@@ -25,6 +25,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Profile
     Route::get('/me',   [UserController::class, 'me']);
     Route::patch('/me', [UserController::class, 'update']);
+    Route::patch('/user/profile', [UserController::class, 'update']);
+    Route::post('/user/password', [UserController::class, 'changePassword']);
 
     // Reports
     Route::get('/reports',          [ReportController::class, 'index']);   // list (map pins + my reports)
@@ -34,6 +36,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Alerts / advisories
     Route::get('/alerts', [AlertController::class, 'index']);
+    Route::post('/alerts/{alert}/read', [AlertController::class, 'markRead']);
+    Route::post('/alerts/read-all', [AlertController::class, 'markAllRead']);
 
     // ── Admin only ───────────────────────────────────────────────────────
     Route::middleware('role:admin')->group(function () {

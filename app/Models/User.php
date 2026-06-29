@@ -53,4 +53,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(ReportStatusUpdate::class);
     }
+
+    public function alertReads()
+    {
+        return $this->hasMany(AlertRead::class);
+    }
 }

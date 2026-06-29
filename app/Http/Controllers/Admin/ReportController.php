@@ -13,6 +13,23 @@ use Inertia\Response;
 
 class ReportController extends Controller
 {
+    public function map(Request $request): Response
+    {
+        $reports = Report::with(['user:id,name', 'assignedResponder:id,name'])
+            ->when($request->status, fn ($q) => $q->where('status', $request->status))
+            ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
+            ->when($request->hazard_type, fn ($q) => $q->where('hazard_type', $request->hazard_type))
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->latest()
+            ->get();
+
+        return Inertia::render('admin/reports/map', [
+            'reports' => $reports,
+            'filters' => $request->only(['status', 'severity', 'hazard_type']),
+        ]);
+    }
+
     public function index(Request $request): Response
     {
         $reports = Report::with(['user:id,name', 'assignedResponder:id,name'])

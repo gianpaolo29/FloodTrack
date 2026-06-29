@@ -1,5 +1,5 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { Search } from 'lucide-react';
+import { Globe, Search } from 'lucide-react';
 import { useCallback } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -98,6 +98,12 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
                                 Clear filters
                             </Button>
                         )}
+                        <Link href="/admin/reports/map">
+                            <Button variant="outline" size="sm" className="gap-1.5">
+                                <Globe className="size-3.5" />
+                                Map view
+                            </Button>
+                        </Link>
                     </CardContent>
                 </Card>
 

@@ -20,4 +20,9 @@ class Alert extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function reads()
+    {
+        return $this->hasMany(AlertRead::class);
+    }
 }

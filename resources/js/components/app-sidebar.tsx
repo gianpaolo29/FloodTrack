@@ -2,16 +2,23 @@ import { Link } from '@inertiajs/react';
 import { usePage } from '@inertiajs/react';
 import {
     AlertTriangle,
+    BarChart3,
     BookOpen,
+    Download,
+    FileText,
     FolderGit2,
+    Globe,
+    History,
+    LayoutDashboard,
     LayoutGrid,
-    MapPin,
+    Settings,
     ShieldCheck,
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
+import { NavSection } from '@/components/nav-section';
 import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
@@ -33,16 +40,26 @@ const defaultNavItems: NavItem[] = [
     },
 ];
 
-const adminNavItems: NavItem[] = [
+// ─── Admin sidebar sections ─────────────────────────────────────────────────
+
+const mainItems: NavItem[] = [
     {
-        title: 'Overview',
+        title: 'Dashboard',
         href: '/admin',
-        icon: ShieldCheck,
+        icon: LayoutDashboard,
     },
+    {
+        title: 'Map View',
+        href: '/admin/reports/map',
+        icon: Globe,
+    },
+];
+
+const managementItems: NavItem[] = [
     {
         title: 'Reports',
         href: '/admin/reports',
-        icon: MapPin,
+        icon: FileText,
     },
     {
         title: 'Alerts',
@@ -53,6 +70,37 @@ const adminNavItems: NavItem[] = [
         title: 'Users',
         href: '/admin/users',
         icon: Users,
+    },
+    {
+        title: 'Responders',
+        href: '/admin/responders',
+        icon: ShieldCheck,
+    },
+];
+
+const analyticsItems: NavItem[] = [
+    {
+        title: 'Statistics',
+        href: '/admin/statistics',
+        icon: BarChart3,
+    },
+    {
+        title: 'Export',
+        href: '/admin/export',
+        icon: Download,
+    },
+];
+
+const systemItems: NavItem[] = [
+    {
+        title: 'Activity Log',
+        href: '/admin/activity',
+        icon: History,
+    },
+    {
+        title: 'Settings',
+        href: '/admin/settings',
+        icon: Settings,
     },
 ];
 
@@ -88,7 +136,16 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={isAdmin ? adminNavItems : defaultNavItems} />
+                {isAdmin ? (
+                    <>
+                        <NavSection label="Main" items={mainItems} />
+                        <NavSection label="Management" items={managementItems} />
+                        <NavSection label="Analytics" items={analyticsItems} />
+                        <NavSection label="System" items={systemItems} />
+                    </>
+                ) : (
+                    <NavMain items={defaultNavItems} />
+                )}
             </SidebarContent>
 
             <SidebarFooter>
