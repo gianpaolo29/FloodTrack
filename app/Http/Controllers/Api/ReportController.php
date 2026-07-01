@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Report;
 use App\Models\ReportMedia;
 use App\Models\ReportStatusUpdate;
+use App\Services\ExpoPushService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -106,6 +107,24 @@ class ReportController extends Controller
             'notes'     => $data['notes'] ?? null,
         ]);
 
+        // Notify reporter about status change
+        $statusLabels = [
+            'en_route' => 'A responder is on the way',
+            'on_scene' => 'A responder has arrived at the scene',
+            'resolved' => 'Your report has been resolved',
+        ];
+        $label = $statusLabels[$data['status']] ?? 'Status updated';
+        ExpoPushService::sendToUsers(
+            $report->user_id,
+            "Report {$report->reference_number}",
+            $label,
+            [
+                'type'     => 'status_update',
+                'reportId' => $report->id,
+                'status'   => $data['status'],
+            ]
+        );
+
         return response()->json($report->fresh()->load(['statusUpdates.user:id,name,role']));
     }
 
@@ -132,6 +151,19 @@ class ReportController extends Controller
             'status'    => 'assigned',
             'notes'     => 'Assigned to responder.',
         ]);
+
+        // Notify assigned responder
+        $hazardLabel = str_replace('_', ' ', ucfirst($report->hazard_type));
+        ExpoPushService::sendToUsers(
+            $data['responder_id'],
+            'New incident assigned',
+            "{$hazardLabel} — {$report->address}",
+            [
+                'type'     => 'incident_assigned',
+                'reportId' => $report->id,
+                'severity' => $report->severity,
+            ]
+        );
 
         return response()->json($report->fresh()->load('assignedResponder:id,name,contact_number'));
     }

@@ -26,6 +26,17 @@ class UserController extends Controller
         return response()->json($request->user()->fresh());
     }
 
+    public function updateDutyStatus(Request $request)
+    {
+        $data = $request->validate([
+            'is_on_duty' => 'required|boolean',
+        ]);
+
+        $request->user()->update($data);
+
+        return response()->json($request->user()->fresh());
+    }
+
     public function changePassword(Request $request)
     {
         $request->validate([

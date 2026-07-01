@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Alert;
 use App\Models\AlertRead;
+use App\Services\ExpoPushService;
 use Illuminate\Http\Request;
 
 class AlertController extends Controller
@@ -46,6 +47,16 @@ class AlertController extends Controller
             ...$data,
             'created_by' => $request->user()->id,
         ]);
+
+        // Push notification to all users
+        ExpoPushService::sendToAll(
+            $alert->title,
+            $alert->body,
+            [
+                'type'    => 'alert',
+                'alertId' => $alert->id,
+            ]
+        );
 
         return response()->json($alert, 201);
     }

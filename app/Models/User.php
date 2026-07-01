@@ -21,6 +21,7 @@ class User extends Authenticatable
         'role',
         'contact_number',
         'avatar',
+        'is_on_duty',
     ];
 
     protected $hidden = [
@@ -35,6 +36,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_on_duty' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
         ];
     }
@@ -57,6 +59,11 @@ class User extends Authenticatable
     public function alertReads()
     {
         return $this->hasMany(AlertRead::class);
+    }
+
+    public function deviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class);
     }
 
     // ── Role helpers ────────────────────────────────────────────────────

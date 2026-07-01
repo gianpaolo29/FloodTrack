@@ -67,4 +67,16 @@ class Report extends Model
     {
         return $this->hasMany(ReportStatusUpdate::class)->latest();
     }
+
+    public function responders()
+    {
+        return $this->hasMany(ReportResponder::class);
+    }
+
+    public function responderUsers()
+    {
+        return $this->belongsToMany(User::class, 'report_responders')
+            ->withPivot('role', 'status')
+            ->withTimestamps();
+    }
 }
