@@ -1,14 +1,13 @@
+'use no memo';
 import { Head, Link, router } from '@inertiajs/react';
-import { List, MapPin } from 'lucide-react';
-import { useCallback, useMemo, useRef, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { GoogleMap, InfoWindowF, MarkerF, useJsApiLoader } from '@react-google-maps/api';
+import { List, MapPin, X } from 'lucide-react';
+import { useCallback, useMemo, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
-import type { Report, Severity, HazardType, ReportStatus } from '@/types/admin';
+import type { Report, Severity } from '@/types/admin';
 import { HAZARD_LABELS, SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
 
 interface Filters {
@@ -32,7 +31,6 @@ const STATUS_OPTIONS = ['', 'pending', 'verified', 'assigned', 'resolved', 'reje
 const SEVERITY_OPTIONS = ['', 'critical', 'high', 'moderate', 'low'];
 const HAZARD_OPTIONS = ['', 'flood', 'road_damage', 'debris', 'drainage', 'other'];
 
-// Marker colors by severity
 const MARKER_COLORS: Record<Severity, string> = {
     low: '#22c55e',
     moderate: '#eab308',
@@ -40,34 +38,37 @@ const MARKER_COLORS: Record<Severity, string> = {
     critical: '#ef4444',
 };
 
-function createMarkerIcon(severity: Severity): L.DivIcon {
-    const color = MARKER_COLORS[severity];
-    return L.divIcon({
-        className: '',
-        iconSize: [28, 28],
-        iconAnchor: [14, 28],
-        popupAnchor: [0, -28],
-        html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="28" height="28">
-            <path fill="${color}" stroke="#fff" stroke-width="1.5" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-            <circle fill="#fff" cx="12" cy="9" r="3"/>
-        </svg>`,
-    });
+function createMarkerUrl(severity: Severity): string {
+    const color = encodeURIComponent(MARKER_COLORS[severity]);
+    return `https://maps.google.com/mapfiles/ms/icons/${
+        severity === 'critical' ? 'red' :
+        severity === 'high' ? 'orange' :
+        severity === 'moderate' ? 'yellow' :
+        'green'
+    }-dot.png`;
 }
 
-// Auto-fit map to report bounds
-function FitBounds({ reports }: { reports: Report[] }) {
-    const map = useMap();
+const mapContainerStyle = { width: '100%', height: '100%' };
 
-    useEffect(() => {
-        if (reports.length === 0) return;
-        const bounds = L.latLngBounds(reports.map((r) => [r.latitude, r.longitude]));
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
-    }, [reports, map]);
-
-    return null;
-}
+const mapOptions: google.maps.MapOptions = {
+    disableDefaultUI: false,
+    zoomControl: true,
+    mapTypeControl: false,
+    streetViewControl: false,
+    fullscreenControl: true,
+    styles: [
+        { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
+        { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+    ],
+};
 
 export default function AdminReportsMap({ reports, filters }: Props) {
+    const { isLoaded } = useJsApiLoader({
+        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY ?? '',
+    });
+
+    const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+
     const filter = useCallback(
         (key: string, value: string) => {
             router.get('/admin/reports/map', { ...filters, [key]: value || undefined }, {
@@ -78,32 +79,32 @@ export default function AdminReportsMap({ reports, filters }: Props) {
         [filters],
     );
 
+    const hasFilters = !!(filters.status || filters.severity || filters.hazard_type);
+
     // Default center: Philippines (or first report)
-    const center = useMemo<[number, number]>(() => {
-        if (reports.length > 0) return [reports[0].latitude, reports[0].longitude];
-        return [14.5995, 120.9842]; // Manila
+    const center = useMemo(() => {
+        if (reports.length > 0) return { lat: reports[0].latitude, lng: reports[0].longitude };
+        return { lat: 14.5995, lng: 120.9842 }; // Manila
     }, [reports]);
 
-    // Memoize icons
-    const icons = useMemo(
-        () =>
-            Object.fromEntries(
-                (['low', 'moderate', 'high', 'critical'] as Severity[]).map((s) => [s, createMarkerIcon(s)]),
-            ) as Record<Severity, L.DivIcon>,
-        [],
-    );
+    const onMapLoad = useCallback((map: google.maps.Map) => {
+        if (reports.length === 0) return;
+        const bounds = new google.maps.LatLngBounds();
+        reports.forEach((r) => bounds.extend({ lat: r.latitude, lng: r.longitude }));
+        map.fitBounds(bounds, 40);
+    }, [reports]);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Map View — FloodTrack Admin" />
 
-            <div className="flex flex-col gap-4 p-6 h-[calc(100vh-4rem)]">
+            <div className="flex flex-col gap-4 p-6 lg:p-8 h-[calc(100vh-4rem)]">
                 {/* Header with filters */}
-                <Card>
+                <Card className="overflow-hidden">
                     <CardContent className="flex flex-wrap items-center gap-3 p-4">
                         <div className="flex items-center gap-2 mr-auto">
                             <MapPin className="size-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">
+                            <span className="text-sm font-semibold">
                                 {reports.length} report{reports.length !== 1 ? 's' : ''} on map
                             </span>
                         </div>
@@ -128,12 +129,14 @@ export default function AdminReportsMap({ reports, filters }: Props) {
                             labelMap={HAZARD_LABELS}
                         />
 
-                        {(filters.status || filters.severity || filters.hazard_type) && (
+                        {hasFilters && (
                             <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => router.get('/admin/reports/map')}
+                                className="gap-1 text-muted-foreground hover:text-foreground"
                             >
+                                <X className="size-3.5" />
                                 Clear
                             </Button>
                         )}
@@ -149,11 +152,11 @@ export default function AdminReportsMap({ reports, filters }: Props) {
 
                 {/* Legend */}
                 <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-                    <span className="font-medium">Severity:</span>
+                    <span className="font-semibold">Severity:</span>
                     {(['critical', 'high', 'moderate', 'low'] as Severity[]).map((s) => (
-                        <span key={s} className="flex items-center gap-1">
+                        <span key={s} className="flex items-center gap-1.5">
                             <span
-                                className="inline-block size-3 rounded-full"
+                                className="inline-block size-3 rounded-full ring-1 ring-black/10"
                                 style={{ backgroundColor: MARKER_COLORS[s] }}
                             />
                             {s.charAt(0).toUpperCase() + s.slice(1)}
@@ -162,60 +165,67 @@ export default function AdminReportsMap({ reports, filters }: Props) {
                 </div>
 
                 {/* Map */}
-                <div className="flex-1 rounded-lg overflow-hidden border">
-                    <MapContainer
-                        center={center}
-                        zoom={12}
-                        className="h-full w-full"
-                        zoomControl={true}
-                        scrollWheelZoom={true}
-                    >
-                        <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                        />
-                        <FitBounds reports={reports} />
+                <div className="flex-1 rounded-xl overflow-hidden border shadow-sm">
+                    {isLoaded ? (
+                        <GoogleMap
+                            mapContainerStyle={mapContainerStyle}
+                            center={center}
+                            zoom={12}
+                            options={mapOptions}
+                            onLoad={onMapLoad}
+                            onClick={() => setSelectedReport(null)}
+                        >
+                            {reports.map((report) => (
+                                <MarkerF
+                                    key={report.id}
+                                    position={{ lat: report.latitude, lng: report.longitude }}
+                                    icon={{
+                                        url: createMarkerUrl(report.severity),
+                                        scaledSize: new google.maps.Size(32, 32),
+                                    }}
+                                    onClick={() => setSelectedReport(report)}
+                                />
+                            ))}
 
-                        {reports.map((report) => (
-                            <Marker
-                                key={report.id}
-                                position={[report.latitude, report.longitude]}
-                                icon={icons[report.severity]}
-                            >
-                                <Popup maxWidth={280} minWidth={220}>
-                                    <div className="flex flex-col gap-2 text-sm">
+                            {selectedReport && (
+                                <InfoWindowF
+                                    position={{ lat: selectedReport.latitude, lng: selectedReport.longitude }}
+                                    onCloseClick={() => setSelectedReport(null)}
+                                    options={{ maxWidth: 300, minWidth: 240 }}
+                                >
+                                    <div className="flex flex-col gap-2 p-1 text-sm">
                                         <div className="flex items-center justify-between gap-2">
-                                            <span className="font-mono text-xs font-semibold">
-                                                {report.reference_number}
+                                            <span className="font-mono text-xs font-bold">
+                                                {selectedReport.reference_number}
                                             </span>
                                             <span
-                                                className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${SEVERITY_COLORS[report.severity]}`}
+                                                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${SEVERITY_COLORS[selectedReport.severity]}`}
                                             >
-                                                {report.severity}
+                                                {selectedReport.severity}
                                             </span>
                                         </div>
 
                                         <div className="flex items-center gap-2">
-                                            <span className="text-muted-foreground text-xs">
-                                                {HAZARD_LABELS[report.hazard_type]}
+                                            <span className="text-gray-500 text-xs">
+                                                {HAZARD_LABELS[selectedReport.hazard_type]}
                                             </span>
                                             <span
-                                                className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${STATUS_COLORS[report.status]}`}
+                                                className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[selectedReport.status]}`}
                                             >
-                                                {report.status}
+                                                {selectedReport.status}
                                             </span>
                                         </div>
 
-                                        {report.address && (
-                                            <p className="text-xs text-muted-foreground leading-snug">
-                                                {report.address}
+                                        {selectedReport.address && (
+                                            <p className="text-xs text-gray-500 leading-snug">
+                                                {selectedReport.address}
                                             </p>
                                         )}
 
-                                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                            <span>by {report.user?.name ?? 'Unknown'}</span>
+                                        <div className="flex items-center justify-between text-xs text-gray-500">
+                                            <span>by {selectedReport.user?.name ?? 'Unknown'}</span>
                                             <span>
-                                                {new Date(report.created_at).toLocaleDateString('en-PH', {
+                                                {new Date(selectedReport.created_at).toLocaleDateString('en-PH', {
                                                     month: 'short',
                                                     day: 'numeric',
                                                 })}
@@ -223,16 +233,23 @@ export default function AdminReportsMap({ reports, filters }: Props) {
                                         </div>
 
                                         <Link
-                                            href={`/admin/reports/${report.id}`}
-                                            className="mt-1 block rounded-md bg-primary px-3 py-1.5 text-center text-xs font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+                                            href={`/admin/reports/${selectedReport.id}`}
+                                            className="mt-1 block rounded-lg bg-blue-600 px-3 py-2 text-center text-xs font-semibold text-white hover:bg-blue-700 transition-colors"
                                         >
                                             View details
                                         </Link>
                                     </div>
-                                </Popup>
-                            </Marker>
-                        ))}
-                    </MapContainer>
+                                </InfoWindowF>
+                            )}
+                        </GoogleMap>
+                    ) : (
+                        <div className="flex h-full items-center justify-center bg-muted/30">
+                            <div className="flex flex-col items-center gap-3">
+                                <div className="size-8 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground" />
+                                <p className="text-sm text-muted-foreground">Loading map...</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </AppLayout>
@@ -256,7 +273,7 @@ function FilterSelect({
         <select
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            className="h-9 rounded-lg border border-input bg-muted/30 px-3 text-sm transition-colors focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring"
         >
             <option value="">{placeholder}</option>
             {options.filter(Boolean).map((opt) => (

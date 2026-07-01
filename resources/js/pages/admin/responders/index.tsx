@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { Search, ShieldCheck } from 'lucide-react';
+import { Phone, Search, ShieldCheck, X } from 'lucide-react';
 import { useCallback } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
@@ -49,52 +49,51 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Responders — FloodTrack Admin" />
 
-            <div className="flex flex-col gap-6 p-6">
+            <div className="flex flex-col gap-6 p-6 lg:p-8">
 
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <ShieldCheck className="size-5 text-muted-foreground" />
-                        <h1 className="text-lg font-semibold">Responders</h1>
-                        <span className="text-sm text-muted-foreground">({responders.total})</span>
-                    </div>
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Responders</h1>
+                    <p className="text-sm text-muted-foreground">
+                        {responders.total} registered responder{responders.total !== 1 ? 's' : ''}
+                    </p>
                 </div>
 
                 {/* Search */}
-                <Card>
-                    <CardContent className="flex gap-3 p-4">
-                        <div className="relative flex-1 max-w-sm">
-                            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                                placeholder="Search by name or email…"
-                                defaultValue={filters.search ?? ''}
-                                className="pl-9"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        search((e.target as HTMLInputElement).value);
-                                    }
-                                }}
-                            />
-                        </div>
-                        {filters.search && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => router.get('/admin/responders')}
-                            >
-                                Clear
-                            </Button>
-                        )}
-                    </CardContent>
-                </Card>
+                <div className="flex items-center gap-3">
+                    <div className="relative flex-1 max-w-sm">
+                        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input
+                            placeholder="Search by name or email..."
+                            defaultValue={filters.search ?? ''}
+                            className="pl-9 bg-muted/30 border-transparent focus:bg-background focus:border-input transition-colors"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                    search((e.target as HTMLInputElement).value);
+                                }
+                            }}
+                        />
+                    </div>
+                    {filters.search && (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => router.get('/admin/responders')}
+                            className="gap-1 text-muted-foreground hover:text-foreground"
+                        >
+                            <X className="size-3.5" />
+                            Clear
+                        </Button>
+                    )}
+                </div>
 
-                {/* Responder cards grid */}
+                {/* Responder cards */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {responders.data.map((r) => (
-                        <Card key={r.id}>
-                            <CardHeader className="pb-3">
-                                <CardTitle className="flex items-center gap-2 text-base">
-                                    <div className="flex size-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 text-sm font-bold">
+                        <Card key={r.id} className="overflow-hidden transition-shadow hover:shadow-md">
+                            <CardHeader className="pb-3 px-6 pt-6">
+                                <CardTitle className="flex items-center gap-3 text-base">
+                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-sm font-bold text-white shadow-sm">
                                         {r.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="min-w-0 flex-1">
@@ -103,24 +102,27 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                                     </div>
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="grid grid-cols-3 gap-2 text-center">
-                                <div>
-                                    <p className="text-xl font-bold text-teal-600">{r.active_assignments}</p>
-                                    <p className="text-[10px] text-muted-foreground leading-tight">Active</p>
-                                </div>
-                                <div>
-                                    <p className="text-xl font-bold text-green-600">{r.resolved_count}</p>
-                                    <p className="text-[10px] text-muted-foreground leading-tight">Resolved</p>
-                                </div>
-                                <div>
-                                    <p className="text-xl font-bold">{r.total_assigned}</p>
-                                    <p className="text-[10px] text-muted-foreground leading-tight">Total</p>
+                            <CardContent className="px-6 pb-4">
+                                <div className="grid grid-cols-3 gap-3 rounded-xl bg-muted/40 p-3 text-center">
+                                    <div>
+                                        <p className="text-xl font-bold text-indigo-600 tabular-nums">{r.active_assignments}</p>
+                                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Active</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xl font-bold text-emerald-600 tabular-nums">{r.resolved_count}</p>
+                                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Resolved</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-xl font-bold tabular-nums">{r.total_assigned}</p>
+                                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Total</p>
+                                    </div>
                                 </div>
                             </CardContent>
                             {r.contact_number && (
-                                <div className="border-t px-6 py-2">
-                                    <p className="text-xs text-muted-foreground">
-                                        Contact: {r.contact_number}
+                                <div className="border-t px-6 py-3">
+                                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                        <Phone className="size-3" />
+                                        {r.contact_number}
                                     </p>
                                 </div>
                             )}
@@ -129,43 +131,38 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                 </div>
 
                 {responders.data.length === 0 && (
-                    <Card>
-                        <CardContent className="py-12 text-center text-muted-foreground">
-                            No responders found.
+                    <Card className="overflow-hidden">
+                        <CardContent className="flex flex-col items-center gap-2 py-16">
+                            <ShieldCheck className="size-8 text-muted-foreground/40" />
+                            <p className="text-sm text-muted-foreground">No responders found</p>
                         </CardContent>
                     </Card>
                 )}
 
                 {/* Pagination */}
                 {responders.last_page > 1 && (
-                    <Pagination links={responders.links} />
+                    <div className="flex justify-center gap-1">
+                        {responders.links.map((link, i) =>
+                            link.url ? (
+                                <button
+                                    key={i}
+                                    onClick={() => router.get(link.url!)}
+                                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                                        link.active ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                                    }`}
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ) : (
+                                <span
+                                    key={i}
+                                    className="rounded-lg px-3 py-1.5 text-xs opacity-30"
+                                    dangerouslySetInnerHTML={{ __html: link.label }}
+                                />
+                            ),
+                        )}
+                    </div>
                 )}
             </div>
         </AppLayout>
-    );
-}
-
-function Pagination({ links }: { links: { url: string | null; label: string; active: boolean }[] }) {
-    return (
-        <div className="flex justify-center gap-1">
-            {links.map((link, i) =>
-                link.url ? (
-                    <button
-                        key={i}
-                        onClick={() => router.get(link.url!)}
-                        className={`rounded px-3 py-1.5 text-xs ${
-                            link.active ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
-                        }`}
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                    />
-                ) : (
-                    <span
-                        key={i}
-                        className="rounded px-3 py-1.5 text-xs opacity-40"
-                        dangerouslySetInnerHTML={{ __html: link.label }}
-                    />
-                ),
-            )}
-        </div>
     );
 }

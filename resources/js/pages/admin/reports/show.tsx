@@ -1,5 +1,5 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle, UserCheck, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Clock, MapPin, UserCheck, XCircle } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,32 +31,38 @@ export default function AdminReportShow({ report, responders }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`${report.reference_number} — FloodTrack Admin`} />
 
-            <div className="flex flex-col gap-6 p-6">
+            <div className="flex flex-col gap-6 p-6 lg:p-8">
 
-                <div className="flex items-center gap-3">
-                    <Link href="/admin/reports" className="text-muted-foreground hover:text-foreground">
+                {/* Header */}
+                <div className="flex items-center gap-4">
+                    <Link
+                        href="/admin/reports"
+                        className="flex size-8 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+                    >
                         <ArrowLeft className="size-4" />
                     </Link>
-                    <h1 className="text-lg font-semibold">{report.reference_number}</h1>
-                    <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${SEVERITY_COLORS[report.severity]}`}>
-                        {report.severity}
-                    </span>
-                    <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[report.status]}`}>
-                        {report.status}
-                    </span>
+                    <div className="flex items-center gap-3">
+                        <h1 className="text-xl font-bold tracking-tight">{report.reference_number}</h1>
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${SEVERITY_COLORS[report.severity]}`}>
+                            {report.severity}
+                        </span>
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_COLORS[report.status]}`}>
+                            {report.status}
+                        </span>
+                    </div>
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-3">
 
-                    {/* Left column — report details */}
-                    <div className="flex flex-col gap-4 lg:col-span-2">
+                    {/* Left column */}
+                    <div className="flex flex-col gap-6 lg:col-span-2">
 
-                        {/* Info */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Report details</CardTitle>
+                        {/* Details */}
+                        <Card className="overflow-hidden">
+                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                                <CardTitle className="text-sm font-semibold tracking-tight">Report Details</CardTitle>
                             </CardHeader>
-                            <CardContent className="grid gap-3 text-sm sm:grid-cols-2">
+                            <CardContent className="grid gap-4 p-6 sm:grid-cols-2">
                                 <Detail label="Hazard type" value={HAZARD_LABELS[report.hazard_type]} />
                                 <Detail label="Severity"    value={report.severity} />
                                 <Detail label="Status"      value={report.status} />
@@ -74,12 +80,12 @@ export default function AdminReportShow({ report, responders }: Props) {
 
                         {/* Description */}
                         {report.description && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-sm">Description</CardTitle>
+                            <Card className="overflow-hidden">
+                                <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                                    <CardTitle className="text-sm font-semibold tracking-tight">Description</CardTitle>
                                 </CardHeader>
-                                <CardContent>
-                                    <p className="text-sm text-muted-foreground leading-relaxed">
+                                <CardContent className="p-6">
+                                    <p className="text-sm leading-relaxed text-muted-foreground">
                                         {report.description}
                                     </p>
                                 </CardContent>
@@ -88,21 +94,21 @@ export default function AdminReportShow({ report, responders }: Props) {
 
                         {/* Evidence */}
                         {(report.media?.length ?? 0) > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-sm">
+                            <Card className="overflow-hidden">
+                                <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                                    <CardTitle className="text-sm font-semibold tracking-tight">
                                         Evidence ({report.media!.length})
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent>
-                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                                <CardContent className="p-6">
+                                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                                         {report.media!.map((m) =>
                                             m.file_type === 'image' ? (
-                                                <a key={m.id} href={m.url} target="_blank" rel="noreferrer">
+                                                <a key={m.id} href={m.url} target="_blank" rel="noreferrer" className="group">
                                                     <img
                                                         src={m.url}
                                                         alt="Evidence"
-                                                        className="aspect-video w-full rounded-lg object-cover hover:opacity-90 transition-opacity"
+                                                        className="aspect-video w-full rounded-xl object-cover ring-1 ring-border transition-all group-hover:ring-2 group-hover:ring-blue-500/50 group-hover:shadow-lg"
                                                     />
                                                 </a>
                                             ) : (
@@ -111,7 +117,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                                     href={m.url}
                                                     target="_blank"
                                                     rel="noreferrer"
-                                                    className="flex aspect-video w-full items-center justify-center rounded-lg bg-muted text-sm text-muted-foreground hover:bg-muted/70 transition-colors"
+                                                    className="flex aspect-video w-full items-center justify-center rounded-xl bg-muted ring-1 ring-border text-sm text-muted-foreground transition-all hover:ring-2 hover:ring-blue-500/50 hover:shadow-lg"
                                                 >
                                                     ▶ Video
                                                 </a>
@@ -122,27 +128,27 @@ export default function AdminReportShow({ report, responders }: Props) {
                             </Card>
                         )}
 
-                        {/* Status timeline */}
+                        {/* Timeline */}
                         {(report.status_updates?.length ?? 0) > 0 && (
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-sm">Status timeline</CardTitle>
+                            <Card className="overflow-hidden">
+                                <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                                    <CardTitle className="text-sm font-semibold tracking-tight">Status Timeline</CardTitle>
                                 </CardHeader>
-                                <CardContent>
-                                    <ol className="relative border-l border-muted ml-2 flex flex-col gap-4">
+                                <CardContent className="p-6">
+                                    <ol className="relative ml-3 border-l-2 border-muted flex flex-col gap-6">
                                         {report.status_updates!.map((u) => (
-                                            <li key={u.id} className="ml-4">
-                                                <div className="absolute -left-1.5 mt-1 size-3 rounded-full border border-background bg-muted-foreground/40" />
-                                                <div className="flex items-center gap-2">
-                                                    <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${STATUS_COLORS[u.status as Report['status']] ?? 'bg-gray-100 text-gray-600'}`}>
+                                            <li key={u.id} className="ml-6">
+                                                <div className="absolute -left-[9px] mt-0.5 size-4 rounded-full border-2 border-background bg-muted-foreground/30" />
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[u.status as Report['status']] ?? 'bg-zinc-100 text-zinc-600'}`}>
                                                         {u.status.replace('_', ' ')}
                                                     </span>
                                                     <span className="text-xs text-muted-foreground">
-                                                        by {u.user.name} · {new Date(u.created_at).toLocaleString('en-PH')}
+                                                        by <span className="font-medium text-foreground">{u.user.name}</span> · {new Date(u.created_at).toLocaleString('en-PH')}
                                                     </span>
                                                 </div>
                                                 {u.notes && (
-                                                    <p className="mt-1 text-sm text-muted-foreground">{u.notes}</p>
+                                                    <p className="mt-1.5 text-sm text-muted-foreground">{u.notes}</p>
                                                 )}
                                             </li>
                                         ))}
@@ -152,15 +158,15 @@ export default function AdminReportShow({ report, responders }: Props) {
                         )}
                     </div>
 
-                    {/* Right column — reporter, actions */}
-                    <div className="flex flex-col gap-4">
+                    {/* Right column */}
+                    <div className="flex flex-col gap-6">
 
                         {/* Reporter */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Reporter</CardTitle>
+                        <Card className="overflow-hidden">
+                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                                <CardTitle className="text-sm font-semibold tracking-tight">Reporter</CardTitle>
                             </CardHeader>
-                            <CardContent className="grid gap-2 text-sm">
+                            <CardContent className="grid gap-3 p-6">
                                 <Detail label="Name"    value={report.user?.name ?? '—'} />
                                 <Detail label="Email"   value={report.user?.email ?? '—'} />
                                 <Detail label="Contact" value={report.user?.contact_number ?? '—'} />
@@ -168,30 +174,29 @@ export default function AdminReportShow({ report, responders }: Props) {
                         </Card>
 
                         {/* Assigned responder */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Assigned responder</CardTitle>
+                        <Card className="overflow-hidden">
+                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                                <CardTitle className="text-sm font-semibold tracking-tight">Assigned Responder</CardTitle>
                             </CardHeader>
-                            <CardContent className="grid gap-2 text-sm">
+                            <CardContent className="grid gap-3 p-6">
                                 {report.assigned_responder ? (
                                     <>
                                         <Detail label="Name"    value={report.assigned_responder.name} />
                                         <Detail label="Contact" value={report.assigned_responder.contact_number ?? '—'} />
                                     </>
                                 ) : (
-                                    <p className="text-muted-foreground">Not yet assigned.</p>
+                                    <p className="text-sm text-muted-foreground">Not yet assigned</p>
                                 )}
                             </CardContent>
                         </Card>
 
                         {/* Actions */}
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm">Actions</CardTitle>
+                        <Card className="overflow-hidden">
+                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                                <CardTitle className="text-sm font-semibold tracking-tight">Actions</CardTitle>
                             </CardHeader>
-                            <CardContent className="flex flex-col gap-3">
+                            <CardContent className="flex flex-col gap-4 p-6">
 
-                                {/* Verify */}
                                 {canVerify && (
                                     <form
                                         onSubmit={(e) => {
@@ -201,34 +206,33 @@ export default function AdminReportShow({ report, responders }: Props) {
                                     >
                                         <Button
                                             type="submit"
-                                            className="w-full gap-2"
+                                            className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-sm"
                                             disabled={verifyForm.processing}
                                         >
-                                            <CheckCircle className="size-4" />
-                                            Verify report
+                                            <CheckCircle2 className="size-4" />
+                                            Verify Report
                                         </Button>
                                     </form>
                                 )}
 
-                                {/* Assign */}
                                 {canAssign && (
                                     <form
                                         onSubmit={(e) => {
                                             e.preventDefault();
                                             assignForm.post(`/admin/reports/${report.id}/assign`);
                                         }}
-                                        className="flex flex-col gap-2"
+                                        className="flex flex-col gap-3"
                                     >
-                                        <label className="text-xs font-medium text-muted-foreground">
+                                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                                             Assign to responder
                                         </label>
                                         <select
                                             value={assignForm.data.responder_id}
                                             onChange={(e) => assignForm.setData('responder_id', e.target.value)}
-                                            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                                            className="h-9 w-full rounded-lg border border-input bg-muted/30 px-3 text-sm transition-colors focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                                             required
                                         >
-                                            <option value="">Select responder…</option>
+                                            <option value="">Select responder...</option>
                                             {responders.map((r) => (
                                                 <option key={r.id} value={r.id}>{r.name}</option>
                                             ))}
@@ -236,7 +240,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                         <Button
                                             type="submit"
                                             variant="outline"
-                                            className="w-full gap-2"
+                                            className="w-full gap-2 shadow-sm"
                                             disabled={assignForm.processing}
                                         >
                                             <UserCheck className="size-4" />
@@ -245,26 +249,25 @@ export default function AdminReportShow({ report, responders }: Props) {
                                     </form>
                                 )}
 
-                                {/* Reject */}
                                 {canReject && (
                                     <form
                                         onSubmit={(e) => {
                                             e.preventDefault();
                                             rejectForm.post(`/admin/reports/${report.id}/reject`);
                                         }}
-                                        className="flex flex-col gap-2"
+                                        className="flex flex-col gap-3"
                                     >
                                         <textarea
                                             placeholder="Reason for rejection (optional)"
                                             value={rejectForm.data.notes}
                                             onChange={(e) => rejectForm.setData('notes', e.target.value)}
                                             rows={2}
-                                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                                            className="w-full rounded-lg border border-input bg-muted/30 px-3 py-2 text-sm transition-colors focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring resize-none"
                                         />
                                         <Button
                                             type="submit"
                                             variant="destructive"
-                                            className="w-full gap-2"
+                                            className="w-full gap-2 shadow-sm"
                                             disabled={rejectForm.processing}
                                         >
                                             <XCircle className="size-4" />
@@ -274,9 +277,12 @@ export default function AdminReportShow({ report, responders }: Props) {
                                 )}
 
                                 {!canVerify && !canAssign && !canReject && (
-                                    <p className="text-sm text-muted-foreground text-center py-2">
-                                        No actions available for this status.
-                                    </p>
+                                    <div className="flex flex-col items-center gap-2 py-4">
+                                        <Clock className="size-6 text-muted-foreground/40" />
+                                        <p className="text-sm text-muted-foreground">
+                                            No actions available for this status
+                                        </p>
+                                    </div>
                                 )}
                             </CardContent>
                         </Card>
@@ -290,8 +296,8 @@ export default function AdminReportShow({ report, responders }: Props) {
 function Detail({ label, value }: { label: string; value: string }) {
     return (
         <div>
-            <p className="text-xs text-muted-foreground">{label}</p>
-            <p className="font-medium">{value}</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+            <p className="mt-0.5 text-sm font-medium">{value}</p>
         </div>
     );
 }

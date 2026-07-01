@@ -1,18 +1,19 @@
 import { Head, Link } from '@inertiajs/react';
 import {
     AlertTriangle,
-    CheckCircle,
+    ArrowUpRight,
+    CheckCircle2,
     Clock,
     MapPin,
     ShieldAlert,
+    TrendingUp,
     Users,
     Zap,
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
-import type { Report, SEVERITY_COLORS, STATUS_COLORS, HAZARD_LABELS } from '@/types/admin';
+import type { Report } from '@/types/admin';
 import {
     SEVERITY_COLORS as SEV,
     STATUS_COLORS as STA,
@@ -52,159 +53,185 @@ export default function AdminDashboard({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Dashboard — FloodTrack" />
 
-            <div className="flex flex-col gap-6 p-6">
+            <div className="flex flex-col gap-8 p-6 lg:p-8">
 
-                {/* Stat cards */}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <StatCard
-                        icon={<MapPin className="size-5 text-blue-600" />}
-                        label="Total reports"
+                {/* Welcome header */}
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                        Overview of flood reports, responders, and system activity.
+                    </p>
+                </div>
+
+                {/* Primary stat cards */}
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <MetricCard
+                        icon={MapPin}
+                        iconBg="bg-blue-500/10"
+                        iconColor="text-blue-600"
+                        label="Total Reports"
                         value={stats.total_reports}
-                        bg="bg-blue-50"
                     />
-                    <StatCard
-                        icon={<Clock className="size-5 text-amber-600" />}
-                        label="Pending review"
+                    <MetricCard
+                        icon={Clock}
+                        iconBg="bg-amber-500/10"
+                        iconColor="text-amber-600"
+                        label="Pending Review"
                         value={stats.pending}
-                        bg="bg-amber-50"
-                        urgent={stats.pending > 0}
+                        accent={stats.pending > 0 ? 'border-l-amber-500' : undefined}
                     />
-                    <StatCard
-                        icon={<Zap className="size-5 text-teal-600" />}
-                        label="Active incidents"
+                    <MetricCard
+                        icon={Zap}
+                        iconBg="bg-indigo-500/10"
+                        iconColor="text-indigo-600"
+                        label="Active Incidents"
                         value={stats.active}
-                        bg="bg-teal-50"
                     />
-                    <StatCard
-                        icon={<CheckCircle className="size-5 text-green-600" />}
-                        label="Resolved today"
+                    <MetricCard
+                        icon={CheckCircle2}
+                        iconBg="bg-emerald-500/10"
+                        iconColor="text-emerald-600"
+                        label="Resolved Today"
                         value={stats.resolved_today}
-                        bg="bg-green-50"
                     />
                 </div>
 
+                {/* Secondary stats */}
                 <div className="grid gap-4 sm:grid-cols-3">
-                    <StatCard
-                        icon={<Users className="size-5 text-violet-600" />}
-                        label="Registered users"
+                    <MetricCard
+                        icon={Users}
+                        iconBg="bg-violet-500/10"
+                        iconColor="text-violet-600"
+                        label="Registered Users"
                         value={stats.total_users}
-                        bg="bg-violet-50"
                     />
-                    <StatCard
-                        icon={<ShieldAlert className="size-5 text-indigo-600" />}
+                    <MetricCard
+                        icon={ShieldAlert}
+                        iconBg="bg-sky-500/10"
+                        iconColor="text-sky-600"
                         label="Responders"
                         value={stats.total_responders}
-                        bg="bg-indigo-50"
                     />
-                    <StatCard
-                        icon={<AlertTriangle className="size-5 text-red-600" />}
-                        label="Active alerts"
+                    <MetricCard
+                        icon={AlertTriangle}
+                        iconBg="bg-rose-500/10"
+                        iconColor="text-rose-600"
+                        label="Active Alerts"
                         value={active_alerts}
-                        bg="bg-red-50"
-                        urgent={active_alerts > 0}
+                        accent={active_alerts > 0 ? 'border-l-rose-500' : undefined}
                     />
                 </div>
 
                 {/* Breakdowns */}
-                <div className="grid gap-4 lg:grid-cols-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Reports by severity
+                <div className="grid gap-6 lg:grid-cols-2">
+                    <Card className="overflow-hidden">
+                        <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                            <CardTitle className="text-sm font-semibold tracking-tight">
+                                Reports by Severity
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="flex flex-wrap gap-3">
-                            {(['critical', 'high', 'moderate', 'low'] as const).map((sev) => (
-                                <div key={sev} className="flex items-center gap-2">
-                                    <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${SEV[sev]}`}>
-                                        {sev.charAt(0).toUpperCase() + sev.slice(1)}
-                                    </span>
-                                    <span className="text-sm font-semibold">
-                                        {severity_breakdown[sev] ?? 0}
-                                    </span>
-                                </div>
-                            ))}
+                        <CardContent className="flex flex-wrap items-center gap-4 p-6">
+                            {(['critical', 'high', 'moderate', 'low'] as const).map((sev) => {
+                                const count = severity_breakdown[sev] ?? 0;
+                                return (
+                                    <div key={sev} className="flex items-center gap-2.5">
+                                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${SEV[sev]}`}>
+                                            {sev.charAt(0).toUpperCase() + sev.slice(1)}
+                                        </span>
+                                        <span className="text-sm font-bold tabular-nums">
+                                            {count}
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm font-medium text-muted-foreground">
-                                Reports by status
+                    <Card className="overflow-hidden">
+                        <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                            <CardTitle className="text-sm font-semibold tracking-tight">
+                                Reports by Status
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="flex flex-wrap gap-3">
-                            {(['pending', 'verified', 'assigned', 'resolved', 'rejected'] as const).map((st) => (
-                                <div key={st} className="flex items-center gap-2">
-                                    <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${STA[st]}`}>
-                                        {st.charAt(0).toUpperCase() + st.slice(1)}
-                                    </span>
-                                    <span className="text-sm font-semibold">
-                                        {status_breakdown[st] ?? 0}
-                                    </span>
-                                </div>
-                            ))}
+                        <CardContent className="flex flex-wrap items-center gap-4 p-6">
+                            {(['pending', 'verified', 'assigned', 'resolved', 'rejected'] as const).map((st) => {
+                                const count = status_breakdown[st] ?? 0;
+                                return (
+                                    <div key={st} className="flex items-center gap-2.5">
+                                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${STA[st]}`}>
+                                            {st.charAt(0).toUpperCase() + st.slice(1)}
+                                        </span>
+                                        <span className="text-sm font-bold tabular-nums">
+                                            {count}
+                                        </span>
+                                    </div>
+                                );
+                            })}
                         </CardContent>
                     </Card>
                 </div>
 
                 {/* Recent reports table */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Recent reports</CardTitle>
+                <Card className="overflow-hidden">
+                    <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/30 px-6 py-4">
+                        <CardTitle className="text-sm font-semibold tracking-tight">
+                            Recent Reports
+                        </CardTitle>
                         <Link
                             href="/admin/reports"
-                            className="text-sm text-blue-600 hover:underline"
+                            className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
                         >
-                            View all →
+                            View all
+                            <ArrowUpRight className="size-3" />
                         </Link>
                     </CardHeader>
                     <CardContent className="p-0">
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
-                                    <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
-                                        <th className="px-4 py-3 font-medium">Reference</th>
-                                        <th className="px-4 py-3 font-medium">Type</th>
-                                        <th className="px-4 py-3 font-medium">Severity</th>
-                                        <th className="px-4 py-3 font-medium">Status</th>
-                                        <th className="px-4 py-3 font-medium">Reporter</th>
-                                        <th className="px-4 py-3 font-medium">Location</th>
-                                        <th className="px-4 py-3 font-medium">Date</th>
+                                    <tr className="border-b bg-muted/20 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                        <th className="px-6 py-3">Reference</th>
+                                        <th className="px-6 py-3">Type</th>
+                                        <th className="px-6 py-3">Severity</th>
+                                        <th className="px-6 py-3">Status</th>
+                                        <th className="px-6 py-3">Reporter</th>
+                                        <th className="px-6 py-3">Location</th>
+                                        <th className="px-6 py-3">Date</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y">
+                                <tbody className="divide-y divide-border/50">
                                     {recent_reports.map((report) => (
                                         <tr
                                             key={report.id}
-                                            className="hover:bg-muted/20 transition-colors"
+                                            className="group transition-colors hover:bg-muted/30"
                                         >
-                                            <td className="px-4 py-3">
+                                            <td className="px-6 py-3.5">
                                                 <Link
                                                     href={`/admin/reports/${report.id}`}
-                                                    className="font-mono text-xs text-blue-600 hover:underline"
+                                                    className="inline-flex items-center gap-1 font-mono text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
                                                 >
                                                     {report.reference_number}
+                                                    <ArrowUpRight className="size-3 opacity-0 group-hover:opacity-100 transition-opacity" />
                                                 </Link>
                                             </td>
-                                            <td className="px-4 py-3 text-muted-foreground">
+                                            <td className="px-6 py-3.5 text-muted-foreground">
                                                 {HAZ[report.hazard_type]}
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${SEV[report.severity]}`}>
+                                            <td className="px-6 py-3.5">
+                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${SEV[report.severity]}`}>
                                                     {report.severity}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <span className={`rounded-md px-2 py-0.5 text-xs font-medium ${STA[report.status]}`}>
+                                            <td className="px-6 py-3.5">
+                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${STA[report.status]}`}>
                                                     {report.status}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3">{report.user?.name ?? '—'}</td>
-                                            <td className="px-4 py-3 max-w-[180px] truncate text-muted-foreground">
+                                            <td className="px-6 py-3.5 font-medium">{report.user?.name ?? '—'}</td>
+                                            <td className="px-6 py-3.5 max-w-[180px] truncate text-muted-foreground">
                                                 {report.address ?? '—'}
                                             </td>
-                                            <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
+                                            <td className="px-6 py-3.5 text-muted-foreground whitespace-nowrap">
                                                 {new Date(report.created_at).toLocaleDateString('en-PH', {
                                                     month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                                                 })}
@@ -213,8 +240,11 @@ export default function AdminDashboard({
                                     ))}
                                     {recent_reports.length === 0 && (
                                         <tr>
-                                            <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                                                No reports yet.
+                                            <td colSpan={7} className="px-6 py-16 text-center">
+                                                <div className="flex flex-col items-center gap-2">
+                                                    <MapPin className="size-8 text-muted-foreground/40" />
+                                                    <p className="text-sm text-muted-foreground">No reports yet</p>
+                                                </div>
                                             </td>
                                         </tr>
                                     )}
@@ -228,24 +258,30 @@ export default function AdminDashboard({
     );
 }
 
-function StatCard({
-    icon, label, value, bg, urgent = false,
+function MetricCard({
+    icon: Icon,
+    iconBg,
+    iconColor,
+    label,
+    value,
+    accent,
 }: {
-    icon: React.ReactNode;
+    icon: React.ComponentType<{ className?: string }>;
+    iconBg: string;
+    iconColor: string;
     label: string;
     value: number;
-    bg: string;
-    urgent?: boolean;
+    accent?: string;
 }) {
     return (
-        <Card className={urgent ? 'ring-2 ring-red-300' : ''}>
+        <Card className={`relative overflow-hidden transition-shadow hover:shadow-md ${accent ? `border-l-4 ${accent}` : ''}`}>
             <CardContent className="flex items-center gap-4 p-5">
-                <div className={`flex size-10 items-center justify-center rounded-lg ${bg}`}>
-                    {icon}
+                <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
+                    <Icon className={`size-5 ${iconColor}`} />
                 </div>
-                <div>
-                    <p className="text-xs text-muted-foreground">{label}</p>
-                    <p className="text-2xl font-bold">{value}</p>
+                <div className="min-w-0">
+                    <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
+                    <p className="text-2xl font-bold tracking-tight tabular-nums">{value}</p>
                 </div>
             </CardContent>
         </Card>

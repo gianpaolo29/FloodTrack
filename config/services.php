@@ -35,4 +35,10 @@ return [
         ],
     ],
 
+    'openweather' => [
+        'key' => env('OPENWEATHER_API_KEY', ''),
+        'lat' => env('WEATHER_DEFAULT_LAT', 14.5995),
+        'lon' => env('WEATHER_DEFAULT_LON', 120.9842),
+    ],
+
 ];

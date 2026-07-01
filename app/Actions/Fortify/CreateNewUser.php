@@ -22,7 +22,7 @@ class CreateNewUser implements CreatesNewUsers
         Validator::make($input, [
             ...$this->profileRules(),
             'password'       => $this->passwordRules(),
-            'role'           => ['required', 'in:resident,responder'],
+            'role'           => ['nullable', 'in:resident,responder'],
             'contact_number' => ['nullable', 'string', 'max:20'],
         ])->validate();
 
@@ -30,7 +30,7 @@ class CreateNewUser implements CreatesNewUsers
             'name'           => $input['name'],
             'email'          => $input['email'],
             'password'       => $input['password'],
-            'role'           => $input['role'],
+            'role'           => $input['role'] ?? 'resident',
             'contact_number' => $input['contact_number'] ?? null,
         ]);
     }

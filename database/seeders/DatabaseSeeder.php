@@ -13,11 +13,20 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
+        // Admin account
         User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+            'name'  => 'Admin',
+            'email' => 'admin@floodtrack.com',
+            'password' => 'password123',
+            'role'  => 'admin',
+        ]);
+
+        // Resident account (test)
+        User::factory()->create([
+            'name'  => 'Test Resident',
+            'email' => 'resident@floodtrack.com',
+            'password' => 'password123',
+            'role'  => 'resident',
         ]);
 
         $this->call(ResponderSeeder::class);

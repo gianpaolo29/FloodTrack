@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { Settings } from 'lucide-react';
+import { Check, Info, X } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
@@ -14,102 +14,136 @@ export default function AdminSettings() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Settings — FloodTrack Admin" />
 
-            <div className="flex flex-col gap-6 p-6">
+            <div className="flex flex-col gap-8 p-6 lg:p-8">
 
-                <div className="flex items-center gap-2">
-                    <Settings className="size-5 text-muted-foreground" />
-                    <h1 className="text-lg font-semibold">System Settings</h1>
+                {/* Header */}
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+                    <p className="text-sm text-muted-foreground">
+                        System configuration and platform information.
+                    </p>
                 </div>
 
                 <div className="grid gap-6 lg:grid-cols-2">
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm">General</CardTitle>
+                    <Card className="overflow-hidden">
+                        <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                            <CardTitle className="text-sm font-semibold tracking-tight">General</CardTitle>
                         </CardHeader>
-                        <CardContent className="flex flex-col gap-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium">System name</p>
-                                    <p className="text-xs text-muted-foreground">The name displayed across the platform</p>
-                                </div>
-                                <span className="text-sm font-medium">FloodTrack</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium">Default region</p>
-                                    <p className="text-xs text-muted-foreground">Default map center for new sessions</p>
-                                </div>
-                                <span className="text-sm text-muted-foreground">Philippines</span>
-                            </div>
+                        <CardContent className="flex flex-col divide-y divide-border/50 p-0">
+                            <SettingRow
+                                title="System name"
+                                description="The name displayed across the platform"
+                                value="FloodTrack"
+                            />
+                            <SettingRow
+                                title="Default region"
+                                description="Default map center for new sessions"
+                                value="Philippines"
+                            />
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm">Notifications</CardTitle>
+                    <Card className="overflow-hidden">
+                        <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                            <CardTitle className="text-sm font-semibold tracking-tight">Notifications</CardTitle>
                         </CardHeader>
-                        <CardContent className="flex flex-col gap-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium">Email notifications</p>
-                                    <p className="text-xs text-muted-foreground">Send email on critical reports</p>
-                                </div>
-                                <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Enabled</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium">Auto-assign responders</p>
-                                    <p className="text-xs text-muted-foreground">Automatically assign nearest responder</p>
-                                </div>
-                                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">Disabled</span>
-                            </div>
+                        <CardContent className="flex flex-col divide-y divide-border/50 p-0">
+                            <SettingRow
+                                title="Email notifications"
+                                description="Send email on critical reports"
+                            >
+                                <StatusBadge enabled />
+                            </SettingRow>
+                            <SettingRow
+                                title="Auto-assign responders"
+                                description="Automatically assign nearest responder"
+                            >
+                                <StatusBadge enabled={false} />
+                            </SettingRow>
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm">Data retention</CardTitle>
+                    <Card className="overflow-hidden">
+                        <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                            <CardTitle className="text-sm font-semibold tracking-tight">Data Retention</CardTitle>
                         </CardHeader>
-                        <CardContent className="flex flex-col gap-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium">Report retention</p>
-                                    <p className="text-xs text-muted-foreground">How long resolved reports are kept</p>
-                                </div>
-                                <span className="text-sm text-muted-foreground">Indefinite</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <p className="text-sm font-medium">Media storage</p>
-                                    <p className="text-xs text-muted-foreground">Where uploaded evidence is stored</p>
-                                </div>
-                                <span className="text-sm text-muted-foreground">Local disk</span>
-                            </div>
+                        <CardContent className="flex flex-col divide-y divide-border/50 p-0">
+                            <SettingRow
+                                title="Report retention"
+                                description="How long resolved reports are kept"
+                                value="Indefinite"
+                            />
+                            <SettingRow
+                                title="Media storage"
+                                description="Where uploaded evidence is stored"
+                                value="Local disk"
+                            />
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-sm">About</CardTitle>
+                    <Card className="overflow-hidden">
+                        <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                            <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+                                <Info className="size-3.5" />
+                                About
+                            </CardTitle>
                         </CardHeader>
-                        <CardContent className="flex flex-col gap-3 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Version</span>
-                                <span className="font-medium">1.0.0</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Framework</span>
-                                <span className="font-medium">Laravel 13</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Frontend</span>
-                                <span className="font-medium">React 19 + Inertia.js</span>
-                            </div>
+                        <CardContent className="flex flex-col divide-y divide-border/50 p-0">
+                            <AboutRow label="Version" value="1.0.0" />
+                            <AboutRow label="Framework" value="Laravel 13" />
+                            <AboutRow label="Frontend" value="React 19 + Inertia.js" />
                         </CardContent>
                     </Card>
                 </div>
             </div>
         </AppLayout>
+    );
+}
+
+function SettingRow({
+    title,
+    description,
+    value,
+    children,
+}: {
+    title: string;
+    description: string;
+    value?: string;
+    children?: React.ReactNode;
+}) {
+    return (
+        <div className="flex items-center justify-between px-6 py-4">
+            <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{title}</p>
+                <p className="text-xs text-muted-foreground">{description}</p>
+            </div>
+            {children ?? (
+                <span className="text-sm font-medium text-muted-foreground shrink-0 ml-4">{value}</span>
+            )}
+        </div>
+    );
+}
+
+function StatusBadge({ enabled }: { enabled: boolean }) {
+    return enabled ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-600/10">
+            <Check className="size-3" />
+            Enabled
+        </span>
+    ) : (
+        <span className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-500 ring-1 ring-zinc-500/10">
+            <X className="size-3" />
+            Disabled
+        </span>
+    );
+}
+
+function AboutRow({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="flex items-center justify-between px-6 py-3.5">
+            <span className="text-sm text-muted-foreground">{label}</span>
+            <span className="text-sm font-semibold">{value}</span>
+        </div>
     );
 }

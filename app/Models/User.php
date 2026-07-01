@@ -58,4 +58,68 @@ class User extends Authenticatable
     {
         return $this->hasMany(AlertRead::class);
     }
+
+    // ── Role helpers ────────────────────────────────────────────────────
+
+    public function isAdmin(): bool
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isResponder(): bool
+    {
+        return $this->role === 'responder';
+    }
+
+    public function isResident(): bool
+    {
+        return $this->role === 'resident';
+    }
+
+    public function hasRole(string ...$roles): bool
+    {
+        return in_array($this->role, $roles);
+    }
+
+    /**
+     * Return a permissions map based on the user's role.
+     */
+    public function permissions(): array
+    {
+        return match ($this->role) {
+            'admin' => [
+                'can_verify_reports'  => true,
+                'can_assign_reports'  => true,
+                'can_reject_reports'  => true,
+                'can_manage_users'    => true,
+                'can_create_alerts'   => true,
+                'can_view_statistics' => true,
+                'can_export_data'     => true,
+                'can_update_status'   => true,
+                'can_submit_reports'  => true,
+            ],
+            'responder' => [
+                'can_verify_reports'  => false,
+                'can_assign_reports'  => false,
+                'can_reject_reports'  => false,
+                'can_manage_users'    => false,
+                'can_create_alerts'   => false,
+                'can_view_statistics' => false,
+                'can_export_data'     => false,
+                'can_update_status'   => true,
+                'can_submit_reports'  => true,
+            ],
+            'resident' => [
+                'can_verify_reports'  => false,
+                'can_assign_reports'  => false,
+                'can_reject_reports'  => false,
+                'can_manage_users'    => false,
+                'can_create_alerts'   => false,
+                'can_view_statistics' => false,
+                'can_export_data'     => false,
+                'can_update_status'   => false,
+                'can_submit_reports'  => true,
+            ],
+        };
+    }
 }

@@ -68,21 +68,21 @@ export interface Responder {
     name: string;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Premium color tokens ────────────────────────────────────────────────────
 
 export const SEVERITY_COLORS: Record<Severity, string> = {
-    low:      'bg-green-100 text-green-800',
-    moderate: 'bg-yellow-100 text-yellow-800',
-    high:     'bg-orange-100 text-orange-800',
-    critical: 'bg-red-100 text-red-800',
+    low:      'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/10',
+    moderate: 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/10',
+    high:     'bg-orange-50 text-orange-700 ring-1 ring-orange-600/10',
+    critical: 'bg-red-50 text-red-700 ring-1 ring-red-600/10',
 };
 
 export const STATUS_COLORS: Record<ReportStatus, string> = {
-    pending:  'bg-amber-100 text-amber-800',
-    verified: 'bg-blue-100 text-blue-800',
-    assigned: 'bg-teal-100 text-teal-800',
-    resolved: 'bg-green-100 text-green-800',
-    rejected: 'bg-gray-100 text-gray-600',
+    pending:  'bg-amber-50 text-amber-700 ring-1 ring-amber-600/10',
+    verified: 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/10',
+    assigned: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/10',
+    resolved: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/10',
+    rejected: 'bg-zinc-100 text-zinc-500 ring-1 ring-zinc-500/10',
 };
 
 export const HAZARD_LABELS: Record<HazardType, string> = {

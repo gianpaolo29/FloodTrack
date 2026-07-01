@@ -1,12 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { History, Search } from 'lucide-react';
+import { History, Search, X } from 'lucide-react';
 import { useCallback } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import type { BreadcrumbItem } from '@/types';
-import { SEVERITY_COLORS, STATUS_COLORS, HAZARD_LABELS } from '@/types/admin';
+import { SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
 import type { HazardType, Severity, ReportStatus } from '@/types/admin';
 
 interface Activity {
@@ -39,10 +39,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const STATUS_OPTIONS = ['', 'pending', 'verified', 'assigned', 'en_route', 'on_scene', 'resolved', 'rejected'];
 
-const ROLE_BADGE: Record<string, string> = {
-    admin:     'bg-purple-100 text-purple-800',
-    responder: 'bg-indigo-100 text-indigo-800',
-    resident:  'bg-gray-100 text-gray-600',
+const ROLE_STYLES: Record<string, string> = {
+    admin:     'bg-purple-50 text-purple-700 ring-1 ring-purple-600/10',
+    responder: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/10',
+    resident:  'bg-zinc-100 text-zinc-600 ring-1 ring-zinc-500/10',
 };
 
 export default function AdminActivityLog({ activities, filters }: Props) {
@@ -53,27 +53,31 @@ export default function AdminActivityLog({ activities, filters }: Props) {
         });
     }, [filters]);
 
+    const hasFilters = !!(filters.status || filters.search);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Activity Log — FloodTrack Admin" />
 
-            <div className="flex flex-col gap-6 p-6">
+            <div className="flex flex-col gap-6 p-6 lg:p-8">
 
-                <div className="flex items-center gap-2">
-                    <History className="size-5 text-muted-foreground" />
-                    <h1 className="text-lg font-semibold">Activity Log</h1>
-                    <span className="text-sm text-muted-foreground">({activities.total} entries)</span>
+                {/* Header */}
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Activity Log</h1>
+                    <p className="text-sm text-muted-foreground">
+                        {activities.total} recorded event{activities.total !== 1 ? 's' : ''}
+                    </p>
                 </div>
 
                 {/* Filters */}
-                <Card>
-                    <CardContent className="flex flex-wrap gap-3 p-4">
-                        <div className="relative flex-1 min-w-[180px] max-w-sm">
+                <Card className="overflow-hidden">
+                    <CardContent className="flex flex-wrap items-center gap-3 p-4">
+                        <div className="relative flex-1 min-w-[200px] max-w-sm">
                             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
-                                placeholder="Search by reference number…"
+                                placeholder="Search by reference number..."
                                 defaultValue={filters.search ?? ''}
-                                className="pl-9"
+                                className="pl-9 bg-muted/30 border-transparent focus:bg-background focus:border-input transition-colors"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                         filter('search', (e.target as HTMLInputElement).value);
@@ -84,19 +88,21 @@ export default function AdminActivityLog({ activities, filters }: Props) {
                         <select
                             value={filters.status ?? ''}
                             onChange={(e) => filter('status', e.target.value)}
-                            className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                            className="h-9 rounded-lg border border-input bg-muted/30 px-3 text-sm transition-colors focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                         >
                             <option value="">All actions</option>
                             {STATUS_OPTIONS.filter(Boolean).map((opt) => (
                                 <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1).replace('_', ' ')}</option>
                             ))}
                         </select>
-                        {(filters.status || filters.search) && (
+                        {hasFilters && (
                             <Button
-                                variant="outline"
+                                variant="ghost"
                                 size="sm"
                                 onClick={() => router.get('/admin/activity')}
+                                className="gap-1 text-muted-foreground hover:text-foreground"
                             >
+                                <X className="size-3.5" />
                                 Clear
                             </Button>
                         )}
@@ -104,55 +110,56 @@ export default function AdminActivityLog({ activities, filters }: Props) {
                 </Card>
 
                 {/* Timeline */}
-                <Card>
-                    <CardContent className="p-0">
-                        <div className="divide-y">
-                            {activities.data.map((a) => (
-                                <div key={a.id} className="flex items-start gap-4 px-5 py-4 hover:bg-muted/20 transition-colors">
-                                    {/* Status dot */}
-                                    <div className="mt-1.5 flex size-3 shrink-0 rounded-full bg-muted-foreground/30" />
+                <Card className="overflow-hidden">
+                    <div className="divide-y divide-border/50">
+                        {activities.data.map((a) => (
+                            <div key={a.id} className="flex items-start gap-4 px-6 py-5 transition-colors hover:bg-muted/20">
+                                {/* Avatar */}
+                                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm mt-0.5">
+                                    {a.user.name.charAt(0).toUpperCase()}
+                                </div>
 
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex flex-wrap items-center gap-2 text-sm">
-                                            <span className="font-medium">{a.user.name}</span>
-                                            <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${ROLE_BADGE[a.user.role] ?? 'bg-gray-100 text-gray-600'}`}>
-                                                {a.user.role}
-                                            </span>
-                                            <span className="text-muted-foreground">changed status to</span>
-                                            <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${STATUS_COLORS[a.status as ReportStatus] ?? 'bg-gray-100 text-gray-600'}`}>
-                                                {a.status.replace('_', ' ')}
-                                            </span>
-                                            <span className="text-muted-foreground">on</span>
-                                            <Link
-                                                href={`/admin/reports/${a.report.id}`}
-                                                className="font-mono text-xs text-blue-600 hover:underline"
-                                            >
-                                                {a.report.reference_number}
-                                            </Link>
-                                            <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${SEVERITY_COLORS[a.report.severity]}`}>
-                                                {a.report.severity}
-                                            </span>
-                                        </div>
-                                        {a.notes && (
-                                            <p className="mt-1 text-xs text-muted-foreground">{a.notes}</p>
-                                        )}
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                                        <span className="font-semibold">{a.user.name}</span>
+                                        <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${ROLE_STYLES[a.user.role] ?? ROLE_STYLES.resident}`}>
+                                            {a.user.role}
+                                        </span>
+                                        <span className="text-muted-foreground">changed status to</span>
+                                        <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[a.status as ReportStatus] ?? 'bg-zinc-100 text-zinc-600'}`}>
+                                            {a.status.replace('_', ' ')}
+                                        </span>
+                                        <span className="text-muted-foreground">on</span>
+                                        <Link
+                                            href={`/admin/reports/${a.report.id}`}
+                                            className="font-mono text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                                        >
+                                            {a.report.reference_number}
+                                        </Link>
+                                        <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${SEVERITY_COLORS[a.report.severity]}`}>
+                                            {a.report.severity}
+                                        </span>
                                     </div>
+                                    {a.notes && (
+                                        <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">{a.notes}</p>
+                                    )}
+                                </div>
 
-                                    <span className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
-                                        {new Date(a.created_at).toLocaleString('en-PH', {
-                                            month: 'short', day: 'numeric',
-                                            hour: '2-digit', minute: '2-digit',
-                                        })}
-                                    </span>
-                                </div>
-                            ))}
-                            {activities.data.length === 0 && (
-                                <div className="px-5 py-12 text-center text-muted-foreground">
-                                    No activity recorded yet.
-                                </div>
-                            )}
-                        </div>
-                    </CardContent>
+                                <span className="shrink-0 whitespace-nowrap text-xs font-medium text-muted-foreground">
+                                    {new Date(a.created_at).toLocaleString('en-PH', {
+                                        month: 'short', day: 'numeric',
+                                        hour: '2-digit', minute: '2-digit',
+                                    })}
+                                </span>
+                            </div>
+                        ))}
+                        {activities.data.length === 0 && (
+                            <div className="flex flex-col items-center gap-2 py-16">
+                                <History className="size-8 text-muted-foreground/40" />
+                                <p className="text-sm text-muted-foreground">No activity recorded yet</p>
+                            </div>
+                        )}
+                    </div>
                 </Card>
 
                 {/* Pagination */}
@@ -163,15 +170,15 @@ export default function AdminActivityLog({ activities, filters }: Props) {
                                 <button
                                     key={i}
                                     onClick={() => router.get(link.url!)}
-                                    className={`rounded px-3 py-1.5 text-xs ${
-                                        link.active ? 'bg-primary text-primary-foreground' : 'hover:bg-muted'
+                                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                                        link.active ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
                                     }`}
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                 />
                             ) : (
                                 <span
                                     key={i}
-                                    className="rounded px-3 py-1.5 text-xs opacity-40"
+                                    className="rounded-lg px-3 py-1.5 text-xs opacity-30"
                                     dangerouslySetInnerHTML={{ __html: link.label }}
                                 />
                             ),

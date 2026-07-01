@@ -71,6 +71,12 @@ class ReportController extends Controller
 
     public function updateStatus(Request $request, Report $report)
     {
+        // Only the assigned responder or an admin can update status
+        $user = $request->user();
+        if (! $user->isAdmin() && $report->assigned_to !== $user->id) {
+            return response()->json(['message' => 'You are not assigned to this report.'], 403);
+        }
+
         $data = $request->validate([
             'status' => 'required|in:en_route,on_scene,resolved',
             'notes'  => 'nullable|string|max:500',
@@ -108,6 +114,12 @@ class ReportController extends Controller
         $data = $request->validate([
             'responder_id' => 'required|exists:users,id',
         ]);
+
+        // Ensure the target user is actually a responder
+        $responder = \App\Models\User::findOrFail($data['responder_id']);
+        if (! $responder->isResponder()) {
+            return response()->json(['message' => 'Selected user is not a responder.'], 422);
+        }
 
         $report->update([
             'assigned_to' => $data['responder_id'],

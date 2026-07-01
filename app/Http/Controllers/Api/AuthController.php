@@ -24,8 +24,10 @@ class AuthController extends Controller
         $token = $user->createToken('mobile')->plainTextToken;
 
         return response()->json([
-            'user'  => $user,
-            'token' => $token,
+            'user'        => $user,
+            'token'       => $token,
+            'role'        => $user->role,
+            'permissions' => $user->permissions(),
         ], 201);
     }
 
@@ -44,11 +46,20 @@ class AuthController extends Controller
             ]);
         }
 
+        // Revoke previous tokens for this device to prevent token accumulation
+        $user->tokens()->delete();
         $token = $user->createToken('mobile')->plainTextToken;
 
         return response()->json([
-            'user'  => $user,
-            'token' => $token,
+            'user'        => $user,
+            'token'       => $token,
+            'role'        => $user->role,
+            'permissions' => $user->permissions(),
+            'redirect'    => match ($user->role) {
+                'admin'     => '/admin',
+                'responder' => '/responder/dashboard',
+                'resident'  => '/dashboard',
+            },
         ]);
     }
 

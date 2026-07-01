@@ -3,10 +3,9 @@ import { usePage } from '@inertiajs/react';
 import {
     AlertTriangle,
     BarChart3,
-    BookOpen,
+    CloudSun,
     Download,
     FileText,
-    FolderGit2,
     Globe,
     History,
     LayoutDashboard,
@@ -16,7 +15,6 @@ import {
     Users,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavSection } from '@/components/nav-section';
 import { NavUser } from '@/components/nav-user';
@@ -28,6 +26,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
@@ -52,6 +51,11 @@ const mainItems: NavItem[] = [
         title: 'Map View',
         href: '/admin/reports/map',
         icon: Globe,
+    },
+    {
+        title: 'Weather',
+        href: '/admin/weather',
+        icon: CloudSun,
     },
 ];
 
@@ -104,19 +108,6 @@ const systemItems: NavItem[] = [
     },
 ];
 
-const footerNavItems: NavItem[] = [
-    {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
-    },
-    {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
-    },
-];
-
 export function AppSidebar() {
     const { auth } = usePage().props;
     const isAdmin = auth.user?.role === 'admin';
@@ -138,9 +129,12 @@ export function AppSidebar() {
             <SidebarContent>
                 {isAdmin ? (
                     <>
-                        <NavSection label="Main" items={mainItems} />
+                        <NavSection label="Overview" items={mainItems} />
+                        <SidebarSeparator className="mx-3 opacity-50" />
                         <NavSection label="Management" items={managementItems} />
+                        <SidebarSeparator className="mx-3 opacity-50" />
                         <NavSection label="Analytics" items={analyticsItems} />
+                        <SidebarSeparator className="mx-3 opacity-50" />
                         <NavSection label="System" items={systemItems} />
                     </>
                 ) : (
@@ -149,7 +143,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>

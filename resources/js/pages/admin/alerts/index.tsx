@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { Trash2 } from 'lucide-react';
+import { Bell, Megaphone, Trash2 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,10 +25,10 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Alerts', href: '/admin/alerts' },
 ];
 
-const TYPE_COLORS: Record<string, string> = {
-    critical: 'bg-red-100 text-red-800',
-    advisory: 'bg-blue-100 text-blue-800',
-    update:   'bg-gray-100 text-gray-700',
+const TYPE_STYLES: Record<string, string> = {
+    critical: 'bg-red-50 text-red-700 ring-1 ring-red-600/10',
+    advisory: 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/10',
+    update:   'bg-zinc-100 text-zinc-600 ring-1 ring-zinc-500/10',
 };
 
 export default function AdminAlertsIndex({ alerts }: Props) {
@@ -51,24 +51,37 @@ export default function AdminAlertsIndex({ alerts }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Alerts — FloodTrack Admin" />
 
-            <div className="flex flex-col gap-6 p-6">
+            <div className="flex flex-col gap-6 p-6 lg:p-8">
+
+                {/* Header */}
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight">Alerts</h1>
+                    <p className="text-sm text-muted-foreground">
+                        Publish advisories and critical notifications to all users.
+                    </p>
+                </div>
+
                 <div className="grid gap-6 lg:grid-cols-5">
 
                     {/* Create form */}
                     <div className="lg:col-span-2">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Publish new alert</CardTitle>
+                        <Card className="overflow-hidden">
+                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                                <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+                                    <Megaphone className="size-4" />
+                                    Publish New Alert
+                                </CardTitle>
                             </CardHeader>
-                            <CardContent>
-                                <form onSubmit={submit} className="flex flex-col gap-4">
+                            <CardContent className="p-6">
+                                <form onSubmit={submit} className="flex flex-col gap-5">
                                     <div className="flex flex-col gap-1.5">
-                                        <Label htmlFor="title">Title</Label>
+                                        <Label htmlFor="title" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Title</Label>
                                         <Input
                                             id="title"
                                             value={form.data.title}
                                             onChange={(e) => form.setData('title', e.target.value)}
                                             placeholder="e.g. Flood advisory — Brgy. Reparo"
+                                            className="bg-muted/30 border-transparent focus:bg-background focus:border-input transition-colors"
                                             required
                                         />
                                         {form.errors.title && (
@@ -77,14 +90,14 @@ export default function AdminAlertsIndex({ alerts }: Props) {
                                     </div>
 
                                     <div className="flex flex-col gap-1.5">
-                                        <Label htmlFor="body">Message</Label>
+                                        <Label htmlFor="body" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Message</Label>
                                         <textarea
                                             id="body"
                                             value={form.data.body}
                                             onChange={(e) => form.setData('body', e.target.value)}
                                             rows={4}
-                                            placeholder="Alert details visible to all app users…"
-                                            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                                            placeholder="Alert details visible to all app users..."
+                                            className="w-full rounded-lg border-transparent bg-muted/30 px-3 py-2 text-sm transition-colors focus:bg-background focus:border-input focus:outline-none focus:ring-1 focus:ring-ring resize-none"
                                             required
                                         />
                                         {form.errors.body && (
@@ -93,12 +106,12 @@ export default function AdminAlertsIndex({ alerts }: Props) {
                                     </div>
 
                                     <div className="flex flex-col gap-1.5">
-                                        <Label htmlFor="type">Type</Label>
+                                        <Label htmlFor="type" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Type</Label>
                                         <select
                                             id="type"
                                             value={form.data.type}
                                             onChange={(e) => form.setData('type', e.target.value as typeof form.data.type)}
-                                            className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                                            className="h-9 w-full rounded-lg border-transparent bg-muted/30 px-3 text-sm transition-colors focus:bg-background focus:border-input focus:outline-none focus:ring-1 focus:ring-ring"
                                         >
                                             <option value="advisory">Advisory</option>
                                             <option value="update">Update</option>
@@ -107,31 +120,32 @@ export default function AdminAlertsIndex({ alerts }: Props) {
                                     </div>
 
                                     <div className="flex flex-col gap-1.5">
-                                        <Label htmlFor="expires_at">Expires at (optional)</Label>
+                                        <Label htmlFor="expires_at" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Expires at (optional)</Label>
                                         <Input
                                             id="expires_at"
                                             type="datetime-local"
                                             value={form.data.expires_at}
                                             onChange={(e) => form.setData('expires_at', e.target.value)}
+                                            className="bg-muted/30 border-transparent focus:bg-background focus:border-input transition-colors"
                                         />
                                     </div>
 
-                                    <label className="flex items-center gap-2 text-sm">
+                                    <label className="flex items-center gap-2.5 text-sm">
                                         <input
                                             type="checkbox"
                                             checked={form.data.is_critical}
                                             onChange={(e) => form.setData('is_critical', e.target.checked)}
-                                            className="rounded border-input"
+                                            className="size-4 rounded border-input accent-red-600"
                                         />
-                                        Pin as critical (shown at top of app)
+                                        <span className="text-muted-foreground">Pin as critical (shown at top of app)</span>
                                     </label>
 
                                     <Button
                                         type="submit"
                                         disabled={form.processing}
-                                        className="w-full"
+                                        className="w-full shadow-sm"
                                     >
-                                        {form.processing ? 'Publishing…' : 'Publish alert'}
+                                        {form.processing ? 'Publishing...' : 'Publish Alert'}
                                     </Button>
                                 </form>
                             </CardContent>
@@ -140,24 +154,26 @@ export default function AdminAlertsIndex({ alerts }: Props) {
 
                     {/* Alert list */}
                     <div className="lg:col-span-3">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>
-                                    Published alerts
-                                    <span className="ml-2 text-sm font-normal text-muted-foreground">
-                                        ({alerts.total})
+                        <Card className="overflow-hidden">
+                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                                <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
+                                    <Bell className="size-4" />
+                                    Published Alerts
+                                    <span className="ml-1 rounded-full bg-muted px-2 py-0.5 text-xs font-normal text-muted-foreground">
+                                        {alerts.total}
                                     </span>
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="p-0">
-                                <div className="divide-y">
+                                <div className="divide-y divide-border/50">
                                     {alerts.data.map((alert) => (
                                         <AlertRow key={alert.id} alert={alert} />
                                     ))}
                                     {alerts.data.length === 0 && (
-                                        <p className="px-5 py-8 text-center text-sm text-muted-foreground">
-                                            No alerts published yet.
-                                        </p>
+                                        <div className="flex flex-col items-center gap-2 py-16">
+                                            <Bell className="size-8 text-muted-foreground/40" />
+                                            <p className="text-sm text-muted-foreground">No alerts published yet</p>
+                                        </div>
                                     )}
                                 </div>
                             </CardContent>
@@ -173,14 +189,14 @@ function AlertRow({ alert }: { alert: Alert }) {
     const deleteForm = useForm({});
 
     return (
-        <div className="flex items-start gap-3 px-5 py-4">
+        <div className="flex items-start gap-4 px-6 py-5 transition-colors hover:bg-muted/20">
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${TYPE_COLORS[alert.type] ?? 'bg-gray-100 text-gray-700'}`}>
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${TYPE_STYLES[alert.type] ?? TYPE_STYLES.update}`}>
                         {alert.type}
                     </span>
                     {alert.is_critical && (
-                        <span className="rounded px-1.5 py-0.5 text-xs font-medium bg-red-600 text-white">
+                        <span className="inline-flex items-center rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
                             PINNED
                         </span>
                     )}
@@ -193,9 +209,9 @@ function AlertRow({ alert }: { alert: Alert }) {
                         </span>
                     )}
                 </div>
-                <p className="mt-1 text-sm font-medium">{alert.title}</p>
-                <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2">{alert.body}</p>
-                <p className="mt-1 text-xs text-muted-foreground">by {alert.creator?.name ?? 'Admin'}</p>
+                <p className="mt-1.5 text-sm font-semibold">{alert.title}</p>
+                <p className="mt-0.5 text-sm text-muted-foreground line-clamp-2 leading-relaxed">{alert.body}</p>
+                <p className="mt-1.5 text-xs text-muted-foreground">by {alert.creator?.name ?? 'Admin'}</p>
             </div>
             <form
                 onSubmit={(e) => {
@@ -209,7 +225,7 @@ function AlertRow({ alert }: { alert: Alert }) {
                     type="submit"
                     variant="ghost"
                     size="sm"
-                    className="text-muted-foreground hover:text-destructive shrink-0"
+                    className="text-muted-foreground hover:text-destructive hover:bg-red-50 shrink-0 transition-colors"
                     disabled={deleteForm.processing}
                 >
                     <Trash2 className="size-4" />
