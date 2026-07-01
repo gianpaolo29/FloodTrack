@@ -16,6 +16,13 @@ class IncidentMessageController extends Controller
      */
     public function index(Request $request, Report $report)
     {
+        $user = $request->user();
+
+        // Only the report owner, assigned responder, or admin can view messages
+        if (! $this->canAccess($user, $report)) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
         $messages = IncidentMessage::where('report_id', $report->id)
             ->with('user:id,name,role')
             ->orderBy('created_at', 'asc')
@@ -26,17 +33,13 @@ class IncidentMessageController extends Controller
 
     /**
      * Create a message for a report.
-     * Only the assigned responder or an admin can message.
+     * The report owner (resident), assigned responder, or admin can message.
      */
     public function store(Request $request, Report $report)
     {
         $user = $request->user();
 
-        // Only assigned responder or admin can send messages
-        $isAssignedResponder = $report->assigned_to === $user->id;
-        $isAdmin = $user->isAdmin();
-
-        if (! $isAssignedResponder && ! $isAdmin) {
+        if (! $this->canAccess($user, $report)) {
             return response()->json(['message' => 'You are not authorized to message on this report.'], 403);
         }
 
@@ -54,28 +57,60 @@ class IncidentMessageController extends Controller
 
         $message->load('user:id,name,role');
 
-        // Send push notification to the other party
-        if ($isAdmin && $report->assigned_to) {
-            // Admin sent message -> notify the assigned responder
-            ExpoPushService::sendToUsers(
-                $report->assigned_to,
-                'New Message',
-                $user->name . ': ' . \Illuminate\Support\Str::limit($data['body'], 100),
-                ['type' => 'incident_message', 'report_id' => $report->id]
-            );
-        } elseif ($isAssignedResponder) {
-            // Responder sent message -> notify all admins
+        // Send push notifications to the other parties
+        $snippet = \Illuminate\Support\Str::limit($data['body'], 100);
+
+        if ($user->id === $report->user_id) {
+            // Resident sent message -> notify assigned responder + admins
+            $notifyIds = [];
+            if ($report->assigned_to) $notifyIds[] = $report->assigned_to;
             $adminIds = User::where('role', 'admin')->pluck('id')->toArray();
-            if (! empty($adminIds)) {
+            $notifyIds = array_unique(array_merge($notifyIds, $adminIds));
+
+            if (! empty($notifyIds)) {
                 ExpoPushService::sendToUsers(
-                    $adminIds,
-                    'New Message on Report #' . $report->reference_number,
-                    $user->name . ': ' . \Illuminate\Support\Str::limit($data['body'], 100),
-                    ['type' => 'incident_message', 'report_id' => $report->id]
+                    $notifyIds,
+                    'Message from ' . $user->name,
+                    $snippet,
+                    ['type' => 'incident_message', 'reportId' => $report->id]
                 );
             }
+        } elseif ($report->assigned_to === $user->id) {
+            // Responder sent message -> notify reporter + admins
+            $notifyIds = [$report->user_id];
+            $adminIds = User::where('role', 'admin')->pluck('id')->toArray();
+            $notifyIds = array_unique(array_merge($notifyIds, $adminIds));
+
+            ExpoPushService::sendToUsers(
+                $notifyIds,
+                'Update on Report #' . $report->reference_number,
+                $user->name . ': ' . $snippet,
+                ['type' => 'incident_message', 'reportId' => $report->id]
+            );
+        } elseif ($user->isAdmin()) {
+            // Admin sent message -> notify reporter + assigned responder
+            $notifyIds = [$report->user_id];
+            if ($report->assigned_to) $notifyIds[] = $report->assigned_to;
+            $notifyIds = array_unique(array_filter($notifyIds));
+
+            ExpoPushService::sendToUsers(
+                $notifyIds,
+                'Message from dispatch',
+                $snippet,
+                ['type' => 'incident_message', 'reportId' => $report->id]
+            );
         }
 
         return response()->json($message, 201);
+    }
+
+    /**
+     * Check if a user can access messages for a report.
+     */
+    private function canAccess(User $user, Report $report): bool
+    {
+        return $user->isAdmin()
+            || $report->user_id === $user->id          // report owner (resident)
+            || $report->assigned_to === $user->id;      // assigned responder
     }
 }

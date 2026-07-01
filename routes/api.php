@@ -50,9 +50,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/alerts/{alert}/read', [AlertController::class, 'markRead']);
     Route::post('/alerts/read-all', [AlertController::class, 'markAllRead']);
 
-    // ── Resident + Responder: submit reports ─────────────────────────────
+    // ── Resident + Responder: submit reports + messages ────────────────
     Route::middleware('role:resident,responder,admin')->group(function () {
         Route::post('/reports', [ReportController::class, 'store']);
+        Route::get('/reports/{report}/messages',  [IncidentMessageController::class, 'index']);
+        Route::post('/reports/{report}/messages', [IncidentMessageController::class, 'store']);
     });
 
     // ── Responder only ───────────────────────────────────────────────────
