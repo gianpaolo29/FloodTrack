@@ -14,21 +14,25 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Admin account
-        User::factory()->create([
-            'name'  => 'Admin',
-            'email' => 'admin@floodtrack.com',
-            'password' => 'password123',
-            'role'  => 'admin',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'admin@floodtrack.com'],
+            [
+                'name'              => 'Admin',
+                'password'          => bcrypt('password123'),
+                'role'              => 'admin',
+                'email_verified_at' => now(),
+            ]
+        );
 
         // Resident account (test)
-        User::factory()->create([
-            'name'  => 'Test Resident',
-            'email' => 'resident@floodtrack.com',
-            'password' => 'password123',
-            'role'  => 'resident',
-        ]);
-
-        $this->call(ResponderSeeder::class);
+        User::firstOrCreate(
+            ['email' => 'resident@floodtrack.com'],
+            [
+                'name'              => 'Test Resident',
+                'password'          => bcrypt('password123'),
+                'role'              => 'resident',
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }
