@@ -53,8 +53,13 @@ Route::middleware('auth:sanctum')->group(function () {
     // ── Resident + Responder: submit reports + messages ────────────────
     Route::middleware('role:resident,responder,admin')->group(function () {
         Route::post('/reports', [ReportController::class, 'store']);
+        Route::delete('/reports/{report}', [ReportController::class, 'destroy']);
         Route::get('/reports/{report}/messages',  [IncidentMessageController::class, 'index']);
-        Route::post('/reports/{report}/messages', [IncidentMessageController::class, 'store']);
+        Route::post('/reports/{report}/messages', [IncidentMessageController::class, 'store'])->middleware('throttle:30,1');
+        Route::post('/reports/{report}/messages/read', [IncidentMessageController::class, 'markRead']);
+        Route::get('/reports/{report}/messages/unread-count', [IncidentMessageController::class, 'unreadCount']);
+        Route::post('/reports/{report}/typing', [IncidentMessageController::class, 'typing'])->middleware('throttle:60,1');
+        Route::get('/reports/{report}/typing', [IncidentMessageController::class, 'typingUsers']);
     });
 
     // ── Responder only ───────────────────────────────────────────────────
@@ -62,8 +67,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/assigned-reports', [ReportController::class, 'index']);  // with ?assigned=me
         Route::patch('/reports/{report}/status', [ReportController::class, 'updateStatus']);
         Route::get('/stats', [ResponderStatsController::class, 'index']);
-        Route::get('/reports/{report}/messages', [IncidentMessageController::class, 'index']);
-        Route::post('/reports/{report}/messages', [IncidentMessageController::class, 'store']);
         Route::get('/reports/{report}/field-report', [FieldReportController::class, 'show']);
         Route::post('/reports/{report}/field-report', [FieldReportController::class, 'store']);
     });

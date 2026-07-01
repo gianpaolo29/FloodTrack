@@ -8,6 +8,7 @@ use App\Models\Report;
 use App\Models\User;
 use App\Services\ExpoPushService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class IncidentMessageController extends Controller
 {
@@ -26,7 +27,7 @@ class IncidentMessageController extends Controller
         $messages = IncidentMessage::where('report_id', $report->id)
             ->with('user:id,name,role')
             ->orderBy('created_at', 'asc')
-            ->get();
+            ->cursorPaginate($request->input('per_page', 50));
 
         return response()->json($messages);
     }
@@ -51,7 +52,7 @@ class IncidentMessageController extends Controller
         $message = IncidentMessage::create([
             'report_id'      => $report->id,
             'user_id'        => $user->id,
-            'body'           => $data['body'],
+            'body'           => strip_tags($data['body']),
             'is_quick_reply' => $data['is_quick_reply'] ?? false,
         ]);
 
@@ -102,6 +103,76 @@ class IncidentMessageController extends Controller
         }
 
         return response()->json($message, 201);
+    }
+
+    public function markRead(Request $request, Report $report)
+    {
+        $user = $request->user();
+        if (! $this->canAccess($user, $report)) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        IncidentMessage::where('report_id', $report->id)
+            ->where('user_id', '!=', $user->id)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+
+        return response()->json(['message' => 'Messages marked as read.']);
+    }
+
+    public function unreadCount(Request $request, Report $report)
+    {
+        $user = $request->user();
+        if (! $this->canAccess($user, $report)) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $count = IncidentMessage::where('report_id', $report->id)
+            ->where('user_id', '!=', $user->id)
+            ->whereNull('read_at')
+            ->count();
+
+        return response()->json(['unread_count' => $count]);
+    }
+
+    public function typing(Request $request, Report $report)
+    {
+        $user = $request->user();
+        if (! $this->canAccess($user, $report)) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        Cache::put("typing:{$report->id}:{$user->id}", [
+            'id'   => $user->id,
+            'name' => $user->name,
+            'role' => $user->role,
+        ], now()->addSeconds(4));
+
+        return response()->json(['status' => 'ok']);
+    }
+
+    public function typingUsers(Request $request, Report $report)
+    {
+        $user = $request->user();
+        if (! $this->canAccess($user, $report)) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        $participantIds = array_filter([
+            $report->user_id,
+            $report->assigned_to,
+        ]);
+        $adminIds = User::where('role', 'admin')->pluck('id')->toArray();
+        $allIds = array_unique(array_merge($participantIds, $adminIds));
+
+        $typing = [];
+        foreach ($allIds as $uid) {
+            if ((int) $uid === (int) $user->id) continue;
+            $data = Cache::get("typing:{$report->id}:{$uid}");
+            if ($data) $typing[] = $data;
+        }
+
+        return response()->json(['typing' => $typing]);
     }
 
     /**

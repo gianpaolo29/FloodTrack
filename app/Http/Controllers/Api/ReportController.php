@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\IncidentMessage;
 use App\Models\Report;
 use App\Models\ReportMedia;
 use App\Models\ReportStatusUpdate;
@@ -183,6 +184,28 @@ class ReportController extends Controller
         ]);
 
         return response()->json($report->fresh());
+    }
+
+    public function destroy(Request $request, Report $report)
+    {
+        if ((int) $request->user()->id !== (int) $report->user_id) {
+            return response()->json(['message' => 'You are not the owner of this report.'], 403);
+        }
+
+        if ($report->status !== 'pending') {
+            return response()->json(['message' => 'Only pending reports can be withdrawn.'], 422);
+        }
+
+        foreach ($report->media as $media) {
+            Storage::disk('public')->delete($media->file_path);
+        }
+
+        $report->media()->delete();
+        ReportStatusUpdate::where('report_id', $report->id)->delete();
+        IncidentMessage::where('report_id', $report->id)->delete();
+        $report->delete();
+
+        return response()->noContent();
     }
 
     public function reject(Request $request, Report $report)

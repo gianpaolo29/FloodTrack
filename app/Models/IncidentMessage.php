@@ -12,12 +12,14 @@ class IncidentMessage extends Model
         'user_id',
         'body',
         'is_quick_reply',
+        'read_at',
     ];
 
     protected function casts(): array
     {
         return [
             'is_quick_reply' => 'boolean',
+            'read_at' => 'datetime',
         ];
     }
 
