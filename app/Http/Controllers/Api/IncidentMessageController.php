@@ -60,7 +60,7 @@ class IncidentMessageController extends Controller
         // Send push notifications to the other parties
         $snippet = \Illuminate\Support\Str::limit($data['body'], 100);
 
-        if ($user->id === $report->user_id) {
+        if ((int) $user->id === (int) $report->user_id) {
             // Resident sent message -> notify assigned responder + admins
             $notifyIds = [];
             if ($report->assigned_to) $notifyIds[] = $report->assigned_to;
@@ -75,7 +75,7 @@ class IncidentMessageController extends Controller
                     ['type' => 'incident_message', 'reportId' => $report->id]
                 );
             }
-        } elseif ($report->assigned_to === $user->id) {
+        } elseif ((int) $report->assigned_to === (int) $user->id) {
             // Responder sent message -> notify reporter + admins
             $notifyIds = [$report->user_id];
             $adminIds = User::where('role', 'admin')->pluck('id')->toArray();
@@ -110,7 +110,7 @@ class IncidentMessageController extends Controller
     private function canAccess(User $user, Report $report): bool
     {
         return $user->isAdmin()
-            || $report->user_id === $user->id          // report owner (resident)
-            || $report->assigned_to === $user->id;      // assigned responder
+            || (int) $report->user_id === (int) $user->id          // report owner (resident)
+            || (int) $report->assigned_to === (int) $user->id;      // assigned responder
     }
 }

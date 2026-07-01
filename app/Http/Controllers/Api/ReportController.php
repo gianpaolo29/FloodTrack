@@ -74,7 +74,7 @@ class ReportController extends Controller
     {
         // Only the assigned responder or an admin can update status
         $user = $request->user();
-        if (! $user->isAdmin() && $report->assigned_to !== $user->id) {
+        if (! $user->isAdmin() && (int) $report->assigned_to !== (int) $user->id) {
             return response()->json(['message' => 'You are not assigned to this report.'], 403);
         }
 
