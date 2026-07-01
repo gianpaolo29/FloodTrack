@@ -50,17 +50,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/alerts/{alert}/read', [AlertController::class, 'markRead']);
     Route::post('/alerts/read-all', [AlertController::class, 'markAllRead']);
 
-    // ── Resident + Responder: submit reports + messages ────────────────
-    Route::middleware('role:resident,responder,admin')->group(function () {
-        Route::post('/reports', [ReportController::class, 'store']);
-        Route::delete('/reports/{report}', [ReportController::class, 'destroy']);
-        Route::get('/reports/{report}/messages',  [IncidentMessageController::class, 'index']);
-        Route::post('/reports/{report}/messages', [IncidentMessageController::class, 'store'])->middleware('throttle:30,1');
-        Route::post('/reports/{report}/messages/read', [IncidentMessageController::class, 'markRead']);
-        Route::get('/reports/{report}/messages/unread-count', [IncidentMessageController::class, 'unreadCount']);
-        Route::post('/reports/{report}/typing', [IncidentMessageController::class, 'typing'])->middleware('throttle:60,1');
-        Route::get('/reports/{report}/typing', [IncidentMessageController::class, 'typingUsers']);
-    });
+    // ── Reports: submit + withdraw ──────────────────────────────────────
+    Route::post('/reports', [ReportController::class, 'store']);
+    Route::delete('/reports/{report}', [ReportController::class, 'destroy']);
+
+    // ── Messages (auth handled by controller canAccess) ──────────────────
+    Route::get('/reports/{report}/messages',  [IncidentMessageController::class, 'index']);
+    Route::post('/reports/{report}/messages', [IncidentMessageController::class, 'store'])->middleware('throttle:30,1');
+    Route::post('/reports/{report}/messages/read', [IncidentMessageController::class, 'markRead']);
+    Route::get('/reports/{report}/messages/unread-count', [IncidentMessageController::class, 'unreadCount']);
+    Route::post('/reports/{report}/typing', [IncidentMessageController::class, 'typing'])->middleware('throttle:60,1');
+    Route::get('/reports/{report}/typing', [IncidentMessageController::class, 'typingUsers']);
 
     // ── Responder only ───────────────────────────────────────────────────
     Route::middleware('role:responder,admin')->prefix('responder')->group(function () {
@@ -77,7 +77,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/reports/{report}/assign',           [ReportController::class, 'assign']);
         Route::patch('/reports/{report}/verify',           [ReportController::class, 'verify']);
         Route::patch('/reports/{report}/reject',           [ReportController::class, 'reject']);
-        Route::get('/reports/{report}/messages',           [IncidentMessageController::class, 'index']);
-        Route::post('/reports/{report}/messages',          [IncidentMessageController::class, 'store']);
     });
 });
