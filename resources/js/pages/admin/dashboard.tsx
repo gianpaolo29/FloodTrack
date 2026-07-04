@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import {
     AlertTriangle,
+    ArrowDownRight,
     ArrowUpRight,
     CheckCircle2,
     Clock,
@@ -10,6 +11,18 @@ import {
     Users,
     Zap,
 } from 'lucide-react';
+import {
+    Area,
+    AreaChart,
+    Bar,
+    BarChart,
+    CartesianGrid,
+    Cell,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
@@ -29,8 +42,24 @@ interface Stats {
     total_responders: number;
 }
 
+interface DailyReport {
+    date: string;
+    total: number;
+    resolved: number;
+}
+
+interface MonthlyReport {
+    month: string;
+    total: number;
+    critical: number;
+    high: number;
+}
+
 interface Props {
     stats: Stats;
+    trends: { reports: number; resolved: number };
+    daily_reports: DailyReport[];
+    monthly_reports: MonthlyReport[];
     severity_breakdown: Record<string, number>;
     status_breakdown: Record<string, number>;
     recent_reports: Report[];
@@ -44,6 +73,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function AdminDashboard({
     stats,
+    trends,
+    daily_reports,
+    monthly_reports,
     severity_breakdown,
     status_breakdown,
     recent_reports,
@@ -53,76 +85,202 @@ export default function AdminDashboard({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Admin Dashboard — FloodTrack" />
 
-            <div className="flex flex-col gap-8 p-6 lg:p-8">
+            <div className="flex flex-col gap-6 p-6 lg:p-8">
 
-                {/* Welcome header */}
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        Overview of flood reports, responders, and system activity.
-                    </p>
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Analytics</h1>
+                        <p className="mt-0.5 text-sm text-muted-foreground">
+                            Flood monitoring overview and system metrics.
+                        </p>
+                    </div>
+                    <div className="hidden items-center gap-2 sm:flex">
+                        <span className="rounded-md bg-muted px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                            Last 30 days
+                        </span>
+                    </div>
                 </div>
 
-                {/* Primary stat cards */}
+                {/* Stat cards */}
                 <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <MetricCard
+                    <StatCard
                         icon={MapPin}
-                        iconBg="bg-blue-500/10"
-                        iconColor="text-blue-600"
                         label="Total Reports"
                         value={stats.total_reports}
+                        trend={trends.reports}
+                        color="blue"
                     />
-                    <MetricCard
+                    <StatCard
                         icon={Clock}
-                        iconBg="bg-amber-500/10"
-                        iconColor="text-amber-600"
                         label="Pending Review"
                         value={stats.pending}
-                        accent={stats.pending > 0 ? 'border-l-amber-500' : undefined}
+                        color="amber"
+                        alert={stats.pending > 0}
                     />
-                    <MetricCard
+                    <StatCard
                         icon={Zap}
-                        iconBg="bg-indigo-500/10"
-                        iconColor="text-indigo-600"
                         label="Active Incidents"
                         value={stats.active}
+                        color="indigo"
                     />
-                    <MetricCard
+                    <StatCard
                         icon={CheckCircle2}
-                        iconBg="bg-emerald-500/10"
-                        iconColor="text-emerald-600"
                         label="Resolved Today"
                         value={stats.resolved_today}
+                        trend={trends.resolved}
+                        color="emerald"
                     />
                 </div>
 
-                {/* Secondary stats */}
-                <div className="grid gap-4 sm:grid-cols-3">
-                    <MetricCard
+                {/* Charts row */}
+                <div className="grid gap-6 lg:grid-cols-3">
+                    {/* Area chart - Reports over time */}
+                    <Card className="lg:col-span-2 overflow-hidden">
+                        <CardHeader className="flex flex-row items-center justify-between px-6 py-4">
+                            <div>
+                                <CardTitle className="text-sm font-semibold">Reports Overview</CardTitle>
+                                <p className="text-xs text-muted-foreground mt-0.5">Daily reports vs resolved (30 days)</p>
+                            </div>
+                            <div className="flex items-center gap-4 text-xs">
+                                <span className="flex items-center gap-1.5">
+                                    <span className="size-2.5 rounded-full bg-blue-500" />
+                                    Reports
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                    <span className="size-2.5 rounded-full bg-emerald-500" />
+                                    Resolved
+                                </span>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="px-2 pb-4 pt-0">
+                            <ResponsiveContainer width="100%" height={280}>
+                                <AreaChart data={daily_reports} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="gradientReports" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.3} />
+                                            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                                        </linearGradient>
+                                        <linearGradient id="gradientResolved" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.3} />
+                                            <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                                    <XAxis
+                                        dataKey="date"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                                        interval="preserveStartEnd"
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                                        width={30}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: 'hsl(var(--card))',
+                                            border: '1px solid hsl(var(--border))',
+                                            borderRadius: '8px',
+                                            fontSize: '12px',
+                                        }}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="total"
+                                        stroke="#3b82f6"
+                                        strokeWidth={2}
+                                        fill="url(#gradientReports)"
+                                        name="Reports"
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="resolved"
+                                        stroke="#10b981"
+                                        strokeWidth={2}
+                                        fill="url(#gradientResolved)"
+                                        name="Resolved"
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+
+                    {/* Bar chart - Monthly breakdown */}
+                    <Card className="overflow-hidden">
+                        <CardHeader className="px-6 py-4">
+                            <CardTitle className="text-sm font-semibold">Monthly Trend</CardTitle>
+                            <p className="text-xs text-muted-foreground mt-0.5">Last 6 months</p>
+                        </CardHeader>
+                        <CardContent className="px-2 pb-4 pt-0">
+                            <ResponsiveContainer width="100%" height={280}>
+                                <BarChart data={monthly_reports} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
+                                    <XAxis
+                                        dataKey="month"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                                    />
+                                    <YAxis
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                                        width={30}
+                                    />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: 'hsl(var(--card))',
+                                            border: '1px solid hsl(var(--border))',
+                                            borderRadius: '8px',
+                                            fontSize: '12px',
+                                        }}
+                                    />
+                                    <Bar dataKey="total" fill="#6366f1" radius={[4, 4, 0, 0]} name="Total" />
+                                    <Bar dataKey="critical" fill="#ef4444" radius={[4, 4, 0, 0]} name="Critical" />
+                                    <Bar dataKey="high" fill="#f97316" radius={[4, 4, 0, 0]} name="High" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Secondary stats + breakdowns */}
+                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                    <StatCard
                         icon={Users}
-                        iconBg="bg-violet-500/10"
-                        iconColor="text-violet-600"
                         label="Registered Users"
                         value={stats.total_users}
+                        color="violet"
                     />
-                    <MetricCard
+                    <StatCard
                         icon={ShieldAlert}
-                        iconBg="bg-sky-500/10"
-                        iconColor="text-sky-600"
                         label="Responders"
                         value={stats.total_responders}
+                        color="sky"
                     />
-                    <MetricCard
+                    <StatCard
                         icon={AlertTriangle}
-                        iconBg="bg-rose-500/10"
-                        iconColor="text-rose-600"
                         label="Active Alerts"
                         value={active_alerts}
-                        accent={active_alerts > 0 ? 'border-l-rose-500' : undefined}
+                        color="rose"
+                        alert={active_alerts > 0}
+                    />
+                    <StatCard
+                        icon={TrendingUp}
+                        label="Resolution Rate"
+                        value={stats.total_reports > 0
+                            ? Math.round(((status_breakdown['resolved'] ?? 0) / stats.total_reports) * 100)
+                            : 0}
+                        suffix="%"
+                        color="teal"
                     />
                 </div>
 
-                {/* Breakdowns */}
+                {/* Breakdowns row */}
                 <div className="grid gap-6 lg:grid-cols-2">
                     <Card className="overflow-hidden">
                         <CardHeader className="border-b bg-muted/30 px-6 py-4">
@@ -130,20 +288,36 @@ export default function AdminDashboard({
                                 Reports by Severity
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="flex flex-wrap items-center gap-4 p-6">
-                            {(['critical', 'high', 'moderate', 'low'] as const).map((sev) => {
-                                const count = severity_breakdown[sev] ?? 0;
-                                return (
-                                    <div key={sev} className="flex items-center gap-2.5">
-                                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${SEV[sev]}`}>
-                                            {sev.charAt(0).toUpperCase() + sev.slice(1)}
-                                        </span>
-                                        <span className="text-sm font-bold tabular-nums">
-                                            {count}
-                                        </span>
-                                    </div>
-                                );
-                            })}
+                        <CardContent className="p-6">
+                            <div className="space-y-3">
+                                {(['critical', 'high', 'moderate', 'low'] as const).map((sev) => {
+                                    const count = severity_breakdown[sev] ?? 0;
+                                    const total = stats.total_reports || 1;
+                                    const pct = Math.round((count / total) * 100);
+                                    const barColors: Record<string, string> = {
+                                        critical: 'bg-red-500',
+                                        high: 'bg-orange-500',
+                                        moderate: 'bg-amber-500',
+                                        low: 'bg-emerald-500',
+                                    };
+                                    return (
+                                        <div key={sev} className="flex items-center gap-3">
+                                            <span className="w-20 text-xs font-medium capitalize text-muted-foreground">
+                                                {sev}
+                                            </span>
+                                            <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full ${barColors[sev]} transition-all`}
+                                                    style={{ width: `${pct}%` }}
+                                                />
+                                            </div>
+                                            <span className="w-10 text-right text-xs font-semibold tabular-nums">
+                                                {count}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -153,20 +327,37 @@ export default function AdminDashboard({
                                 Reports by Status
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="flex flex-wrap items-center gap-4 p-6">
-                            {(['pending', 'verified', 'assigned', 'resolved', 'rejected'] as const).map((st) => {
-                                const count = status_breakdown[st] ?? 0;
-                                return (
-                                    <div key={st} className="flex items-center gap-2.5">
-                                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${STA[st]}`}>
-                                            {st.charAt(0).toUpperCase() + st.slice(1)}
-                                        </span>
-                                        <span className="text-sm font-bold tabular-nums">
-                                            {count}
-                                        </span>
-                                    </div>
-                                );
-                            })}
+                        <CardContent className="p-6">
+                            <div className="space-y-3">
+                                {(['pending', 'verified', 'assigned', 'resolved', 'rejected'] as const).map((st) => {
+                                    const count = status_breakdown[st] ?? 0;
+                                    const total = stats.total_reports || 1;
+                                    const pct = Math.round((count / total) * 100);
+                                    const barColors: Record<string, string> = {
+                                        pending: 'bg-amber-500',
+                                        verified: 'bg-blue-500',
+                                        assigned: 'bg-indigo-500',
+                                        resolved: 'bg-emerald-500',
+                                        rejected: 'bg-zinc-400',
+                                    };
+                                    return (
+                                        <div key={st} className="flex items-center gap-3">
+                                            <span className="w-20 text-xs font-medium capitalize text-muted-foreground">
+                                                {st}
+                                            </span>
+                                            <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                                                <div
+                                                    className={`h-full rounded-full ${barColors[st]} transition-all`}
+                                                    style={{ width: `${pct}%` }}
+                                                />
+                                            </div>
+                                            <span className="w-10 text-right text-xs font-semibold tabular-nums">
+                                                {count}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -258,30 +449,57 @@ export default function AdminDashboard({
     );
 }
 
-function MetricCard({
+/* ─── Stat Card Component ─── */
+
+const COLOR_MAP: Record<string, { bg: string; text: string; ring: string }> = {
+    blue:    { bg: 'bg-blue-500/10',    text: 'text-blue-600',    ring: 'ring-blue-500/20' },
+    amber:   { bg: 'bg-amber-500/10',   text: 'text-amber-600',   ring: 'ring-amber-500/20' },
+    indigo:  { bg: 'bg-indigo-500/10',  text: 'text-indigo-600',  ring: 'ring-indigo-500/20' },
+    emerald: { bg: 'bg-emerald-500/10', text: 'text-emerald-600', ring: 'ring-emerald-500/20' },
+    violet:  { bg: 'bg-violet-500/10',  text: 'text-violet-600',  ring: 'ring-violet-500/20' },
+    sky:     { bg: 'bg-sky-500/10',     text: 'text-sky-600',     ring: 'ring-sky-500/20' },
+    rose:    { bg: 'bg-rose-500/10',    text: 'text-rose-600',    ring: 'ring-rose-500/20' },
+    teal:    { bg: 'bg-teal-500/10',    text: 'text-teal-600',    ring: 'ring-teal-500/20' },
+};
+
+function StatCard({
     icon: Icon,
-    iconBg,
-    iconColor,
     label,
     value,
-    accent,
+    trend,
+    color,
+    alert,
+    suffix = '',
 }: {
     icon: React.ComponentType<{ className?: string }>;
-    iconBg: string;
-    iconColor: string;
     label: string;
     value: number;
-    accent?: string;
+    trend?: number;
+    color: string;
+    alert?: boolean;
+    suffix?: string;
 }) {
+    const colors = COLOR_MAP[color] ?? COLOR_MAP.blue;
+
     return (
-        <Card className={`relative overflow-hidden transition-shadow hover:shadow-md ${accent ? `border-l-4 ${accent}` : ''}`}>
+        <Card className={`relative overflow-hidden transition-all hover:shadow-md ${alert ? 'border-l-4 border-l-' + color + '-500' : ''}`}>
             <CardContent className="flex items-center gap-4 p-5">
-                <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl ${iconBg}`}>
-                    <Icon className={`size-5 ${iconColor}`} />
+                <div className={`flex size-11 shrink-0 items-center justify-center rounded-xl ring-1 ${colors.bg} ${colors.ring}`}>
+                    <Icon className={`size-5 ${colors.text}`} />
                 </div>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-medium text-muted-foreground">{label}</p>
-                    <p className="text-2xl font-bold tracking-tight tabular-nums">{value}</p>
+                    <div className="flex items-baseline gap-2">
+                        <p className="text-2xl font-bold tracking-tight tabular-nums">
+                            {value.toLocaleString()}{suffix}
+                        </p>
+                        {trend !== undefined && trend !== 0 && (
+                            <span className={`inline-flex items-center gap-0.5 text-xs font-medium ${trend > 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                {trend > 0 ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
+                                {Math.abs(trend)}%
+                            </span>
+                        )}
+                    </div>
                 </div>
             </CardContent>
         </Card>
