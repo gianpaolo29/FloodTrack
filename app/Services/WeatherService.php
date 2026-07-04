@@ -96,6 +96,7 @@ class WeatherService
                 'temp_min'    => round($item['main']['temp_min'] ?? 0, 1),
                 'temp_max'    => round($item['main']['temp_max'] ?? 0, 1),
                 'humidity'    => $item['main']['humidity'] ?? 0,
+                'pressure'    => $item['main']['pressure'] ?? 0,
                 'wind_speed'  => round(($item['wind']['speed'] ?? 0) * 3.6, 1),
                 'wind_gust'   => round(($item['wind']['gust'] ?? 0) * 3.6, 1),
                 'rain_3h'     => $item['rain']['3h'] ?? 0,
