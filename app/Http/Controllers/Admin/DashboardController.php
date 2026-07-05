@@ -13,6 +13,11 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
+    private function isUsingSqlite(): bool
+    {
+        return DB::getDriverName() === 'sqlite';
+    }
+
     public function index(): Response
     {
         $stats = [
@@ -56,14 +61,18 @@ class DashboardController extends Controller
             ]);
 
         // Monthly reports for the last 6 months
+        $monthExpr = $this->isUsingSqlite()
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
+
         $monthlyReports = Report::select(
-                DB::raw("strftime('%Y-%m', created_at) as month"),
+                DB::raw("$monthExpr as month"),
                 DB::raw("COUNT(*) as total"),
                 DB::raw("SUM(CASE WHEN severity = 'critical' THEN 1 ELSE 0 END) as critical"),
                 DB::raw("SUM(CASE WHEN severity = 'high' THEN 1 ELSE 0 END) as high")
             )
             ->where('created_at', '>=', now()->subMonths(6))
-            ->groupBy(DB::raw("strftime('%Y-%m', created_at)"))
+            ->groupBy(DB::raw($monthExpr))
             ->orderBy('month')
             ->get()
             ->map(fn ($row) => [

@@ -57,7 +57,11 @@ class StatisticsController extends Controller
             ->get(['id', 'name']);
 
         // Monthly trend (last 6 months)
-        $monthly_trend = Report::selectRaw("strftime('%Y-%m', created_at) as month, count(*) as count")
+        $monthExpr = DB::getDriverName() === 'sqlite'
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
+
+        $monthly_trend = Report::selectRaw("$monthExpr as month, count(*) as count")
             ->where('created_at', '>=', now()->subMonths(6))
             ->groupBy('month')
             ->orderBy('month')
