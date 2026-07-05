@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\ResponderStatsController;
 use App\Http\Controllers\Api\IncidentMessageController;
 use App\Http\Controllers\Api\FieldReportController;
 use App\Http\Controllers\Api\WeatherController;
+use App\Http\Controllers\Api\FamilyController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -61,6 +62,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/reports/{report}/messages/unread-count', [IncidentMessageController::class, 'unreadCount']);
     Route::post('/reports/{report}/typing', [IncidentMessageController::class, 'typing'])->middleware('throttle:60,1');
     Route::get('/reports/{report}/typing', [IncidentMessageController::class, 'typingUsers']);
+
+    // ── Family safety group ─────────────────────────────────────────────
+    Route::get('/family',                  [FamilyController::class, 'show']);
+    Route::post('/family',                 [FamilyController::class, 'store']);
+    Route::post('/family/join/{code}',     [FamilyController::class, 'join']);
+    Route::post('/family/invite',          [FamilyController::class, 'invite']);
+    Route::post('/family/check-in',        [FamilyController::class, 'checkIn']);
+    Route::delete('/family/leave',         [FamilyController::class, 'leave']);
+    Route::delete('/family/members/{id}',  [FamilyController::class, 'removeMember']);
+
+    // Avatar upload
+    Route::post('/user/avatar', [UserController::class, 'updateAvatar']);
 
     // ── Responder only ───────────────────────────────────────────────────
     Route::middleware('role:responder,admin')->prefix('responder')->group(function () {
