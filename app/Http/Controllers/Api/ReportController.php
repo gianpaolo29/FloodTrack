@@ -7,8 +7,13 @@ use App\Models\IncidentMessage;
 use App\Models\Report;
 use App\Models\ReportMedia;
 use App\Models\ReportStatusUpdate;
+use App\Models\User;
+use App\Notifications\NewReportSubmitted;
+use App\Notifications\ReportStatusChanged;
 use App\Services\ExpoPushService;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\DatabaseNotification;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
@@ -57,6 +62,10 @@ class ReportController extends Controller
             'status'    => 'pending',
             'notes'     => 'Report submitted.',
         ]);
+
+        // Notify all admins about the new report
+        $admins = User::where('role', 'admin')->get();
+        Notification::send($admins, new NewReportSubmitted($report));
 
         return response()->json(
             $report->load(['media', 'statusUpdates.user:id,name,role']),

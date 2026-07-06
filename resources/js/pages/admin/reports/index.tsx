@@ -1,6 +1,16 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowUpRight, Globe, Search, SlidersHorizontal, X } from 'lucide-react';
-import { useCallback } from 'react';
+import {
+    ArrowUpRight,
+    CheckCircle2,
+    Globe,
+    RefreshCw,
+    Search,
+    SlidersHorizontal,
+    Trash2,
+    X,
+    XCircle,
+} from 'lucide-react';
+import { useCallback, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -41,6 +51,10 @@ const SEVERITY_OPTIONS = ['', 'critical', 'high', 'moderate', 'low'];
 const HAZARD_OPTIONS = ['', 'flood', 'road_damage', 'debris', 'drainage', 'other'];
 
 export default function AdminReportsIndex({ reports, responders, filters }: Props) {
+    const [selected, setSelected] = useState<number[]>([]);
+    const [bulkProcessing, setBulkProcessing] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+
     const filter = useCallback((key: string, value: string) => {
         router.get('/admin/reports', { ...filters, [key]: value || undefined }, {
             preserveState: true,
@@ -49,6 +63,40 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
     }, [filters]);
 
     const hasFilters = !!(filters.status || filters.severity || filters.hazard_type || filters.search);
+
+    const allOnPageSelected = reports.data.length > 0 && reports.data.every((r) => selected.includes(r.id));
+
+    const toggleAll = () => {
+        if (allOnPageSelected) {
+            setSelected(selected.filter((id) => !reports.data.some((r) => r.id === id)));
+        } else {
+            const pageIds = reports.data.map((r) => r.id);
+            setSelected([...new Set([...selected, ...pageIds])]);
+        }
+    };
+
+    const toggleOne = (id: number) => {
+        setSelected((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
+    };
+
+    const runBulkAction = (action: string) => {
+        if (selected.length === 0) return;
+
+        if (action === 'delete' && !confirmDelete) {
+            setConfirmDelete(true);
+            return;
+        }
+
+        setBulkProcessing(true);
+        router.post('/admin/reports/bulk', { ids: selected, action }, {
+            preserveState: true,
+            onFinish: () => {
+                setBulkProcessing(false);
+                setSelected([]);
+                setConfirmDelete(false);
+            },
+        });
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -121,55 +169,159 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
                     </CardContent>
                 </Card>
 
+                {/* Bulk action bar */}
+                {selected.length > 0 && (
+                    <Card className="border-primary/20 bg-primary/5">
+                        <CardContent className="flex flex-wrap items-center gap-3 p-3">
+                            <span className="text-sm font-medium">
+                                {selected.length} selected
+                            </span>
+                            <div className="h-5 w-px bg-border" />
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                                onClick={() => runBulkAction('verify')}
+                                disabled={bulkProcessing}
+                            >
+                                <CheckCircle2 className="size-3.5" />
+                                Verify
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5 border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                                onClick={() => runBulkAction('reject')}
+                                disabled={bulkProcessing}
+                            >
+                                <XCircle className="size-3.5" />
+                                Reject
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5 border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                onClick={() => runBulkAction('reopen')}
+                                disabled={bulkProcessing}
+                            >
+                                <RefreshCw className="size-3.5" />
+                                Reopen
+                            </Button>
+                            {confirmDelete ? (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-xs font-medium text-destructive">Are you sure?</span>
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        className="gap-1.5"
+                                        onClick={() => runBulkAction('delete')}
+                                        disabled={bulkProcessing}
+                                    >
+                                        <Trash2 className="size-3.5" />
+                                        Confirm Delete
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setConfirmDelete(false)}
+                                    >
+                                        Cancel
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1.5 border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                                    onClick={() => runBulkAction('delete')}
+                                    disabled={bulkProcessing}
+                                >
+                                    <Trash2 className="size-3.5" />
+                                    Delete
+                                </Button>
+                            )}
+                            <div className="ml-auto">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => { setSelected([]); setConfirmDelete(false); }}
+                                    className="text-muted-foreground"
+                                >
+                                    Clear selection
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
                 {/* Table */}
                 <Card className="overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b bg-muted/30 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                                    <th className="px-6 py-3">Reference</th>
-                                    <th className="px-6 py-3">Type</th>
-                                    <th className="px-6 py-3">Severity</th>
-                                    <th className="px-6 py-3">Status</th>
-                                    <th className="px-6 py-3">Reporter</th>
-                                    <th className="px-6 py-3">Assigned to</th>
-                                    <th className="px-6 py-3">Location</th>
-                                    <th className="px-6 py-3">Date</th>
-                                    <th className="px-6 py-3"></th>
+                                    <th className="px-4 py-3 w-10">
+                                        <input
+                                            type="checkbox"
+                                            checked={allOnPageSelected}
+                                            onChange={toggleAll}
+                                            className="size-4 rounded border-border text-primary focus:ring-primary/20"
+                                        />
+                                    </th>
+                                    <th className="px-4 py-3">Reference</th>
+                                    <th className="px-4 py-3">Type</th>
+                                    <th className="px-4 py-3">Severity</th>
+                                    <th className="px-4 py-3">Status</th>
+                                    <th className="px-4 py-3">Reporter</th>
+                                    <th className="px-4 py-3">Assigned to</th>
+                                    <th className="px-4 py-3">Location</th>
+                                    <th className="px-4 py-3">Date</th>
+                                    <th className="px-4 py-3"></th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border/50">
                                 {reports.data.map((report) => (
-                                    <tr key={report.id} className="group transition-colors hover:bg-muted/30">
-                                        <td className="px-6 py-3.5">
+                                    <tr
+                                        key={report.id}
+                                        className={`group transition-colors ${selected.includes(report.id) ? 'bg-primary/5' : 'hover:bg-muted/30'}`}
+                                    >
+                                        <td className="px-4 py-3.5">
+                                            <input
+                                                type="checkbox"
+                                                checked={selected.includes(report.id)}
+                                                onChange={() => toggleOne(report.id)}
+                                                className="size-4 rounded border-border text-primary focus:ring-primary/20"
+                                            />
+                                        </td>
+                                        <td className="px-4 py-3.5">
                                             <span className="font-mono text-xs font-medium">{report.reference_number}</span>
                                         </td>
-                                        <td className="px-6 py-3.5 text-muted-foreground">
+                                        <td className="px-4 py-3.5 text-muted-foreground">
                                             {HAZARD_LABELS[report.hazard_type]}
                                         </td>
-                                        <td className="px-6 py-3.5">
+                                        <td className="px-4 py-3.5">
                                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${SEVERITY_COLORS[report.severity]}`}>
                                                 {report.severity}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-3.5">
+                                        <td className="px-4 py-3.5">
                                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[report.status]}`}>
                                                 {report.status}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-3.5 font-medium">{report.user?.name ?? '—'}</td>
-                                        <td className="px-6 py-3.5 text-muted-foreground">
+                                        <td className="px-4 py-3.5 font-medium">{report.user?.name ?? '—'}</td>
+                                        <td className="px-4 py-3.5 text-muted-foreground">
                                             {report.assigned_responder?.name ?? '—'}
                                         </td>
-                                        <td className="px-6 py-3.5 max-w-[160px] truncate text-muted-foreground">
+                                        <td className="px-4 py-3.5 max-w-[160px] truncate text-muted-foreground">
                                             {report.address ?? '—'}
                                         </td>
-                                        <td className="px-6 py-3.5 text-muted-foreground whitespace-nowrap">
+                                        <td className="px-4 py-3.5 text-muted-foreground whitespace-nowrap">
                                             {new Date(report.created_at).toLocaleDateString('en-PH', {
                                                 month: 'short', day: 'numeric',
                                             })}
                                         </td>
-                                        <td className="px-6 py-3.5">
+                                        <td className="px-4 py-3.5">
                                             <Link
                                                 href={`/admin/reports/${report.id}`}
                                                 className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors opacity-0 group-hover:opacity-100"
@@ -182,7 +334,7 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
                                 ))}
                                 {reports.data.length === 0 && (
                                     <tr>
-                                        <td colSpan={9} className="px-6 py-16 text-center">
+                                        <td colSpan={10} className="px-6 py-16 text-center">
                                             <div className="flex flex-col items-center gap-2">
                                                 <SlidersHorizontal className="size-8 text-muted-foreground/40" />
                                                 <p className="text-sm text-muted-foreground">No reports match the current filters</p>

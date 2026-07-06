@@ -1,5 +1,18 @@
-import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, CheckCircle2, Clock, MapPin, UserCheck, XCircle } from 'lucide-react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import {
+    ArrowLeft,
+    CheckCircle2,
+    Clock,
+    MapPin,
+    Pencil,
+    RefreshCw,
+    Save,
+    Trash2,
+    UserCheck,
+    X,
+    XCircle,
+} from 'lucide-react';
+import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,6 +25,9 @@ interface Props {
     responders: Responder[];
 }
 
+const SEVERITY_OPTIONS = ['low', 'moderate', 'high', 'critical'] as const;
+const HAZARD_OPTIONS = ['flood', 'road_damage', 'debris', 'drainage', 'other'] as const;
+
 export default function AdminReportShow({ report, responders }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Admin', href: '/admin' },
@@ -19,13 +35,39 @@ export default function AdminReportShow({ report, responders }: Props) {
         { title: report.reference_number, href: `/admin/reports/${report.id}` },
     ];
 
+    const [editing, setEditing] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
     const verifyForm  = useForm({});
     const rejectForm  = useForm({ notes: '' });
     const assignForm  = useForm({ responder_id: '' });
+    const reopenForm  = useForm({});
+    const editForm    = useForm({
+        severity: report.severity,
+        hazard_type: report.hazard_type,
+        address: report.address ?? '',
+        description: report.description ?? '',
+    });
 
     const canVerify = report.status === 'pending';
     const canAssign = ['pending', 'verified'].includes(report.status);
     const canReject = ['pending', 'verified'].includes(report.status);
+    const canReopen = ['resolved', 'rejected'].includes(report.status);
+
+    const handleDelete = () => {
+        setDeleting(true);
+        router.delete(`/admin/reports/${report.id}`, {
+            onFinish: () => setDeleting(false),
+        });
+    };
+
+    const handleEditSave = (e: React.FormEvent) => {
+        e.preventDefault();
+        editForm.put(`/admin/reports/${report.id}`, {
+            onSuccess: () => setEditing(false),
+        });
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -34,21 +76,70 @@ export default function AdminReportShow({ report, responders }: Props) {
             <div className="flex flex-col gap-6 p-6 lg:p-8">
 
                 {/* Header */}
-                <div className="flex items-center gap-4">
-                    <Link
-                        href="/admin/reports"
-                        className="flex size-8 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                        <ArrowLeft className="size-4" />
-                    </Link>
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-xl font-bold tracking-tight">{report.reference_number}</h1>
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${SEVERITY_COLORS[report.severity]}`}>
-                            {report.severity}
-                        </span>
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_COLORS[report.status]}`}>
-                            {report.status}
-                        </span>
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <Link
+                            href="/admin/reports"
+                            className="flex size-8 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                            <ArrowLeft className="size-4" />
+                        </Link>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-xl font-bold tracking-tight">{report.reference_number}</h1>
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${SEVERITY_COLORS[report.severity]}`}>
+                                {report.severity}
+                            </span>
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${STATUS_COLORS[report.status]}`}>
+                                {report.status}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Edit & Delete buttons */}
+                    <div className="flex items-center gap-2">
+                        {!editing && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5"
+                                onClick={() => setEditing(true)}
+                            >
+                                <Pencil className="size-3.5" />
+                                Edit
+                            </Button>
+                        )}
+                        {confirmDelete ? (
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium text-destructive">Delete this report?</span>
+                                <Button
+                                    variant="destructive"
+                                    size="sm"
+                                    className="gap-1.5"
+                                    onClick={handleDelete}
+                                    disabled={deleting}
+                                >
+                                    <Trash2 className="size-3.5" />
+                                    Confirm
+                                </Button>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setConfirmDelete(false)}
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        ) : (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                onClick={() => setConfirmDelete(true)}
+                            >
+                                <Trash2 className="size-3.5" />
+                                Delete
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -57,29 +148,117 @@ export default function AdminReportShow({ report, responders }: Props) {
                     {/* Left column */}
                     <div className="flex flex-col gap-6 lg:col-span-2">
 
-                        {/* Details */}
-                        <Card className="overflow-hidden">
-                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
-                                <CardTitle className="text-sm font-semibold tracking-tight">Report Details</CardTitle>
-                            </CardHeader>
-                            <CardContent className="grid gap-4 p-6 sm:grid-cols-2">
-                                <Detail label="Hazard type" value={HAZARD_LABELS[report.hazard_type]} />
-                                <Detail label="Severity"    value={report.severity} />
-                                <Detail label="Status"      value={report.status} />
-                                <Detail label="Address"     value={report.address ?? '—'} />
-                                <Detail label="Coordinates" value={`${report.latitude}, ${report.longitude}`} />
-                                <Detail label="Submitted"   value={new Date(report.created_at).toLocaleString('en-PH')} />
-                                {report.verified_at && (
-                                    <Detail label="Verified at" value={new Date(report.verified_at).toLocaleString('en-PH')} />
-                                )}
-                                {report.resolved_at && (
-                                    <Detail label="Resolved at" value={new Date(report.resolved_at).toLocaleString('en-PH')} />
-                                )}
-                            </CardContent>
-                        </Card>
+                        {/* Edit Form or Details */}
+                        {editing ? (
+                            <Card className="overflow-hidden border-primary/20">
+                                <CardHeader className="flex flex-row items-center justify-between border-b bg-primary/5 px-6 py-4">
+                                    <CardTitle className="text-sm font-semibold tracking-tight">Edit Report</CardTitle>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => { setEditing(false); editForm.reset(); }}
+                                        className="gap-1 text-muted-foreground"
+                                    >
+                                        <X className="size-3.5" />
+                                        Cancel
+                                    </Button>
+                                </CardHeader>
+                                <CardContent className="p-6">
+                                    <form onSubmit={handleEditSave} className="flex flex-col gap-5">
+                                        <div className="grid gap-5 sm:grid-cols-2">
+                                            <FormField label="Severity">
+                                                <select
+                                                    value={editForm.data.severity}
+                                                    onChange={(e) => editForm.setData('severity', e.target.value as any)}
+                                                    className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                                >
+                                                    {SEVERITY_OPTIONS.map((s) => (
+                                                        <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                                                    ))}
+                                                </select>
+                                                {editForm.errors.severity && <p className="text-xs text-destructive mt-1">{editForm.errors.severity}</p>}
+                                            </FormField>
 
-                        {/* Description */}
-                        {report.description && (
+                                            <FormField label="Hazard Type">
+                                                <select
+                                                    value={editForm.data.hazard_type}
+                                                    onChange={(e) => editForm.setData('hazard_type', e.target.value as any)}
+                                                    className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                                >
+                                                    {HAZARD_OPTIONS.map((h) => (
+                                                        <option key={h} value={h}>{HAZARD_LABELS[h]}</option>
+                                                    ))}
+                                                </select>
+                                                {editForm.errors.hazard_type && <p className="text-xs text-destructive mt-1">{editForm.errors.hazard_type}</p>}
+                                            </FormField>
+                                        </div>
+
+                                        <FormField label="Address">
+                                            <input
+                                                type="text"
+                                                value={editForm.data.address}
+                                                onChange={(e) => editForm.setData('address', e.target.value)}
+                                                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                                placeholder="Report address..."
+                                            />
+                                            {editForm.errors.address && <p className="text-xs text-destructive mt-1">{editForm.errors.address}</p>}
+                                        </FormField>
+
+                                        <FormField label="Description">
+                                            <textarea
+                                                value={editForm.data.description}
+                                                onChange={(e) => editForm.setData('description', e.target.value)}
+                                                rows={4}
+                                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                                                placeholder="Report description..."
+                                            />
+                                            {editForm.errors.description && <p className="text-xs text-destructive mt-1">{editForm.errors.description}</p>}
+                                        </FormField>
+
+                                        <div className="flex justify-end gap-3">
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                onClick={() => { setEditing(false); editForm.reset(); }}
+                                            >
+                                                Cancel
+                                            </Button>
+                                            <Button
+                                                type="submit"
+                                                className="gap-1.5"
+                                                disabled={editForm.processing || !editForm.isDirty}
+                                            >
+                                                <Save className="size-4" />
+                                                Save Changes
+                                            </Button>
+                                        </div>
+                                    </form>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <Card className="overflow-hidden">
+                                <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                                    <CardTitle className="text-sm font-semibold tracking-tight">Report Details</CardTitle>
+                                </CardHeader>
+                                <CardContent className="grid gap-4 p-6 sm:grid-cols-2">
+                                    <Detail label="Hazard type" value={HAZARD_LABELS[report.hazard_type]} />
+                                    <Detail label="Severity"    value={report.severity} />
+                                    <Detail label="Status"      value={report.status} />
+                                    <Detail label="Address"     value={report.address ?? '—'} />
+                                    <Detail label="Coordinates" value={`${report.latitude}, ${report.longitude}`} />
+                                    <Detail label="Submitted"   value={new Date(report.created_at).toLocaleString('en-PH')} />
+                                    {report.verified_at && (
+                                        <Detail label="Verified at" value={new Date(report.verified_at).toLocaleString('en-PH')} />
+                                    )}
+                                    {report.resolved_at && (
+                                        <Detail label="Resolved at" value={new Date(report.resolved_at).toLocaleString('en-PH')} />
+                                    )}
+                                </CardContent>
+                            </Card>
+                        )}
+
+                        {/* Description (read-only, shown when not editing) */}
+                        {!editing && report.description && (
                             <Card className="overflow-hidden">
                                 <CardHeader className="border-b bg-muted/30 px-6 py-4">
                                     <CardTitle className="text-sm font-semibold tracking-tight">Description</CardTitle>
@@ -198,12 +377,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                             <CardContent className="flex flex-col gap-4 p-6">
 
                                 {canVerify && (
-                                    <form
-                                        onSubmit={(e) => {
-                                            e.preventDefault();
-                                            verifyForm.post(`/admin/reports/${report.id}/verify`);
-                                        }}
-                                    >
+                                    <form onSubmit={(e) => { e.preventDefault(); verifyForm.post(`/admin/reports/${report.id}/verify`); }}>
                                         <Button
                                             type="submit"
                                             className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-sm"
@@ -215,16 +389,14 @@ export default function AdminReportShow({ report, responders }: Props) {
                                     </form>
                                 )}
 
-                                {canAssign && (
+                                {/* Assign — always available when pending/verified, and also for reassignment */}
+                                {(canAssign || report.status === 'assigned') && (
                                     <form
-                                        onSubmit={(e) => {
-                                            e.preventDefault();
-                                            assignForm.post(`/admin/reports/${report.id}/assign`);
-                                        }}
+                                        onSubmit={(e) => { e.preventDefault(); assignForm.post(`/admin/reports/${report.id}/assign`); }}
                                         className="flex flex-col gap-3"
                                     >
                                         <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                            Assign to responder
+                                            {report.assigned_responder ? 'Reassign responder' : 'Assign to responder'}
                                         </label>
                                         <select
                                             value={assignForm.data.responder_id}
@@ -244,17 +416,14 @@ export default function AdminReportShow({ report, responders }: Props) {
                                             disabled={assignForm.processing}
                                         >
                                             <UserCheck className="size-4" />
-                                            Assign
+                                            {report.assigned_responder ? 'Reassign' : 'Assign'}
                                         </Button>
                                     </form>
                                 )}
 
                                 {canReject && (
                                     <form
-                                        onSubmit={(e) => {
-                                            e.preventDefault();
-                                            rejectForm.post(`/admin/reports/${report.id}/reject`);
-                                        }}
+                                        onSubmit={(e) => { e.preventDefault(); rejectForm.post(`/admin/reports/${report.id}/reject`); }}
                                         className="flex flex-col gap-3"
                                     >
                                         <textarea
@@ -276,7 +445,21 @@ export default function AdminReportShow({ report, responders }: Props) {
                                     </form>
                                 )}
 
-                                {!canVerify && !canAssign && !canReject && (
+                                {canReopen && (
+                                    <form onSubmit={(e) => { e.preventDefault(); reopenForm.post(`/admin/reports/${report.id}/reopen`); }}>
+                                        <Button
+                                            type="submit"
+                                            variant="outline"
+                                            className="w-full gap-2 border-blue-200 text-blue-700 hover:bg-blue-50 shadow-sm"
+                                            disabled={reopenForm.processing}
+                                        >
+                                            <RefreshCw className="size-4" />
+                                            Reopen Report
+                                        </Button>
+                                    </form>
+                                )}
+
+                                {!canVerify && !canAssign && !canReject && !canReopen && report.status !== 'assigned' && (
                                     <div className="flex flex-col items-center gap-2 py-4">
                                         <Clock className="size-6 text-muted-foreground/40" />
                                         <p className="text-sm text-muted-foreground">
@@ -298,6 +481,15 @@ function Detail({ label, value }: { label: string; value: string }) {
         <div>
             <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
             <p className="mt-0.5 text-sm font-medium">{value}</p>
+        </div>
+    );
+}
+
+function FormField({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+        <div className="flex flex-col gap-1.5">
+            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</label>
+            {children}
         </div>
     );
 }

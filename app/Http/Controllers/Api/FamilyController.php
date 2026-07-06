@@ -94,6 +94,8 @@ class FamilyController extends Controller
     {
         $request->validate([
             'status' => 'required|in:safe,need_help,unknown',
+            'latitude' => 'nullable|numeric',
+            'longitude' => 'nullable|numeric',
         ]);
 
         $user = $request->user();
@@ -106,6 +108,8 @@ class FamilyController extends Controller
         $membership->update([
             'check_in_status' => $request->status,
             'checked_in_at' => now(),
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
         ]);
 
         return response()->json(['message' => 'Check-in updated.']);
@@ -185,6 +189,8 @@ class FamilyController extends Controller
                     'check_in_status' => $m->check_in_status,
                     'checked_in_at' => $m->checked_in_at?->toIso8601String(),
                     'is_creator' => $m->user_id === $group->creator_id,
+                    'latitude' => $m->latitude,
+                    'longitude' => $m->longitude,
                 ];
             })->values(),
         ];

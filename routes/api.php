@@ -10,6 +10,9 @@ use App\Http\Controllers\Api\IncidentMessageController;
 use App\Http\Controllers\Api\FieldReportController;
 use App\Http\Controllers\Api\WeatherController;
 use App\Http\Controllers\Api\FamilyController;
+use App\Http\Controllers\Api\EvacuationCenterController;
+use App\Http\Controllers\Api\ProtocolController;
+use App\Http\Controllers\Api\AdminStatsController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -75,6 +78,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Avatar upload
     Route::post('/user/avatar', [UserController::class, 'updateAvatar']);
 
+    // Evacuation centers and protocols (read-only for all users)
+    Route::get('/evacuation-centers', [EvacuationCenterController::class, 'index']);
+Route::get('/protocols',          [ProtocolController::class, 'index']);
+
     // ── Responder only ───────────────────────────────────────────────────
     Route::middleware('role:responder,admin')->prefix('responder')->group(function () {
         Route::get('/assigned-reports', [ReportController::class, 'index']);  // with ?assigned=me
@@ -90,5 +97,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/reports/{report}/assign',           [ReportController::class, 'assign']);
         Route::patch('/reports/{report}/verify',           [ReportController::class, 'verify']);
         Route::patch('/reports/{report}/reject',           [ReportController::class, 'reject']);
+        Route::get('/admin/stats',                         [AdminStatsController::class, 'index']);
     });
 });

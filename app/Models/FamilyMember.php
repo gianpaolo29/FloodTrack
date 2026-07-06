@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class FamilyMember extends Model
 {
-    protected $fillable = ['family_group_id', 'user_id', 'check_in_status', 'checked_in_at'];
+    protected $fillable = ['family_group_id', 'user_id', 'check_in_status', 'checked_in_at', 'latitude', 'longitude'];
 
     protected function casts(): array
     {
