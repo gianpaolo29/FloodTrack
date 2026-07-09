@@ -144,16 +144,16 @@ class DashboardController extends Controller
             ->limit(5)
             ->get(['id', 'name', 'email']);
 
-        // Average response time (hours from created_at to resolved_at)
-        $avgResponseHours = Report::where('status', 'resolved')
+        // Average response time (minutes from created_at to resolved_at)
+        $avgResponseQuery = Report::where('status', 'resolved')
             ->whereNotNull('resolved_at');
         if ($from) {
-            $avgResponseHours = $avgResponseHours->where('created_at', '>=', $from);
+            $avgResponseQuery = $avgResponseQuery->where('created_at', '>=', $from);
         }
-        $avgResponseTime = $avgResponseHours->count() > 0
-            ? round($avgResponseHours->avg(DB::raw($this->isUsingSqlite()
-                ? "(julianday(resolved_at) - julianday(created_at)) * 24"
-                : "TIMESTAMPDIFF(HOUR, created_at, resolved_at)"
+        $avgResponseMinutes = $avgResponseQuery->count() > 0
+            ? round($avgResponseQuery->avg(DB::raw($this->isUsingSqlite()
+                ? "(julianday(resolved_at) - julianday(created_at)) * 1440"
+                : "TIMESTAMPDIFF(MINUTE, created_at, resolved_at)"
             )), 1)
             : 0;
 
@@ -196,7 +196,7 @@ class DashboardController extends Controller
             'active_alerts'      => $active_alerts,
             'critical_alerts'    => $critical_alerts,
             'top_responders'     => $top_responders,
-            'avg_response_time'  => $avgResponseTime,
+            'avg_response_time'  => $avgResponseMinutes,
             'recent_activity'    => $recent_activity,
             'affected_areas'     => $affected_areas,
             'map_reports'        => $map_reports,

@@ -205,7 +205,7 @@ export default function AdminDashboard({
                 {/* ─── Secondary Stats (4 cols) ─── */}
                 <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                     <MiniStatCard icon={CheckCircle2} iconColor="text-emerald-500" iconBg="bg-emerald-50 dark:bg-emerald-900/30" value={stats.resolved_today} label="Resolved Today" />
-                    <MiniStatCard icon={Clock} iconColor="text-orange-500" iconBg="bg-orange-50 dark:bg-orange-900/30" value={avg_response_time > 0 ? `${avg_response_time}h` : '—'} label="Avg Response Time" />
+                    <MiniStatCard icon={Clock} iconColor="text-orange-500" iconBg="bg-orange-50 dark:bg-orange-900/30" value={formatResponseTime(avg_response_time)} label="Avg Response Time" />
                     <MiniStatCard icon={Globe} iconColor="text-violet-500" iconBg="bg-violet-50 dark:bg-violet-900/30" value={affected_areas} label="Affected Areas" />
                     <MiniStatCard icon={TrendingUp} iconColor="text-teal-500" iconBg="bg-teal-50 dark:bg-teal-900/30" value={`${resolutionRate}%`} label="Resolution Rate" />
                 </div>
@@ -521,6 +521,17 @@ export default function AdminDashboard({
             </div>
         </AppLayout>
     );
+}
+
+/* ─── Helpers ─── */
+
+function formatResponseTime(minutes: number): string {
+    if (minutes <= 0) return '—';
+    if (minutes < 1) return `${Math.round(minutes * 60)}s`;
+    if (minutes < 60) return `${Math.round(minutes)}m`;
+    const h = Math.floor(minutes / 60);
+    const m = Math.round(minutes % 60);
+    return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
 /* ─── Reusable Components ─── */

@@ -13,6 +13,7 @@ import {
 import { useCallback, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
+import { swalDelete, swalSuccess } from '@/lib/swal';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import type { BreadcrumbItem } from '@/types';
@@ -53,7 +54,6 @@ const HAZARD_OPTIONS = ['', 'flood', 'road_damage', 'debris', 'drainage', 'other
 export default function AdminReportsIndex({ reports, responders, filters }: Props) {
     const [selected, setSelected] = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false);
 
     const filter = useCallback((key: string, value: string) => {
         router.get('/admin/reports', { ...filters, [key]: value || undefined }, {
@@ -79,22 +79,20 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
         setSelected((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
     };
 
-    const runBulkAction = (action: string) => {
+    const runBulkAction = async (action: string) => {
         if (selected.length === 0) return;
-
-        if (action === 'delete' && !confirmDelete) {
-            setConfirmDelete(true);
-            return;
+        if (action === 'delete') {
+            const confirmed = await swalDelete(`${selected.length} selected report(s)`);
+            if (!confirmed) return;
         }
-
         setBulkProcessing(true);
         router.post('/admin/reports/bulk', { ids: selected, action }, {
             preserveState: true,
             onFinish: () => {
                 setBulkProcessing(false);
                 setSelected([]);
-                setConfirmDelete(false);
             },
+            onSuccess: () => swalSuccess('Done', `Bulk ${action} completed successfully.`),
         });
     };
 
@@ -207,44 +205,21 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
                                 <RefreshCw className="size-3.5" />
                                 Reopen
                             </Button>
-                            {confirmDelete ? (
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xs font-medium text-destructive">Are you sure?</span>
-                                    <Button
-                                        variant="destructive"
-                                        size="sm"
-                                        className="gap-1.5"
-                                        onClick={() => runBulkAction('delete')}
-                                        disabled={bulkProcessing}
-                                    >
-                                        <Trash2 className="size-3.5" />
-                                        Confirm Delete
-                                    </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setConfirmDelete(false)}
-                                    >
-                                        Cancel
-                                    </Button>
-                                </div>
-                            ) : (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-1.5 border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
-                                    onClick={() => runBulkAction('delete')}
-                                    disabled={bulkProcessing}
-                                >
-                                    <Trash2 className="size-3.5" />
-                                    Delete
-                                </Button>
-                            )}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-1.5 border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+                                onClick={() => runBulkAction('delete')}
+                                disabled={bulkProcessing}
+                            >
+                                <Trash2 className="size-3.5" />
+                                Delete
+                            </Button>
                             <div className="ml-auto">
                                 <Button
                                     variant="ghost"
                                     size="sm"
-                                    onClick={() => { setSelected([]); setConfirmDelete(false); }}
+                                    onClick={() => setSelected([])}
                                     className="text-muted-foreground"
                                 >
                                     Clear selection

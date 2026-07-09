@@ -10,6 +10,7 @@ import {
     X,
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
+import { swalSuccess } from '@/lib/swal';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
@@ -48,7 +49,9 @@ export default function AdminSettings({ settings }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        form.put('/admin/settings');
+        form.put('/admin/settings', {
+            onSuccess: () => swalSuccess('Settings saved'),
+        });
     };
 
     return (

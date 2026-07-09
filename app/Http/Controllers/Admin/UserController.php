@@ -106,7 +106,7 @@ class UserController extends Controller
         $name = $user->name;
         $user->delete();
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => "User \"{$name}\" deleted."]);
+
 
         return back();
     }

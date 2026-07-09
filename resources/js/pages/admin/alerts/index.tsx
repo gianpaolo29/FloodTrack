@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Bell, Megaphone, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 import type { Alert } from '@/types/admin';
 
@@ -37,7 +38,6 @@ const modalSpring = { type: 'spring' as const, stiffness: 400, damping: 28 };
 
 export default function AdminAlertsIndex({ alerts }: Props) {
     const [selected, setSelected] = useState<number[]>([]);
-    const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
@@ -56,6 +56,7 @@ export default function AdminAlertsIndex({ alerts }: Props) {
             onSuccess: () => {
                 form.reset();
                 setShowCreateModal(false);
+                swalSuccess('Alert Published', 'The alert has been published successfully.');
             },
         });
     }
@@ -72,12 +73,10 @@ export default function AdminAlertsIndex({ alerts }: Props) {
         setSelected((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
     };
 
-    const runBulkDelete = () => {
+    const runBulkDelete = async () => {
         if (selected.length === 0) return;
-        if (!confirmBulkDelete) {
-            setConfirmBulkDelete(true);
-            return;
-        }
+        const confirmed = await swalDelete(`${selected.length} selected alert(s)`);
+        if (!confirmed) return;
         setBulkProcessing(true);
         router.post(
             '/admin/alerts/bulk',
@@ -87,8 +86,8 @@ export default function AdminAlertsIndex({ alerts }: Props) {
                 onFinish: () => {
                     setBulkProcessing(false);
                     setSelected([]);
-                    setConfirmBulkDelete(false);
                 },
+                onSuccess: () => swalSuccess('Deleted', 'Selected alerts have been deleted.'),
             },
         );
     };
@@ -128,37 +127,17 @@ export default function AdminAlertsIndex({ alerts }: Props) {
                             <div className="flex flex-wrap items-center gap-3">
                                 <span className="text-sm font-semibold text-sky-900 dark:text-sky-200">{selected.length} selected</span>
                                 <div className="h-5 w-px bg-sky-200 dark:bg-sky-800" />
-                                {confirmBulkDelete ? (
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-medium text-red-600 dark:text-red-400">Are you sure?</span>
-                                        <button
-                                            onClick={runBulkDelete}
-                                            disabled={bulkProcessing}
-                                            className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-50"
-                                        >
-                                            <Trash2 className="size-3.5" /> Confirm Delete
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmBulkDelete(false)}
-                                            className="rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={runBulkDelete}
-                                        disabled={bulkProcessing}
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50 dark:border-red-800/40 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/60"
-                                    >
-                                        <Trash2 className="size-3.5" /> Delete
-                                    </button>
-                                )}
+                                <button
+                                    onClick={runBulkDelete}
+                                    disabled={bulkProcessing}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50 dark:border-red-800/40 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/60"
+                                >
+                                    <Trash2 className="size-3.5" /> Delete
+                                </button>
                                 <div className="ml-auto">
                                     <button
                                         onClick={() => {
                                             setSelected([]);
-                                            setConfirmBulkDelete(false);
                                         }}
                                         className="rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-500 transition-colors hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
                                     >
@@ -383,7 +362,6 @@ export default function AdminAlertsIndex({ alerts }: Props) {
 /* ─── Edit Modal ─── */
 
 function EditModal({ alert, onClose }: { alert: Alert; onClose: () => void }) {
-    const [confirmDelete, setConfirmDelete] = useState(false);
     const deleteForm = useForm({});
     const editForm = useForm({
         title: alert.title,
@@ -396,7 +374,10 @@ function EditModal({ alert, onClose }: { alert: Alert; onClose: () => void }) {
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
         editForm.put(`/admin/alerts/${alert.id}`, {
-            onSuccess: () => onClose(),
+            onSuccess: () => {
+                onClose();
+                swalSuccess('Alert Updated', 'Changes have been saved.');
+            },
         });
     };
 
@@ -492,33 +473,18 @@ function EditModal({ alert, onClose }: { alert: Alert; onClose: () => void }) {
                     {/* Footer */}
                     <div className="flex items-center justify-between border-t border-neutral-200/60 pt-4 dark:border-neutral-700/60">
                         <div>
-                            {confirmDelete ? (
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => deleteForm.delete(`/admin/alerts/${alert.id}`)}
-                                        disabled={deleteForm.processing}
-                                        className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-50"
-                                    >
-                                        Confirm Delete
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setConfirmDelete(false)}
-                                        className="rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={() => setConfirmDelete(true)}
-                                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                                >
-                                    <Trash2 className="size-3.5" /> Delete alert
-                                </button>
-                            )}
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const confirmed = await swalDelete('this alert');
+                                    if (confirmed) deleteForm.delete(`/admin/alerts/${alert.id}`, {
+                                        onSuccess: () => swalSuccess('Deleted', 'Alert has been deleted.'),
+                                    });
+                                }}
+                                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                            >
+                                <Trash2 className="size-3.5" /> Delete alert
+                            </button>
                         </div>
                         <div className="flex items-center gap-3">
                             <button
@@ -557,7 +523,6 @@ function AlertRow({
     onToggle: () => void;
     onEdit: () => void;
 }) {
-    const [confirmDelete, setConfirmDelete] = useState(false);
     const deleteForm = useForm({});
 
     return (
@@ -605,34 +570,18 @@ function AlertRow({
                 >
                     <Pencil className="size-3.5" />
                 </button>
-                {confirmDelete ? (
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={(e) => {
-                                e.preventDefault();
-                                deleteForm.delete(`/admin/alerts/${alert.id}`);
-                            }}
-                            className="rounded-lg bg-red-600 px-2 py-1 text-[11px] font-semibold text-white"
-                            disabled={deleteForm.processing}
-                        >
-                            Confirm
-                        </button>
-                        <button
-                            onClick={() => setConfirmDelete(false)}
-                            className="rounded-lg px-2 py-1 text-[11px] font-medium text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-                        >
-                            Cancel
-                        </button>
-                    </div>
-                ) : (
-                    <button
-                        onClick={() => setConfirmDelete(true)}
-                        className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-                        title="Delete alert"
-                    >
-                        <Trash2 className="size-3.5" />
-                    </button>
-                )}
+                <button
+                    onClick={async () => {
+                        const confirmed = await swalDelete('this alert');
+                        if (confirmed) deleteForm.delete(`/admin/alerts/${alert.id}`, {
+                            onSuccess: () => swalSuccess('Deleted', 'Alert has been deleted.'),
+                        });
+                    }}
+                    className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                    title="Delete alert"
+                >
+                    <Trash2 className="size-3.5" />
+                </button>
             </div>
         </div>
     );

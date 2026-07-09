@@ -1,3 +1,4 @@
+import { swalDelete, swalSuccess } from '@/lib/swal';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -65,10 +66,8 @@ const modalVariants = {
 export default function AdminUsersIndex({ users, filters }: Props) {
     const [showCreate, setShowCreate] = useState(false);
     const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
-    const [deletingId, setDeletingId] = useState<number | null>(null);
     const [selected, setSelected] = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
-    const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
 
     const filter = useCallback((key: string, value: string) => {
         router.get('/admin/users', { ...filters, [key]: value || undefined }, {
@@ -91,20 +90,26 @@ export default function AdminUsersIndex({ users, filters }: Props) {
         setSelected((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
     };
 
-    const runBulkAction = (action: string) => {
+    const runBulkAction = async (action: string) => {
         if (selected.length === 0) return;
-        if (action === 'delete' && !confirmBulkDelete) { setConfirmBulkDelete(true); return; }
+        if (action === 'delete') {
+            const confirmed = await swalDelete(`${selected.length} selected user(s)`);
+            if (!confirmed) return;
+        }
         setBulkProcessing(true);
         router.post('/admin/users/bulk', { ids: selected, action }, {
             preserveState: true,
-            onFinish: () => { setBulkProcessing(false); setSelected([]); setConfirmBulkDelete(false); },
+            onFinish: () => { setBulkProcessing(false); setSelected([]); },
+            onSuccess: () => swalSuccess('Done', `Bulk ${action} completed successfully.`),
         });
     };
 
-    const handleDelete = (id: number) => {
+    const handleDelete = async (id: number) => {
+        const confirmed = await swalDelete('this user');
+        if (!confirmed) return;
         router.delete(`/admin/users/${id}`, {
             preserveState: true,
-            onFinish: () => setDeletingId(null),
+            onSuccess: () => swalSuccess('Deleted', 'User has been deleted.'),
         });
     };
 
@@ -212,35 +217,16 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                 >
                                     <ShieldCheck className="size-3.5" /> Set Responder
                                 </button>
-                                {confirmBulkDelete ? (
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs font-medium text-red-600 dark:text-red-400">Are you sure?</span>
-                                        <button
-                                            onClick={() => runBulkAction('delete')}
-                                            disabled={bulkProcessing}
-                                            className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
-                                        >
-                                            <Trash2 className="size-3.5" /> Confirm Delete
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmBulkDelete(false)}
-                                            className="rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-500 transition-colors hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-                                        >
-                                            Cancel
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <button
-                                        onClick={() => runBulkAction('delete')}
-                                        disabled={bulkProcessing}
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/40"
-                                    >
-                                        <Trash2 className="size-3.5" /> Delete
-                                    </button>
-                                )}
+                                <button
+                                    onClick={() => runBulkAction('delete')}
+                                    disabled={bulkProcessing}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50 dark:border-red-800 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-900/40"
+                                >
+                                    <Trash2 className="size-3.5" /> Delete
+                                </button>
                                 <div className="ml-auto">
                                     <button
-                                        onClick={() => { setSelected([]); setConfirmBulkDelete(false); }}
+                                        onClick={() => setSelected([])}
                                         className="text-sm text-neutral-500 transition-colors hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
                                     >
                                         Clear selection
@@ -323,30 +309,13 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                                 >
                                                     <Pencil className="size-3.5" />
                                                 </button>
-                                                {deletingId === user.id ? (
-                                                    <div className="flex items-center gap-1">
-                                                        <button
-                                                            onClick={() => handleDelete(user.id)}
-                                                            className="rounded-lg bg-red-600 px-2 py-1 text-[11px] font-medium text-white transition-colors hover:bg-red-700"
-                                                        >
-                                                            Confirm
-                                                        </button>
-                                                        <button
-                                                            onClick={() => setDeletingId(null)}
-                                                            className="rounded-lg px-2 py-1 text-[11px] font-medium text-neutral-500 transition-colors hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-                                                        >
-                                                            Cancel
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <button
-                                                        onClick={() => setDeletingId(user.id)}
-                                                        className="rounded-lg p-1.5 text-neutral-400 opacity-0 transition-all hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-                                                        title="Delete user"
-                                                    >
-                                                        <Trash2 className="size-3.5" />
-                                                    </button>
-                                                )}
+                                                <button
+                                                    onClick={() => handleDelete(user.id)}
+                                                    className="rounded-lg p-1.5 text-neutral-400 opacity-0 transition-all hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                                                    title="Delete user"
+                                                >
+                                                    <Trash2 className="size-3.5" />
+                                                </button>
                                             </div>
                                         </td>
                                     </tr>
@@ -457,9 +426,9 @@ function UserFormModal({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (isEdit) {
-            form.put(`/admin/users/${user!.id}`, { onSuccess: onClose });
+            form.put(`/admin/users/${user!.id}`, { onSuccess: () => { onClose(); swalSuccess('Success', 'User updated successfully.'); } });
         } else {
-            form.post('/admin/users', { onSuccess: () => { form.reset(); onClose(); } });
+            form.post('/admin/users', { onSuccess: () => { form.reset(); onClose(); swalSuccess('Success', 'User created successfully.'); } });
         }
     };
 

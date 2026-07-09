@@ -22,6 +22,7 @@ import {
     Zap,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import AppLogoIcon from '@/components/app-logo-icon';
 import { dashboard, login, register } from '@/routes';
 
 /* ─── Hooks ──────────────────────────────────────────────────────────────── */
@@ -230,8 +231,8 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 }`}>
                     <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
                         <Link href="/" className="group flex items-center gap-3">
-                            <div className="relative flex size-10 items-center justify-center rounded-[14px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-xl shadow-blue-500/20 transition-all duration-300 group-hover:shadow-blue-500/40 group-hover:scale-110">
-                                <Droplets className="size-5 text-white drop-shadow-sm" />
+                            <div className="logo-float relative flex size-10 items-center justify-center rounded-[14px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-xl shadow-blue-500/20 transition-all duration-300 group-hover:shadow-blue-500/40 group-hover:scale-110">
+                                <AppLogoIcon className="size-5 fill-current text-white drop-shadow-sm" />
                                 <div className="absolute inset-[1px] rounded-[13px] bg-gradient-to-b from-white/25 to-transparent" />
                             </div>
                             <span className="text-[1.15rem] font-bold tracking-tight">
@@ -624,8 +625,8 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                             </div>
 
                             <div className={`relative mx-auto max-w-3xl text-center transition-all duration-[800ms] ${ctaIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                                <div className="mb-8 inline-flex items-center justify-center size-24 rounded-[28px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-2xl shadow-blue-500/20">
-                                    <Droplets className="size-12 text-white drop-shadow-lg" />
+                                <div className="water-ripple logo-float glow-pulse mb-8 inline-flex items-center justify-center size-24 rounded-[28px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-2xl shadow-blue-500/20">
+                                    <AppLogoIcon className="size-12 fill-current text-white drop-shadow-lg" />
                                     <div className="absolute inset-[1px] rounded-[27px] bg-gradient-to-b from-white/20 to-transparent" />
                                 </div>
                                 <h2 className="mb-5 text-4xl font-bold tracking-tight sm:text-5xl">
@@ -652,11 +653,12 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 </main>
 
                 {/* ── Footer ─────────────────────────────────────────── */}
-                <footer className="border-t border-white/[0.03] px-6 py-14">
+                <footer className="relative border-t border-white/[0.03] px-6 py-14">
+                    <div className="absolute inset-x-0 top-0 h-px animated-border" />
                     <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 sm:flex-row">
                         <div className="flex items-center gap-3">
-                            <div className="flex size-9 items-center justify-center rounded-[12px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-lg shadow-blue-500/15">
-                                <Droplets className="size-[18px] text-white" />
+                            <div className="logo-float flex size-9 items-center justify-center rounded-[12px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-lg shadow-blue-500/15">
+                                <AppLogoIcon className="size-[18px] fill-current text-white" />
                             </div>
                             <span className="text-sm font-semibold text-white/40">FloodTrack</span>
                             <span className="text-white/[0.06]">|</span>
@@ -732,6 +734,67 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                     70% { box-shadow: 0 0 0 12px rgba(56,189,248,0); }
                     100% { box-shadow: 0 0 0 0 rgba(56,189,248,0); }
                 }
+
+                /* Floating logo animation */
+                .logo-float {
+                    animation: logoFloat 6s ease-in-out infinite;
+                }
+                @keyframes logoFloat {
+                    0%, 100% { transform: translateY(0) rotate(0deg); }
+                    33% { transform: translateY(-6px) rotate(2deg); }
+                    66% { transform: translateY(3px) rotate(-1deg); }
+                }
+
+                /* Glow pulse for CTA icon */
+                .glow-pulse {
+                    animation: glowPulse 3s ease-in-out infinite;
+                }
+                @keyframes glowPulse {
+                    0%, 100% { box-shadow: 0 0 20px rgba(56,189,248,0.15), 0 0 60px rgba(99,102,241,0.08); }
+                    50% { box-shadow: 0 0 30px rgba(56,189,248,0.25), 0 0 80px rgba(99,102,241,0.15); }
+                }
+
+                /* Stagger reveal for lists */
+                .stagger-item {
+                    animation: staggerIn 0.6s ease-out both;
+                }
+                @keyframes staggerIn {
+                    from { opacity: 0; transform: translateY(12px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                /* Animated border gradient */
+                .animated-border {
+                    background: linear-gradient(90deg, transparent, rgba(56,189,248,0.15), transparent);
+                    background-size: 200% 100%;
+                    animation: borderSlide 3s linear infinite;
+                }
+                @keyframes borderSlide {
+                    0% { background-position: -200% 0; }
+                    100% { background-position: 200% 0; }
+                }
+
+                /* Water ripple effect */
+                .water-ripple::before {
+                    content: '';
+                    position: absolute;
+                    inset: -4px;
+                    border-radius: inherit;
+                    border: 2px solid rgba(56,189,248,0.1);
+                    animation: waterRipple 3s ease-out infinite;
+                }
+                .water-ripple::after {
+                    content: '';
+                    position: absolute;
+                    inset: -4px;
+                    border-radius: inherit;
+                    border: 2px solid rgba(56,189,248,0.1);
+                    animation: waterRipple 3s ease-out infinite 1.5s;
+                }
+                @keyframes waterRipple {
+                    0% { transform: scale(1); opacity: 0.6; }
+                    100% { transform: scale(1.15); opacity: 0; }
+                }
             `}</style>
         </>
     );
@@ -752,7 +815,12 @@ function PremiumButton({ href, children }: { href: string; children: ReactNode }
 }
 
 function GlowDivider() {
-    return <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.05] to-transparent" />;
+    return (
+        <div className="absolute inset-x-0 top-0">
+            <div className="h-px bg-gradient-to-r from-transparent via-white/[0.05] to-transparent" />
+            <div className="h-px animated-border" />
+        </div>
+    );
 }
 
 function Gradient({ children }: { children: ReactNode }) {

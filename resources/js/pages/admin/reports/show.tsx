@@ -15,6 +15,7 @@ import {
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
+import { swalDelete, swalSuccess } from '@/lib/swal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
 import type { Report, Responder } from '@/types/admin';
@@ -36,7 +37,6 @@ export default function AdminReportShow({ report, responders }: Props) {
     ];
 
     const [editing, setEditing] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
     const verifyForm  = useForm({});
@@ -55,17 +55,23 @@ export default function AdminReportShow({ report, responders }: Props) {
     const canReject = ['pending', 'verified'].includes(report.status);
     const canReopen = ['resolved', 'rejected'].includes(report.status);
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
+        const confirmed = await swalDelete('this report');
+        if (!confirmed) return;
         setDeleting(true);
         router.delete(`/admin/reports/${report.id}`, {
             onFinish: () => setDeleting(false),
+            onSuccess: () => swalSuccess('Deleted', 'Report has been deleted.'),
         });
     };
 
     const handleEditSave = (e: React.FormEvent) => {
         e.preventDefault();
         editForm.put(`/admin/reports/${report.id}`, {
-            onSuccess: () => setEditing(false),
+            onSuccess: () => {
+                setEditing(false);
+                swalSuccess('Updated', 'Report has been updated.');
+            },
         });
     };
 
@@ -108,38 +114,16 @@ export default function AdminReportShow({ report, responders }: Props) {
                                 Edit
                             </Button>
                         )}
-                        {confirmDelete ? (
-                            <div className="flex items-center gap-2">
-                                <span className="text-xs font-medium text-destructive">Delete this report?</span>
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    className="gap-1.5"
-                                    onClick={handleDelete}
-                                    disabled={deleting}
-                                >
-                                    <Trash2 className="size-3.5" />
-                                    Confirm
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => setConfirmDelete(false)}
-                                >
-                                    Cancel
-                                </Button>
-                            </div>
-                        ) : (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1.5 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                onClick={() => setConfirmDelete(true)}
-                            >
-                                <Trash2 className="size-3.5" />
-                                Delete
-                            </Button>
-                        )}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            onClick={handleDelete}
+                            disabled={deleting}
+                        >
+                            <Trash2 className="size-3.5" />
+                            Delete
+                        </Button>
                     </div>
                 </div>
 
@@ -377,7 +361,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                             <CardContent className="flex flex-col gap-4 p-6">
 
                                 {canVerify && (
-                                    <form onSubmit={(e) => { e.preventDefault(); verifyForm.post(`/admin/reports/${report.id}/verify`); }}>
+                                    <form onSubmit={(e) => { e.preventDefault(); verifyForm.post(`/admin/reports/${report.id}/verify`, { onSuccess: () => swalSuccess('Verified', 'Report has been verified.') }); }}>
                                         <Button
                                             type="submit"
                                             className="w-full gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-sm"
@@ -392,7 +376,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                 {/* Assign — always available when pending/verified, and also for reassignment */}
                                 {(canAssign || report.status === 'assigned') && (
                                     <form
-                                        onSubmit={(e) => { e.preventDefault(); assignForm.post(`/admin/reports/${report.id}/assign`); }}
+                                        onSubmit={(e) => { e.preventDefault(); assignForm.post(`/admin/reports/${report.id}/assign`, { onSuccess: () => swalSuccess('Assigned', 'Responder has been assigned.') }); }}
                                         className="flex flex-col gap-3"
                                     >
                                         <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -423,7 +407,7 @@ export default function AdminReportShow({ report, responders }: Props) {
 
                                 {canReject && (
                                     <form
-                                        onSubmit={(e) => { e.preventDefault(); rejectForm.post(`/admin/reports/${report.id}/reject`); }}
+                                        onSubmit={(e) => { e.preventDefault(); rejectForm.post(`/admin/reports/${report.id}/reject`, { onSuccess: () => swalSuccess('Rejected', 'Report has been rejected.') }); }}
                                         className="flex flex-col gap-3"
                                     >
                                         <textarea
@@ -446,7 +430,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                 )}
 
                                 {canReopen && (
-                                    <form onSubmit={(e) => { e.preventDefault(); reopenForm.post(`/admin/reports/${report.id}/reopen`); }}>
+                                    <form onSubmit={(e) => { e.preventDefault(); reopenForm.post(`/admin/reports/${report.id}/reopen`, { onSuccess: () => swalSuccess('Reopened', 'Report has been reopened.') }); }}>
                                         <Button
                                             type="submit"
                                             variant="outline"
