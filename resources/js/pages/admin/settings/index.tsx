@@ -77,7 +77,7 @@ export default function AdminSettings({ settings }: Props) {
                     </div>
 
                     {form.isDirty && (
-                        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        <div className="rounded-2xl border border-amber-200/60 bg-amber-50 shadow-sm px-4 py-3 text-sm text-amber-800 dark:border-amber-700/60 dark:bg-amber-900/20 dark:text-amber-200">
                             You have unsaved changes.
                         </div>
                     )}
@@ -85,14 +85,14 @@ export default function AdminSettings({ settings }: Props) {
                     <div className="grid gap-6 lg:grid-cols-2">
 
                         {/* General */}
-                        <Card className="overflow-hidden">
-                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                        <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
+                            <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                                 <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
                                     <Globe className="size-4" />
                                     General
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="flex flex-col divide-y divide-border/50 p-0">
+                            <CardContent className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800 p-0">
                                 <SettingInput
                                     title="System Name"
                                     description="The name displayed across the platform"
@@ -123,14 +123,14 @@ export default function AdminSettings({ settings }: Props) {
                         </Card>
 
                         {/* Notifications */}
-                        <Card className="overflow-hidden">
-                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                        <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
+                            <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                                 <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
                                     <Bell className="size-4" />
                                     Notifications
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="flex flex-col divide-y divide-border/50 p-0">
+                            <CardContent className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800 p-0">
                                 <SettingToggle
                                     title="Email Notifications"
                                     description="Send email on critical reports"
@@ -153,14 +153,14 @@ export default function AdminSettings({ settings }: Props) {
                         </Card>
 
                         {/* Data Retention */}
-                        <Card className="overflow-hidden">
-                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                        <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
+                            <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                                 <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
                                     <Database className="size-4" />
                                     Data & Storage
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="flex flex-col divide-y divide-border/50 p-0">
+                            <CardContent className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800 p-0">
                                 <SettingInput
                                     title="Report Retention (days)"
                                     description="0 = keep forever, or number of days to retain resolved reports"
@@ -190,14 +190,14 @@ export default function AdminSettings({ settings }: Props) {
                         </Card>
 
                         {/* About (read-only) */}
-                        <Card className="overflow-hidden">
-                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                        <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
+                            <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                                 <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
                                     <Info className="size-3.5" />
                                     About
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="flex flex-col divide-y divide-border/50 p-0">
+                            <CardContent className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800 p-0">
                                 <AboutRow label="Version" value="1.0.0" />
                                 <AboutRow label="Framework" value="Laravel 13" />
                                 <AboutRow label="Frontend" value="React 19 + Inertia.js" />
@@ -208,7 +208,7 @@ export default function AdminSettings({ settings }: Props) {
 
                     {/* Bottom save bar */}
                     {form.isDirty && (
-                        <div className="sticky bottom-4 flex items-center justify-end gap-3 rounded-xl border bg-card px-6 py-4 shadow-lg">
+                        <div className="sticky bottom-4 flex items-center justify-end gap-3 rounded-2xl border border-neutral-200/60 bg-white px-6 py-4 shadow-lg dark:border-neutral-700/60 dark:bg-neutral-900">
                             <span className="text-sm text-muted-foreground">Unsaved changes</span>
                             <Button
                                 type="button"
@@ -254,7 +254,7 @@ function SettingInput({
                 type={type}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="h-9 w-48 shrink-0 rounded-lg border border-input bg-background px-3 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="h-9 w-48 shrink-0 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm text-right outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
             />
         </div>
     );
@@ -282,7 +282,7 @@ function SettingSelect({
             <select
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="h-9 w-48 shrink-0 rounded-lg border border-input bg-background px-3 text-sm text-right focus:outline-none focus:ring-2 focus:ring-primary/20"
+                className="h-9 w-48 shrink-0 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm text-right outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
             >
                 {options.map((opt) => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -313,7 +313,7 @@ function SettingToggle({
                 type="button"
                 onClick={onToggle}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 ${
-                    enabled ? 'bg-primary' : 'bg-muted-foreground/20'
+                    enabled ? 'bg-sky-500' : 'bg-muted-foreground/20'
                 }`}
             >
                 <span

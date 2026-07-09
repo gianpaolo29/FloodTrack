@@ -66,7 +66,7 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                         <Input
                             placeholder="Search by name or email..."
                             defaultValue={filters.search ?? ''}
-                            className="pl-9 bg-muted/30 border-transparent focus:bg-background focus:border-input transition-colors"
+                            className="pl-9 rounded-xl border border-neutral-200 bg-neutral-50/50 shadow-sm placeholder:text-muted-foreground/50 outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
                                     search((e.target as HTMLInputElement).value);
@@ -90,10 +90,10 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                 {/* Responder cards */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {responders.data.map((r) => (
-                        <Card key={r.id} className="overflow-hidden transition-shadow hover:shadow-md">
+                        <Card key={r.id} className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-all hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
                             <CardHeader className="pb-3 px-6 pt-6">
                                 <CardTitle className="flex items-center gap-3 text-base">
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-sm font-bold text-white shadow-sm">
+                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-sky-600 text-sm font-bold text-white shadow-sm">
                                         {r.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="min-w-0 flex-1">
@@ -103,9 +103,9 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="px-6 pb-4">
-                                <div className="grid grid-cols-3 gap-3 rounded-xl bg-muted/40 p-3 text-center">
+                                <div className="grid grid-cols-3 gap-3 rounded-xl border border-neutral-200/60 bg-neutral-50/50 p-3 text-center dark:border-neutral-700/60 dark:bg-neutral-800/50">
                                     <div>
-                                        <p className="text-xl font-bold text-indigo-600 tabular-nums">{r.active_assignments}</p>
+                                        <p className="text-xl font-bold text-blue-600 tabular-nums">{r.active_assignments}</p>
                                         <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Active</p>
                                     </div>
                                     <div>
@@ -119,7 +119,7 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                                 </div>
                             </CardContent>
                             {r.contact_number && (
-                                <div className="border-t px-6 py-3">
+                                <div className="border-t border-neutral-100 px-6 py-3 dark:border-neutral-800">
                                     <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                                         <Phone className="size-3" />
                                         {r.contact_number}
@@ -131,7 +131,7 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                 </div>
 
                 {responders.data.length === 0 && (
-                    <Card className="overflow-hidden">
+                    <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                         <CardContent className="flex flex-col items-center gap-2 py-16">
                             <ShieldCheck className="size-8 text-muted-foreground/40" />
                             <p className="text-sm text-muted-foreground">No responders found</p>

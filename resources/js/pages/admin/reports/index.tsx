@@ -121,14 +121,14 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
                 </div>
 
                 {/* Filters */}
-                <Card className="overflow-hidden">
+                <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                     <CardContent className="flex flex-wrap items-center gap-3 p-4">
                         <div className="relative flex-1 min-w-[200px]">
                             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 placeholder="Search reference or address..."
                                 defaultValue={filters.search ?? ''}
-                                className="pl-9 bg-muted/30 border-transparent focus:bg-background focus:border-input transition-colors"
+                                className="pl-9 rounded-xl border border-neutral-200 bg-neutral-50/50 shadow-sm placeholder:text-muted-foreground/50 outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                         filter('search', (e.target as HTMLInputElement).value);
@@ -171,7 +171,7 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
 
                 {/* Bulk action bar */}
                 {selected.length > 0 && (
-                    <Card className="border-primary/20 bg-primary/5">
+                    <Card className="overflow-hidden rounded-2xl border-primary/20 bg-primary/5 shadow-sm">
                         <CardContent className="flex flex-wrap items-center gap-3 p-3">
                             <span className="text-sm font-medium">
                                 {selected.length} selected
@@ -255,11 +255,22 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
                 )}
 
                 {/* Table */}
-                <Card className="overflow-hidden">
+                <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                    <div className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
+                        <div className="flex items-center gap-3">
+                            <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
+                                <SlidersHorizontal className="size-4 text-white" />
+                            </div>
+                            <div>
+                                <h2 className="text-sm font-semibold tracking-tight">All Reports</h2>
+                                <p className="text-xs text-muted-foreground">{reports.total} total</p>
+                            </div>
+                        </div>
+                    </div>
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b bg-muted/30 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                                <tr className="border-b border-neutral-100 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:border-neutral-800">
                                     <th className="px-4 py-3 w-10">
                                         <input
                                             type="checkbox"
@@ -279,11 +290,11 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
                                     <th className="px-4 py-3"></th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-border/50">
+                            <tbody>
                                 {reports.data.map((report) => (
                                     <tr
                                         key={report.id}
-                                        className={`group transition-colors ${selected.includes(report.id) ? 'bg-primary/5' : 'hover:bg-muted/30'}`}
+                                        className={`group border-t border-neutral-100 transition-colors dark:border-neutral-800/50 ${selected.includes(report.id) ? 'bg-primary/5' : 'hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30'}`}
                                     >
                                         <td className="px-4 py-3.5">
                                             <input
@@ -336,7 +347,7 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
                                     <tr>
                                         <td colSpan={10} className="px-6 py-16 text-center">
                                             <div className="flex flex-col items-center gap-2">
-                                                <SlidersHorizontal className="size-8 text-muted-foreground/40" />
+                                                <div className="rounded-2xl"><SlidersHorizontal className="size-8 text-muted-foreground/40" /></div>
                                                 <p className="text-sm text-muted-foreground">No reports match the current filters</p>
                                             </div>
                                         </td>
@@ -362,7 +373,7 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
                                         href={link.url}
                                         className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
                                             link.active
-                                                ? 'bg-primary text-primary-foreground shadow-sm'
+                                                ? 'bg-primary text-primary-foreground shadow-sm ring-1 ring-primary/20'
                                                 : 'hover:bg-muted text-muted-foreground hover:text-foreground'
                                         }`}
                                         dangerouslySetInnerHTML={{ __html: link.label }}
@@ -396,7 +407,7 @@ function FilterSelect({
         <select
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="h-9 rounded-lg border border-input bg-muted/30 px-3 text-sm transition-colors focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            className="h-9 rounded-xl border border-neutral-200 bg-neutral-50/50 py-2 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
         >
             <option value="">{placeholder}</option>
             {options.filter(Boolean).map((opt) => (

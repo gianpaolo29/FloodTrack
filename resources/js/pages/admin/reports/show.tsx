@@ -80,7 +80,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                     <div className="flex items-center gap-4">
                         <Link
                             href="/admin/reports"
-                            className="flex size-8 items-center justify-center rounded-lg border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+                            className="flex size-8 items-center justify-center rounded-xl border bg-background text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
                         >
                             <ArrowLeft className="size-4" />
                         </Link>
@@ -150,8 +150,8 @@ export default function AdminReportShow({ report, responders }: Props) {
 
                         {/* Edit Form or Details */}
                         {editing ? (
-                            <Card className="overflow-hidden border-primary/20">
-                                <CardHeader className="flex flex-row items-center justify-between border-b bg-primary/5 px-6 py-4">
+                            <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                                <CardHeader className="flex flex-row items-center justify-between border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                                     <CardTitle className="text-sm font-semibold tracking-tight">Edit Report</CardTitle>
                                     <Button
                                         variant="ghost"
@@ -170,7 +170,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                                 <select
                                                     value={editForm.data.severity}
                                                     onChange={(e) => editForm.setData('severity', e.target.value as any)}
-                                                    className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
                                                 >
                                                     {SEVERITY_OPTIONS.map((s) => (
                                                         <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
@@ -183,7 +183,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                                 <select
                                                     value={editForm.data.hazard_type}
                                                     onChange={(e) => editForm.setData('hazard_type', e.target.value as any)}
-                                                    className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
                                                 >
                                                     {HAZARD_OPTIONS.map((h) => (
                                                         <option key={h} value={h}>{HAZARD_LABELS[h]}</option>
@@ -198,7 +198,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                                 type="text"
                                                 value={editForm.data.address}
                                                 onChange={(e) => editForm.setData('address', e.target.value)}
-                                                className="h-9 w-full rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                                className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
                                                 placeholder="Report address..."
                                             />
                                             {editForm.errors.address && <p className="text-xs text-destructive mt-1">{editForm.errors.address}</p>}
@@ -209,7 +209,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                                 value={editForm.data.description}
                                                 onChange={(e) => editForm.setData('description', e.target.value)}
                                                 rows={4}
-                                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
+                                                className="w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 resize-none"
                                                 placeholder="Report description..."
                                             />
                                             {editForm.errors.description && <p className="text-xs text-destructive mt-1">{editForm.errors.description}</p>}
@@ -236,8 +236,8 @@ export default function AdminReportShow({ report, responders }: Props) {
                                 </CardContent>
                             </Card>
                         ) : (
-                            <Card className="overflow-hidden">
-                                <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                            <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                                <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                                     <CardTitle className="text-sm font-semibold tracking-tight">Report Details</CardTitle>
                                 </CardHeader>
                                 <CardContent className="grid gap-4 p-6 sm:grid-cols-2">
@@ -259,8 +259,8 @@ export default function AdminReportShow({ report, responders }: Props) {
 
                         {/* Description (read-only, shown when not editing) */}
                         {!editing && report.description && (
-                            <Card className="overflow-hidden">
-                                <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                            <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                                <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                                     <CardTitle className="text-sm font-semibold tracking-tight">Description</CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-6">
@@ -273,8 +273,8 @@ export default function AdminReportShow({ report, responders }: Props) {
 
                         {/* Evidence */}
                         {(report.media?.length ?? 0) > 0 && (
-                            <Card className="overflow-hidden">
-                                <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                            <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                                <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                                     <CardTitle className="text-sm font-semibold tracking-tight">
                                         Evidence ({report.media!.length})
                                     </CardTitle>
@@ -287,7 +287,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                                     <img
                                                         src={m.url}
                                                         alt="Evidence"
-                                                        className="aspect-video w-full rounded-xl object-cover ring-1 ring-border transition-all group-hover:ring-2 group-hover:ring-blue-500/50 group-hover:shadow-lg"
+                                                        className="aspect-video w-full rounded-2xl object-cover ring-1 ring-border transition-all group-hover:ring-2 group-hover:ring-blue-500/50 group-hover:shadow-lg"
                                                     />
                                                 </a>
                                             ) : (
@@ -296,7 +296,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                                     href={m.url}
                                                     target="_blank"
                                                     rel="noreferrer"
-                                                    className="flex aspect-video w-full items-center justify-center rounded-xl bg-muted ring-1 ring-border text-sm text-muted-foreground transition-all hover:ring-2 hover:ring-blue-500/50 hover:shadow-lg"
+                                                    className="flex aspect-video w-full items-center justify-center rounded-2xl bg-muted ring-1 ring-border text-sm text-muted-foreground transition-all hover:ring-2 hover:ring-blue-500/50 hover:shadow-lg"
                                                 >
                                                     ▶ Video
                                                 </a>
@@ -309,8 +309,8 @@ export default function AdminReportShow({ report, responders }: Props) {
 
                         {/* Timeline */}
                         {(report.status_updates?.length ?? 0) > 0 && (
-                            <Card className="overflow-hidden">
-                                <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                            <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                                <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                                     <CardTitle className="text-sm font-semibold tracking-tight">Status Timeline</CardTitle>
                                 </CardHeader>
                                 <CardContent className="p-6">
@@ -341,8 +341,8 @@ export default function AdminReportShow({ report, responders }: Props) {
                     <div className="flex flex-col gap-6">
 
                         {/* Reporter */}
-                        <Card className="overflow-hidden">
-                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                        <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                            <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                                 <CardTitle className="text-sm font-semibold tracking-tight">Reporter</CardTitle>
                             </CardHeader>
                             <CardContent className="grid gap-3 p-6">
@@ -353,8 +353,8 @@ export default function AdminReportShow({ report, responders }: Props) {
                         </Card>
 
                         {/* Assigned responder */}
-                        <Card className="overflow-hidden">
-                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                        <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                            <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                                 <CardTitle className="text-sm font-semibold tracking-tight">Assigned Responder</CardTitle>
                             </CardHeader>
                             <CardContent className="grid gap-3 p-6">
@@ -370,8 +370,8 @@ export default function AdminReportShow({ report, responders }: Props) {
                         </Card>
 
                         {/* Actions */}
-                        <Card className="overflow-hidden">
-                            <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                        <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                            <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                                 <CardTitle className="text-sm font-semibold tracking-tight">Actions</CardTitle>
                             </CardHeader>
                             <CardContent className="flex flex-col gap-4 p-6">
@@ -380,7 +380,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                     <form onSubmit={(e) => { e.preventDefault(); verifyForm.post(`/admin/reports/${report.id}/verify`); }}>
                                         <Button
                                             type="submit"
-                                            className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 shadow-sm"
+                                            className="w-full gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 shadow-sm"
                                             disabled={verifyForm.processing}
                                         >
                                             <CheckCircle2 className="size-4" />
@@ -401,7 +401,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                         <select
                                             value={assignForm.data.responder_id}
                                             onChange={(e) => assignForm.setData('responder_id', e.target.value)}
-                                            className="h-9 w-full rounded-lg border border-input bg-muted/30 px-3 text-sm transition-colors focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                                            className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
                                             required
                                         >
                                             <option value="">Select responder...</option>
@@ -412,7 +412,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                         <Button
                                             type="submit"
                                             variant="outline"
-                                            className="w-full gap-2 shadow-sm"
+                                            className="w-full gap-2 rounded-xl shadow-sm"
                                             disabled={assignForm.processing}
                                         >
                                             <UserCheck className="size-4" />
@@ -431,12 +431,12 @@ export default function AdminReportShow({ report, responders }: Props) {
                                             value={rejectForm.data.notes}
                                             onChange={(e) => rejectForm.setData('notes', e.target.value)}
                                             rows={2}
-                                            className="w-full rounded-lg border border-input bg-muted/30 px-3 py-2 text-sm transition-colors focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                                            className="w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 resize-none"
                                         />
                                         <Button
                                             type="submit"
                                             variant="destructive"
-                                            className="w-full gap-2 shadow-sm"
+                                            className="w-full gap-2 rounded-xl shadow-sm"
                                             disabled={rejectForm.processing}
                                         >
                                             <XCircle className="size-4" />
@@ -450,7 +450,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                         <Button
                                             type="submit"
                                             variant="outline"
-                                            className="w-full gap-2 border-blue-200 text-blue-700 hover:bg-blue-50 shadow-sm"
+                                            className="w-full gap-2 rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50 shadow-sm"
                                             disabled={reopenForm.processing}
                                         >
                                             <RefreshCw className="size-4" />

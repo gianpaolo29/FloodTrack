@@ -65,6 +65,7 @@ const mapOptions: google.maps.MapOptions = {
 export default function AdminReportsMap({ reports, filters }: Props) {
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY ?? '',
+        libraries: ['places'] as ('places')[],
     });
 
     const [selectedReport, setSelectedReport] = useState<Report | null>(null);
@@ -100,7 +101,7 @@ export default function AdminReportsMap({ reports, filters }: Props) {
 
             <div className="flex flex-col gap-4 p-6 lg:p-8 h-[calc(100vh-4rem)]">
                 {/* Header with filters */}
-                <Card className="overflow-hidden">
+                <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                     <CardContent className="flex flex-wrap items-center gap-3 p-4">
                         <div className="flex items-center gap-2 mr-auto">
                             <MapPin className="size-4 text-muted-foreground" />
@@ -165,7 +166,7 @@ export default function AdminReportsMap({ reports, filters }: Props) {
                 </div>
 
                 {/* Map */}
-                <div className="flex-1 rounded-xl overflow-hidden border shadow-sm">
+                <div className="flex-1 rounded-2xl overflow-hidden border shadow-sm">
                     {isLoaded ? (
                         <GoogleMap
                             mapContainerStyle={mapContainerStyle}
@@ -273,7 +274,7 @@ function FilterSelect({
         <select
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="h-9 rounded-lg border border-input bg-muted/30 px-3 text-sm transition-colors focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+            className="h-9 rounded-xl border border-neutral-200 bg-neutral-50/50 py-2 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
         >
             <option value="">{placeholder}</option>
             {options.filter(Boolean).map((opt) => (

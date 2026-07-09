@@ -70,14 +70,14 @@ export default function AdminActivityLog({ activities, filters }: Props) {
                 </div>
 
                 {/* Filters */}
-                <Card className="overflow-hidden">
+                <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                     <CardContent className="flex flex-wrap items-center gap-3 p-4">
                         <div className="relative flex-1 min-w-[200px] max-w-sm">
                             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
                                 placeholder="Search by reference number..."
                                 defaultValue={filters.search ?? ''}
-                                className="pl-9 bg-muted/30 border-transparent focus:bg-background focus:border-input transition-colors"
+                                className="pl-9 rounded-xl border border-neutral-200 bg-neutral-50/50 shadow-sm placeholder:text-muted-foreground/50 outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
                                         filter('search', (e.target as HTMLInputElement).value);
@@ -88,7 +88,7 @@ export default function AdminActivityLog({ activities, filters }: Props) {
                         <select
                             value={filters.status ?? ''}
                             onChange={(e) => filter('status', e.target.value)}
-                            className="h-9 rounded-lg border border-input bg-muted/30 px-3 text-sm transition-colors focus:bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                            className="h-9 rounded-xl border border-neutral-200 bg-neutral-50/50 py-2 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
                         >
                             <option value="">All actions</option>
                             {STATUS_OPTIONS.filter(Boolean).map((opt) => (
@@ -110,10 +110,10 @@ export default function AdminActivityLog({ activities, filters }: Props) {
                 </Card>
 
                 {/* Timeline */}
-                <Card className="overflow-hidden">
-                    <div className="divide-y divide-border/50">
+                <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                    <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
                         {activities.data.map((a) => (
-                            <div key={a.id} className="flex items-start gap-4 px-6 py-5 transition-colors hover:bg-muted/20">
+                            <div key={a.id} className="flex items-start gap-4 px-6 py-5 transition-colors hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30">
                                 {/* Avatar */}
                                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-bold text-white shadow-sm mt-0.5">
                                     {a.user.name.charAt(0).toUpperCase()}

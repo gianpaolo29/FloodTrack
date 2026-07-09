@@ -68,19 +68,19 @@ export default function AdminExport({ counts }: Props) {
 
                 {/* Summary */}
                 <div className="grid gap-4 sm:grid-cols-3">
-                    <Card className="overflow-hidden">
+                    <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
                         <CardContent className="flex flex-col items-center justify-center p-6">
                             <p className="text-3xl font-bold tracking-tight tabular-nums">{counts.total}</p>
                             <p className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Total reports</p>
                         </CardContent>
                     </Card>
-                    <Card className="overflow-hidden border-l-4 border-l-amber-500">
+                    <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                         <CardContent className="flex flex-col items-center justify-center p-6">
                             <p className="text-3xl font-bold tracking-tight tabular-nums text-amber-600">{counts.pending}</p>
                             <p className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Pending</p>
                         </CardContent>
                     </Card>
-                    <Card className="overflow-hidden border-l-4 border-l-emerald-500">
+                    <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                         <CardContent className="flex flex-col items-center justify-center p-6">
                             <p className="text-3xl font-bold tracking-tight tabular-nums text-emerald-600">{counts.resolved}</p>
                             <p className="mt-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">Resolved</p>
@@ -89,14 +89,14 @@ export default function AdminExport({ counts }: Props) {
                 </div>
 
                 {/* Filters & download */}
-                <Card className="overflow-hidden">
-                    <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                    <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                         <CardTitle className="text-sm font-semibold tracking-tight">Filter Before Exporting</CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-6 p-6">
                         <div className="grid gap-4 sm:grid-cols-3">
                             <FilterField label="Status">
-                                <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 w-full rounded-lg border-transparent bg-muted/30 px-3 text-sm transition-colors focus:bg-background focus:border-input focus:outline-none focus:ring-1 focus:ring-ring">
+                                <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 py-2 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50">
                                     <option value="">All statuses</option>
                                     {STATUS_OPTIONS.filter(Boolean).map((opt) => (
                                         <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
@@ -104,7 +104,7 @@ export default function AdminExport({ counts }: Props) {
                                 </select>
                             </FilterField>
                             <FilterField label="Severity">
-                                <select value={severity} onChange={(e) => setSeverity(e.target.value)} className="h-9 w-full rounded-lg border-transparent bg-muted/30 px-3 text-sm transition-colors focus:bg-background focus:border-input focus:outline-none focus:ring-1 focus:ring-ring">
+                                <select value={severity} onChange={(e) => setSeverity(e.target.value)} className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 py-2 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50">
                                     <option value="">All severities</option>
                                     {SEVERITY_OPTIONS.filter(Boolean).map((opt) => (
                                         <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
@@ -112,7 +112,7 @@ export default function AdminExport({ counts }: Props) {
                                 </select>
                             </FilterField>
                             <FilterField label="Hazard type">
-                                <select value={hazardType} onChange={(e) => setHazardType(e.target.value)} className="h-9 w-full rounded-lg border-transparent bg-muted/30 px-3 text-sm transition-colors focus:bg-background focus:border-input focus:outline-none focus:ring-1 focus:ring-ring">
+                                <select value={hazardType} onChange={(e) => setHazardType(e.target.value)} className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 py-2 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50">
                                     <option value="">All types</option>
                                     {HAZARD_OPTIONS.filter(Boolean).map((opt) => (
                                         <option key={opt} value={opt}>{HAZARD_LABELS[opt as keyof typeof HAZARD_LABELS] ?? opt}</option>
@@ -126,7 +126,7 @@ export default function AdminExport({ counts }: Props) {
                                     type="date"
                                     value={dateFrom}
                                     onChange={(e) => setDateFrom(e.target.value)}
-                                    className="h-9 w-full rounded-lg border-transparent bg-muted/30 px-3 text-sm transition-colors focus:bg-background focus:border-input focus:outline-none focus:ring-1 focus:ring-ring"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 py-2 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
                                 />
                             </FilterField>
                             <FilterField label="To date">
@@ -134,13 +134,13 @@ export default function AdminExport({ counts }: Props) {
                                     type="date"
                                     value={dateTo}
                                     onChange={(e) => setDateTo(e.target.value)}
-                                    className="h-9 w-full rounded-lg border-transparent bg-muted/30 px-3 text-sm transition-colors focus:bg-background focus:border-input focus:outline-none focus:ring-1 focus:ring-ring"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 py-2 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
                                 />
                             </FilterField>
                         </div>
                         <div className="flex items-center gap-3 pt-2">
                             <a href={buildUrl()}>
-                                <Button className="gap-2 shadow-sm">
+                                <Button className="gap-2 rounded-xl shadow-sm">
                                     <FileDown className="size-4" />
                                     Download CSV
                                 </Button>

@@ -4,13 +4,18 @@ import {
     Bell,
     CheckCheck,
     FileText,
+    Maximize,
     Megaphone,
+    Minimize,
+    Moon,
     Search,
+    Sun,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useAppearance } from '@/hooks/use-appearance';
 import { useInitials } from '@/hooks/use-initials';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
@@ -37,7 +42,9 @@ export function AppSidebarHeader({
 }) {
     const { auth, unreadNotifications } = usePage().props;
     const getInitials = useInitials();
-    const [searchFocused, setSearchFocused] = useState(false);
+    const { appearance, updateAppearance } = useAppearance();
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [loading, setLoading] = useState(false);
@@ -61,6 +68,16 @@ export function AppSidebarHeader({
             return () => document.removeEventListener('mousedown', handleClick);
         }
     }, [showNotifications]);
+
+    const toggleFullscreen = useCallback(() => {
+        if (document.fullscreenElement) {
+            document.exitFullscreen();
+            setIsFullscreen(false);
+        } else {
+            document.documentElement.requestFullscreen();
+            setIsFullscreen(true);
+        }
+    }, []);
 
     const fetchNotifications = useCallback(async () => {
         setLoading(true);
@@ -129,35 +146,41 @@ export function AppSidebarHeader({
     }, [showNotifications]);
 
     return (
-        <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-border/40 bg-card/80 px-6 backdrop-blur-xl transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-4 rounded-tl-2xl rounded-tr-2xl border-b border-border/40 bg-background/80 px-6 backdrop-blur-xl">
             {/* Left — trigger + breadcrumbs */}
             <div className="flex items-center gap-3">
-                <SidebarTrigger className="-ml-1 text-muted-foreground hover:text-foreground transition-colors" />
+                <SidebarTrigger className="-ml-1 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white transition-colors" />
                 <div className="hidden h-5 w-px bg-border/60 sm:block" />
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
             </div>
 
             {/* Right — search, notifications, avatar */}
             <div className="flex items-center gap-2">
-                {/* Search */}
-                <div className={`relative hidden transition-all duration-200 md:block ${searchFocused ? 'w-72' : 'w-56'}`}>
-                    <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/60" />
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        onFocus={() => setSearchFocused(true)}
-                        onBlur={() => setSearchFocused(false)}
-                        className="h-9 w-full rounded-xl border-0 bg-muted/50 pl-9 pr-4 text-sm text-foreground shadow-sm ring-1 ring-border/40 placeholder:text-muted-foreground/50 focus:bg-background focus:shadow-md focus:ring-2 focus:ring-primary/30 focus:outline-none transition-all duration-200"
-                    />
-                    <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 select-none rounded-md border border-border/40 bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground/60 lg:inline-block">
-                        /
-                    </kbd>
+                {/* Expandable Search */}
+                <div className="relative flex items-center">
+                    {searchOpen ? (
+                        <div className="flex items-center gap-2">
+                            <div className="relative">
+                                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/60" />
+                                <input
+                                    type="text"
+                                    placeholder="Search..."
+                                    autoFocus
+                                    onBlur={() => setSearchOpen(false)}
+                                    onKeyDown={(e) => { if (e.key === 'Escape') setSearchOpen(false); }}
+                                    className="h-9 w-64 rounded-xl border-0 bg-muted/50 pl-9 pr-4 text-sm text-foreground shadow-sm ring-1 ring-border/40 placeholder:text-muted-foreground/50 focus:bg-background focus:shadow-md focus:ring-2 focus:ring-primary/30 focus:outline-none transition-all"
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => setSearchOpen(true)}
+                            className="flex size-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
+                        >
+                            <Search className="size-[18px]" />
+                        </button>
+                    )}
                 </div>
-
-                {/* Mobile search button */}
-                <button className="flex size-9 items-center justify-center rounded-xl text-muted-foreground ring-1 ring-border/30 hover:bg-muted/50 hover:text-foreground transition-all md:hidden">
-                    <Search className="size-4" />
-                </button>
 
                 {/* Divider */}
                 <div className="hidden h-5 w-px bg-border/40 md:block" />
@@ -220,6 +243,24 @@ export function AppSidebarHeader({
                         </div>
                     )}
                 </div>
+
+                {/* Dark mode toggle */}
+                <button
+                    onClick={() => updateAppearance(appearance === 'dark' ? 'light' : 'dark')}
+                    className="flex size-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
+                    title={appearance === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                >
+                    {appearance === 'dark' ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
+                </button>
+
+                {/* Fullscreen toggle */}
+                <button
+                    onClick={toggleFullscreen}
+                    className="hidden md:flex size-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
+                    title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                >
+                    {isFullscreen ? <Minimize className="size-[18px]" /> : <Maximize className="size-[18px]" />}
+                </button>
 
                 {/* Divider */}
                 <div className="hidden h-5 w-px bg-border/40 sm:block" />

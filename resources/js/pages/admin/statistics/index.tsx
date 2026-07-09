@@ -60,9 +60,9 @@ export default function AdminStatistics({
 
                 {/* Top metrics */}
                 <div className="grid gap-4 sm:grid-cols-3">
-                    <Card className="overflow-hidden">
+                    <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
                         <CardContent className="flex items-center gap-4 p-5">
-                            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10">
+                            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10">
                                 <TrendingUp className="size-5 text-blue-600" />
                             </div>
                             <div>
@@ -71,9 +71,9 @@ export default function AdminStatistics({
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="overflow-hidden">
+                    <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
                         <CardContent className="flex items-center gap-4 p-5">
-                            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-amber-500/10">
+                            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10">
                                 <Clock className="size-5 text-amber-600" />
                             </div>
                             <div>
@@ -84,9 +84,9 @@ export default function AdminStatistics({
                             </div>
                         </CardContent>
                     </Card>
-                    <Card className="overflow-hidden">
+                    <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
                         <CardContent className="flex items-center gap-4 p-5">
-                            <div className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
+                            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10">
                                 <BarChart3 className="size-5 text-emerald-600" />
                             </div>
                             <div>
@@ -100,8 +100,8 @@ export default function AdminStatistics({
                 </div>
 
                 {/* Daily chart */}
-                <Card className="overflow-hidden">
-                    <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
+                    <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                         <CardTitle className="text-sm font-semibold tracking-tight">Daily Reports (last 30 days)</CardTitle>
                     </CardHeader>
                     <CardContent className="p-6">
@@ -136,8 +136,8 @@ export default function AdminStatistics({
                 </Card>
 
                 {/* Monthly trend */}
-                <Card className="overflow-hidden">
-                    <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
+                    <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                         <CardTitle className="text-sm font-semibold tracking-tight">Monthly Trend (last 6 months)</CardTitle>
                     </CardHeader>
                     <CardContent className="p-6">
@@ -147,7 +147,7 @@ export default function AdminStatistics({
                                     <div key={month} className="flex-1 flex flex-col items-center gap-1.5">
                                         <span className="text-xs font-bold tabular-nums">{count}</span>
                                         <div
-                                            className="w-full rounded-t bg-indigo-500/80 hover:bg-indigo-600 transition-colors"
+                                            className="w-full rounded-t bg-blue-500/80 hover:bg-blue-600 transition-colors"
                                             style={{ height: `${(count / maxMonthly) * 100}%`, minHeight: count > 0 ? '4px' : '0' }}
                                         />
                                         <span className="text-[10px] font-medium text-muted-foreground">{month}</span>
@@ -165,8 +165,8 @@ export default function AdminStatistics({
 
                 {/* Breakdowns grid */}
                 <div className="grid gap-6 lg:grid-cols-3">
-                    <Card className="overflow-hidden">
-                        <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                    <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                             <CardTitle className="text-sm font-semibold tracking-tight">By Hazard Type</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-4 p-6">
@@ -193,8 +193,8 @@ export default function AdminStatistics({
                         </CardContent>
                     </Card>
 
-                    <Card className="overflow-hidden">
-                        <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                    <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                             <CardTitle className="text-sm font-semibold tracking-tight">By Severity</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-3 p-6">
@@ -209,8 +209,8 @@ export default function AdminStatistics({
                         </CardContent>
                     </Card>
 
-                    <Card className="overflow-hidden">
-                        <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                    <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                             <CardTitle className="text-sm font-semibold tracking-tight">By Status</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-col gap-3 p-6">
@@ -227,8 +227,8 @@ export default function AdminStatistics({
                 </div>
 
                 {/* Top responders */}
-                <Card className="overflow-hidden">
-                    <CardHeader className="border-b bg-muted/30 px-6 py-4">
+                <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
+                    <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                         <CardTitle className="flex items-center gap-2 text-sm font-semibold tracking-tight">
                             <Trophy className="size-4" />
                             Top Responders
@@ -241,7 +241,7 @@ export default function AdminStatistics({
                                     <div key={r.id} className="flex items-center gap-4">
                                         <span className={`flex size-8 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                                             i === 0 ? 'bg-amber-100 text-amber-800 ring-2 ring-amber-300' :
-                                            i === 1 ? 'bg-zinc-100 text-zinc-700 ring-2 ring-zinc-300' :
+                                            i === 1 ? 'bg-blue-100 text-blue-700 ring-2 ring-blue-300' :
                                             i === 2 ? 'bg-orange-100 text-orange-800 ring-2 ring-orange-300' :
                                             'bg-muted text-muted-foreground'
                                         }`}>
