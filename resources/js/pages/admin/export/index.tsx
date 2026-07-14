@@ -5,8 +5,6 @@ import AppLayout from '@/layouts/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
-import { HAZARD_LABELS } from '@/types/admin';
-
 interface Props {
     counts: {
         total: number;
@@ -22,22 +20,18 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const STATUS_OPTIONS = ['', 'pending', 'verified', 'assigned', 'resolved', 'rejected'];
 const SEVERITY_OPTIONS = ['', 'critical', 'high', 'moderate', 'low'];
-const HAZARD_OPTIONS = ['', 'flood', 'road_damage', 'debris', 'drainage', 'other'];
-
 export default function AdminExport({ counts }: Props) {
     const [status, setStatus] = useState('');
     const [severity, setSeverity] = useState('');
-    const [hazardType, setHazardType] = useState('');
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
 
-    const hasFilters = !!(status || severity || hazardType || dateFrom || dateTo);
+    const hasFilters = !!(status || severity || dateFrom || dateTo);
 
     function buildUrl() {
         const params = new URLSearchParams();
         if (status) params.set('status', status);
         if (severity) params.set('severity', severity);
-        if (hazardType) params.set('hazard_type', hazardType);
         if (dateFrom) params.set('date_from', dateFrom);
         if (dateTo) params.set('date_to', dateTo);
         const qs = params.toString();
@@ -47,7 +41,6 @@ export default function AdminExport({ counts }: Props) {
     function clearFilters() {
         setStatus('');
         setSeverity('');
-        setHazardType('');
         setDateFrom('');
         setDateTo('');
     }
@@ -94,7 +87,7 @@ export default function AdminExport({ counts }: Props) {
                         <CardTitle className="text-sm font-semibold tracking-tight">Filter Before Exporting</CardTitle>
                     </CardHeader>
                     <CardContent className="flex flex-col gap-6 p-6">
-                        <div className="grid gap-4 sm:grid-cols-3">
+                        <div className="grid gap-4 sm:grid-cols-2">
                             <FilterField label="Status">
                                 <select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 py-2 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50">
                                     <option value="">All statuses</option>
@@ -108,14 +101,6 @@ export default function AdminExport({ counts }: Props) {
                                     <option value="">All severities</option>
                                     {SEVERITY_OPTIONS.filter(Boolean).map((opt) => (
                                         <option key={opt} value={opt}>{opt.charAt(0).toUpperCase() + opt.slice(1)}</option>
-                                    ))}
-                                </select>
-                            </FilterField>
-                            <FilterField label="Hazard type">
-                                <select value={hazardType} onChange={(e) => setHazardType(e.target.value)} className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 py-2 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50">
-                                    <option value="">All types</option>
-                                    {HAZARD_OPTIONS.filter(Boolean).map((opt) => (
-                                        <option key={opt} value={opt}>{HAZARD_LABELS[opt as keyof typeof HAZARD_LABELS] ?? opt}</option>
                                     ))}
                                 </select>
                             </FilterField>

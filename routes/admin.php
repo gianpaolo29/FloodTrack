@@ -3,7 +3,9 @@
 use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\AlertController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EvacuationCenterController;
 use App\Http\Controllers\Admin\ExportController;
+use App\Http\Controllers\Admin\HazardController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ResponderController;
@@ -30,6 +32,26 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         Route::post('/{report}/assign',          [ReportController::class, 'assign'])->name('assign');
         Route::post('/{report}/reject',          [ReportController::class, 'reject'])->name('reject');
         Route::post('/{report}/reopen',          [ReportController::class, 'reopen'])->name('reopen');
+    });
+
+    // Hazards
+    Route::prefix('hazards')->name('hazards.')->group(function () {
+        Route::get('/',                      [HazardController::class, 'index'])->name('index');
+        Route::post('/',                     [HazardController::class, 'store'])->name('store');
+        Route::post('/bulk',                 [HazardController::class, 'bulkAction'])->name('bulk');
+        Route::put('/{hazard}',              [HazardController::class, 'update'])->name('update');
+        Route::post('/{hazard}/toggle',      [HazardController::class, 'toggleActive'])->name('toggle');
+        Route::delete('/{hazard}',           [HazardController::class, 'destroy'])->name('destroy');
+    });
+
+    // Evacuation Centers
+    Route::prefix('evacuation-centers')->name('evacuation-centers.')->group(function () {
+        Route::get('/',                              [EvacuationCenterController::class, 'index'])->name('index');
+        Route::post('/',                             [EvacuationCenterController::class, 'store'])->name('store');
+        Route::post('/bulk',                         [EvacuationCenterController::class, 'bulkAction'])->name('bulk');
+        Route::put('/{evacuationCenter}',            [EvacuationCenterController::class, 'update'])->name('update');
+        Route::post('/{evacuationCenter}/toggle',    [EvacuationCenterController::class, 'toggleActive'])->name('toggle');
+        Route::delete('/{evacuationCenter}',         [EvacuationCenterController::class, 'destroy'])->name('destroy');
     });
 
     // Alerts

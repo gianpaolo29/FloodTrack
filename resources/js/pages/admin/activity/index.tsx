@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import type { BreadcrumbItem } from '@/types';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
-import type { HazardType, Severity, ReportStatus } from '@/types/admin';
+import type { Severity, ReportStatus } from '@/types/admin';
 
 interface Activity {
     id: number;
@@ -15,7 +15,7 @@ interface Activity {
     notes: string | null;
     created_at: string;
     user: { id: number; name: string; role: string };
-    report: { id: number; reference_number: string; hazard_type: HazardType; severity: Severity };
+    report: { id: number; reference_number: string; severity: Severity };
 }
 
 interface Paginated<T> {

@@ -22,7 +22,7 @@ class NewReportSubmitted extends Notification
         return [
             'type'    => 'new_report',
             'title'   => 'New Report Submitted',
-            'message' => "A new {$this->report->severity} {$this->report->hazard_type} report was submitted"
+            'message' => "A new {$this->report->severity} flood report was submitted"
                 . ($this->report->address ? " at {$this->report->address}" : '') . '.',
             'report_id'        => $this->report->id,
             'reference_number' => $this->report->reference_number,

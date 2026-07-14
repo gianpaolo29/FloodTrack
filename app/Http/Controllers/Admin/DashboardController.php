@@ -109,16 +109,11 @@ class DashboardController extends Controller
             ->groupBy('status')
             ->pluck('count', 'status');
 
-        // Hazard type breakdown (scoped by period)
-        $hazard_breakdown = (clone $reportQuery)->selectRaw('hazard_type, count(*) as count')
-            ->groupBy('hazard_type')
-            ->pluck('count', 'hazard_type');
-
         // Recent reports
         $recent_reports = Report::with('user:id,name')
             ->latest()
             ->limit(10)
-            ->get(['id', 'reference_number', 'hazard_type', 'severity', 'status', 'address', 'latitude', 'longitude', 'user_id', 'created_at']);
+            ->get(['id', 'reference_number', 'severity', 'status', 'address', 'latitude', 'longitude', 'user_id', 'created_at']);
 
         // Active alerts
         $active_alerts = Alert::where(function ($q) {
@@ -191,7 +186,6 @@ class DashboardController extends Controller
             'monthly_reports'    => $monthlyReports,
             'severity_breakdown' => $severity_breakdown,
             'status_breakdown'   => $status_breakdown,
-            'hazard_breakdown'   => $hazard_breakdown,
             'recent_reports'     => $recent_reports,
             'active_alerts'      => $active_alerts,
             'critical_alerts'    => $critical_alerts,

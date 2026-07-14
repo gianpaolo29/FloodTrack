@@ -3,6 +3,7 @@ import { usePage } from '@inertiajs/react';
 import {
     AlertTriangle,
     BarChart3,
+    Building2,
     CloudSun,
     Download,
     FileText,
@@ -11,6 +12,7 @@ import {
     LayoutDashboard,
     LayoutGrid,
     Settings,
+    ShieldAlert,
     ShieldCheck,
     Users,
 } from 'lucide-react';
@@ -64,6 +66,16 @@ const managementItems: NavItem[] = [
         title: 'Reports',
         href: '/admin/reports',
         icon: FileText,
+    },
+    {
+        title: 'Hazards',
+        href: '/admin/hazards',
+        icon: ShieldAlert,
+    },
+    {
+        title: 'Evacuation Centers',
+        href: '/admin/evacuation-centers',
+        icon: Building2,
     },
     {
         title: 'Alerts',

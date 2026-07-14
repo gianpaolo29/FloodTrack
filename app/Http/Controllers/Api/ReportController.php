@@ -33,7 +33,6 @@ class ReportController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'hazard_type' => 'required|in:flood,road_damage,debris,drainage,other',
             'severity'    => 'required|in:low,moderate,high,critical',
             'description' => 'nullable|string|max:1000',
             'latitude'    => 'required|numeric|between:-90,90',
@@ -163,11 +162,10 @@ class ReportController extends Controller
         ]);
 
         // Notify assigned responder
-        $hazardLabel = str_replace('_', ' ', ucfirst($report->hazard_type));
         ExpoPushService::sendToUsers(
             $data['responder_id'],
             'New incident assigned',
-            "{$hazardLabel} — {$report->address}",
+            "Flood report — {$report->address}",
             [
                 'type'     => 'incident_assigned',
                 'reportId' => $report->id,

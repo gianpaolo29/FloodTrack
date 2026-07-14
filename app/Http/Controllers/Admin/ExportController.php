@@ -29,7 +29,6 @@ class ExportController extends Controller
         $request->validate([
             'status'      => 'nullable|in:pending,verified,assigned,resolved,rejected',
             'severity'    => 'nullable|in:low,moderate,high,critical',
-            'hazard_type' => 'nullable|in:flood,road_damage,debris,drainage,other',
             'date_from'   => 'nullable|date',
             'date_to'     => 'nullable|date',
         ]);
@@ -37,7 +36,6 @@ class ExportController extends Controller
         $reports = Report::with(['user:id,name', 'assignedResponder:id,name'])
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
-            ->when($request->hazard_type, fn ($q) => $q->where('hazard_type', $request->hazard_type))
             ->when($request->date_from, fn ($q) => $q->whereDate('created_at', '>=', $request->date_from))
             ->when($request->date_to, fn ($q) => $q->whereDate('created_at', '<=', $request->date_to))
             ->latest()
@@ -49,7 +47,7 @@ class ExportController extends Controller
             $handle = fopen('php://output', 'w');
 
             fputcsv($handle, [
-                'Reference', 'Hazard Type', 'Severity', 'Status',
+                'Reference', 'Severity', 'Status',
                 'Description', 'Address', 'Latitude', 'Longitude',
                 'Reporter', 'Assigned To', 'Created At', 'Verified At', 'Resolved At',
             ]);
@@ -57,7 +55,6 @@ class ExportController extends Controller
             foreach ($reports as $report) {
                 fputcsv($handle, [
                     $report->reference_number,
-                    $report->hazard_type,
                     $report->severity,
                     $report->status,
                     $report->description,

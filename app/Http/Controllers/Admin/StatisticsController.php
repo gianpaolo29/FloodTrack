@@ -34,11 +34,6 @@ class StatisticsController extends Controller
                 ->value('avg_hours');
         }
 
-        // Reports by hazard type
-        $hazard_breakdown = Report::selectRaw('hazard_type, count(*) as count')
-            ->groupBy('hazard_type')
-            ->pluck('count', 'hazard_type');
-
         // Reports by severity
         $severity_breakdown = Report::selectRaw('severity, count(*) as count')
             ->groupBy('severity')
@@ -70,7 +65,6 @@ class StatisticsController extends Controller
         return Inertia::render('admin/statistics/index', [
             'daily_reports'      => $daily_reports,
             'avg_response_time'  => round((float) ($avg_response_time ?? 0), 1),
-            'hazard_breakdown'   => $hazard_breakdown,
             'severity_breakdown' => $severity_breakdown,
             'status_breakdown'   => $status_breakdown,
             'top_responders'     => $top_responders,

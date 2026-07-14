@@ -80,7 +80,12 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Evacuation centers and protocols (read-only for all users)
     Route::get('/evacuation-centers', [EvacuationCenterController::class, 'index']);
-Route::get('/protocols',          [ProtocolController::class, 'index']);
+    Route::get('/protocols',          [ProtocolController::class, 'index']);
+
+    // Active hazards (read-only for all users — shown on map)
+    Route::get('/hazards', function () {
+        return \App\Models\Hazard::where('active', true)->latest()->get();
+    });
 
     // ── Responder only ───────────────────────────────────────────────────
     Route::middleware('role:responder,admin')->prefix('responder')->group(function () {
@@ -98,5 +103,42 @@ Route::get('/protocols',          [ProtocolController::class, 'index']);
         Route::patch('/reports/{report}/verify',           [ReportController::class, 'verify']);
         Route::patch('/reports/{report}/reject',           [ReportController::class, 'reject']);
         Route::get('/admin/stats',                         [AdminStatsController::class, 'index']);
+
+        // Hazard management (admin API for mobile app)
+        Route::get('/admin/hazards',              function () {
+            return ['data' => \App\Models\Hazard::with('creator:id,name')->latest()->get()];
+        });
+        Route::post('/admin/hazards',             function (\Illuminate\Http\Request $request) {
+            $validated = $request->validate([
+                'category'    => 'required|in:flood,road',
+                'type'        => 'required|string|max:50',
+                'severity'    => 'required|in:low,moderate,high,critical',
+                'title'       => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'latitude'    => 'required|numeric|between:-90,90',
+                'longitude'   => 'required|numeric|between:-180,180',
+                'address'     => 'nullable|string|max:500',
+            ]);
+            return \App\Models\Hazard::create([...$validated, 'created_by' => $request->user()->id]);
+        });
+        Route::put('/admin/hazards/{hazard}',     function (\Illuminate\Http\Request $request, \App\Models\Hazard $hazard) {
+            $validated = $request->validate([
+                'category'    => 'sometimes|in:flood,road',
+                'type'        => 'sometimes|string|max:50',
+                'severity'    => 'sometimes|in:low,moderate,high,critical',
+                'title'       => 'sometimes|string|max:255',
+                'description' => 'nullable|string',
+                'latitude'    => 'sometimes|numeric|between:-90,90',
+                'longitude'   => 'sometimes|numeric|between:-180,180',
+                'address'     => 'nullable|string|max:500',
+                'active'      => 'sometimes|boolean',
+            ]);
+            $hazard->update($validated);
+            return $hazard;
+        });
+        Route::delete('/admin/hazards/{hazard}',  function (\App\Models\Hazard $hazard) {
+            $hazard->delete();
+            return response()->noContent();
+        });
     });
 });

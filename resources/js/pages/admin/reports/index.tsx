@@ -18,7 +18,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import type { BreadcrumbItem } from '@/types';
 import type { Report, Responder } from '@/types/admin';
-import { HAZARD_LABELS, SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
+import { SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
 
 interface Paginated<T> {
     data: T[];
@@ -32,7 +32,6 @@ interface Paginated<T> {
 interface Filters {
     status?: string;
     severity?: string;
-    hazard_type?: string;
     search?: string;
 }
 
@@ -49,8 +48,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const STATUS_OPTIONS = ['', 'pending', 'verified', 'assigned', 'resolved', 'rejected'];
 const SEVERITY_OPTIONS = ['', 'critical', 'high', 'moderate', 'low'];
-const HAZARD_OPTIONS = ['', 'flood', 'road_damage', 'debris', 'drainage', 'other'];
-
 export default function AdminReportsIndex({ reports, responders, filters }: Props) {
     const [selected, setSelected] = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
@@ -62,7 +59,7 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
         });
     }, [filters]);
 
-    const hasFilters = !!(filters.status || filters.severity || filters.hazard_type || filters.search);
+    const hasFilters = !!(filters.status || filters.severity || filters.search);
 
     const allOnPageSelected = reports.data.length > 0 && reports.data.every((r) => selected.includes(r.id));
 
@@ -145,13 +142,6 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
                             onChange={(v) => filter('severity', v)}
                             options={SEVERITY_OPTIONS}
                             placeholder="All severities"
-                        />
-                        <FilterSelect
-                            value={filters.hazard_type ?? ''}
-                            onChange={(v) => filter('hazard_type', v)}
-                            options={HAZARD_OPTIONS}
-                            placeholder="All hazard types"
-                            labelMap={HAZARD_LABELS}
                         />
                         {hasFilters && (
                             <Button
@@ -255,7 +245,6 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
                                         />
                                     </th>
                                     <th className="px-4 py-3">Reference</th>
-                                    <th className="px-4 py-3">Type</th>
                                     <th className="px-4 py-3">Severity</th>
                                     <th className="px-4 py-3">Status</th>
                                     <th className="px-4 py-3">Reporter</th>
@@ -281,9 +270,6 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
                                         </td>
                                         <td className="px-4 py-3.5">
                                             <span className="font-mono text-xs font-medium">{report.reference_number}</span>
-                                        </td>
-                                        <td className="px-4 py-3.5 text-muted-foreground">
-                                            {HAZARD_LABELS[report.hazard_type]}
                                         </td>
                                         <td className="px-4 py-3.5">
                                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${SEVERITY_COLORS[report.severity]}`}>
@@ -320,7 +306,7 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
                                 ))}
                                 {reports.data.length === 0 && (
                                     <tr>
-                                        <td colSpan={10} className="px-6 py-16 text-center">
+                                        <td colSpan={9} className="px-6 py-16 text-center">
                                             <div className="flex flex-col items-center gap-2">
                                                 <div className="rounded-2xl"><SlidersHorizontal className="size-8 text-muted-foreground/40" /></div>
                                                 <p className="text-sm text-muted-foreground">No reports match the current filters</p>

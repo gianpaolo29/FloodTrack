@@ -3,13 +3,12 @@ import { BarChart3, Clock, TrendingUp, Trophy } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
-import { HAZARD_LABELS, SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
-import type { HazardType, Severity, ReportStatus } from '@/types/admin';
+import { SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
+import type { Severity, ReportStatus } from '@/types/admin';
 
 interface Props {
     daily_reports: Record<string, number>;
     avg_response_time: number;
-    hazard_breakdown: Record<string, number>;
     severity_breakdown: Record<string, number>;
     status_breakdown: Record<string, number>;
     top_responders: { id: number; name: string; resolved_count: number }[];
@@ -21,18 +20,9 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Statistics', href: '/admin/statistics' },
 ];
 
-const HAZARD_COLORS: Record<string, string> = {
-    flood: 'bg-blue-500',
-    road_damage: 'bg-orange-500',
-    debris: 'bg-amber-500',
-    drainage: 'bg-cyan-500',
-    other: 'bg-zinc-400',
-};
-
 export default function AdminStatistics({
     daily_reports,
     avg_response_time,
-    hazard_breakdown,
     severity_breakdown,
     status_breakdown,
     top_responders,
@@ -164,35 +154,7 @@ export default function AdminStatistics({
                 </Card>
 
                 {/* Breakdowns grid */}
-                <div className="grid gap-6 lg:grid-cols-3">
-                    <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
-                            <CardTitle className="text-sm font-semibold tracking-tight">By Hazard Type</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex flex-col gap-4 p-6">
-                            {Object.entries(hazard_breakdown).map(([type, count]) => {
-                                const pct = totalReports > 0 ? (count / totalReports) * 100 : 0;
-                                return (
-                                    <div key={type} className="flex flex-col gap-1.5">
-                                        <div className="flex justify-between text-xs">
-                                            <span className="font-medium">{HAZARD_LABELS[type as HazardType] ?? type}</span>
-                                            <span className="font-bold tabular-nums">{count}</span>
-                                        </div>
-                                        <div className="h-2 rounded-full bg-muted overflow-hidden">
-                                            <div
-                                                className={`h-full rounded-full transition-all ${HAZARD_COLORS[type] ?? 'bg-zinc-400'}`}
-                                                style={{ width: `${pct}%` }}
-                                            />
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                            {Object.keys(hazard_breakdown).length === 0 && (
-                                <p className="text-sm text-muted-foreground text-center py-6">No data</p>
-                            )}
-                        </CardContent>
-                    </Card>
-
+                <div className="grid gap-6 lg:grid-cols-2">
                     <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
                         <CardHeader className="border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                             <CardTitle className="text-sm font-semibold tracking-tight">By Severity</CardTitle>

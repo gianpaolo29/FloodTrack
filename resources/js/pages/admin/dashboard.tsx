@@ -32,11 +32,10 @@ import {
 } from 'recharts';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import type { Report, Alert as AlertType, HazardType } from '@/types/admin';
+import type { Report, Alert as AlertType } from '@/types/admin';
 import {
     SEVERITY_COLORS as SEV,
     STATUS_COLORS as STA,
-    HAZARD_LABELS as HAZ,
 } from '@/types/admin';
 
 /* ─── Types ─── */
@@ -63,7 +62,6 @@ interface Props {
     monthly_reports: MonthlyReport[];
     severity_breakdown: Record<string, number>;
     status_breakdown: Record<string, number>;
-    hazard_breakdown: Record<string, number>;
     recent_reports: Report[];
     active_alerts: number;
     critical_alerts: AlertType[];
@@ -88,7 +86,6 @@ const PERIODS = [
 ] as const;
 
 const DONUT_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#10b981'];
-const HAZARD_COLORS: Record<string, string> = { flood: '#3b82f6', road_damage: '#f97316', debris: '#eab308', drainage: '#06b6d4', other: '#a3a3a3' };
 const STATUS_BAR_COLORS: Record<string, string> = { pending: '#f59e0b', verified: '#3b82f6', assigned: '#8b5cf6', resolved: '#10b981', rejected: '#94a3b8' };
 
 /* ─── Tooltip ─── */
@@ -112,7 +109,7 @@ function ChartTooltip({ active, payload, label }: any) {
 
 export default function AdminDashboard({
     stats, trends, daily_reports, monthly_reports,
-    severity_breakdown, status_breakdown, hazard_breakdown,
+    severity_breakdown, status_breakdown,
     recent_reports, active_alerts, critical_alerts,
     top_responders, avg_response_time, recent_activity,
     affected_areas, map_reports, period,
@@ -123,10 +120,6 @@ export default function AdminDashboard({
     const statusBarData = (['pending', 'verified', 'assigned', 'resolved', 'rejected'] as const).map((st) => ({
         name: st, value: status_breakdown[st] ?? 0,
     }));
-    const hazardBarData = Object.entries(hazard_breakdown).map(([type, count]) => ({
-        name: HAZ[type as HazardType] ?? type, value: count, fill: HAZARD_COLORS[type] ?? '#a3a3a3',
-    }));
-
     const totalSeverity = severityDonutData.reduce((sum, d) => sum + d.value, 0);
     const resolutionRate = stats.total_reports > 0
         ? Math.round(((status_breakdown['resolved'] ?? 0) / stats.total_reports) * 100) : 0;
@@ -271,42 +264,21 @@ export default function AdminDashboard({
                     </Card>
                 </div>
 
-                {/* ─── Charts: Status + Hazard Type ─── */}
-                <div className="grid gap-4 lg:grid-cols-2">
-                    <Card>
-                        <CardHead title="Status Overview" sub="Current distribution" />
-                        <ResponsiveContainer width="100%" height={200}>
-                            <BarChart data={statusBarData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a3a3a3' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a3a3a3' }} />
-                                <Tooltip content={<ChartTooltip />} />
-                                <Bar dataKey="value" radius={[6, 6, 0, 0]} name="Count" barSize={32}>
-                                    {statusBarData.map((e) => <Cell key={e.name} fill={STATUS_BAR_COLORS[e.name] ?? '#94a3b8'} />)}
-                                </Bar>
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </Card>
-
-                    <Card>
-                        <CardHead title="Hazard Type Distribution" sub="Reports by hazard category" />
-                        {hazardBarData.length > 0 ? (
-                            <ResponsiveContainer width="100%" height={200}>
-                                <BarChart data={hazardBarData} layout="vertical" margin={{ top: 5, right: 20, left: 10, bottom: 0 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
-                                    <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a3a3a3' }} />
-                                    <YAxis type="category" dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#737373' }} width={85} />
-                                    <Tooltip content={<ChartTooltip />} />
-                                    <Bar dataKey="value" radius={[0, 6, 6, 0]} name="Reports" barSize={18}>
-                                        {hazardBarData.map((e, i) => <Cell key={i} fill={e.fill} />)}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        ) : (
-                            <Empty text="No data" />
-                        )}
-                    </Card>
-                </div>
+                {/* ─── Chart: Status Overview ─── */}
+                <Card>
+                    <CardHead title="Status Overview" sub="Current distribution" />
+                    <ResponsiveContainer width="100%" height={200}>
+                        <BarChart data={statusBarData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a3a3a3' }} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#a3a3a3' }} />
+                            <Tooltip content={<ChartTooltip />} />
+                            <Bar dataKey="value" radius={[6, 6, 0, 0]} name="Count" barSize={32}>
+                                {statusBarData.map((e) => <Cell key={e.name} fill={STATUS_BAR_COLORS[e.name] ?? '#94a3b8'} />)}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                </Card>
 
                 {/* ─── Monthly Trend (full width) ─── */}
                 <Card>
@@ -483,7 +455,6 @@ export default function AdminDashboard({
                             <thead>
                                 <tr className="border-b border-neutral-50 text-left dark:border-neutral-800">
                                     <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">Reference</th>
-                                    <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">Type</th>
                                     <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">Date</th>
                                     <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">Reporter</th>
                                     <th className="px-5 py-3 text-[11px] font-semibold uppercase tracking-wider text-neutral-400 text-right">Severity</th>
@@ -498,7 +469,6 @@ export default function AdminDashboard({
                                                 {report.reference_number}
                                             </Link>
                                         </td>
-                                        <td className="px-5 py-3.5 text-neutral-500 dark:text-neutral-400">{HAZ[report.hazard_type]}</td>
                                         <td className="px-5 py-3.5 text-neutral-500 whitespace-nowrap dark:text-neutral-400">
                                             {new Date(report.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
                                         </td>
@@ -512,7 +482,7 @@ export default function AdminDashboard({
                                     </tr>
                                 ))}
                                 {recent_reports.length === 0 && (
-                                    <tr><td colSpan={6} className="px-5 py-16 text-center"><Empty text="No reports yet" /></td></tr>
+                                    <tr><td colSpan={5} className="px-5 py-16 text-center"><Empty text="No reports yet" /></td></tr>
                                 )}
                             </tbody>
                         </table>

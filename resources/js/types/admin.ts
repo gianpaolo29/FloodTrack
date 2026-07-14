@@ -2,7 +2,6 @@
 
 export type Severity   = 'low' | 'moderate' | 'high' | 'critical';
 export type ReportStatus = 'pending' | 'verified' | 'assigned' | 'resolved' | 'rejected';
-export type HazardType = 'flood' | 'road_damage' | 'debris' | 'drainage' | 'other';
 export type AlertType  = 'advisory' | 'update' | 'critical';
 export type UserRole   = 'resident' | 'responder';
 
@@ -35,7 +34,6 @@ export interface StatusUpdate {
 export interface Report {
     id: number;
     reference_number: string;
-    hazard_type: HazardType;
     severity: Severity;
     status: ReportStatus;
     description: string | null;
@@ -85,10 +83,69 @@ export const STATUS_COLORS: Record<ReportStatus, string> = {
     rejected: 'bg-zinc-100 text-zinc-500 ring-1 ring-zinc-500/10',
 };
 
-export const HAZARD_LABELS: Record<HazardType, string> = {
-    flood:       'Flood',
-    road_damage: 'Road damage',
-    debris:      'Debris',
-    drainage:    'Drainage',
-    other:       'Other',
+/* ─── Evacuation Center Management ─── */
+
+export type EvacuationCenterType = 'gymnasium' | 'school' | 'barangay_hall' | 'church' | 'community_center';
+
+export interface EvacuationCenter {
+    id: number;
+    name: string;
+    address: string;
+    type: EvacuationCenterType;
+    capacity: number;
+    latitude: number;
+    longitude: number;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export const EVACUATION_CENTER_TYPE_LABELS: Record<EvacuationCenterType, string> = {
+    gymnasium:        'Gymnasium',
+    school:           'School',
+    barangay_hall:    'Barangay Hall',
+    church:           'Church',
+    community_center: 'Community Center',
+};
+
+/* ─── Hazard Management ─── */
+
+export type HazardCategory = 'flood' | 'road';
+
+export interface Hazard {
+    id: number;
+    category: HazardCategory;
+    type: string;
+    severity: Severity;
+    title: string;
+    description: string | null;
+    latitude: number;
+    longitude: number;
+    address: string | null;
+    active: boolean;
+    created_by: number;
+    creator?: { id: number; name: string };
+    created_at: string;
+    updated_at: string;
+}
+
+export const HAZARD_CATEGORY_LABELS: Record<HazardCategory, string> = {
+    flood: 'Flood Hazard',
+    road:  'Road Hazard',
+};
+
+export const HAZARD_TYPE_OPTIONS: Record<HazardCategory, { value: string; label: string }[]> = {
+    flood: [
+        { value: 'flash_flood',   label: 'Flash Flood' },
+        { value: 'river_flood',   label: 'River Overflow' },
+        { value: 'coastal_flood', label: 'Coastal / Storm Surge' },
+        { value: 'urban_flood',   label: 'Urban Flood' },
+    ],
+    road: [
+        { value: 'closed_road',  label: 'Road Closed' },
+        { value: 'debris',       label: 'Debris / Obstruction' },
+        { value: 'landslide',    label: 'Landslide' },
+        { value: 'flooded_road', label: 'Flooded Road' },
+        { value: 'slow_zone',    label: 'Slow Down Zone' },
+    ],
 };

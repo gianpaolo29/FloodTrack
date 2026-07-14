@@ -14,7 +14,7 @@ class ActivityController extends Controller
     {
         $activities = ReportStatusUpdate::with([
                 'user:id,name,role',
-                'report:id,reference_number,hazard_type,severity',
+                'report:id,reference_number,severity',
             ])
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->search, fn ($q) => $q->whereHas('report', function ($q2) use ($request) {

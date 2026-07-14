@@ -38,6 +38,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             EvacuationCenterSeeder::class,
             ProtocolSeeder::class,
+            ReportSeeder::class,
         ]);
     }
 }

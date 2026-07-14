@@ -19,7 +19,7 @@ import { swalDelete, swalSuccess } from '@/lib/swal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { BreadcrumbItem } from '@/types';
 import type { Report, Responder } from '@/types/admin';
-import { HAZARD_LABELS, SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
+import { SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
 
 interface Props {
     report: Report;
@@ -27,8 +27,6 @@ interface Props {
 }
 
 const SEVERITY_OPTIONS = ['low', 'moderate', 'high', 'critical'] as const;
-const HAZARD_OPTIONS = ['flood', 'road_damage', 'debris', 'drainage', 'other'] as const;
-
 export default function AdminReportShow({ report, responders }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Admin', href: '/admin' },
@@ -45,7 +43,6 @@ export default function AdminReportShow({ report, responders }: Props) {
     const reopenForm  = useForm({});
     const editForm    = useForm({
         severity: report.severity,
-        hazard_type: report.hazard_type,
         address: report.address ?? '',
         description: report.description ?? '',
     });
@@ -149,33 +146,18 @@ export default function AdminReportShow({ report, responders }: Props) {
                                 </CardHeader>
                                 <CardContent className="p-6">
                                     <form onSubmit={handleEditSave} className="flex flex-col gap-5">
-                                        <div className="grid gap-5 sm:grid-cols-2">
-                                            <FormField label="Severity">
-                                                <select
-                                                    value={editForm.data.severity}
-                                                    onChange={(e) => editForm.setData('severity', e.target.value as any)}
-                                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
-                                                >
-                                                    {SEVERITY_OPTIONS.map((s) => (
-                                                        <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-                                                    ))}
-                                                </select>
-                                                {editForm.errors.severity && <p className="text-xs text-destructive mt-1">{editForm.errors.severity}</p>}
-                                            </FormField>
-
-                                            <FormField label="Hazard Type">
-                                                <select
-                                                    value={editForm.data.hazard_type}
-                                                    onChange={(e) => editForm.setData('hazard_type', e.target.value as any)}
-                                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
-                                                >
-                                                    {HAZARD_OPTIONS.map((h) => (
-                                                        <option key={h} value={h}>{HAZARD_LABELS[h]}</option>
-                                                    ))}
-                                                </select>
-                                                {editForm.errors.hazard_type && <p className="text-xs text-destructive mt-1">{editForm.errors.hazard_type}</p>}
-                                            </FormField>
-                                        </div>
+                                        <FormField label="Severity">
+                                            <select
+                                                value={editForm.data.severity}
+                                                onChange={(e) => editForm.setData('severity', e.target.value as any)}
+                                                className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
+                                            >
+                                                {SEVERITY_OPTIONS.map((s) => (
+                                                    <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+                                                ))}
+                                            </select>
+                                            {editForm.errors.severity && <p className="text-xs text-destructive mt-1">{editForm.errors.severity}</p>}
+                                        </FormField>
 
                                         <FormField label="Address">
                                             <input
@@ -225,7 +207,6 @@ export default function AdminReportShow({ report, responders }: Props) {
                                     <CardTitle className="text-sm font-semibold tracking-tight">Report Details</CardTitle>
                                 </CardHeader>
                                 <CardContent className="grid gap-4 p-6 sm:grid-cols-2">
-                                    <Detail label="Hazard type" value={HAZARD_LABELS[report.hazard_type]} />
                                     <Detail label="Severity"    value={report.severity} />
                                     <Detail label="Status"      value={report.status} />
                                     <Detail label="Address"     value={report.address ?? '—'} />

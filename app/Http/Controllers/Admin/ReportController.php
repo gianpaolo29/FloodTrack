@@ -16,10 +16,23 @@ class ReportController extends Controller
 {
     public function map(Request $request): Response
     {
-        $reports = Report::with(['user:id,name', 'assignedResponder:id,name'])
+        $request->validate([
+            'status'      => 'nullable|in:pending,verified,assigned,resolved,rejected',
+            'severity'    => 'nullable|in:low,moderate,high,critical',
+            'date_from'   => 'nullable|date',
+            'date_to'     => 'nullable|date|after_or_equal:date_from',
+        ]);
+
+        $reports = Report::select([
+                'id', 'reference_number', 'severity', 'status',
+                'latitude', 'longitude', 'address', 'user_id', 'created_at',
+                'verified_at', 'resolved_at',
+            ])
+            ->with(['user:id,name'])
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
-            ->when($request->hazard_type, fn ($q) => $q->where('hazard_type', $request->hazard_type))
+            ->when($request->date_from, fn ($q) => $q->whereDate('created_at', '>=', $request->date_from))
+            ->when($request->date_to, fn ($q) => $q->whereDate('created_at', '<=', $request->date_to))
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->latest()
@@ -27,7 +40,7 @@ class ReportController extends Controller
 
         return Inertia::render('admin/reports/map', [
             'reports' => $reports,
-            'filters' => $request->only(['status', 'severity', 'hazard_type']),
+            'filters' => $request->only(['status', 'severity', 'date_from', 'date_to']),
         ]);
     }
 
@@ -36,7 +49,6 @@ class ReportController extends Controller
         $reports = Report::with(['user:id,name', 'assignedResponder:id,name'])
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
-            ->when($request->hazard_type, fn ($q) => $q->where('hazard_type', $request->hazard_type))
             ->when($request->search, fn ($q) => $q->where(function ($q2) use ($request) {
                 $q2->where('address', 'like', "%{$request->search}%")
                    ->orWhere('reference_number', 'like', "%{$request->search}%");
@@ -48,7 +60,7 @@ class ReportController extends Controller
         return Inertia::render('admin/reports/index', [
             'reports'    => $reports,
             'responders' => User::where('role', 'responder')->get(['id', 'name']),
-            'filters'    => $request->only(['status', 'severity', 'hazard_type', 'search']),
+            'filters'    => $request->only(['status', 'severity', 'search']),
         ]);
     }
 
@@ -70,7 +82,6 @@ class ReportController extends Controller
     {
         $validated = $request->validate([
             'severity'    => 'required|in:low,moderate,high,critical',
-            'hazard_type' => 'required|in:flood,road_damage,debris,drainage,other',
             'address'     => 'nullable|string|max:500',
             'description' => 'nullable|string|max:2000',
         ]);
