@@ -134,7 +134,7 @@ export default function AdminWeather({ current, daily_forecast, hourly_forecast,
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Weather — FloodTrack Admin" />
+            <Head title="Weather" />
 
             <div className="space-y-4 p-4 sm:p-5">
 

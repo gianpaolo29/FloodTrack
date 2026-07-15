@@ -48,7 +48,7 @@ export default function Register() {
 
     return (
         <>
-            <Head title="Create account — FloodTrack" />
+            <Head title="Create account" />
 
             {/* Header */}
             <div className="mb-6">

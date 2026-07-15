@@ -47,7 +47,7 @@ export default function AdminExport({ counts }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Export — FloodTrack Admin" />
+            <Head title="Export" />
 
             <div className="flex flex-col gap-8 p-6 lg:p-8">
 

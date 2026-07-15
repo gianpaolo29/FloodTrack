@@ -36,7 +36,7 @@ export default function AdminStatistics({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Statistics — FloodTrack Admin" />
+            <Head title="Statistics" />
 
             <div className="flex flex-col gap-8 p-6 lg:p-8">
 

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Report;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -31,5 +33,25 @@ class ResponderController extends Controller
             'responders' => $responders,
             'filters'    => $request->only(['search']),
         ]);
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'name'           => 'required|string|max:255',
+            'email'          => 'required|email|unique:users,email',
+            'password'       => ['required', Password::defaults()],
+            'contact_number' => 'nullable|string|max:20',
+        ]);
+
+        $validated['role'] = 'responder';
+        $validated['password'] = Hash::make($validated['password']);
+        $validated['email_verified_at'] = now();
+
+        User::create($validated);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Responder created.']);
+
+        return back();
     }
 }

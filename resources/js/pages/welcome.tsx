@@ -212,7 +212,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
 
     return (
         <>
-            <Head title="FloodTrack — Community Flood & Hazard Reporting">
+            <Head title="Community Flood & Hazard Reporting">
                 <meta name="description" content="FloodTrack helps residents of Nasugbu, Batangas report flood and road hazards in real time." />
             </Head>
 

@@ -21,7 +21,7 @@ type Props = {
 export default function Login({ status, canResetPassword, canRegister }: Props) {
     return (
         <>
-            <Head title="Log in — FloodTrack" />
+            <Head title="Log in" />
 
             {/* Header */}
             <div className="mb-8">

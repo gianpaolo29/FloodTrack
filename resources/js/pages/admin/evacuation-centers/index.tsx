@@ -122,7 +122,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Evacuation Centers — FloodTrack Admin" />
+            <Head title="Evacuation Centers" />
 
             <div className="flex flex-col gap-6 p-6 lg:p-8">
                 {/* Header */}

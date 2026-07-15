@@ -57,7 +57,7 @@ export default function AdminActivityLog({ activities, filters }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Activity Log — FloodTrack Admin" />
+            <Head title="Activity Log" />
 
             <div className="flex flex-col gap-6 p-6 lg:p-8">
 

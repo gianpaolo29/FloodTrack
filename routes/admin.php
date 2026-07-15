@@ -74,7 +74,10 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     });
 
     // Responders
-    Route::get('/responders', [ResponderController::class, 'index'])->name('responders.index');
+    Route::prefix('responders')->name('responders.')->group(function () {
+        Route::get('/',  [ResponderController::class, 'index'])->name('index');
+        Route::post('/', [ResponderController::class, 'store'])->name('store');
+    });
 
     // Weather
     Route::get('/weather', [WeatherController::class, 'index'])->name('weather.index');

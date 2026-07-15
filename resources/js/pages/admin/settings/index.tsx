@@ -56,7 +56,7 @@ export default function AdminSettings({ settings }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Settings — FloodTrack Admin" />
+            <Head title="Settings" />
 
             <form onSubmit={handleSubmit}>
                 <div className="flex flex-col gap-6 p-6 lg:p-8">

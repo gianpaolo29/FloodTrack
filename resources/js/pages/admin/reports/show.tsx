@@ -96,7 +96,7 @@ export default function AdminReportShow({ report, responders }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`${report.reference_number} — FloodTrack Admin`} />
+            <Head title={report.reference_number} />
 
             <div className="flex flex-col gap-6 p-6 lg:p-8">
 

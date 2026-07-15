@@ -106,7 +106,7 @@ export default function AdminHazardsIndex({ hazards }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Hazards — FloodTrack Admin" />
+            <Head title="Hazards" />
 
             <div className="flex flex-col gap-6 p-6 lg:p-8">
                 {/* Header */}

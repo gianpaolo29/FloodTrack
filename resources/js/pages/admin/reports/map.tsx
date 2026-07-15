@@ -194,7 +194,7 @@ export default function AdminReportsMap({ reports, filters }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Map View — FloodTrack Admin" />
+            <Head title="Map View" />
 
             <div className="flex h-[calc(100vh-57px)] flex-col lg:flex-row">
 

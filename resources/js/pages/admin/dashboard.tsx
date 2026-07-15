@@ -130,7 +130,7 @@ export default function AdminDashboard({
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Admin Dashboard — FloodTrack" />
+            <Head title="Dashboard" />
 
             <div className="space-y-4 p-4 sm:p-5">
 

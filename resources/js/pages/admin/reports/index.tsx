@@ -111,7 +111,7 @@ export default function AdminReportsIndex({ reports, responders, filters }: Prop
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Reports — FloodTrack Admin" />
+            <Head title="Reports" />
 
             <div className="flex flex-col gap-6 p-6 lg:p-8">
 

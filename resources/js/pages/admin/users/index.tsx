@@ -103,9 +103,26 @@ export default function AdminUsersIndex({ users, filters }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Users — FloodTrack Admin" />
+            <Head title="Users" />
 
             <div className="flex flex-col gap-6 p-6 lg:p-8">
+
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Users</h1>
+                        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                            Manage user accounts and their roles.
+                        </p>
+                    </div>
+                    <button
+                        onClick={() => setShowCreate(true)}
+                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
+                    >
+                        <Plus className="size-4" />
+                        Add User
+                    </button>
+                </div>
 
                 {/* Stat cards */}
                 <div className="grid grid-cols-3 gap-4">
@@ -225,14 +242,6 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                     <X className="size-4" />
                                 </button>
                             )}
-                            <div className="h-6 w-px bg-neutral-200 dark:bg-neutral-700" />
-                            <button
-                                onClick={() => setShowCreate(true)}
-                                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
-                            >
-                                <Plus className="size-3.5" />
-                                Add User
-                            </button>
                         </div>
                     </div>
 
