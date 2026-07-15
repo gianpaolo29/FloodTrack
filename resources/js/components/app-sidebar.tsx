@@ -83,7 +83,7 @@ const managementItems: NavItem[] = [
         icon: AlertTriangle,
     },
     {
-        title: 'Users',
+        title: 'Residents',
         href: '/admin/users',
         icon: Users,
     },

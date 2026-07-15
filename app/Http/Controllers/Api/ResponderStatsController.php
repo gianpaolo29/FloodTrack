@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class ResponderStatsController extends Controller
 {
@@ -33,9 +34,13 @@ class ResponderStatsController extends Controller
             ->where('status', '!=', 'resolved')
             ->count();
 
+        $avgExpr = DB::getDriverName() === 'sqlite'
+            ? 'AVG((julianday(resolved_at) - julianday(created_at)) * 1440)'
+            : 'AVG(TIMESTAMPDIFF(MINUTE, created_at, resolved_at))';
+
         $avgResponseMinutes = (clone $resolvedQuery)
             ->whereNotNull('resolved_at')
-            ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, created_at, resolved_at)) as avg_minutes')
+            ->selectRaw("$avgExpr as avg_minutes")
             ->value('avg_minutes');
 
         return response()->json([

@@ -15,8 +15,7 @@ class UserController extends Controller
 {
     public function index(Request $request): Response
     {
-        $users = User::where('role', '!=', 'admin')
-            ->when($request->role, fn ($q) => $q->where('role', $request->role))
+        $users = User::where('role', 'resident')
             ->when($request->search, fn ($q) => $q->where(function ($q2) use ($request) {
                 $q2->where('name', 'like', "%{$request->search}%")
                    ->orWhere('email', 'like', "%{$request->search}%");
@@ -31,7 +30,7 @@ class UserController extends Controller
 
         return Inertia::render('admin/users/index', [
             'users'   => $users,
-            'filters' => $request->only(['role', 'search']),
+            'filters' => $request->only(['search']),
         ]);
     }
 
@@ -41,16 +40,16 @@ class UserController extends Controller
             'name'           => 'required|string|max:255',
             'email'          => 'required|email|unique:users,email',
             'password'       => ['required', Password::defaults()],
-            'role'           => 'required|in:resident,responder',
             'contact_number' => 'nullable|string|max:20',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
         $validated['email_verified_at'] = now();
+        $validated['role'] = 'resident';
 
         User::create($validated);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'User created.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Resident created.']);
 
         return back();
     }
@@ -65,7 +64,6 @@ class UserController extends Controller
         $validated = $request->validate([
             'name'           => 'required|string|max:255',
             'email'          => "required|email|unique:users,email,{$user->id}",
-            'role'           => 'required|in:resident,responder',
             'contact_number' => 'nullable|string|max:20',
             'password'       => ['nullable', Password::defaults()],
         ]);
@@ -78,7 +76,7 @@ class UserController extends Controller
 
         $user->update($validated);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'User updated.']);
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Resident updated.']);
 
         return back();
     }

@@ -68,9 +68,68 @@ class ReportController extends Controller
         $aiFlags    = ReportAnalysisService::analyze($report, $mediaFiles);
         $report->update($aiFlags);
 
-        // Notify all admins about the new report
-        $admins = User::where('role', 'admin')->get();
-        Notification::send($admins, new NewReportSubmitted($report));
+        // Auto-process based on AI verdict
+        $autoVerified = $aiFlags['ai_image_verified'] === true
+            && $aiFlags['ai_flagged'] === false
+            && $aiFlags['potential_duplicate_of'] === null;
+
+        $autoRejected = $aiFlags['ai_image_verified'] === false
+            && $aiFlags['potential_duplicate_of'] === null;
+
+        if ($autoVerified) {
+            $report->update([
+                'status'      => 'verified',
+                'verified_at' => now(),
+            ]);
+
+            ReportStatusUpdate::create([
+                'report_id' => $report->id,
+                'user_id'   => null,
+                'status'    => 'verified',
+                'notes'     => 'Auto-verified: AI confirmed flood in submitted photo.',
+            ]);
+
+            $report->user->notify(new \App\Notifications\ReportStatusChanged($report, 'pending', 'verified'));
+
+            ExpoPushService::sendToUsers(
+                $report->user_id,
+                "Report {$report->reference_number} Verified",
+                'Your flood report has been verified automatically.',
+                [
+                    'type'     => 'status_update',
+                    'reportId' => $report->id,
+                    'status'   => 'verified',
+                ]
+            );
+
+        } elseif ($autoRejected) {
+            $report->update(['status' => 'rejected']);
+
+            ReportStatusUpdate::create([
+                'report_id' => $report->id,
+                'user_id'   => null,
+                'status'    => 'rejected',
+                'notes'     => 'Auto-rejected: No flood detected in submitted photo.',
+            ]);
+
+            $report->user->notify(new \App\Notifications\ReportStatusChanged($report, 'pending', 'rejected'));
+
+            ExpoPushService::sendToUsers(
+                $report->user_id,
+                "Report {$report->reference_number} Not Verified",
+                'Your report could not be verified. The photo does not show flooding.',
+                [
+                    'type'     => 'status_update',
+                    'reportId' => $report->id,
+                    'status'   => 'rejected',
+                ]
+            );
+
+        } else {
+            // Needs manual admin review — notify admins
+            $admins = User::where('role', 'admin')->get();
+            Notification::send($admins, new NewReportSubmitted($report));
+        }
 
         return response()->json(
             $report->load(['media', 'statusUpdates.user:id,name,role']),
@@ -111,6 +170,8 @@ class ReportController extends Controller
             }
         }
 
+        $oldStatus = $report->status;
+
         if ($data['status'] === 'resolved') {
             $report->update(['status' => 'resolved', 'resolved_at' => now()]);
         }
@@ -121,6 +182,13 @@ class ReportController extends Controller
             'status'    => $data['status'],
             'notes'     => $data['notes'] ?? null,
         ]);
+
+        $report->user->notify(new \App\Notifications\ReportStatusChanged(
+            $report->fresh(),
+            $oldStatus,
+            $data['status'],
+            $request->user()->name,
+        ));
 
         // Notify reporter about status change
         $statusLabels = [
@@ -184,6 +252,8 @@ class ReportController extends Controller
 
     public function verify(Request $request, Report $report)
     {
+        $oldStatus = $report->status;
+
         $report->update([
             'status'      => 'verified',
             'verified_by' => $request->user()->id,
@@ -195,6 +265,13 @@ class ReportController extends Controller
             'user_id'   => $request->user()->id,
             'status'    => 'verified',
         ]);
+
+        $report->user->notify(new \App\Notifications\ReportStatusChanged(
+            $report->fresh(),
+            $oldStatus,
+            'verified',
+            $request->user()->name,
+        ));
 
         return response()->json($report->fresh());
     }
@@ -225,6 +302,8 @@ class ReportController extends Controller
     {
         $request->validate(['notes' => 'nullable|string|max:500']);
 
+        $oldStatus = $report->status;
+
         $report->update(['status' => 'rejected']);
 
         ReportStatusUpdate::create([
@@ -233,6 +312,13 @@ class ReportController extends Controller
             'status'    => 'rejected',
             'notes'     => $request->notes,
         ]);
+
+        $report->user->notify(new \App\Notifications\ReportStatusChanged(
+            $report->fresh(),
+            $oldStatus,
+            'rejected',
+            $request->user()->name,
+        ));
 
         return response()->json($report->fresh());
     }

@@ -2,13 +2,10 @@ import { swalDelete, swalSuccess } from '@/lib/swal';
 import { Head, router, useForm } from '@inertiajs/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Eye,
     Pencil,
     Plus,
     Search,
-    ShieldCheck,
     Trash2,
-    User as UserIcon,
     Users2,
     X,
 } from 'lucide-react';
@@ -27,7 +24,6 @@ interface Paginated<T> {
 }
 
 interface Filters {
-    role?: string;
     search?: string;
 }
 
@@ -38,13 +34,8 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Admin', href: '/admin' },
-    { title: 'Users', href: '/admin/users' },
+    { title: 'Residents', href: '/admin/users' },
 ];
-
-const ROLE_STYLES: Record<string, string> = {
-    resident:  'bg-blue-50 text-blue-700 ring-1 ring-blue-600/10 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-blue-500/20',
-    responder: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/10 dark:bg-indigo-950/40 dark:text-indigo-400 dark:ring-indigo-500/20',
-};
 
 const modalSpring = { type: 'spring' as const, stiffness: 400, damping: 28 };
 
@@ -61,7 +52,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
         });
     }, [filters]);
 
-    const hasFilters = !!(filters.role || filters.search);
+    const hasFilters = !!filters.search;
 
     const allOnPageSelected = users.data.length > 0 && users.data.every((u) => selected.includes(u.id));
     const toggleAll = () => {
@@ -78,7 +69,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
     const runBulkAction = async (action: string) => {
         if (selected.length === 0) return;
         if (action === 'delete') {
-            const confirmed = await swalDelete(`${selected.length} selected user(s)`);
+            const confirmed = await swalDelete(`${selected.length} selected resident(s)`);
             if (!confirmed) return;
         }
         setBulkProcessing(true);
@@ -90,29 +81,26 @@ export default function AdminUsersIndex({ users, filters }: Props) {
     };
 
     const handleDelete = async (id: number) => {
-        const confirmed = await swalDelete('this user');
+        const confirmed = await swalDelete('this resident');
         if (!confirmed) return;
         router.delete(`/admin/users/${id}`, {
             preserveState: true,
-            onSuccess: () => swalSuccess('Deleted', 'User has been deleted.'),
+            onSuccess: () => swalSuccess('Deleted', 'Resident has been deleted.'),
         });
     };
 
-    const residentCount = users.data.filter((u) => u.role === 'resident').length;
-    const responderCount = users.data.filter((u) => u.role === 'responder').length;
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Users" />
+            <Head title="Residents" />
 
             <div className="flex flex-col gap-6 p-6 lg:p-8">
 
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Users</h1>
+                        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Residents</h1>
                         <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                            Manage user accounts and their roles.
+                            Manage resident accounts.
                         </p>
                     </div>
                     <button
@@ -120,32 +108,18 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                         className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
                     >
                         <Plus className="size-4" />
-                        Add User
+                        Add Resident
                     </button>
                 </div>
 
                 {/* Stat cards */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                     <StatCard
                         icon={Users2}
                         iconBg="bg-blue-50 dark:bg-blue-950/30"
                         iconColor="text-blue-600 dark:text-blue-400"
-                        label="Total Users"
+                        label="Total Residents"
                         value={users.total}
-                    />
-                    <StatCard
-                        icon={UserIcon}
-                        iconBg="bg-emerald-50 dark:bg-emerald-950/30"
-                        iconColor="text-emerald-600 dark:text-emerald-400"
-                        label="Residents"
-                        value={residentCount}
-                    />
-                    <StatCard
-                        icon={ShieldCheck}
-                        iconBg="bg-amber-50 dark:bg-amber-950/30"
-                        iconColor="text-amber-600 dark:text-amber-400"
-                        label="Responders"
-                        value={responderCount}
                     />
                 </div>
 
@@ -162,20 +136,6 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                             <div className="flex flex-wrap items-center gap-3">
                                 <span className="text-sm font-semibold text-sky-900 dark:text-sky-200">{selected.length} selected</span>
                                 <div className="h-5 w-px bg-sky-200 dark:bg-sky-800" />
-                                <button
-                                    onClick={() => runBulkAction('make_resident')}
-                                    disabled={bulkProcessing}
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100 disabled:opacity-50 dark:border-blue-800/40 dark:bg-blue-950/40 dark:text-blue-400"
-                                >
-                                    <UserIcon className="size-3.5" /> Set Resident
-                                </button>
-                                <button
-                                    onClick={() => runBulkAction('make_responder')}
-                                    disabled={bulkProcessing}
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-100 disabled:opacity-50 dark:border-indigo-800/40 dark:bg-indigo-950/40 dark:text-indigo-400"
-                                >
-                                    <ShieldCheck className="size-3.5" /> Set Responder
-                                </button>
                                 <button
                                     onClick={() => runBulkAction('delete')}
                                     disabled={bulkProcessing}
@@ -206,26 +166,17 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                 <Users2 className="size-4.5 text-blue-600 dark:text-blue-400" />
                             </div>
                             <div>
-                                <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">All Users</h2>
+                                <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">All Residents</h2>
                                 <p className="text-xs text-neutral-500 dark:text-neutral-400">{users.total} results</p>
                             </div>
                         </div>
 
                         <div className="flex items-center gap-3">
-                            <select
-                                value={filters.role ?? ''}
-                                onChange={(e) => filter('role', e.target.value)}
-                                className="h-9 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
-                            >
-                                <option value="">All Roles</option>
-                                <option value="resident">Residents</option>
-                                <option value="responder">Responders</option>
-                            </select>
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                                 <input
                                     type="text"
-                                    placeholder="Search users..."
+                                    placeholder="Search residents..."
                                     defaultValue={filters.search ?? ''}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') filter('search', (e.target as HTMLInputElement).value);
@@ -249,7 +200,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                                <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
                                     <th className="px-6 py-3 w-10">
                                         <input
                                             type="checkbox"
@@ -258,19 +209,18 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                             className="size-3.5 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
                                         />
                                     </th>
-                                    <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">User</th>
+                                    <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Resident</th>
                                     <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Reports</th>
-                                    <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Role</th>
                                     <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                                 {users.data.map((user) => (
                                     <tr
                                         key={user.id}
-                                        className={`group border-b border-neutral-50 last:border-b-0 transition-colors dark:border-neutral-800/50 ${
+                                        className={`group transition-colors ${
                                             selected.includes(user.id)
-                                                ? 'bg-sky-50/50 dark:bg-sky-950/10'
+                                                ? 'bg-sky-50/60 dark:bg-sky-950/20'
                                                 : 'hover:bg-neutral-50/60 dark:hover:bg-neutral-800/20'
                                         }`}
                                     >
@@ -284,11 +234,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className={`flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-bold shadow-sm ${
-                                                    user.role === 'responder'
-                                                        ? 'bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-700 dark:from-indigo-900/40 dark:to-purple-900/40 dark:text-indigo-300'
-                                                        : 'bg-gradient-to-br from-sky-100 to-blue-100 text-sky-700 dark:from-sky-900/40 dark:to-blue-900/40 dark:text-sky-300'
-                                                }`}>
+                                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-100 to-blue-100 text-sm font-bold text-sky-700 shadow-sm dark:from-sky-900/40 dark:to-blue-900/40 dark:text-sky-300">
                                                     {user.name.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div className="min-w-0">
@@ -302,26 +248,19 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                                 {user.reports_count}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${ROLE_STYLES[user.role] ?? ''}`}>
-                                                {user.role === 'responder' && <ShieldCheck className="size-3" />}
-                                                {user.role === 'resident' && <UserIcon className="size-3" />}
-                                                {user.role}
-                                            </span>
-                                        </td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center justify-center gap-1">
                                                 <button
                                                     onClick={() => setEditingUser(user)}
                                                     className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-                                                    title="Edit user"
+                                                    title="Edit resident"
                                                 >
                                                     <Pencil className="size-4" />
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(user.id)}
                                                     className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-                                                    title="Delete user"
+                                                    title="Delete resident"
                                                 >
                                                     <Trash2 className="size-4" />
                                                 </button>
@@ -338,7 +277,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                             <div className="flex size-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
                                 <Users2 className="size-6 text-neutral-400 dark:text-neutral-500" />
                             </div>
-                            <p className="text-sm text-neutral-500 dark:text-neutral-400">No users found</p>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400">No residents found</p>
                             {hasFilters && (
                                 <button
                                     onClick={() => router.get('/admin/users')}
@@ -391,7 +330,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
             <AnimatePresence>
                 {showCreate && (
                     <UserFormModal
-                        title="Create User"
+                        title="Add Resident"
                         onClose={() => setShowCreate(false)}
                     />
                 )}
@@ -401,7 +340,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
             <AnimatePresence>
                 {editingUser && (
                     <UserFormModal
-                        title="Edit User"
+                        title="Edit Resident"
                         user={editingUser}
                         onClose={() => setEditingUser(null)}
                     />
@@ -455,7 +394,7 @@ function UserFormModal({
     const form = useForm({
         name: user?.name ?? '',
         email: user?.email ?? '',
-        role: user?.role ?? 'resident',
+        role: 'resident',
         contact_number: user?.contact_number ?? '',
         password: '',
     });
@@ -463,9 +402,9 @@ function UserFormModal({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (isEdit) {
-            form.put(`/admin/users/${user!.id}`, { onSuccess: () => { onClose(); swalSuccess('Success', 'User updated successfully.'); } });
+            form.put(`/admin/users/${user!.id}`, { onSuccess: () => { onClose(); swalSuccess('Success', 'Resident updated successfully.'); } });
         } else {
-            form.post('/admin/users', { onSuccess: () => { form.reset(); onClose(); swalSuccess('Success', 'User created successfully.'); } });
+            form.post('/admin/users', { onSuccess: () => { form.reset(); onClose(); swalSuccess('Success', 'Resident added successfully.'); } });
         }
     };
 
@@ -505,7 +444,7 @@ function UserFormModal({
                     <div>
                         <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                            {isEdit ? 'Update user details' : 'Create a new user account'}
+                            {isEdit ? 'Update resident details' : 'Add a new resident account'}
                         </p>
                     </div>
                     <button
@@ -540,17 +479,7 @@ function UserFormModal({
                             />
                         </FormField>
                     </div>
-                    <div className="grid gap-5 sm:grid-cols-3">
-                        <FormField label="Role" error={form.errors.role}>
-                            <select
-                                value={form.data.role}
-                                onChange={(e) => form.setData('role', e.target.value as any)}
-                                className={inputClassName}
-                            >
-                                <option value="resident">Resident</option>
-                                <option value="responder">Responder</option>
-                            </select>
-                        </FormField>
+                    <div className="grid gap-5 sm:grid-cols-2">
                         <FormField label="Contact Number" error={form.errors.contact_number}>
                             <input
                                 type="text"
@@ -587,7 +516,7 @@ function UserFormModal({
                             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
                         >
                             {isEdit ? <Pencil className="size-3.5" /> : <Plus className="size-3.5" />}
-                            {form.processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Create User'}
+                            {form.processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Resident'}
                         </button>
                     </div>
                 </form>

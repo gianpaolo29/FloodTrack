@@ -156,51 +156,6 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
                     </div>
                 </div>
 
-                {/* Filters */}
-                <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-neutral-200/60 bg-white px-5 py-3 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                    <div className="relative flex-1 min-w-[200px] max-w-sm">
-                        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            placeholder="Search by name or address..."
-                            defaultValue={filters.search ?? ''}
-                            className="pl-9 rounded-xl border border-neutral-200 bg-neutral-50/50 shadow-sm placeholder:text-muted-foreground/50 outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    filter('search', (e.target as HTMLInputElement).value);
-                                }
-                            }}
-                        />
-                    </div>
-                    <select
-                        value={filters.type ?? ''}
-                        onChange={(e) => filter('type', e.target.value)}
-                        className="h-9 rounded-xl border border-neutral-200 bg-neutral-50/50 py-2 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
-                    >
-                        <option value="">All types</option>
-                        {TYPE_OPTIONS.map((t) => (
-                            <option key={t} value={t}>{EVACUATION_CENTER_TYPE_LABELS[t]}</option>
-                        ))}
-                    </select>
-                    <select
-                        value={filters.active ?? ''}
-                        onChange={(e) => filter('active', e.target.value)}
-                        className="h-9 rounded-xl border border-neutral-200 bg-neutral-50/50 py-2 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
-                    >
-                        <option value="">All status</option>
-                        <option value="1">Active</option>
-                        <option value="0">Inactive</option>
-                    </select>
-                    {hasFilters && (
-                        <button
-                            onClick={() => router.get('/admin/evacuation-centers')}
-                            className="inline-flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-500 transition-colors hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-                        >
-                            <X className="size-3.5" />
-                            Clear
-                        </button>
-                    )}
-                </div>
-
                 {/* Bulk action bar */}
                 <AnimatePresence>
                     {selected.length > 0 && (
@@ -248,59 +203,127 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
                     )}
                 </AnimatePresence>
 
-                {/* Center list */}
+                {/* Table card */}
                 <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                    <div className="flex items-center justify-between border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
+
+                    {/* Card toolbar */}
+                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                         <div className="flex items-center gap-3">
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
-                                <Building2 className="size-4 text-white" />
+                            <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
+                                <Building2 className="size-3.5 text-white" />
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div>
                                 <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Evacuation Centers</h2>
-                                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                                    {centers.total}
-                                </span>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400">{centers.total} total</p>
                             </div>
                         </div>
-                        {centers.data.length > 0 && (
-                            <label className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-                                <input
-                                    type="checkbox"
-                                    checked={allOnPageSelected}
-                                    onChange={toggleAll}
-                                    className="size-3.5 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
+
+                        <div className="flex items-center gap-2.5">
+                            <select
+                                value={filters.type ?? ''}
+                                onChange={(e) => filter('type', e.target.value)}
+                                className="h-9 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100"
+                            >
+                                <option value="">All types</option>
+                                {TYPE_OPTIONS.map((t) => (
+                                    <option key={t} value={t}>{EVACUATION_CENTER_TYPE_LABELS[t]}</option>
+                                ))}
+                            </select>
+                            <select
+                                value={filters.active ?? ''}
+                                onChange={(e) => filter('active', e.target.value)}
+                                className="h-9 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 text-sm outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100"
+                            >
+                                <option value="">All statuses</option>
+                                <option value="1">Active</option>
+                                <option value="0">Inactive</option>
+                            </select>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                                <Input
+                                    placeholder="Search centers..."
+                                    defaultValue={filters.search ?? ''}
+                                    className="h-9 w-52 rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-3 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500"
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            filter('search', (e.target as HTMLInputElement).value);
+                                        }
+                                    }}
                                 />
-                                Select all
-                            </label>
-                        )}
+                            </div>
+                            {hasFilters && (
+                                <button
+                                    onClick={() => router.get('/admin/evacuation-centers')}
+                                    className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                                    title="Clear filters"
+                                >
+                                    <X className="size-4" />
+                                </button>
+                            )}
+                        </div>
                     </div>
 
-                    <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                        {centers.data.map((center) => (
-                            <CenterRow
-                                key={center.id}
-                                center={center}
-                                isSelected={selected.includes(center.id)}
-                                onToggle={() => toggleOne(center.id)}
-                                onEdit={() => setEditingCenter(center)}
-                            />
-                        ))}
-                        {centers.data.length === 0 && (
-                            <div className="flex flex-col items-center gap-3 py-20">
-                                <div className="flex size-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
-                                    <Building2 className="size-6 text-neutral-400 dark:text-neutral-500" />
-                                </div>
-                                <p className="text-sm text-neutral-500 dark:text-neutral-400">No evacuation centers found</p>
-                            </div>
-                        )}
+                    {/* Table */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                    <th className="w-12 px-5 py-4 text-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={allOnPageSelected}
+                                            onChange={toggleAll}
+                                            className="size-3.5 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
+                                        />
+                                    </th>
+                                    <th className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Center</th>
+                                    <th className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Type</th>
+                                    <th className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Capacity</th>
+                                    <th className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Status</th>
+                                    <th className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Location</th>
+                                    <th className="px-4 py-4 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                                {centers.data.map((center) => (
+                                    <CenterRow
+                                        key={center.id}
+                                        center={center}
+                                        isSelected={selected.includes(center.id)}
+                                        onToggle={() => toggleOne(center.id)}
+                                        onEdit={() => setEditingCenter(center)}
+                                    />
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
+
+                    {centers.data.length === 0 && (
+                        <div className="flex flex-col items-center gap-3 py-20">
+                            <div className="flex size-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+                                <Building2 className="size-6 text-neutral-400 dark:text-neutral-500" />
+                            </div>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400">No evacuation centers found</p>
+                            {hasFilters && (
+                                <button
+                                    onClick={() => router.get('/admin/evacuation-centers')}
+                                    className="text-xs font-medium text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-400"
+                                >
+                                    Clear all filters
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Pagination */}
                 {centers.last_page > 1 && (
                     <div className="flex items-center justify-between text-sm">
                         <span className="text-neutral-500 dark:text-neutral-400">
-                            Page {centers.current_page} of {centers.last_page}
+                            Page{' '}
+                            <span className="font-semibold text-neutral-900 dark:text-neutral-100">{centers.current_page}</span>
+                            {' '}of{' '}
+                            <span className="font-semibold text-neutral-900 dark:text-neutral-100">{centers.last_page}</span>
                         </span>
                         <div className="flex gap-1">
                             {centers.links.map((link, i) =>
@@ -365,81 +388,107 @@ function CenterRow({
     const deleteForm = useForm({});
 
     return (
-        <div
-            className={`group flex items-start gap-4 px-6 py-4 transition-colors ${
-                isSelected ? 'bg-sky-50/50 dark:bg-sky-950/20' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/30'
-            }`}
-        >
-            <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={onToggle}
-                className="mt-1 size-4 shrink-0 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
-            />
-            <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${TYPE_COLORS[center.type]}`}>
-                        <Building2 className="size-3" />
-                        {EVACUATION_CENTER_TYPE_LABELS[center.type]}
-                    </span>
-                    {center.is_active ? (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-600/10 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-500/20">
-                            <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            Active
-                        </span>
-                    ) : (
-                        <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-semibold text-neutral-500 ring-1 ring-neutral-500/10 dark:bg-neutral-800 dark:text-neutral-400">
-                            Inactive
-                        </span>
-                    )}
-                    <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-semibold text-indigo-700 ring-1 ring-indigo-600/10 dark:bg-indigo-950/40 dark:text-indigo-400 dark:ring-indigo-500/20">
-                        <Users className="size-3" />
-                        {center.capacity} capacity
-                    </span>
+        <tr className={`transition-colors ${
+            isSelected
+                ? 'bg-sky-50/60 dark:bg-sky-950/20'
+                : 'hover:bg-neutral-50/60 dark:hover:bg-neutral-800/20'
+        }`}>
+            {/* Checkbox */}
+            <td className="w-12 px-5 py-4 text-center">
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={onToggle}
+                    className="size-3.5 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
+                />
+            </td>
+
+            {/* Center name + type label */}
+            <td className="px-4 py-4">
+                <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{center.name}</p>
+                <p className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">{EVACUATION_CENTER_TYPE_LABELS[center.type]}</p>
+            </td>
+
+            {/* Type badge */}
+            <td className="px-4 py-4">
+                <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${TYPE_COLORS[center.type]}`}>
+                    <Building2 className="size-3" />
+                    {EVACUATION_CENTER_TYPE_LABELS[center.type]}
+                </span>
+            </td>
+
+            {/* Capacity */}
+            <td className="px-4 py-4">
+                <div className="inline-flex items-center gap-1.5">
+                    <Users className="size-3.5 text-neutral-400" />
+                    <span className="text-sm font-semibold tabular-nums text-neutral-900 dark:text-neutral-100">{center.capacity}</span>
                 </div>
-                <p className="mt-1.5 text-sm font-semibold text-neutral-900 dark:text-neutral-100">{center.name}</p>
-                {center.address && (
-                    <p className="mt-1 flex items-center gap-1 text-xs text-neutral-400 dark:text-neutral-500">
-                        <MapPin className="size-3" />
-                        {center.address}
-                    </p>
+            </td>
+
+            {/* Status */}
+            <td className="px-4 py-4">
+                {center.is_active ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-600/10 dark:bg-emerald-950/40 dark:text-emerald-400 dark:ring-emerald-500/20">
+                        <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+                        Active
+                    </span>
+                ) : (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-500 ring-1 ring-neutral-500/10 dark:bg-neutral-800 dark:text-neutral-400">
+                        <span className="size-1.5 rounded-full bg-neutral-400" />
+                        Inactive
+                    </span>
                 )}
-                <p className="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500">
-                    {new Date(center.created_at).toLocaleString('en-PH')}
-                </p>
-            </div>
-            <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                <button
-                    onClick={() =>
-                        router.post(`/admin/evacuation-centers/${center.id}/toggle`, {}, { preserveState: true })
-                    }
-                    className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-                    title={center.is_active ? 'Deactivate' : 'Activate'}
-                >
-                    <Power className="size-3.5" />
-                </button>
-                <button
-                    onClick={onEdit}
-                    className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-                    title="Edit center"
-                >
-                    <Pencil className="size-3.5" />
-                </button>
-                <button
-                    onClick={async () => {
-                        const confirmed = await swalDelete('this evacuation center');
-                        if (confirmed)
-                            deleteForm.delete(`/admin/evacuation-centers/${center.id}`, {
-                                onSuccess: () => swalSuccess('Deleted', 'Evacuation center has been removed.'),
-                            });
-                    }}
-                    className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-                    title="Delete center"
-                >
-                    <Trash2 className="size-3.5" />
-                </button>
-            </div>
-        </div>
+            </td>
+
+            {/* Location */}
+            <td className="max-w-[200px] px-4 py-4">
+                {center.address ? (
+                    <div className="flex items-start gap-1.5">
+                        <MapPin className="mt-0.5 size-3 shrink-0 text-neutral-400" />
+                        <span className="truncate text-xs text-neutral-500 dark:text-neutral-400" title={center.address}>
+                            {center.address}
+                        </span>
+                    </div>
+                ) : (
+                    <span className="text-xs text-neutral-300 dark:text-neutral-600">—</span>
+                )}
+            </td>
+
+            {/* Actions */}
+            <td className="px-4 py-4">
+                <div className="flex items-center justify-center gap-1">
+                    <button
+                        onClick={() =>
+                            router.post(`/admin/evacuation-centers/${center.id}/toggle`, {}, { preserveState: true })
+                        }
+                        className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                        title={center.is_active ? 'Deactivate' : 'Activate'}
+                    >
+                        <Power className="size-4" />
+                    </button>
+                    <button
+                        onClick={onEdit}
+                        className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                        title="Edit center"
+                    >
+                        <Pencil className="size-4" />
+                    </button>
+                    <button
+                        onClick={async () => {
+                            const confirmed = await swalDelete('this evacuation center');
+                            if (confirmed)
+                                deleteForm.delete(`/admin/evacuation-centers/${center.id}`, {
+                                    onSuccess: () => swalSuccess('Deleted', 'Evacuation center has been removed.'),
+                                });
+                        }}
+                        className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                        title="Delete center"
+                    >
+                        <Trash2 className="size-4" />
+                    </button>
+                </div>
+            </td>
+        </tr>
     );
 }
 

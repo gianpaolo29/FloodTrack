@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\EvacuationCenterController;
 use App\Http\Controllers\Api\ProtocolController;
 use App\Http\Controllers\Api\AdminStatsController;
+use App\Http\Controllers\Api\UserNotificationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -77,6 +78,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Avatar upload
     Route::post('/user/avatar', [UserController::class, 'updateAvatar']);
+
+    // Personal in-app notifications
+    Route::get('/user/notifications',              [UserNotificationController::class, 'index']);
+    Route::post('/user/notifications/read-all',    [UserNotificationController::class, 'markAllRead']);
+    Route::post('/user/notifications/{id}/read',   [UserNotificationController::class, 'markRead']);
 
     // Evacuation centers and protocols (read-only for all users)
     Route::get('/evacuation-centers', [EvacuationCenterController::class, 'index']);

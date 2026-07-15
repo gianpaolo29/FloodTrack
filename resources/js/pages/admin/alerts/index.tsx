@@ -151,50 +151,61 @@ export default function AdminAlertsIndex({ alerts }: Props) {
 
                 {/* Alert list card */}
                 <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                    <div className="flex items-center justify-between border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
-                        <div className="flex items-center gap-3">
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
-                                <Bell className="size-4 text-white" />
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Published Alerts</h2>
-                                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                                    {alerts.total}
-                                </span>
-                            </div>
+                    {/* Card header */}
+                    <div className="flex items-center gap-3 border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
+                        <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
+                            <Bell className="size-4 text-white" />
                         </div>
-                        {alerts.data.length > 0 && (
-                            <label className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-                                <input
-                                    type="checkbox"
-                                    checked={allOnPageSelected}
-                                    onChange={toggleAll}
-                                    className="size-3.5 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
-                                />
-                                Select all
-                            </label>
-                        )}
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Published Alerts</h2>
+                            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                                {alerts.total}
+                            </span>
+                        </div>
                     </div>
 
-                    <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                        {alerts.data.map((alert) => (
-                            <AlertRow
-                                key={alert.id}
-                                alert={alert}
-                                isSelected={selected.includes(alert.id)}
-                                onToggle={() => toggleOne(alert.id)}
-                                onEdit={() => setEditingAlert(alert)}
-                            />
-                        ))}
-                        {alerts.data.length === 0 && (
-                            <div className="flex flex-col items-center gap-3 py-20">
-                                <div className="flex size-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
-                                    <Bell className="size-6 text-neutral-400 dark:text-neutral-500" />
-                                </div>
-                                <p className="text-sm text-neutral-500 dark:text-neutral-400">No alerts published yet</p>
-                            </div>
-                        )}
+                    {/* Table */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                    <th className="w-12 px-5 py-4 text-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={allOnPageSelected}
+                                            onChange={toggleAll}
+                                            className="size-3.5 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
+                                        />
+                                    </th>
+                                    <th className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Alert</th>
+                                    <th className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Type</th>
+                                    <th className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Published</th>
+                                    <th className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Expires</th>
+                                    <th className="px-4 py-4 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                                {alerts.data.map((alert) => (
+                                    <AlertRow
+                                        key={alert.id}
+                                        alert={alert}
+                                        isSelected={selected.includes(alert.id)}
+                                        onToggle={() => toggleOne(alert.id)}
+                                        onEdit={() => setEditingAlert(alert)}
+                                    />
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
+
+                    {alerts.data.length === 0 && (
+                        <div className="flex flex-col items-center gap-3 py-20">
+                            <div className="flex size-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+                                <Bell className="size-6 text-neutral-400 dark:text-neutral-500" />
+                            </div>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400">No alerts published yet</p>
+                        </div>
+                    )}
                 </div>
 
                 {/* Pagination */}
@@ -525,22 +536,42 @@ function AlertRow({
 }) {
     const deleteForm = useForm({});
 
+    const published = new Date(alert.created_at);
+    const publishedDate = published.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const publishedTime = published.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
+
+    const expires = alert.expires_at ? new Date(alert.expires_at) : null;
+    const expiresDate = expires
+        ? expires.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : null;
+
     return (
-        <div
-            className={`group flex items-start gap-4 px-6 py-4 transition-colors ${
-                isSelected ? 'bg-sky-50/50 dark:bg-sky-950/20' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/30'
-            }`}
-        >
-            <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={onToggle}
-                className="mt-1 size-4 shrink-0 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
-            />
-            <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
+        <tr className={`transition-colors ${
+            isSelected
+                ? 'bg-sky-50/60 dark:bg-sky-950/20'
+                : 'hover:bg-neutral-50/60 dark:hover:bg-neutral-800/20'
+        }`}>
+            {/* Checkbox */}
+            <td className="w-12 px-5 py-4 text-center">
+                <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={onToggle}
+                    className="size-3.5 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
+                />
+            </td>
+
+            {/* Alert title + body preview */}
+            <td className="px-4 py-4">
+                <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{alert.title}</p>
+                <p className="mt-0.5 max-w-[320px] truncate text-xs text-neutral-400 dark:text-neutral-500">{alert.body}</p>
+            </td>
+
+            {/* Type badge + optional PINNED pill */}
+            <td className="px-4 py-4">
+                <div className="flex flex-wrap items-center gap-1.5">
                     <span
-                        className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${TYPE_STYLES[alert.type] ?? TYPE_STYLES.update}`}
+                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${TYPE_STYLES[alert.type] ?? TYPE_STYLES.update}`}
                     >
                         {alert.type}
                     </span>
@@ -549,41 +580,49 @@ function AlertRow({
                             PINNED
                         </span>
                     )}
-                    <span className="text-xs text-neutral-400 dark:text-neutral-500">
-                        {new Date(alert.created_at).toLocaleString('en-PH')}
-                    </span>
-                    {alert.expires_at && (
-                        <span className="text-xs text-neutral-400 dark:text-neutral-500">
-                            &middot; expires {new Date(alert.expires_at).toLocaleString('en-PH')}
-                        </span>
-                    )}
                 </div>
-                <p className="mt-1.5 text-sm font-semibold text-neutral-900 dark:text-neutral-100">{alert.title}</p>
-                <p className="mt-0.5 line-clamp-2 text-sm leading-relaxed text-neutral-500 dark:text-neutral-400">{alert.body}</p>
-                <p className="mt-1.5 text-xs text-neutral-400 dark:text-neutral-500">by {alert.creator?.name ?? 'Admin'}</p>
-            </div>
-            <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                <button
-                    onClick={onEdit}
-                    className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-                    title="Edit alert"
-                >
-                    <Pencil className="size-3.5" />
-                </button>
-                <button
-                    onClick={async () => {
-                        const confirmed = await swalDelete('this alert');
-                        if (confirmed) deleteForm.delete(`/admin/alerts/${alert.id}`, {
-                            onSuccess: () => swalSuccess('Deleted', 'Alert has been deleted.'),
-                        });
-                    }}
-                    className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-                    title="Delete alert"
-                >
-                    <Trash2 className="size-3.5" />
-                </button>
-            </div>
-        </div>
+            </td>
+
+            {/* Published */}
+            <td className="whitespace-nowrap px-4 py-4">
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">{publishedDate}</p>
+                <p className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">{publishedTime}</p>
+            </td>
+
+            {/* Expires */}
+            <td className="whitespace-nowrap px-4 py-4">
+                {expiresDate ? (
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{expiresDate}</p>
+                ) : (
+                    <span className="text-xs text-neutral-300 dark:text-neutral-600">—</span>
+                )}
+            </td>
+
+            {/* Actions */}
+            <td className="px-4 py-4">
+                <div className="flex items-center justify-center gap-1">
+                    <button
+                        onClick={onEdit}
+                        className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                        title="Edit alert"
+                    >
+                        <Pencil className="size-4" />
+                    </button>
+                    <button
+                        onClick={async () => {
+                            const confirmed = await swalDelete('this alert');
+                            if (confirmed) deleteForm.delete(`/admin/alerts/${alert.id}`, {
+                                onSuccess: () => swalSuccess('Deleted', 'Alert has been deleted.'),
+                            });
+                        }}
+                        className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                        title="Delete alert"
+                    >
+                        <Trash2 className="size-4" />
+                    </button>
+                </div>
+            </td>
+        </tr>
     );
 }
 

@@ -20,19 +20,15 @@ class StatisticsController extends Controller
             ->orderBy('date')
             ->pluck('count', 'date');
 
-        // Average response time (created → resolved) in hours
+        // Average response time (created → resolved) in minutes
+        $avgExpr = DB::getDriverName() === 'sqlite'
+            ? 'AVG((julianday(resolved_at) - julianday(created_at)) * 1440)'
+            : 'AVG(TIMESTAMPDIFF(MINUTE, created_at, resolved_at))';
+
         $avg_response_time = Report::where('status', 'resolved')
             ->whereNotNull('resolved_at')
-            ->selectRaw('AVG(TIMESTAMPDIFF(HOUR, created_at, resolved_at)) as avg_hours')
-            ->value('avg_hours');
-
-        // If using SQLite (dev), use julianday instead
-        if ($avg_response_time === null) {
-            $avg_response_time = Report::where('status', 'resolved')
-                ->whereNotNull('resolved_at')
-                ->selectRaw('AVG((julianday(resolved_at) - julianday(created_at)) * 24) as avg_hours')
-                ->value('avg_hours');
-        }
+            ->selectRaw("$avgExpr as avg_minutes")
+            ->value('avg_minutes');
 
         // Reports by severity
         $severity_breakdown = Report::selectRaw('severity, count(*) as count')
