@@ -16,6 +16,7 @@
         "laravel/sanctum": "*",
         "laravel/tinker": "^3.0",
         "laravel/wayfinder": "^0.1.14",
+        "openai-php/client": "^0.20.0",
         "symfony/http-foundation": "^7.0"
     },
     "require-dev": {

@@ -48,6 +48,11 @@ export interface Report {
     created_at: string;
     verified_at: string | null;
     resolved_at: string | null;
+    ai_flagged: boolean;
+    ai_flag_reason: string | null;
+    ai_image_verified: boolean | null;
+    ai_image_notes: string | null;
+    potential_duplicate_of: number | null;
 }
 
 export interface Alert {

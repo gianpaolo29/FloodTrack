@@ -5,12 +5,15 @@ import {
     ArrowUpRight,
     CheckCircle2,
     Clock,
+    Copy,
     Eye,
     FileText,
     Globe,
+    ImageOff,
     RefreshCw,
     Search,
     ShieldCheck,
+    Sparkles,
     Trash2,
     X,
     XCircle,
@@ -389,6 +392,30 @@ function ReportRow({
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[report.status]}`}>
                         {report.status}
                     </span>
+                    {report.potential_duplicate_of != null && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                            <Sparkles className="size-2.5" />
+                            Duplicate
+                        </span>
+                    )}
+                    {report.ai_image_verified === false && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                            <ImageOff className="size-2.5" />
+                            Bad image
+                        </span>
+                    )}
+                    {report.ai_flagged && report.potential_duplicate_of == null && report.ai_image_verified !== false && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                            <Sparkles className="size-2.5" />
+                            Suspicious
+                        </span>
+                    )}
+                    {report.ai_image_verified === true && !report.ai_flagged && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                            <Sparkles className="size-2.5" />
+                            AI verified
+                        </span>
+                    )}
                 </div>
 
                 {report.address && (

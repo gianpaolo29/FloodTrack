@@ -23,15 +23,22 @@ class Report extends Model
         'verified_by',
         'verified_at',
         'resolved_at',
+        'ai_flagged',
+        'ai_flag_reason',
+        'ai_image_verified',
+        'ai_image_notes',
+        'potential_duplicate_of',
     ];
 
     protected function casts(): array
     {
         return [
-            'latitude'    => 'float',
-            'longitude'   => 'float',
-            'verified_at' => 'datetime',
-            'resolved_at' => 'datetime',
+            'latitude'          => 'float',
+            'longitude'         => 'float',
+            'verified_at'       => 'datetime',
+            'resolved_at'       => 'datetime',
+            'ai_flagged'        => 'boolean',
+            'ai_image_verified' => 'boolean',
         ];
     }
 

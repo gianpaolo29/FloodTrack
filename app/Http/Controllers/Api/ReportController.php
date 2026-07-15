@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\NewReportSubmitted;
 use App\Notifications\ReportStatusChanged;
 use App\Services\ExpoPushService;
+use App\Services\ReportAnalysisService;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Notification;
@@ -61,6 +62,11 @@ class ReportController extends Controller
             'status'    => 'pending',
             'notes'     => 'Report submitted.',
         ]);
+
+        // AI analysis: duplicate detection, fake report check, image verification
+        $mediaFiles = $request->hasFile('media') ? $request->file('media') : [];
+        $aiFlags    = ReportAnalysisService::analyze($report, $mediaFiles);
+        $report->update($aiFlags);
 
         // Notify all admins about the new report
         $admins = User::where('role', 'admin')->get();

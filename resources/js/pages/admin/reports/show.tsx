@@ -2,11 +2,14 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     ArrowLeft,
+    Bot,
     Calendar,
     CheckCircle2,
     Clock,
+    Copy,
     ExternalLink,
     Image,
+    ImageOff,
     Mail,
     MapPin,
     Navigation,
@@ -16,6 +19,7 @@ import {
     Save,
     Shield,
     ShieldCheck,
+    Sparkles,
     Trash2,
     User,
     UserCheck,
@@ -199,6 +203,9 @@ export default function AdminReportShow({ report, responders }: Props) {
                         </div>
                     </div>
                 )}
+
+                {/* AI Analysis Panel */}
+                <AiAnalysisPanel report={report} />
 
                 <div className="grid gap-6 lg:grid-cols-3">
 
@@ -621,6 +628,104 @@ export default function AdminReportShow({ report, responders }: Props) {
                 </div>
             </div>
         </AppLayout>
+    );
+}
+
+/* ─── AI Analysis Panel ─── */
+
+function AiAnalysisPanel({ report }: { report: Report }) {
+    const { ai_flagged, ai_flag_reason, ai_image_verified, ai_image_notes, potential_duplicate_of } = report;
+
+    // Don't show if AI hasn't run (no flag, no image result)
+    if (!ai_flagged && ai_image_verified === null) return null;
+
+    const isDuplicate  = potential_duplicate_of != null;
+    const imageFailed  = ai_image_verified === false;
+    const imageOk      = ai_image_verified === true;
+    const textFlagged  = ai_flagged && !isDuplicate && !imageFailed;
+    const allClear     = !ai_flagged && imageOk;
+
+    return (
+        <div className={`rounded-2xl border p-5 ${
+            allClear
+                ? 'border-emerald-200/60 bg-emerald-50/60 dark:border-emerald-800/40 dark:bg-emerald-950/20'
+                : 'border-amber-200/60 bg-amber-50/60 dark:border-amber-800/40 dark:bg-amber-950/20'
+        }`}>
+            {/* Header */}
+            <div className="mb-4 flex items-center gap-2.5">
+                <div className={`flex size-8 items-center justify-center rounded-lg ${
+                    allClear ? 'bg-emerald-500' : 'bg-amber-500'
+                }`}>
+                    <Bot className="size-4 text-white" />
+                </div>
+                <div className="flex items-center gap-2">
+                    <h3 className={`text-sm font-semibold ${
+                        allClear ? 'text-emerald-900 dark:text-emerald-100' : 'text-amber-900 dark:text-amber-100'
+                    }`}>
+                        AI Analysis
+                    </h3>
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide ${
+                        allClear
+                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
+                            : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
+                    }`}>
+                        <Sparkles className="size-2.5" />
+                        GPT-4o
+                    </span>
+                </div>
+            </div>
+
+            {/* Badges row */}
+            <div className="flex flex-wrap gap-2 mb-4">
+                {allClear && (
+                    <AiBadge icon={<CheckCircle2 className="size-3" />} label="Report looks legitimate" color="emerald" />
+                )}
+                {imageOk && (
+                    <AiBadge icon={<Image className="size-3" />} label="Image verified" color="emerald" />
+                )}
+                {imageFailed && (
+                    <AiBadge icon={<ImageOff className="size-3" />} label="Image could not be verified" color="amber" />
+                )}
+                {isDuplicate && (
+                    <AiBadge icon={<Copy className="size-3" />} label={`Possible duplicate of #${potential_duplicate_of}`} color="amber" />
+                )}
+                {textFlagged && (
+                    <AiBadge icon={<XCircle className="size-3" />} label="Suspicious content detected" color="amber" />
+                )}
+            </div>
+
+            {/* Notes */}
+            <div className="flex flex-col gap-2">
+                {ai_image_notes && (
+                    <div className="rounded-lg bg-white/60 px-3.5 py-2.5 dark:bg-black/20">
+                        <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Image notes</p>
+                        <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">{ai_image_notes}</p>
+                    </div>
+                )}
+                {ai_flag_reason && (
+                    <div className="rounded-lg bg-white/60 px-3.5 py-2.5 dark:bg-black/20">
+                        <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Flag reason</p>
+                        <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">{ai_flag_reason}</p>
+                    </div>
+                )}
+            </div>
+
+            <p className="mt-3 text-[10px] text-neutral-400 dark:text-neutral-500">
+                AI analysis is advisory only. Admin decision takes precedence.
+            </p>
+        </div>
+    );
+}
+
+function AiBadge({ icon, label, color }: { icon: React.ReactNode; label: string; color: 'emerald' | 'amber' }) {
+    const cls = color === 'emerald'
+        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300';
+    return (
+        <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${cls}`}>
+            {icon}
+            {label}
+        </span>
     );
 }
 

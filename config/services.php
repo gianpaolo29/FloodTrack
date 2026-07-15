@@ -35,6 +35,10 @@ return [
         ],
     ],
 
+    'openai' => [
+        'key' => env('OPENAI_API_KEY', ''),
+    ],
+
     'openweather' => [
         'key' => env('OPENWEATHER_API_KEY', ''),
         'lat' => env('WEATHER_DEFAULT_LAT', 14.5995),

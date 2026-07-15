@@ -49,7 +49,8 @@ class AdminStatsController extends Controller
         $recentReports = Report::with('user:id,name')
             ->latest()
             ->limit(10)
-            ->get(['id', 'reference_number', 'severity', 'status', 'address', 'user_id', 'created_at']);
+            ->get(['id', 'reference_number', 'severity', 'status', 'address', 'user_id', 'created_at',
+                   'ai_flagged', 'ai_flag_reason', 'ai_image_verified', 'ai_image_notes', 'potential_duplicate_of']);
 
         return response()->json([
             'stats'              => $stats,
