@@ -1,10 +1,7 @@
 import { Head, router } from '@inertiajs/react';
-import { Phone, Search, ShieldCheck, X } from 'lucide-react';
+import { Activity, CheckCircle2, ClipboardList, Eye, Pencil, Phone, Search, ShieldCheck, Users, X } from 'lucide-react';
 import { useCallback } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import type { BreadcrumbItem } from '@/types';
 
 interface Responder {
@@ -45,124 +42,227 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
         });
     }, []);
 
+    const totalActive = responders.data.reduce((sum, r) => sum + r.active_assignments, 0);
+    const totalResolved = responders.data.reduce((sum, r) => sum + r.resolved_count, 0);
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Responders — FloodTrack Admin" />
 
             <div className="flex flex-col gap-6 p-6 lg:p-8">
 
-                {/* Header */}
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Responders</h1>
-                    <p className="text-sm text-muted-foreground">
-                        {responders.total} registered responder{responders.total !== 1 ? 's' : ''}
-                    </p>
+                {/* Stat cards */}
+                <div className="grid grid-cols-3 gap-4">
+                    <StatCard
+                        icon={ShieldCheck}
+                        iconBg="bg-blue-50 dark:bg-blue-950/30"
+                        iconColor="text-blue-600 dark:text-blue-400"
+                        label="Total Responders"
+                        value={responders.total}
+                    />
+                    <StatCard
+                        icon={Activity}
+                        iconBg="bg-emerald-50 dark:bg-emerald-950/30"
+                        iconColor="text-emerald-600 dark:text-emerald-400"
+                        label="Active"
+                        value={totalActive}
+                    />
+                    <StatCard
+                        icon={CheckCircle2}
+                        iconBg="bg-amber-50 dark:bg-amber-950/30"
+                        iconColor="text-amber-600 dark:text-amber-400"
+                        label="Total Resolved"
+                        value={totalResolved}
+                    />
                 </div>
 
-                {/* Search */}
-                <div className="flex items-center gap-3">
-                    <div className="relative flex-1 max-w-sm">
-                        <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            placeholder="Search by name or email..."
-                            defaultValue={filters.search ?? ''}
-                            className="pl-9 rounded-xl border border-neutral-200 bg-neutral-50/50 shadow-sm placeholder:text-muted-foreground/50 outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50"
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    search((e.target as HTMLInputElement).value);
-                                }
-                            }}
-                        />
+                {/* Table card */}
+                <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+
+                    {/* Table header */}
+                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
+                        <div className="flex items-center gap-3">
+                            <div className="flex size-9 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/30">
+                                <Users className="size-4.5 text-blue-600 dark:text-blue-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">All Responders</h2>
+                                <p className="text-xs text-neutral-500 dark:text-neutral-400">{responders.total} results</p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search responders..."
+                                    defaultValue={filters.search ?? ''}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') search((e.target as HTMLInputElement).value);
+                                    }}
+                                    className="h-9 w-56 rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-3 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500"
+                                />
+                            </div>
+                            {filters.search && (
+                                <button
+                                    onClick={() => router.get('/admin/responders')}
+                                    className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                                    title="Clear search"
+                                >
+                                    <X className="size-4" />
+                                </button>
+                            )}
+                        </div>
                     </div>
-                    {filters.search && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.get('/admin/responders')}
-                            className="gap-1 text-muted-foreground hover:text-foreground"
-                        >
-                            <X className="size-3.5" />
-                            Clear
-                        </Button>
+
+                    {/* Table */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                                    <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Responder</th>
+                                    <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Assignments</th>
+                                    <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Status</th>
+                                    <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {responders.data.map((r) => (
+                                    <tr key={r.id} className="group border-b border-neutral-50 last:border-b-0 transition-colors hover:bg-neutral-50/60 dark:border-neutral-800/50 dark:hover:bg-neutral-800/20">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-100 to-blue-100 text-sm font-bold text-sky-700 dark:from-sky-900/40 dark:to-blue-900/40 dark:text-sky-300">
+                                                    {r.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{r.name}</p>
+                                                    <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{r.email}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-sky-700 dark:text-sky-400">
+                                                <ClipboardList className="size-4 text-sky-500/70 dark:text-sky-500/50" />
+                                                {r.total_assigned}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            {r.active_assignments > 0 ? (
+                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
+                                                    <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                    active
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                                                    <span className="size-1.5 rounded-full bg-neutral-400" />
+                                                    idle
+                                                </span>
+                                            )}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center justify-center gap-1">
+                                                <button
+                                                    className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                                                    title="View details"
+                                                >
+                                                    <Eye className="size-4" />
+                                                </button>
+                                                <button
+                                                    className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                                                    title="Edit responder"
+                                                >
+                                                    <Pencil className="size-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {responders.data.length === 0 && (
+                        <div className="flex flex-col items-center gap-3 py-20">
+                            <div className="flex size-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+                                <ShieldCheck className="size-6 text-neutral-400 dark:text-neutral-500" />
+                            </div>
+                            <p className="text-sm text-neutral-500 dark:text-neutral-400">No responders found</p>
+                            {filters.search && (
+                                <button
+                                    onClick={() => router.get('/admin/responders')}
+                                    className="text-xs font-medium text-sky-600 hover:text-sky-700 transition-colors"
+                                >
+                                    Clear search
+                                </button>
+                            )}
+                        </div>
                     )}
                 </div>
 
-                {/* Responder cards */}
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {responders.data.map((r) => (
-                        <Card key={r.id} className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-all hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
-                            <CardHeader className="pb-3 px-6 pt-6">
-                                <CardTitle className="flex items-center gap-3 text-base">
-                                    <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-sky-600 text-sm font-bold text-white shadow-sm">
-                                        {r.name.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate font-semibold">{r.name}</p>
-                                        <p className="truncate text-xs text-muted-foreground font-normal">{r.email}</p>
-                                    </div>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="px-6 pb-4">
-                                <div className="grid grid-cols-3 gap-3 rounded-xl border border-neutral-200/60 bg-neutral-50/50 p-3 text-center dark:border-neutral-700/60 dark:bg-neutral-800/50">
-                                    <div>
-                                        <p className="text-xl font-bold text-blue-600 tabular-nums">{r.active_assignments}</p>
-                                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Active</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xl font-bold text-emerald-600 tabular-nums">{r.resolved_count}</p>
-                                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Resolved</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xl font-bold tabular-nums">{r.total_assigned}</p>
-                                        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">Total</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                            {r.contact_number && (
-                                <div className="border-t border-neutral-100 px-6 py-3 dark:border-neutral-800">
-                                    <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                                        <Phone className="size-3" />
-                                        {r.contact_number}
-                                    </p>
-                                </div>
-                            )}
-                        </Card>
-                    ))}
-                </div>
-
-                {responders.data.length === 0 && (
-                    <Card className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <CardContent className="flex flex-col items-center gap-2 py-16">
-                            <ShieldCheck className="size-8 text-muted-foreground/40" />
-                            <p className="text-sm text-muted-foreground">No responders found</p>
-                        </CardContent>
-                    </Card>
-                )}
-
                 {/* Pagination */}
                 {responders.last_page > 1 && (
-                    <div className="flex justify-center gap-1">
-                        {responders.links.map((link, i) =>
-                            link.url ? (
-                                <button
-                                    key={i}
-                                    onClick={() => router.get(link.url!)}
-                                    className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                                        link.active ? 'bg-primary text-primary-foreground shadow-sm' : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                                    }`}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ) : (
-                                <span
-                                    key={i}
-                                    className="rounded-lg px-3 py-1.5 text-xs opacity-30"
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                />
-                            ),
-                        )}
+                    <div className="flex items-center justify-between text-sm">
+                        <span className="text-neutral-500 dark:text-neutral-400">
+                            Page {responders.current_page} of {responders.last_page}
+                        </span>
+                        <div className="flex gap-1">
+                            {responders.links.map((link, i) =>
+                                link.url ? (
+                                    <a
+                                        key={i}
+                                        href={link.url}
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            router.get(link.url!);
+                                        }}
+                                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                                            link.active
+                                                ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-sm'
+                                                : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
+                                        }`}
+                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                    />
+                                ) : (
+                                    <span
+                                        key={i}
+                                        className="rounded-lg px-3 py-1.5 text-xs opacity-30"
+                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                    />
+                                ),
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
         </AppLayout>
+    );
+}
+
+/* ─── Stat Card ─── */
+
+function StatCard({
+    icon: Icon,
+    iconBg,
+    iconColor,
+    label,
+    value,
+}: {
+    icon: typeof ShieldCheck;
+    iconBg: string;
+    iconColor: string;
+    label: string;
+    value: number;
+}) {
+    return (
+        <div className="flex items-center justify-between rounded-2xl border border-neutral-200/60 bg-white px-5 py-4 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+            <div className="flex flex-col gap-1">
+                <div className={`flex size-10 items-center justify-center rounded-xl ${iconBg}`}>
+                    <Icon className={`size-5 ${iconColor}`} />
+                </div>
+                <p className="mt-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">{label}</p>
+            </div>
+            <p className="text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{value}</p>
+        </div>
     );
 }
