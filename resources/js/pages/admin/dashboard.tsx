@@ -357,11 +357,11 @@ export default function AdminDashboard({
                             {recent_activity.length > 0 ? recent_activity.map((a) => (
                                 <div key={a.id} className="flex items-start gap-3 px-5 py-3">
                                     <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-500 to-blue-600 text-[10px] font-bold text-white mt-0.5">
-                                        {a.user.name.charAt(0)}
+                                        {a.user?.name?.charAt(0) ?? '?'}
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <p className="text-xs text-neutral-600 dark:text-neutral-300">
-                                            <span className="font-semibold">{a.user.name}</span>
+                                            <span className="font-semibold">{a.user?.name ?? 'System'}</span>
                                             <span className="text-neutral-400"> changed status to </span>
                                             <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${STA[a.status as keyof typeof STA] ?? 'bg-neutral-100 text-neutral-500'}`}>
                                                 {a.status.replace('_', ' ')}
