@@ -12,6 +12,7 @@ use App\Notifications\NewReportSubmitted;
 use App\Notifications\ReportStatusChanged;
 use App\Services\ExpoPushService;
 use App\Services\ReportAnalysisService;
+use App\Services\SocketService;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Notification;
@@ -102,6 +103,9 @@ class ReportController extends Controller
                 ]
             );
 
+            SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'verified']);
+            SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'verified']);
+
         } elseif ($autoRejected) {
             $report->update(['status' => 'rejected']);
 
@@ -124,6 +128,9 @@ class ReportController extends Controller
                     'status'   => 'rejected',
                 ]
             );
+
+            SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'rejected']);
+            SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'rejected']);
 
         } else {
             // Needs manual admin review — notify admins
@@ -208,6 +215,9 @@ class ReportController extends Controller
             ]
         );
 
+        SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => $data['status']]);
+        SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => $data['status']]);
+
         return response()->json($report->fresh()->load(['statusUpdates.user:id,name,role']));
     }
 
@@ -247,6 +257,10 @@ class ReportController extends Controller
             ]
         );
 
+        SocketService::toUser($data['responder_id'], 'new-notification', ['type' => 'incident_assigned', 'reportId' => $report->id]);
+        SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'assigned']);
+        SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'assigned']);
+
         return response()->json($report->fresh()->load('assignedResponder:id,name,contact_number'));
     }
 
@@ -272,6 +286,9 @@ class ReportController extends Controller
             'verified',
             $request->user()->name,
         ));
+
+        SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'verified']);
+        SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'verified']);
 
         return response()->json($report->fresh());
     }
@@ -361,6 +378,9 @@ class ReportController extends Controller
             'rejected',
             $request->user()->name,
         ));
+
+        SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'rejected']);
+        SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'rejected']);
 
         return response()->json($report->fresh());
     }

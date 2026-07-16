@@ -228,7 +228,7 @@ export default function AdminReportsMap({ reports, filters }: Props) {
                                         ? 'ring-2 ring-offset-1'
                                         : 'hover:bg-neutral-50 dark:hover:bg-neutral-800'
                                 }`}
-                                style={filters.severity === s ? { ringColor: SEVERITY_META[s].hex } : {}}
+                                style={filters.severity === s ? { '--tw-ring-color': SEVERITY_META[s].hex } as React.CSSProperties : {}}
                             >
                                 <span className="text-base font-bold text-neutral-900 dark:text-white">{counts[s]}</span>
                                 <span className={`mt-1 h-1.5 w-full rounded-full ${SEVERITY_META[s].color}`} />

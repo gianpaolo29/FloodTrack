@@ -39,6 +39,7 @@ io.on('connection', (socket) => {
   console.log(`[+] uid=${userId} name="${name}"`);
 
   socket.join(`user:${userId}`);
+  socket.join('alerts');
 
   socket.on('join-report', (reportId) => socket.join(`report:${reportId}`));
   socket.on('leave-report', (reportId) => socket.leave(`report:${reportId}`));

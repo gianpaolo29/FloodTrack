@@ -21,7 +21,7 @@ import {
     Users,
     X,
 } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { Input } from '@/components/ui/input';
 import { swalDelete, swalSuccess } from '@/lib/swal';
@@ -57,7 +57,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const inputClass =
-    'w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-sky-500 dark:focus:ring-sky-500/20';
+    'w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-sky-500 dark:focus:ring-sky-500/20';
 
 const modalSpring = { type: 'spring' as const, stiffness: 380, damping: 30 };
 
@@ -632,7 +632,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                 exit={{ opacity: 0, scale: 0.96, y: 16 }}
                 transition={modalSpring}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-lg overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-2xl shadow-black/20 dark:border-neutral-700/60 dark:bg-neutral-900"
+                className="w-full max-w-3xl overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-2xl shadow-black/20 dark:border-neutral-700/60 dark:bg-neutral-900"
             >
                 {/* Modal Header */}
                 <div className="flex items-center gap-3.5 bg-gradient-to-r from-sky-500/5 to-blue-600/5 px-6 py-4 dark:from-sky-500/10 dark:to-blue-600/10">
@@ -659,23 +659,26 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                 <div className="h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-neutral-700" />
 
                 {/* Body */}
-                <form onSubmit={submit} className="flex max-h-[72vh] flex-col overflow-y-auto">
-                    <div className="flex flex-col gap-4 px-6 py-5">
+                <form onSubmit={submit} className="flex flex-col">
+                    {/* Two-column layout */}
+                    <div className="grid grid-cols-[1fr_1.15fr]">
 
-                        {/* Name */}
-                        <FormField label="Center Name" error={form.errors.name}>
-                            <input
-                                type="text"
-                                value={form.data.name}
-                                onChange={(e) => form.setData('name', e.target.value)}
-                                placeholder="e.g. Nasugbu Municipal Gymnasium"
-                                className={inputClass}
-                                required
-                            />
-                        </FormField>
+                        {/* LEFT — form fields */}
+                        <div className="flex flex-col gap-3 border-r border-neutral-100 px-5 py-4 dark:border-neutral-800">
 
-                        {/* Type + Capacity row */}
-                        <div className="grid grid-cols-2 gap-3">
+                            {/* Name */}
+                            <FormField label="Center Name" error={form.errors.name}>
+                                <input
+                                    type="text"
+                                    value={form.data.name}
+                                    onChange={(e) => form.setData('name', e.target.value)}
+                                    placeholder="e.g. Nasugbu Municipal Gymnasium"
+                                    className={inputClass}
+                                    required
+                                />
+                            </FormField>
+
+                            {/* Type */}
                             <FormField label="Type" error={form.errors.type}>
                                 <div className="relative">
                                     <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
@@ -697,6 +700,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                 </div>
                             </FormField>
 
+                            {/* Capacity */}
                             <FormField label="Capacity (persons)" error={form.errors.capacity}>
                                 <div className="relative">
                                     <Users className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
@@ -711,40 +715,51 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                     />
                                 </div>
                             </FormField>
-                        </div>
 
-                        {/* Address */}
-                        <FormField label="Address" error={form.errors.address}>
-                            <div className="relative">
-                                <MapPin className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
-                                <input
-                                    type="text"
+                            {/* Address with Places Autocomplete */}
+                            <FormField label="Address" error={form.errors.address}>
+                                <AddressAutocomplete
                                     value={form.data.address}
-                                    onChange={(e) => form.setData('address', e.target.value)}
-                                    placeholder="e.g. Brgy. Poblacion, Nasugbu, Batangas"
+                                    onAddressChange={(val) => form.setData('address', val)}
+                                    onPlaceSelect={(lat, lng, addr) => {
+                                        form.setData('address', addr);
+                                        form.setData('latitude', lat);
+                                        form.setData('longitude', lng);
+                                    }}
                                     className={`${inputClass} pl-8`}
+                                    placeholder="Search places in Nasugbu…"
                                     required
                                 />
-                            </div>
-                        </FormField>
+                            </FormField>
+                        </div>
 
-                        {/* Location — Map Picker */}
-                        <FormField label="Pin Location on Map" error={form.errors.latitude || form.errors.longitude}>
-                            <MapPicker
-                                latitude={form.data.latitude}
-                                longitude={form.data.longitude}
-                                address={form.data.address}
-                                onChange={(lat, lng, addr) => {
-                                    form.setData('latitude', lat);
-                                    form.setData('longitude', lng);
-                                    if (addr) form.setData('address', addr);
-                                }}
-                            />
-                        </FormField>
+                        {/* RIGHT — map */}
+                        <div className="flex flex-col gap-2 px-4 py-4">
+                            <label className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+                                Pin Location
+                            </label>
+                            <div className="flex-1">
+                                <MapPicker
+                                    latitude={form.data.latitude}
+                                    longitude={form.data.longitude}
+                                    address={form.data.address}
+                                    onChange={(lat, lng, addr) => {
+                                        form.setData('latitude', lat);
+                                        form.setData('longitude', lng);
+                                        if (addr) form.setData('address', addr);
+                                    }}
+                                />
+                            </div>
+                            {(form.errors.latitude || form.errors.longitude) && (
+                                <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                                    {form.errors.latitude || form.errors.longitude}
+                                </p>
+                            )}
+                        </div>
                     </div>
 
                     {/* Footer */}
-                    <div className="sticky bottom-0 flex items-center justify-between border-t border-neutral-100 bg-neutral-50/80 px-6 py-4 backdrop-blur-sm dark:border-neutral-800 dark:bg-neutral-900/80">
+                    <div className="flex items-center justify-between border-t border-neutral-100 px-6 py-4 dark:border-neutral-800">
                         <div>
                             {isEditing && (
                                 <button
@@ -791,8 +806,16 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
 
 /* ─── Map Picker ─── */
 
+/* Tight bounding box for Nasugbu municipality only (excludes Tuy, Calaca, etc.) */
+const NASUGBU_BOUNDS = {
+    north: 14.115,
+    south: 14.010,
+    east:  120.680,
+    west:  120.565,
+};
+
 const MAP_DEFAULT = { lat: 14.0771, lng: 120.6361 };
-const MAP_CONTAINER = { width: '100%', height: '220px', borderRadius: '12px' };
+const MAP_CONTAINER = { width: '100%', height: '100%', minHeight: '200px', borderRadius: '12px' };
 const MAP_OPTIONS: google.maps.MapOptions = {
     disableDefaultUI: true,
     zoomControl: true,
@@ -800,11 +823,35 @@ const MAP_OPTIONS: google.maps.MapOptions = {
     streetViewControl: false,
     fullscreenControl: false,
     clickableIcons: false,
+    restriction: {
+        latLngBounds: {
+            north: NASUGBU_BOUNDS.north,
+            south: NASUGBU_BOUNDS.south,
+            east:  NASUGBU_BOUNDS.east,
+            west:  NASUGBU_BOUNDS.west,
+        },
+        strictBounds: true,
+    },
     styles: [
         { featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] },
         { featureType: 'transit', stylers: [{ visibility: 'off' }] },
     ],
 };
+
+/** Strip Google Plus Codes (e.g. "2MPW+VW, ") from the start of a formatted address. */
+function cleanAddress(raw: string): string {
+    return raw.replace(/^[0-9A-Z]{4,8}\+[0-9A-Z]{2,3},?\s*/i, '').trim();
+}
+
+/** Returns true if the lat/lng falls within Nasugbu's bounding box. */
+function isInNasugbu(latVal: number, lngVal: number): boolean {
+    return (
+        latVal >= NASUGBU_BOUNDS.south &&
+        latVal <= NASUGBU_BOUNDS.north &&
+        lngVal >= NASUGBU_BOUNDS.west &&
+        lngVal <= NASUGBU_BOUNDS.east
+    );
+}
 
 function MapPicker({
     latitude,
@@ -822,13 +869,21 @@ function MapPicker({
         libraries: ['places'] as ('places')[],
     });
 
+    const mapRef = useRef<google.maps.Map | null>(null);
     const [resolving, setResolving] = useState(false);
-    const [displayAddress, setDisplayAddress] = useState(address || '');
+    const [outsideBounds, setOutsideBounds] = useState(false);
 
     const lat = parseFloat(latitude);
     const lng = parseFloat(longitude);
     const hasPin = !isNaN(lat) && !isNaN(lng);
-    const center = hasPin ? { lat, lng } : MAP_DEFAULT;
+
+    /* Pan + zoom map whenever the pin coordinates change (e.g. autocomplete selection) */
+    useEffect(() => {
+        if (mapRef.current && hasPin) {
+            mapRef.current.panTo({ lat, lng });
+            mapRef.current.setZoom(16);
+        }
+    }, [lat, lng, hasPin]);
 
     const reverseGeocode = useCallback(
         (latVal: number, lngVal: number) => {
@@ -837,11 +892,11 @@ function MapPicker({
             geocoder.geocode({ location: { lat: latVal, lng: lngVal } }, (results, status) => {
                 setResolving(false);
                 if (status === 'OK' && results && results.length > 0) {
-                    const addr = results[0].formatted_address;
-                    setDisplayAddress(addr);
-                    onChange(latVal.toFixed(7), lngVal.toFixed(7), addr);
+                    /* Prefer a result without a Plus Code; fall back to first result stripped */
+                    const best = results.find(r => !/^[0-9A-Z]{4,8}\+/i.test(r.formatted_address))
+                        ?? results[0];
+                    onChange(latVal.toFixed(7), lngVal.toFixed(7), cleanAddress(best.formatted_address));
                 } else {
-                    setDisplayAddress('');
                     onChange(latVal.toFixed(7), lngVal.toFixed(7));
                 }
             });
@@ -851,9 +906,16 @@ function MapPicker({
 
     const handleMapEvent = useCallback(
         (e: google.maps.MapMouseEvent) => {
-            if (e.latLng) {
-                reverseGeocode(e.latLng.lat(), e.latLng.lng());
+            if (!e.latLng) return;
+            const latVal = e.latLng.lat();
+            const lngVal = e.latLng.lng();
+            if (!isInNasugbu(latVal, lngVal)) {
+                setOutsideBounds(true);
+                setTimeout(() => setOutsideBounds(false), 2500);
+                return;
             }
+            setOutsideBounds(false);
+            reverseGeocode(latVal, lngVal);
         },
         [reverseGeocode],
     );
@@ -868,12 +930,14 @@ function MapPicker({
 
     return (
         <div className="flex flex-col gap-2">
-            <div className="overflow-hidden rounded-xl border border-neutral-200 shadow-sm dark:border-neutral-700">
+            <div className="relative overflow-hidden rounded-xl border border-neutral-200 shadow-sm dark:border-neutral-700">
                 <GoogleMap
                     mapContainerStyle={MAP_CONTAINER}
-                    center={center}
+                    center={hasPin ? { lat, lng } : MAP_DEFAULT}
                     zoom={hasPin ? 16 : 13}
                     options={MAP_OPTIONS}
+                    onLoad={(map) => { mapRef.current = map; }}
+                    onUnmount={() => { mapRef.current = null; }}
                     onClick={handleMapEvent}
                 >
                     {hasPin && (
@@ -884,31 +948,139 @@ function MapPicker({
                         />
                     )}
                 </GoogleMap>
+
+                {/* Out-of-bounds toast */}
+                <AnimatePresence>
+                    {outsideBounds && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 6 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 6 }}
+                            transition={{ duration: 0.18 }}
+                            className="absolute bottom-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white shadow-lg"
+                        >
+                            Pin must be inside Nasugbu, Batangas
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
-            {hasPin ? (
-                <div className="flex items-start gap-2 rounded-xl border border-emerald-200/60 bg-emerald-50/60 px-3 py-2.5 dark:border-emerald-800/40 dark:bg-emerald-950/20">
-                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    <div className="min-w-0 flex-1">
-                        {resolving ? (
-                            <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400">Resolving address…</p>
-                        ) : displayAddress ? (
-                            <p className="text-xs font-medium leading-snug text-emerald-800 dark:text-emerald-200">{displayAddress}</p>
-                        ) : (
-                            <p className="text-xs text-emerald-600 dark:text-emerald-400">Address not available</p>
-                        )}
-                    </div>
-                    <p className="flex shrink-0 items-center gap-1 text-[10px] text-emerald-500 dark:text-emerald-500">
-                        <Crosshair className="size-3" /> Drag to adjust
-                    </p>
-                </div>
-            ) : (
-                <div className="flex items-center gap-2.5 rounded-xl border border-dashed border-neutral-300 bg-neutral-50/50 px-3 py-2.5 dark:border-neutral-600 dark:bg-neutral-800/30">
-                    <Crosshair className="size-4 shrink-0 text-sky-500" />
-                    <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                        Click on the map to place the evacuation center
-                    </p>
-                </div>
+            <p className="flex items-center gap-1 text-[10px] text-neutral-400 dark:text-neutral-500">
+                <Crosshair className="size-3" />
+                {hasPin ? 'Drag the pin to fine-tune the location' : 'Click on the map to place the pin'}
+                {resolving && <span className="ml-1 text-sky-500">· Resolving…</span>}
+            </p>
+        </div>
+    );
+}
+
+/* ─── Address Autocomplete (Nasugbu-scoped) ─── */
+
+/** Returns true if the place's address components confirm it is in Nasugbu. */
+function placeIsInNasugbu(place: google.maps.places.PlaceResult): boolean {
+    const components = place.address_components ?? [];
+    return components.some(
+        (c) =>
+            c.long_name.toLowerCase() === 'nasugbu' ||
+            c.short_name.toLowerCase() === 'nasugbu',
+    );
+}
+
+function AddressAutocomplete({
+    value,
+    onAddressChange,
+    onPlaceSelect,
+    className,
+    placeholder,
+    required,
+}: {
+    value: string;
+    onAddressChange: (val: string) => void;
+    onPlaceSelect: (lat: string, lng: string, address: string) => void;
+    className?: string;
+    placeholder?: string;
+    required?: boolean;
+}) {
+    const { isLoaded } = useJsApiLoader({
+        googleMapsApiKey: (import.meta.env.VITE_GOOGLE_MAPS_KEY as string) ?? '',
+        libraries: ['places'] as ('places')[],
+    });
+
+    const inputRef = useRef<HTMLInputElement>(null);
+    const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
+    const [outsideError, setOutsideError] = useState(false);
+
+    /* Sync external value changes (e.g. map pin drag) back to the DOM input */
+    useEffect(() => {
+        if (inputRef.current && document.activeElement !== inputRef.current) {
+            inputRef.current.value = value;
+        }
+    }, [value]);
+
+    /* Init autocomplete once the Maps API is ready */
+    useEffect(() => {
+        if (!isLoaded || !inputRef.current || autocompleteRef.current) return;
+
+        const bounds = new google.maps.LatLngBounds(
+            { lat: NASUGBU_BOUNDS.south, lng: NASUGBU_BOUNDS.west },
+            { lat: NASUGBU_BOUNDS.north, lng: NASUGBU_BOUNDS.east },
+        );
+
+        autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
+            bounds,
+            strictBounds: true,
+            componentRestrictions: { country: 'ph' },
+            fields: ['formatted_address', 'geometry', 'name', 'address_components'],
+        });
+
+        autocompleteRef.current.addListener('place_changed', () => {
+            const place = autocompleteRef.current!.getPlace();
+            if (!place.geometry?.location) return;
+
+            /* Reject places not actually in Nasugbu */
+            if (!placeIsInNasugbu(place)) {
+                setOutsideError(true);
+                setTimeout(() => setOutsideError(false), 3000);
+                if (inputRef.current) inputRef.current.value = '';
+                return;
+            }
+
+            setOutsideError(false);
+            const lat = place.geometry.location.lat().toFixed(7);
+            const lng = place.geometry.location.lng().toFixed(7);
+            const addr = cleanAddress(place.formatted_address ?? place.name ?? '');
+            onPlaceSelect(lat, lng, addr);
+            if (inputRef.current) inputRef.current.value = addr;
+        });
+
+        return () => {
+            if (autocompleteRef.current) {
+                google.maps.event.clearInstanceListeners(autocompleteRef.current);
+                autocompleteRef.current = null;
+            }
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoaded]);
+
+    return (
+        <div className="flex flex-col gap-1">
+            <div className="relative">
+                <MapPin className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                <input
+                    ref={inputRef}
+                    type="text"
+                    defaultValue={value}
+                    onChange={(e) => onAddressChange(e.target.value)}
+                    placeholder={placeholder}
+                    className={className}
+                    required={required}
+                    autoComplete="off"
+                />
+            </div>
+            {outsideError && (
+                <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                    That place is outside Nasugbu, Batangas. Please search within Nasugbu only.
+                </p>
             )}
         </div>
     );

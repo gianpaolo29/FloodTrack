@@ -242,7 +242,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
 
                         <div className="flex items-center gap-2">
                             {auth.user ? (
-                                <PremiumButton href={auth.user.role === 'admin' ? '/admin' : dashboard()}>
+                                <PremiumButton href={auth.user.role === 'admin' ? '/admin' : dashboard.url()}>
                                     Dashboard
                                 </PremiumButton>
                             ) : (
@@ -250,7 +250,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                     <Link href={login()} className="px-5 py-2.5 text-sm font-medium text-white/50 transition-colors duration-200 hover:text-white rounded-xl hover:bg-white/[0.04]">
                                         Sign in
                                     </Link>
-                                    {canRegister && <PremiumButton href={register()}>Get started</PremiumButton>}
+                                    {canRegister && <PremiumButton href={register.url()}>Get started</PremiumButton>}
                                 </>
                             )}
                         </div>
@@ -369,7 +369,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                             <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/[0.04] to-transparent skew-x-[-20deg]" />
                                             <Icon className={`size-5 ${s.accent} mb-4 opacity-60 transition-all duration-500 group-hover:opacity-100 group-hover:scale-125 group-hover:rotate-12`} />
                                             <p className="text-2xl font-bold tracking-tight text-white">
-                                                {s.isText ? s.suffix : `${count}${s.suffix}`}
+                                                {('isText' in s && s.isText) ? s.suffix : `${count}${s.suffix}`}
                                             </p>
                                             <p className="mt-0.5 text-sm font-medium text-white/50">{s.label}</p>
                                             <p className="text-[11px] text-white/20">{s.sub}</p>
