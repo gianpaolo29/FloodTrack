@@ -45,4 +45,9 @@ return [
         'lon' => env('WEATHER_DEFAULT_LON', 120.9842),
     ],
 
+    'socket' => [
+        'url'    => env('SOCKET_SERVER_URL', 'http://localhost:3001'),
+        'secret' => env('SOCKET_INTERNAL_SECRET', 'change-me-in-production'),
+    ],
+
 ];

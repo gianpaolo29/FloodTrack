@@ -1,3 +1,5 @@
+/socket-server/.env
+/socket-server/node_modules
 /.phpunit.cache
 /bootstrap/ssr
 /node_modules

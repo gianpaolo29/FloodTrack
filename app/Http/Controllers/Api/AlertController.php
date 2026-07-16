@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Alert;
 use App\Models\AlertRead;
 use App\Services\ExpoPushService;
+use App\Services\SocketService;
 use Illuminate\Http\Request;
 
 class AlertController extends Controller
@@ -47,6 +48,8 @@ class AlertController extends Controller
             ...$data,
             'created_by' => $request->user()->id,
         ]);
+
+        SocketService::toAll('new-alert', $alert->toArray());
 
         // Push notification to all users
         ExpoPushService::sendToAll(

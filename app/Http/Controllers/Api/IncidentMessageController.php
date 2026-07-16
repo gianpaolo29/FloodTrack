@@ -7,6 +7,7 @@ use App\Models\IncidentMessage;
 use App\Models\Report;
 use App\Models\User;
 use App\Services\ExpoPushService;
+use App\Services\SocketService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 
@@ -102,6 +103,8 @@ class IncidentMessageController extends Controller
             );
         }
 
+        SocketService::toReport($report->id, 'new-message', $message->toArray());
+
         return response()->json($message, 201);
     }
 
@@ -147,6 +150,10 @@ class IncidentMessageController extends Controller
             'name' => $user->name,
             'role' => $user->role,
         ], now()->addSeconds(4));
+
+        SocketService::toReport($report->id, 'typing-update', [
+            'id' => $user->id, 'name' => $user->name, 'role' => $user->role,
+        ]);
 
         return response()->json(['status' => 'ok']);
     }

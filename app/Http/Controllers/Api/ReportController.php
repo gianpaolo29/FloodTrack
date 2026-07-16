@@ -276,6 +276,28 @@ class ReportController extends Controller
         return response()->json($report->fresh());
     }
 
+    public function update(Request $request, Report $report)
+    {
+        if ((int) $request->user()->id !== (int) $report->user_id) {
+            return response()->json(['message' => 'You are not the owner of this report.'], 403);
+        }
+
+        if ($report->status !== 'pending') {
+            return response()->json(['message' => 'Only pending reports can be edited.'], 422);
+        }
+
+        $data = $request->validate([
+            'severity'    => 'sometimes|in:low,moderate,high,critical',
+            'description' => 'nullable|string|max:1000',
+        ]);
+
+        $report->update($data);
+
+        return response()->json(
+            $report->fresh()->load(['user:id,name,contact_number', 'media', 'statusUpdates.user:id,name,role'])
+        );
+    }
+
     public function destroy(Request $request, Report $report)
     {
         if ((int) $request->user()->id !== (int) $report->user_id) {
@@ -294,6 +316,26 @@ class ReportController extends Controller
         ReportStatusUpdate::where('report_id', $report->id)->delete();
         IncidentMessage::where('report_id', $report->id)->delete();
         $report->delete();
+
+        return response()->noContent();
+    }
+
+    public function destroyMedia(Request $request, Report $report, ReportMedia $media)
+    {
+        if ((int) $request->user()->id !== (int) $report->user_id) {
+            return response()->json(['message' => 'You are not the owner of this report.'], 403);
+        }
+
+        if ($report->status !== 'pending') {
+            return response()->json(['message' => 'Only pending reports can be edited.'], 422);
+        }
+
+        if ((int) $media->report_id !== (int) $report->id) {
+            return response()->json(['message' => 'Media does not belong to this report.'], 404);
+        }
+
+        Storage::disk('public')->delete($media->file_path);
+        $media->delete();
 
         return response()->noContent();
     }

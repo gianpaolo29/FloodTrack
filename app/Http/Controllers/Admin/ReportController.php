@@ -29,7 +29,8 @@ class ReportController extends Controller
                 'verified_at', 'resolved_at',
             ])
             ->with(['user:id,name'])
-            ->when($request->status, fn ($q) => $q->where('status', $request->status))
+            ->when($request->status, fn ($q) => $q->where('status', $request->status),
+                fn ($q) => $q->whereIn('status', ['verified', 'assigned', 'resolved']))
             ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
             ->when($request->date_from, fn ($q) => $q->whereDate('created_at', '>=', $request->date_from))
             ->when($request->date_to, fn ($q) => $q->whereDate('created_at', '<=', $request->date_to))

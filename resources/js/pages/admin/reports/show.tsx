@@ -435,18 +435,27 @@ export default function AdminReportShow({ report, responders }: Props) {
                                         {report.status_updates!.map((u, i) => (
                                             <li key={u.id} className="ml-6">
                                                 <div className={`absolute -left-[9px] mt-0.5 size-4 rounded-full border-2 border-white dark:border-neutral-900 ${
-                                                    i === 0 ? 'bg-sky-500' : 'bg-neutral-300 dark:bg-neutral-600'
+                                                    i === 0 ? 'bg-sky-500' : !u.user ? 'bg-sky-400 dark:bg-sky-500' : 'bg-neutral-300 dark:bg-neutral-600'
                                                 }`} />
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[u.status as ReportStatus] ?? 'bg-zinc-100 text-zinc-600'}`}>
                                                         {u.status.replace('_', ' ')}
                                                     </span>
                                                     <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                                                        by <span className="font-semibold text-neutral-700 dark:text-neutral-300">{u.user.name}</span>
-                                                        <span className="mx-1.5 text-neutral-300 dark:text-neutral-600">&middot;</span>
-                                                        <span className={`${u.user.role === 'admin' ? 'text-purple-600 dark:text-purple-400' : u.user.role === 'responder' ? 'text-indigo-600 dark:text-indigo-400' : ''}`}>
-                                                            {u.user.role}
-                                                        </span>
+                                                        by {u.user ? (
+                                                            <>
+                                                                <span className="font-semibold text-neutral-700 dark:text-neutral-300">{u.user.name}</span>
+                                                                <span className="mx-1.5 text-neutral-300 dark:text-neutral-600">&middot;</span>
+                                                                <span className={`${u.user.role === 'admin' ? 'text-purple-600 dark:text-purple-400' : u.user.role === 'responder' ? 'text-indigo-600 dark:text-indigo-400' : ''}`}>
+                                                                    {u.user.role}
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            <span className="inline-flex items-center gap-1 font-semibold text-sky-600 dark:text-sky-400">
+                                                                <Bot className="size-3" />
+                                                                AI System
+                                                            </span>
+                                                        )}
                                                         <span className="mx-1.5 text-neutral-300 dark:text-neutral-600">&middot;</span>
                                                         {new Date(u.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                     </span>

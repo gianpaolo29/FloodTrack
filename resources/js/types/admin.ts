@@ -27,7 +27,7 @@ export interface StatusUpdate {
     id: number;
     status: string;
     notes: string | null;
-    user: { id: number; name: string; role: string };
+    user: { id: number; name: string; role: string } | null;
     created_at: string;
 }
 

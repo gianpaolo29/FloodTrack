@@ -55,9 +55,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/alerts/{alert}/read', [AlertController::class, 'markRead']);
     Route::post('/alerts/read-all', [AlertController::class, 'markAllRead']);
 
-    // ── Reports: submit + withdraw ──────────────────────────────────────
+    // ── Reports: submit + edit + withdraw ─────────────────────────────────
     Route::post('/reports', [ReportController::class, 'store']);
+    Route::put('/reports/{report}', [ReportController::class, 'update']);
     Route::delete('/reports/{report}', [ReportController::class, 'destroy']);
+    Route::delete('/reports/{report}/media/{media}', [ReportController::class, 'destroyMedia']);
 
     // ── Messages (auth handled by controller canAccess) ──────────────────
     Route::get('/reports/{report}/messages',  [IncidentMessageController::class, 'index']);
