@@ -1,4 +1,4 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     ArrowLeft,
@@ -12,11 +12,13 @@ import {
     ImageOff,
     Mail,
     MapPin,
+    MessageSquare,
     Navigation,
     Pencil,
     Phone,
     RefreshCw,
     Save,
+    Send,
     Shield,
     ShieldCheck,
     Sparkles,
@@ -27,7 +29,7 @@ import {
     X,
     XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
@@ -471,6 +473,9 @@ export default function AdminReportShow({ report, responders }: Props) {
                                 </div>
                             </div>
                         )}
+
+                        {/* Incident Chat */}
+                        <IncidentChat reportId={report.id} />
                     </div>
 
                     {/* Right column */}
@@ -760,6 +765,171 @@ function FormField({ label, error, children }: { label: string; error?: string; 
             <label className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{label}</label>
             {children}
             {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+        </div>
+    );
+}
+
+/* ─── Incident Chat ─── */
+
+interface IncidentMessage {
+    id: number;
+    report_id: number;
+    user_id: number;
+    body: string;
+    is_quick_reply: boolean;
+    read_at: string | null;
+    created_at: string;
+    user: { id: number; name: string; role: string } | null;
+}
+
+function IncidentChat({ reportId }: { reportId: number }) {
+    const { auth } = usePage().props as { auth: { user: { id: number; name: string; role: string } } };
+
+    const [messages, setMessages]   = useState<IncidentMessage[]>([]);
+    const [body, setBody]           = useState('');
+    const [sending, setSending]     = useState(false);
+    const [loading, setLoading]     = useState(true);
+    const bottomRef                 = useRef<HTMLDivElement>(null);
+    const pollRef                   = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    const csrfToken = (): string =>
+        (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content ?? '';
+
+    const fetchMessages = useCallback(async (silent = false) => {
+        try {
+            const res = await fetch(`/api/reports/${reportId}/messages?per_page=100`, {
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': csrfToken() },
+                credentials: 'same-origin',
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            const fetched: IncidentMessage[] = data.data ?? data;
+            setMessages((prev) => {
+                if (prev.length === fetched.length && prev[prev.length - 1]?.id === fetched[fetched.length - 1]?.id) {
+                    return prev;
+                }
+                return fetched;
+            });
+        } finally {
+            if (!silent) setLoading(false);
+        }
+    }, [reportId]);
+
+    useEffect(() => {
+        fetchMessages();
+        pollRef.current = setInterval(() => fetchMessages(true), 5000);
+        return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    }, [fetchMessages]);
+
+    useEffect(() => {
+        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages]);
+
+    const handleSend = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const trimmed = body.trim();
+        if (!trimmed || sending) return;
+
+        setSending(true);
+        try {
+            const res = await fetch(`/api/reports/${reportId}/messages`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken(),
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({ body: trimmed }),
+            });
+            if (res.ok) {
+                setBody('');
+                await fetchMessages(true);
+            }
+        } finally {
+            setSending(false);
+        }
+    };
+
+    const roleBadge = (role: string) => {
+        if (role === 'admin')     return 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300';
+        if (role === 'responder') return 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300';
+        return 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300';
+    };
+
+    return (
+        <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+            {/* Header */}
+            <div className="flex items-center gap-2 border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
+                <MessageSquare className="size-4 text-neutral-500" />
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Incident Chat</h3>
+                <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                    {messages.length}
+                </span>
+            </div>
+
+            {/* Messages */}
+            <div className="flex h-80 flex-col gap-3 overflow-y-auto p-5">
+                {loading ? (
+                    <div className="flex flex-1 items-center justify-center">
+                        <p className="text-xs text-neutral-400">Loading messages…</p>
+                    </div>
+                ) : messages.length === 0 ? (
+                    <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6">
+                        <div className="flex size-10 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
+                            <MessageSquare className="size-5 text-neutral-400 dark:text-neutral-500" />
+                        </div>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">No messages yet</p>
+                    </div>
+                ) : (
+                    messages.map((msg) => {
+                        const isMe = msg.user?.id === auth.user.id;
+                        return (
+                            <div key={msg.id} className={`flex flex-col gap-1 ${isMe ? 'items-end' : 'items-start'}`}>
+                                {!isMe && (
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                                            {msg.user?.name ?? 'Unknown'}
+                                        </span>
+                                        <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${roleBadge(msg.user?.role ?? '')}`}>
+                                            {msg.user?.role}
+                                        </span>
+                                    </div>
+                                )}
+                                <div className={`max-w-[80%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                                    isMe
+                                        ? 'rounded-tr-sm bg-gradient-to-br from-sky-500 to-blue-600 text-white'
+                                        : 'rounded-tl-sm bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200'
+                                }`}>
+                                    {msg.body}
+                                </div>
+                                <p className="text-[10px] text-neutral-400 dark:text-neutral-500">
+                                    {new Date(msg.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                            </div>
+                        );
+                    })
+                )}
+                <div ref={bottomRef} />
+            </div>
+
+            {/* Composer */}
+            <form onSubmit={handleSend} className="flex items-center gap-3 border-t border-neutral-200/60 px-4 py-3 dark:border-neutral-700/60">
+                <input
+                    type="text"
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    placeholder="Type a message…"
+                    className="flex-1 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-sky-500 dark:focus:bg-neutral-800 dark:focus:ring-sky-500/20"
+                />
+                <button
+                    type="submit"
+                    disabled={sending || !body.trim()}
+                    className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
+                >
+                    <Send className="size-4" />
+                </button>
+            </form>
         </div>
     );
 }

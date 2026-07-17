@@ -11,6 +11,9 @@ export interface AdminUser {
     email: string;
     role: UserRole;
     contact_number: string | null;
+    home_address: string | null;
+    home_latitude: number | null;
+    home_longitude: number | null;
     reports_count: number;
     active_assignments: number;
     created_at: string;

@@ -41,6 +41,9 @@ class UserController extends Controller
             'email'          => 'required|email|unique:users,email',
             'password'       => ['required', Password::defaults()],
             'contact_number' => 'nullable|string|max:20',
+            'home_address'   => 'nullable|string|max:500',
+            'home_latitude'  => 'nullable|numeric|between:-90,90',
+            'home_longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
@@ -66,6 +69,9 @@ class UserController extends Controller
             'email'          => "required|email|unique:users,email,{$user->id}",
             'contact_number' => 'nullable|string|max:20',
             'password'       => ['nullable', Password::defaults()],
+            'home_address'   => 'nullable|string|max:500',
+            'home_latitude'  => 'nullable|numeric|between:-90,90',
+            'home_longitude' => 'nullable|numeric|between:-180,180',
         ]);
 
         if (!empty($validated['password'])) {
@@ -104,7 +110,7 @@ class UserController extends Controller
         $name = $user->name;
         $user->delete();
 
-
+        Inertia::flash('toast', ['type' => 'success', 'message' => "User \"{$name}\" has been deleted."]);
 
         return back();
     }

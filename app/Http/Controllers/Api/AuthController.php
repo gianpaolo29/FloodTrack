@@ -19,6 +19,9 @@ class AuthController extends Controller
             'password'       => 'required|string|min:8|confirmed',
             'role'           => 'required|in:resident,responder',
             'contact_number' => 'nullable|string|max:20',
+            'home_latitude'  => 'nullable|numeric|between:-90,90',
+            'home_longitude' => 'nullable|numeric|between:-180,180',
+            'home_address'   => 'nullable|string|max:500',
         ]);
 
         $data['name'] = trim($data['first_name'].' '.$data['last_name']);
@@ -28,10 +31,11 @@ class AuthController extends Controller
         $token = $user->createToken('mobile')->plainTextToken;
 
         return response()->json([
-            'user'        => $user,
-            'token'       => $token,
-            'role'        => $user->role,
-            'permissions' => $user->permissions(),
+            'user'           => $user,
+            'token'          => $token,
+            'role'           => $user->role,
+            'permissions'    => $user->permissions(),
+            'needs_location' => is_null($user->home_latitude) || is_null($user->home_longitude),
         ], 201);
     }
 
@@ -55,11 +59,12 @@ class AuthController extends Controller
         $token = $user->createToken('mobile')->plainTextToken;
 
         return response()->json([
-            'user'        => $user,
-            'token'       => $token,
-            'role'        => $user->role,
-            'permissions' => $user->permissions(),
-            'redirect'    => match ($user->role) {
+            'user'           => $user,
+            'token'          => $token,
+            'role'           => $user->role,
+            'permissions'    => $user->permissions(),
+            'needs_location' => is_null($user->home_latitude) || is_null($user->home_longitude),
+            'redirect'       => match ($user->role) {
                 'admin'     => '/admin',
                 'responder' => '/responder/dashboard',
                 'resident'  => '/dashboard',

@@ -104,6 +104,18 @@ export default function Profile({
                                     </div>
                                 )}
 
+                            <div className="grid gap-2">
+                                <Label htmlFor="home_address">Home Address</Label>
+                                <Input
+                                    id="home_address"
+                                    className="mt-1 block w-full"
+                                    defaultValue={(auth.user as { home_address?: string }).home_address ?? ''}
+                                    name="home_address"
+                                    placeholder="Your home address in Nasugbu"
+                                />
+                                <InputError className="mt-2" message={errors.home_address} />
+                            </div>
+
                             <div className="flex items-center gap-4">
                                 <Button
                                     disabled={processing}

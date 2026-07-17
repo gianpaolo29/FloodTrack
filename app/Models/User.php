@@ -22,6 +22,9 @@ class User extends Authenticatable
         'contact_number',
         'avatar',
         'is_on_duty',
+        'home_address',
+        'home_latitude',
+        'home_longitude',
     ];
 
     protected $hidden = [

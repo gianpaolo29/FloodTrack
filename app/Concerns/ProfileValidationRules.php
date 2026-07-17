@@ -16,8 +16,11 @@ trait ProfileValidationRules
     protected function profileRules(?int $userId = null): array
     {
         return [
-            'name' => $this->nameRules(),
-            'email' => $this->emailRules($userId),
+            'name'           => $this->nameRules(),
+            'email'          => $this->emailRules($userId),
+            'home_address'   => ['nullable', 'string', 'max:500'],
+            'home_latitude'  => ['nullable', 'numeric', 'between:-90,90'],
+            'home_longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ];
     }
 

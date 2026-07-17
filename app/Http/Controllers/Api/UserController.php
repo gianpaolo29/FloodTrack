@@ -19,6 +19,9 @@ class UserController extends Controller
         $data = $request->validate([
             'name'           => 'sometimes|string|max:255',
             'contact_number' => 'sometimes|nullable|string|max:20',
+            'home_address'   => 'sometimes|nullable|string|max:500',
+            'home_latitude'  => 'sometimes|nullable|numeric|between:-90,90',
+            'home_longitude' => 'sometimes|nullable|numeric|between:-180,180',
         ]);
 
         $request->user()->update($data);

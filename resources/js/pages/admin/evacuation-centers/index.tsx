@@ -581,6 +581,96 @@ function CenterRow({
     );
 }
 
+/* ─── Smart form helpers ─── */
+
+/** Keywords that hint at a center type from its name */
+const NAME_TYPE_KEYWORDS: { keywords: string[]; type: EvacuationCenterType }[] = [
+    { keywords: ['gymnasium', 'gym', 'coliseum', 'arena', 'auditorium'],                                        type: 'gymnasium'        },
+    { keywords: ['school', 'elementary', 'high school', 'national high', 'nhs', 'academy',
+                 'central school', 'integrated school', 'institute', 'college', 'university',
+                 'kindergarten', 'kinder', 'nursery', 'preschool', 'pre-school',
+                 'technical', 'vocational', 'tesda', 'secondary', 'primary'],                                   type: 'school'           },
+    { keywords: ['barangay hall', 'brgy hall', 'brgy. hall', 'kapitan', 'punong barangay'],                     type: 'barangay_hall'    },
+    { keywords: ['church', 'chapel', 'parish', 'cathedral', 'shrine', 'basilica', 'simbahan'],                  type: 'church'           },
+    { keywords: ['community center', 'multipurpose', 'multi-purpose', 'covered court',
+                 'basketball court', 'volleyball court', 'plaza', 'covered gym'],                               type: 'community_center' },
+];
+
+function detectTypeFromName(name: string): EvacuationCenterType | null {
+    const lower = name.toLowerCase();
+    for (const { keywords, type } of NAME_TYPE_KEYWORDS) {
+        if (keywords.some((k) => lower.includes(k))) return type;
+    }
+    return null;
+}
+
+/** Unified sub-level metadata for capacity hints and type badge */
+interface SmartMeta { placeholder: string; hint: string; badge?: string }
+
+type SubEntry = { keywords: string[]; placeholder: string; hint: string; badge: string };
+
+function matchSub(name: string, entries: SubEntry[]): SmartMeta | null {
+    const lower = name.toLowerCase();
+    for (const e of entries) {
+        if (e.keywords.some((k) => lower.includes(k))) {
+            return { placeholder: e.placeholder, hint: e.hint, badge: e.badge };
+        }
+    }
+    return null;
+}
+
+function getSmartMeta(type: EvacuationCenterType, name: string): SmartMeta {
+    switch (type) {
+        case 'school':
+            return matchSub(name, [
+                { keywords: ['elementary', 'central school', 'primary', 'kinder', 'kindergarten', 'nursery', 'preschool', 'pre-school'],
+                  placeholder: '400',  hint: 'Typical: 200 – 600',   badge: 'Elementary School'    },
+                { keywords: ['high school', 'national high', 'nhs', 'secondary', 'integrated school'],
+                  placeholder: '800',  hint: 'Typical: 500 – 1,500', badge: 'High School'           },
+                { keywords: ['college', 'university', 'institute', 'technical', 'vocational', 'tesda', 'academy'],
+                  placeholder: '1000', hint: 'Typical: 500 – 2,000', badge: 'College / University'  },
+            ]) ?? { placeholder: '500', hint: 'Typical: 300 – 1,000' };
+
+        case 'gymnasium':
+            return matchSub(name, [
+                { keywords: ['sports complex', 'arena', 'coliseum', 'auditorium'],
+                  placeholder: '2000', hint: 'Typical: 1,000 – 3,000', badge: 'Sports Complex / Arena' },
+                { keywords: ['covered court', 'basketball court', 'badminton', 'volleyball court'],
+                  placeholder: '300',  hint: 'Typical: 150 – 500',   badge: 'Covered Court'         },
+                { keywords: ['barangay gym', 'brgy gym', 'brgy. gym'],
+                  placeholder: '500',  hint: 'Typical: 300 – 800',   badge: 'Barangay Gymnasium'    },
+            ]) ?? { placeholder: '1000', hint: 'Typical: 500 – 2,000' };
+
+        case 'church':
+            return matchSub(name, [
+                { keywords: ['cathedral', 'basilica'],
+                  placeholder: '1000', hint: 'Typical: 500 – 2,000', badge: 'Cathedral / Basilica' },
+                { keywords: ['parish', 'parochial'],
+                  placeholder: '400',  hint: 'Typical: 200 – 800',   badge: 'Parish Church'        },
+                { keywords: ['chapel', 'shrine', 'oratory'],
+                  placeholder: '150',  hint: 'Typical: 50 – 300',    badge: 'Chapel / Shrine'      },
+            ]) ?? { placeholder: '300', hint: 'Typical: 100 – 600' };
+
+        case 'barangay_hall':
+            return matchSub(name, [
+                { keywords: ['multipurpose hall', 'multi-purpose hall', 'function hall', 'event hall'],
+                  placeholder: '250', hint: 'Typical: 100 – 400', badge: 'Multi-Purpose Hall' },
+                { keywords: ['sitio', 'purok'],
+                  placeholder: '80',  hint: 'Typical: 30 – 150',  badge: 'Sitio / Purok Hall' },
+            ]) ?? { placeholder: '150', hint: 'Typical: 50 – 300' };
+
+        case 'community_center':
+            return matchSub(name, [
+                { keywords: ['covered court', 'basketball court', 'volleyball court', 'badminton court'],
+                  placeholder: '250', hint: 'Typical: 150 – 500',   badge: 'Covered Court'   },
+                { keywords: ['multipurpose', 'multi-purpose', 'function hall', 'event hall'],
+                  placeholder: '400', hint: 'Typical: 200 – 700',   badge: 'Multi-Purpose'   },
+                { keywords: ['plaza', 'park', 'outdoor', 'open court'],
+                  placeholder: '500', hint: 'Typical: 300 – 1,000', badge: 'Plaza / Outdoor' },
+            ]) ?? { placeholder: '300', hint: 'Typical: 100 – 600' };
+    }
+}
+
 /* ─── Create / Edit Modal ─── */
 
 function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClose: () => void }) {
@@ -594,6 +684,21 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
         latitude: center?.latitude?.toString() ?? '',
         longitude: center?.longitude?.toString() ?? '',
     });
+
+    /* Auto-detect type as the user types the name */
+    const [typeLocked, setTypeLocked] = useState(isEditing);
+    useEffect(() => {
+        if (typeLocked) return;
+        const detected = detectTypeFromName(form.data.name);
+        if (detected && detected !== form.data.type) {
+            form.setData('type', detected);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [form.data.name]);
+
+    /* Form completeness for the submit button */
+    const hasPin   = form.data.latitude !== '' && form.data.longitude !== '';
+    const isReady  = !!(form.data.name && form.data.capacity && form.data.address && hasPin);
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
@@ -616,6 +721,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
     }
 
     const SelectedTypeIcon = TYPE_ICON[form.data.type];
+    const smartMeta        = getSmartMeta(form.data.type, form.data.name);
 
     return (
         <motion.div
@@ -666,7 +772,24 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                         {/* LEFT — form fields */}
                         <div className="flex flex-col gap-3 border-r border-neutral-100 px-5 py-4 dark:border-neutral-800">
 
-                            {/* Name */}
+                            {/* 1. Address first — pin on map + auto-fills name */}
+                            <FormField label="Location" error={form.errors.address}>
+                                <AddressAutocomplete
+                                    value={form.data.address}
+                                    onAddressChange={(val) => form.setData('address', val)}
+                                    onPlaceSelect={(lat, lng, addr, placeName) => {
+                                        form.setData('address', addr);
+                                        form.setData('latitude', lat);
+                                        form.setData('longitude', lng);
+                                        if (placeName) form.setData('name', placeName);
+                                    }}
+                                    className={`${inputClass} pl-8`}
+                                    placeholder="Search places in Nasugbu…"
+                                    required
+                                />
+                            </FormField>
+
+                            {/* 2. Name — auto-detects type as you type */}
                             <FormField label="Center Name" error={form.errors.name}>
                                 <input
                                     type="text"
@@ -678,15 +801,22 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                 />
                             </FormField>
 
-                            {/* Type */}
-                            <FormField label="Type" error={form.errors.type}>
+                            {/* 3. Type — auto-set from name, can still override */}
+                            <FormField
+                                label="Type"
+                                hint={smartMeta.badge ?? (!typeLocked && detectTypeFromName(form.data.name) ? 'Auto-detected' : undefined)}
+                                error={form.errors.type}
+                            >
                                 <div className="relative">
                                     <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
                                         <SelectedTypeIcon className="size-3.5 text-neutral-400" />
                                     </div>
                                     <select
                                         value={form.data.type}
-                                        onChange={(e) => form.setData('type', e.target.value as EvacuationCenterType)}
+                                        onChange={(e) => {
+                                            setTypeLocked(true);
+                                            form.setData('type', e.target.value as EvacuationCenterType);
+                                        }}
                                         className={`${inputClass} appearance-none pl-8 pr-8`}
                                         required
                                     >
@@ -700,36 +830,24 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                 </div>
                             </FormField>
 
-                            {/* Capacity */}
-                            <FormField label="Capacity (persons)" error={form.errors.capacity}>
+                            {/* 4. Capacity — hint + placeholder update with type & sub-level */}
+                            <FormField
+                                label="Capacity (persons)"
+                                hint={smartMeta.hint}
+                                error={form.errors.capacity}
+                            >
                                 <div className="relative">
                                     <Users className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                                     <input
                                         type="number"
                                         value={form.data.capacity}
                                         onChange={(e) => form.setData('capacity', e.target.value)}
-                                        placeholder="500"
+                                        placeholder={smartMeta.placeholder}
                                         min="1"
                                         className={`${inputClass} pl-8`}
                                         required
                                     />
                                 </div>
-                            </FormField>
-
-                            {/* Address with Places Autocomplete */}
-                            <FormField label="Address" error={form.errors.address}>
-                                <AddressAutocomplete
-                                    value={form.data.address}
-                                    onAddressChange={(val) => form.setData('address', val)}
-                                    onPlaceSelect={(lat, lng, addr) => {
-                                        form.setData('address', addr);
-                                        form.setData('latitude', lat);
-                                        form.setData('longitude', lng);
-                                    }}
-                                    className={`${inputClass} pl-8`}
-                                    placeholder="Search places in Nasugbu…"
-                                    required
-                                />
                             </FormField>
                         </div>
 
@@ -743,10 +861,12 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                     latitude={form.data.latitude}
                                     longitude={form.data.longitude}
                                     address={form.data.address}
-                                    onChange={(lat, lng, addr) => {
+                                    onChange={(lat, lng, addr, placeName) => {
                                         form.setData('latitude', lat);
                                         form.setData('longitude', lng);
                                         if (addr) form.setData('address', addr);
+                                        /* Auto-fill name + trigger type detection on map pin (create only) */
+                                        if (!isEditing && placeName) form.setData('name', placeName);
                                     }}
                                 />
                             </div>
@@ -790,8 +910,13 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                             </button>
                             <button
                                 type="submit"
-                                disabled={form.processing}
-                                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:shadow-lg hover:shadow-blue-500/30 hover:brightness-110 disabled:opacity-50"
+                                disabled={form.processing || (!isEditing && !isReady)}
+                                title={!isReady && !isEditing ? 'Fill in all fields and pin a location first' : undefined}
+                                className={`inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 ${
+                                    isReady || isEditing
+                                        ? 'bg-gradient-to-r from-sky-500 to-blue-600 shadow-blue-500/20 hover:shadow-blue-500/30'
+                                        : 'bg-neutral-400 shadow-neutral-400/20'
+                                }`}
                             >
                                 {isEditing ? <Save className="size-4" /> : <Plus className="size-4" />}
                                 {form.processing ? 'Saving…' : isEditing ? 'Save Changes' : 'Add Center'}
@@ -862,7 +987,7 @@ function MapPicker({
     latitude: string;
     longitude: string;
     address: string;
-    onChange: (lat: string, lng: string, address?: string) => void;
+    onChange: (lat: string, lng: string, address?: string, placeName?: string) => void;
 }) {
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: (import.meta.env.VITE_GOOGLE_MAPS_KEY as string) ?? '',
@@ -895,7 +1020,26 @@ function MapPicker({
                     /* Prefer a result without a Plus Code; fall back to first result stripped */
                     const best = results.find(r => !/^[0-9A-Z]{4,8}\+/i.test(r.formatted_address))
                         ?? results[0];
-                    onChange(latVal.toFixed(7), lngVal.toFixed(7), cleanAddress(best.formatted_address));
+
+                    /* Extract place name only for evacuation-relevant types (not restaurants, shops, etc.) */
+                    const EVAC_TYPES = [
+                        'school', 'university', 'church', 'place_of_worship',
+                        'gym', 'stadium', 'local_government_office', 'city_hall',
+                        'community_center', 'health',
+                    ];
+                    const PLUS_CODE_RE = /^[0-9A-Z]{4,8}\+[0-9A-Z]{2,3}$/i;
+                    let placeName: string | undefined;
+                    for (const r of results) {
+                        if (r.types?.some((t) => EVAC_TYPES.includes(t)) && r.address_components?.[0]) {
+                            const candidate = r.address_components[0].long_name;
+                            if (!PLUS_CODE_RE.test(candidate.trim())) {
+                                placeName = candidate;
+                                break;
+                            }
+                        }
+                    }
+
+                    onChange(latVal.toFixed(7), lngVal.toFixed(7), cleanAddress(best.formatted_address), placeName);
                 } else {
                     onChange(latVal.toFixed(7), lngVal.toFixed(7));
                 }
@@ -974,17 +1118,9 @@ function MapPicker({
     );
 }
 
-/* ─── Address Autocomplete (Nasugbu-scoped) ─── */
+/* ─── Address Autocomplete (Nasugbu-scoped, programmatic) ─── */
 
-/** Returns true if the place's address components confirm it is in Nasugbu. */
-function placeIsInNasugbu(place: google.maps.places.PlaceResult): boolean {
-    const components = place.address_components ?? [];
-    return components.some(
-        (c) =>
-            c.long_name.toLowerCase() === 'nasugbu' ||
-            c.short_name.toLowerCase() === 'nasugbu',
-    );
-}
+const PLUS_CODE_RE = /^[0-9A-Z]{4,8}\+[0-9A-Z]{2,3}$/i;
 
 function AddressAutocomplete({
     value,
@@ -996,7 +1132,7 @@ function AddressAutocomplete({
 }: {
     value: string;
     onAddressChange: (val: string) => void;
-    onPlaceSelect: (lat: string, lng: string, address: string) => void;
+    onPlaceSelect: (lat: string, lng: string, address: string, placeName?: string) => void;
     className?: string;
     placeholder?: string;
     required?: boolean;
@@ -1006,81 +1142,135 @@ function AddressAutocomplete({
         libraries: ['places'] as ('places')[],
     });
 
-    const inputRef = useRef<HTMLInputElement>(null);
-    const autocompleteRef = useRef<google.maps.places.Autocomplete | null>(null);
-    const [outsideError, setOutsideError] = useState(false);
+    const [inputVal,     setInputVal]     = useState(value);
+    const [predictions,  setPredictions]  = useState<google.maps.places.AutocompletePrediction[]>([]);
+    const [open,         setOpen]         = useState(false);
+    const [fetching,     setFetching]     = useState(false);
 
-    /* Sync external value changes (e.g. map pin drag) back to the DOM input */
+    const acServiceRef  = useRef<google.maps.places.AutocompleteService | null>(null);
+    const placesRef     = useRef<google.maps.places.PlacesService | null>(null);
+    const placesDivRef  = useRef<HTMLDivElement | null>(null);
+    const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const wrapperRef    = useRef<HTMLDivElement>(null);
+
+    /* Sync external value (e.g. map pin reverse geocode) into input */
+    useEffect(() => { setInputVal(value); }, [value]);
+
+    /* Init Google Places services */
     useEffect(() => {
-        if (inputRef.current && document.activeElement !== inputRef.current) {
-            inputRef.current.value = value;
-        }
-    }, [value]);
+        if (!isLoaded) return;
+        acServiceRef.current = new google.maps.places.AutocompleteService();
+        const div = document.createElement('div');
+        document.body.appendChild(div);
+        placesDivRef.current = div;
+        placesRef.current = new google.maps.places.PlacesService(div);
+        return () => { if (placesDivRef.current) document.body.removeChild(placesDivRef.current); };
+    }, [isLoaded]);
 
-    /* Init autocomplete once the Maps API is ready */
+    /* Close dropdown on outside click */
     useEffect(() => {
-        if (!isLoaded || !inputRef.current || autocompleteRef.current) return;
+        const handler = (e: MouseEvent) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
 
+    const fetchPredictions = useCallback((q: string) => {
+        if (!q || q.length < 2 || !acServiceRef.current) { setPredictions([]); setOpen(false); return; }
         const bounds = new google.maps.LatLngBounds(
             { lat: NASUGBU_BOUNDS.south, lng: NASUGBU_BOUNDS.west },
             { lat: NASUGBU_BOUNDS.north, lng: NASUGBU_BOUNDS.east },
         );
+        setFetching(true);
+        acServiceRef.current.getPlacePredictions(
+            { input: q, bounds, strictBounds: true, componentRestrictions: { country: 'ph' } },
+            (preds, status) => {
+                setFetching(false);
+                if (status === 'OK' && preds) {
+                    /* Keep only predictions that mention Nasugbu */
+                    const filtered = preds.filter((p) => p.description.toLowerCase().includes('nasugbu'));
+                    setPredictions(filtered);
+                    setOpen(filtered.length > 0);
+                } else {
+                    setPredictions([]); setOpen(false);
+                }
+            },
+        );
+    }, []);
 
-        autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
-            bounds,
-            strictBounds: true,
-            componentRestrictions: { country: 'ph' },
-            fields: ['formatted_address', 'geometry', 'name', 'address_components'],
-        });
+    const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const q = e.target.value;
+        setInputVal(q);
+        onAddressChange(q);
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => fetchPredictions(q), 300);
+    };
 
-        autocompleteRef.current.addListener('place_changed', () => {
-            const place = autocompleteRef.current!.getPlace();
-            if (!place.geometry?.location) return;
+    const EVAC_PLACE_TYPES = [
+        'school', 'university', 'church', 'place_of_worship',
+        'gym', 'stadium', 'local_government_office', 'city_hall',
+        'community_center', 'health',
+    ];
 
-            /* Reject places not actually in Nasugbu */
-            if (!placeIsInNasugbu(place)) {
-                setOutsideError(true);
-                setTimeout(() => setOutsideError(false), 3000);
-                if (inputRef.current) inputRef.current.value = '';
-                return;
-            }
-
-            setOutsideError(false);
-            const lat = place.geometry.location.lat().toFixed(7);
-            const lng = place.geometry.location.lng().toFixed(7);
-            const addr = cleanAddress(place.formatted_address ?? place.name ?? '');
-            onPlaceSelect(lat, lng, addr);
-            if (inputRef.current) inputRef.current.value = addr;
-        });
-
-        return () => {
-            if (autocompleteRef.current) {
-                google.maps.event.clearInstanceListeners(autocompleteRef.current);
-                autocompleteRef.current = null;
-            }
-        };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isLoaded]);
+    const selectPrediction = (pred: google.maps.places.AutocompletePrediction) => {
+        setOpen(false);
+        if (!placesRef.current) return;
+        placesRef.current.getDetails(
+            { placeId: pred.place_id, fields: ['formatted_address', 'geometry', 'name', 'address_components', 'types'] },
+            (place, status) => {
+                if (status !== 'OK' || !place?.geometry?.location) return;
+                const lat  = place.geometry.location.lat().toFixed(7);
+                const lng  = place.geometry.location.lng().toFixed(7);
+                const addr = cleanAddress(place.formatted_address ?? place.name ?? '');
+                const raw  = place.name ?? '';
+                /* Only use place name to fill Center Name if it's an evacuation-relevant venue */
+                const isEvacType = place.types?.some((t) => EVAC_PLACE_TYPES.includes(t)) ?? false;
+                const placeName  = isEvacType && !PLUS_CODE_RE.test(raw.trim()) ? (raw || undefined) : undefined;
+                setInputVal(addr);
+                onPlaceSelect(lat, lng, addr, placeName);
+            },
+        );
+    };
 
     return (
-        <div className="flex flex-col gap-1">
+        <div ref={wrapperRef} className="relative flex flex-col gap-1">
             <div className="relative">
                 <MapPin className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                 <input
-                    ref={inputRef}
                     type="text"
-                    defaultValue={value}
-                    onChange={(e) => onAddressChange(e.target.value)}
+                    value={inputVal}
+                    onChange={handleInput}
+                    onFocus={() => predictions.length > 0 && setOpen(true)}
                     placeholder={placeholder}
                     className={className}
                     required={required}
                     autoComplete="off"
                 />
+                {fetching && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="size-3.5 animate-spin rounded-full border-2 border-neutral-200 border-t-sky-500" />
+                    </div>
+                )}
             </div>
-            {outsideError && (
-                <p className="text-xs font-medium text-red-600 dark:text-red-400">
-                    That place is outside Nasugbu, Batangas. Please search within Nasugbu only.
-                </p>
+
+            {open && predictions.length > 0 && (
+                <ul className="absolute top-full z-50 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
+                    {predictions.map((pred) => (
+                        <li
+                            key={pred.place_id}
+                            onMouseDown={(e) => { e.preventDefault(); selectPrediction(pred); }}
+                            className="flex cursor-pointer flex-col gap-0.5 px-3 py-2.5 transition-colors hover:bg-sky-50 dark:hover:bg-sky-950/30"
+                        >
+                            <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
+                                {pred.structured_formatting.main_text}
+                            </span>
+                            <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                                {pred.structured_formatting.secondary_text}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
             )}
         </div>
     );
@@ -1088,10 +1278,13 @@ function AddressAutocomplete({
 
 /* ─── Form Field ─── */
 
-function FormField({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+function FormField({ label, hint, error, children }: { label: string; hint?: string; error?: string; children: React.ReactNode }) {
     return (
         <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">{label}</label>
+            <div className="flex items-center justify-between gap-2">
+                <label className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">{label}</label>
+                {hint && <span className="text-[10px] font-medium text-sky-600 dark:text-sky-400">{hint}</span>}
+            </div>
             {children}
             {error && <p className="text-xs font-medium text-red-600 dark:text-red-400">{error}</p>}
         </div>
