@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Alert;
 use App\Models\User;
 use App\Notifications\NewAlertPublished;
+use App\Services\ExpoPushService;
+use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
@@ -44,6 +46,19 @@ class AlertController extends Controller
             'expires_at'  => $request->expires_at,
         ]);
 
+        // Real-time alert to all connected users (residents, responders)
+        SocketService::toAll('new-alert', $alert->toArray());
+
+        // Push notification to all users
+        ExpoPushService::sendToAll(
+            $alert->title,
+            $alert->body,
+            [
+                'type'    => 'alert',
+                'alertId' => $alert->id,
+            ]
+        );
+
         // Notify all admins about the new alert
         $admins = User::where('role', 'admin')
             ->where('id', '!=', $request->user()->id)
@@ -72,6 +87,19 @@ class AlertController extends Controller
             'is_critical' => $request->boolean('is_critical'),
             'expires_at'  => $validated['expires_at'],
         ]);
+
+        // Real-time alert update to all connected users
+        SocketService::toAll('alert-updated', $alert->fresh()->toArray());
+
+        // Push notification for updated alert
+        ExpoPushService::sendToAll(
+            $alert->title,
+            $alert->body,
+            [
+                'type'    => 'alert',
+                'alertId' => $alert->id,
+            ]
+        );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Alert updated.']);
 
