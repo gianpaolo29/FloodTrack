@@ -30,11 +30,19 @@ class EvacuationCenterController extends Controller
             $query->where('is_active', $request->boolean('active'));
         }
 
-        $centers = $query->paginate(30)->withQueryString();
+        $centers = $query->paginate(20)->withQueryString();
+
+        $stats = [
+            'total'           => EvacuationCenter::count(),
+            'active'          => EvacuationCenter::where('is_active', true)->count(),
+            'total_capacity'  => (int) EvacuationCenter::sum('capacity'),
+            'total_occupancy' => (int) EvacuationCenter::sum('current_occupancy'),
+        ];
 
         return Inertia::render('admin/evacuation-centers/index', [
             'centers' => $centers,
             'filters' => $request->only(['search', 'type', 'active']),
+            'stats'   => $stats,
         ]);
     }
 
@@ -62,10 +70,11 @@ class EvacuationCenterController extends Controller
             'name'      => 'sometimes|string|max:255',
             'address'   => 'sometimes|string|max:500',
             'type'      => 'sometimes|in:gymnasium,school,barangay_hall,church,community_center',
-            'capacity'  => 'sometimes|integer|min:1',
-            'latitude'  => 'sometimes|numeric|between:-90,90',
-            'longitude' => 'sometimes|numeric|between:-180,180',
-            'is_active' => 'sometimes|boolean',
+            'capacity'          => 'sometimes|integer|min:1',
+            'current_occupancy' => 'sometimes|integer|min:0',
+            'latitude'          => 'sometimes|numeric|between:-90,90',
+            'longitude'         => 'sometimes|numeric|between:-180,180',
+            'is_active'         => 'sometimes|boolean',
         ]);
 
         $evacuationCenter->update($validated);

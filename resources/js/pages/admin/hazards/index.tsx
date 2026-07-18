@@ -185,7 +185,7 @@ export default function AdminHazardsIndex({ hazards }: Props) {
             <div className="flex flex-col gap-6 p-6 lg:p-8">
 
                 {/* ── Page Header ── */}
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
                         <div className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-red-500/25">
                             <ShieldAlert className="size-6 text-white" />
@@ -213,29 +213,35 @@ export default function AdminHazardsIndex({ hazards }: Props) {
 
                 {/* ── Stats Row ── */}
                 <div className="grid grid-cols-3 gap-4">
-                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Total Hazards</p>
-                        <p className="mt-1 text-2xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{hazards.total}</p>
-                        <div className="mt-2 flex items-center gap-1.5">
-                            <ShieldAlert className="size-3.5 text-orange-500" />
-                            <span className="text-xs text-neutral-400">registered</span>
+                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Total</p>
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/30">
+                                <ShieldAlert className="size-4 text-orange-500" />
+                            </div>
                         </div>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{hazards.total}</p>
+                        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">registered hazards</p>
                     </div>
-                    <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-teal-50/60 p-4 shadow-sm dark:border-emerald-800/40 dark:from-emerald-950/30 dark:to-teal-950/20">
-                        <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Active</p>
-                        <p className="mt-1 text-2xl font-bold tabular-nums text-emerald-800 dark:text-emerald-300">{activeCount}</p>
-                        <div className="mt-2 flex items-center gap-1.5">
-                            <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
-                            <span className="text-xs text-emerald-600 dark:text-emerald-500">on map</span>
+                    <div className="rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-teal-50/60 p-5 shadow-sm dark:border-emerald-800/40 dark:from-emerald-950/30 dark:to-teal-950/20">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-500">Active</p>
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
+                                <span className="size-2.5 animate-pulse rounded-full bg-emerald-500" />
+                            </div>
                         </div>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-emerald-800 dark:text-emerald-300">{activeCount}</p>
+                        <p className="mt-1 text-xs text-emerald-600/70 dark:text-emerald-500/70">visible on map</p>
                     </div>
-                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Inactive</p>
-                        <p className="mt-1 text-2xl font-bold tabular-nums text-neutral-700 dark:text-neutral-300">{inactiveCount}</p>
-                        <div className="mt-2 flex items-center gap-1.5">
-                            <span className="size-1.5 rounded-full bg-neutral-400" />
-                            <span className="text-xs text-neutral-400">hidden</span>
+                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Inactive</p>
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-800">
+                                <Power className="size-4 text-neutral-400" />
+                            </div>
                         </div>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-700 dark:text-neutral-300">{inactiveCount}</p>
+                        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">hidden from map</p>
                     </div>
                 </div>
 
@@ -247,10 +253,12 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -8, scale: 0.99 }}
                             transition={{ duration: 0.18 }}
-                            className="overflow-hidden rounded-2xl border border-orange-200/60 bg-gradient-to-r from-orange-50 to-red-50/60 px-5 py-3 dark:border-orange-800/40 dark:from-orange-950/30 dark:to-red-950/20"
+                            className="overflow-hidden rounded-2xl border border-orange-200/60 bg-gradient-to-r from-orange-50 to-red-50/60 px-5 py-3.5 dark:border-orange-800/40 dark:from-orange-950/30 dark:to-red-950/20"
                         >
                             <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-sm font-semibold text-orange-900 dark:text-orange-200">{selected.length} selected</span>
+                                <span className="text-sm font-semibold text-orange-900 dark:text-orange-200">
+                                    {selected.length} selected
+                                </span>
                                 <div className="h-4 w-px bg-orange-300/60 dark:bg-orange-700/60" />
                                 <button onClick={() => runBulkAction('activate')} disabled={bulkProcessing}
                                     className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-emerald-700 disabled:opacity-50">
@@ -277,16 +285,16 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Toolbar */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-3.5 dark:border-neutral-800">
-                        <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
+                        <div className="flex items-center gap-2">
                             <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
-                                className="h-8 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                                className="h-9 rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                                 <option value="">All categories</option>
                                 <option value="flood">Flood</option>
                                 <option value="road">Road</option>
                             </select>
                             <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-                                className="h-8 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                                className="h-9 rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                                 <option value="">All statuses</option>
                                 <option value="active">Active</option>
                                 <option value="inactive">Inactive</option>
@@ -294,18 +302,18 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="relative">
-                                <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                                <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                                 <input
                                     type="text"
                                     placeholder="Search hazards..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="h-8 w-48 rounded-lg border border-neutral-200 bg-neutral-50 pl-8 pr-3 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500"
+                                    className="h-9 w-52 rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-3 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
                                 />
                             </div>
                             {hasFilters && (
                                 <button onClick={clearFilters}
-                                    className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-neutral-700 dark:hover:border-red-800/60 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                                    className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-neutral-700 dark:hover:border-red-800/60 dark:hover:bg-red-950/30 dark:hover:text-red-400"
                                     title="Clear filters">
                                     <X className="size-3.5" />
                                 </button>
@@ -318,16 +326,16 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-neutral-100 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-800/40">
-                                    <th className="w-10 px-4 py-3 text-center">
+                                    <th className="w-10 px-5 py-3 text-center">
                                         <input type="checkbox" checked={allOnPageSelected} onChange={toggleAll}
                                             className="size-3.5 rounded border-neutral-300 text-orange-500 focus:ring-orange-500/20 dark:border-neutral-600" />
                                     </th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Category</th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Type</th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Status</th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Location</th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Created</th>
-                                    <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Hazard</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Type</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Status</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Location</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Created</th>
+                                    <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/80">
@@ -347,35 +355,28 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                     {/* Empty state */}
                     {filtered.length === 0 && (
                         <div className="flex flex-col items-center gap-4 py-20">
-                            <div className="flex size-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
-                                <ShieldAlert className="size-7 text-neutral-400 dark:text-neutral-500" />
+                            <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/20">
+                                <ShieldAlert className="size-8 text-orange-400 dark:text-orange-500" />
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">No hazards found</p>
-                                <p className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">
+                                <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
                                     {hasFilters ? 'Try adjusting your filters.' : 'Add your first hazard to get started.'}
                                 </p>
                             </div>
-                            {hasFilters ? (
-                                <button onClick={clearFilters} className="text-xs font-semibold text-orange-600 transition-colors hover:text-orange-700 dark:text-orange-400">
-                                    Clear all filters
-                                </button>
-                            ) : (
-                                <button onClick={() => setShowCreateModal(true)}
-                                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 px-4 py-2 text-sm font-semibold text-white shadow-sm">
-                                    <Plus className="size-4" /> Add Hazard
-                                </button>
-                            )}
                         </div>
                     )}
 
                     {/* Pagination */}
                     {hazards.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t border-neutral-100 px-5 py-3.5 dark:border-neutral-800">
+                        <div className="flex items-center justify-between border-t border-neutral-100 px-5 py-4 dark:border-neutral-800">
                             <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                                Page <span className="font-semibold text-neutral-800 dark:text-neutral-200">{hazards.current_page}</span>
+                                Page{' '}
+                                <span className="font-semibold text-neutral-800 dark:text-neutral-200">{hazards.current_page}</span>
                                 {' '}of{' '}
                                 <span className="font-semibold text-neutral-800 dark:text-neutral-200">{hazards.last_page}</span>
+                                <span className="ml-2 text-neutral-300 dark:text-neutral-600">·</span>
+                                <span className="ml-2">{hazards.total} total</span>
                             </span>
                             <div className="flex items-center gap-1">
                                 {hazards.links.map((link, i) => {
@@ -384,11 +385,11 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                                     if (isPrev || isNext) {
                                         return link.url ? (
                                             <button key={i} onClick={() => router.get(link.url!)}
-                                                className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 dark:border-neutral-700 dark:text-neutral-400">
+                                                className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-orange-700/40 dark:hover:bg-orange-950/20 dark:hover:text-orange-400">
                                                 {isPrev ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
                                             </button>
                                         ) : (
-                                            <span key={i} className="flex size-8 items-center justify-center rounded-lg opacity-30">
+                                            <span key={i} className="flex size-8 items-center justify-center rounded-lg opacity-30 text-neutral-400">
                                                 {isPrev ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
                                             </span>
                                         );
@@ -398,12 +399,12 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                                                 link.active
                                                     ? 'bg-gradient-to-br from-orange-500 to-red-600 text-white shadow-sm'
-                                                    : 'border border-neutral-200 text-neutral-500 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 dark:border-neutral-700 dark:text-neutral-400'
+                                                    : 'border border-neutral-200 text-neutral-500 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-orange-700/40 dark:hover:bg-orange-950/20 dark:hover:text-orange-400'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
                                         />
                                     ) : (
-                                        <span key={i} className="flex size-8 items-center justify-center rounded-lg text-xs opacity-30"
+                                        <span key={i} className="flex size-8 items-center justify-center rounded-lg text-xs opacity-30 text-neutral-400"
                                             dangerouslySetInnerHTML={{ __html: link.label }} />
                                     );
                                 })}
@@ -430,33 +431,47 @@ function HazardRow({ hazard, isSelected, onToggle, onEdit }: {
 }) {
     const deleteForm = useForm({});
     const CatIcon    = CATEGORY_ICON[hazard.category] ?? ShieldAlert;
+    const isFlood    = hazard.category === 'flood';
 
     return (
         <tr className={`group transition-colors ${
             isSelected ? 'bg-orange-50/60 dark:bg-orange-950/20' : 'hover:bg-neutral-50/60 dark:hover:bg-neutral-800/30'
         }`}>
-            <td className="w-10 px-4 py-3.5 text-center">
+            <td className="w-10 px-5 py-4 text-center">
                 <input type="checkbox" checked={isSelected} onChange={onToggle}
                     className="size-3.5 rounded border-neutral-300 text-orange-500 focus:ring-orange-500/20 dark:border-neutral-600" />
             </td>
 
-            {/* Category */}
-            <td className="px-4 py-3.5">
-                <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold ${CATEGORY_COLORS[hazard.category]}`}>
-                    <CatIcon className="size-3" />
-                    {HAZARD_CATEGORY_LABELS[hazard.category]}
-                </span>
+            {/* Hazard (icon + title + category badge) */}
+            <td className="px-5 py-4">
+                <div className="flex items-center gap-3">
+                    <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                        isFlood
+                            ? 'bg-blue-100 dark:bg-blue-950/50'
+                            : 'bg-orange-100 dark:bg-orange-950/50'
+                    }`}>
+                        <CatIcon className={`size-4 ${isFlood ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400'}`} />
+                    </div>
+                    <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-neutral-800 dark:text-neutral-200">
+                            {hazard.title}
+                        </p>
+                        <span className={`mt-0.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${CATEGORY_COLORS[hazard.category]}`}>
+                            {HAZARD_CATEGORY_LABELS[hazard.category]}
+                        </span>
+                    </div>
+                </div>
             </td>
 
             {/* Type */}
-            <td className="px-4 py-3.5">
-                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+            <td className="px-5 py-4">
+                <span className="text-sm text-neutral-600 dark:text-neutral-400">
                     {getTypeLabel(hazard.category, hazard.type)}
                 </span>
             </td>
 
             {/* Status */}
-            <td className="px-4 py-3.5">
+            <td className="px-5 py-4">
                 {hazard.active ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-700/40">
                         <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" /> Active
@@ -469,10 +484,10 @@ function HazardRow({ hazard, isSelected, onToggle, onEdit }: {
             </td>
 
             {/* Location */}
-            <td className="max-w-[180px] px-4 py-3.5">
+            <td className="max-w-[200px] px-5 py-4">
                 {hazard.address ? (
                     <div className="flex items-start gap-1.5">
-                        <MapPin className="mt-0.5 size-3 shrink-0 text-neutral-400" />
+                        <MapPin className="mt-0.5 size-3.5 shrink-0 text-neutral-400" />
                         <span className="truncate text-xs text-neutral-500 dark:text-neutral-400" title={hazard.address}>
                             {hazard.address}
                         </span>
@@ -483,18 +498,15 @@ function HazardRow({ hazard, isSelected, onToggle, onEdit }: {
             </td>
 
             {/* Created */}
-            <td className="whitespace-nowrap px-4 py-3.5">
-                <p className="text-xs text-neutral-600 dark:text-neutral-400">
+            <td className="whitespace-nowrap px-5 py-4">
+                <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
                     {new Date(hazard.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </p>
-                {hazard.creator && (
-                    <p className="mt-0.5 text-[11px] text-neutral-400 dark:text-neutral-500">by {hazard.creator.name}</p>
-                )}
             </td>
 
             {/* Actions */}
-            <td className="px-4 py-3.5">
-                <div className="flex items-center justify-end gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
+            <td className="px-5 py-4">
+                <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                         onClick={() => router.post(`/admin/hazards/${hazard.id}/toggle`, {}, { preserveState: true })}
                         className={`rounded-lg p-1.5 transition-colors ${

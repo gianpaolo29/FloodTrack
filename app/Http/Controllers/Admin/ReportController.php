@@ -55,13 +55,21 @@ class ReportController extends Controller
                    ->orWhere('reference_number', 'like', "%{$request->search}%");
             }))
             ->latest()
-            ->paginate(25)
+            ->paginate(20)
             ->withQueryString();
+
+        $stats = [
+            'total'    => Report::count(),
+            'pending'  => Report::where('status', 'pending')->count(),
+            'critical' => Report::where('severity', 'critical')->count(),
+            'resolved' => Report::where('status', 'resolved')->count(),
+        ];
 
         return Inertia::render('admin/reports/index', [
             'reports'    => $reports,
             'responders' => User::where('role', 'responder')->get(['id', 'name']),
             'filters'    => $request->only(['status', 'severity', 'search']),
+            'stats'      => $stats,
         ]);
     }
 

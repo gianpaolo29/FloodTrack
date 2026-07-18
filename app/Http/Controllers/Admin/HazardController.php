@@ -15,7 +15,7 @@ class HazardController extends Controller
     {
         $hazards = Hazard::with('creator:id,name')
             ->latest()
-            ->paginate(30);
+            ->paginate(20);
 
         return Inertia::render('admin/hazards/index', [
             'hazards' => $hazards,

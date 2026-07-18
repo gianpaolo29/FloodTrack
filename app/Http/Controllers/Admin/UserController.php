@@ -25,7 +25,7 @@ class UserController extends Controller
                 'assignedReports as active_assignments' => fn ($q) => $q->whereIn('status', ['assigned']),
             ])
             ->latest()
-            ->paginate(25)
+            ->paginate(20)
             ->withQueryString();
 
         return Inertia::render('admin/users/index', [

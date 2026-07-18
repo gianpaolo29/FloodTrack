@@ -1,7 +1,7 @@
 import { swalSuccess } from '@/lib/swal';
 import { Head, router, useForm } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, CheckCircle2, ClipboardList, Eye, Pencil, Phone, Plus, Search, ShieldCheck, Users, X } from 'lucide-react';
+import { Activity, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Pencil, Phone, Plus, Search, ShieldCheck, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -50,6 +50,7 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
 
     const totalActive = responders.data.reduce((sum, r) => sum + r.active_assignments, 0);
     const totalResolved = responders.data.reduce((sum, r) => sum + r.resolved_count, 0);
+    const hasFilters = !!filters.search;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -59,15 +60,20 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
 
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Responders</h1>
-                        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                            Manage responder accounts and track their assignments.
-                        </p>
+                    <div className="flex items-center gap-4">
+                        <div className="relative flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/25">
+                            <ShieldCheck className="size-5 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Responders</h1>
+                            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                                Manage responder accounts and track their assignments.
+                            </p>
+                        </div>
                     </div>
                     <button
                         onClick={() => setShowCreate(true)}
-                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
+                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
                     >
                         <Plus className="size-4" />
                         Add Responder
@@ -76,45 +82,51 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
 
                 {/* Stat cards */}
                 <div className="grid grid-cols-3 gap-4">
-                    <StatCard
-                        icon={ShieldCheck}
-                        iconBg="bg-blue-50 dark:bg-blue-950/30"
-                        iconColor="text-blue-600 dark:text-blue-400"
-                        label="Total Responders"
-                        value={responders.total}
-                    />
-                    <StatCard
-                        icon={Activity}
-                        iconBg="bg-emerald-50 dark:bg-emerald-950/30"
-                        iconColor="text-emerald-600 dark:text-emerald-400"
-                        label="Active"
-                        value={totalActive}
-                    />
-                    <StatCard
-                        icon={CheckCircle2}
-                        iconBg="bg-amber-50 dark:bg-amber-950/30"
-                        iconColor="text-amber-600 dark:text-amber-400"
-                        label="Total Resolved"
-                        value={totalResolved}
-                    />
+                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <div className="flex items-start justify-between">
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 shadow-sm shadow-indigo-500/20">
+                                <ShieldCheck className="size-4 text-white" />
+                            </div>
+                        </div>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{responders.total}</p>
+                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Total Responders</p>
+                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">All registered responders</p>
+                    </div>
+                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <div className="flex items-start justify-between">
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm shadow-emerald-500/20">
+                                <Activity className="size-4 text-white" />
+                            </div>
+                        </div>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{totalActive}</p>
+                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Active Assignments</p>
+                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">Currently on duty</p>
+                    </div>
+                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <div className="flex items-start justify-between">
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 shadow-sm shadow-amber-500/20">
+                                <CheckCircle2 className="size-4 text-white" />
+                            </div>
+                        </div>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{totalResolved}</p>
+                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Total Resolved</p>
+                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">Completed assignments</p>
+                    </div>
                 </div>
 
                 {/* Table card */}
-                <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
-                    {/* Table header */}
-                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
-                        <div className="flex items-center gap-3">
-                            <div className="flex size-9 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/30">
-                                <Users className="size-4.5 text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <div>
-                                <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">All Responders</h2>
-                                <p className="text-xs text-neutral-500 dark:text-neutral-400">{responders.total} results</p>
-                            </div>
+                    {/* Toolbar */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
+                        <div className="flex items-center gap-2.5">
+                            <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">All Responders</span>
+                            <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                                {responders.total}
+                            </span>
                         </div>
 
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                                 <input
@@ -124,13 +136,13 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') search((e.target as HTMLInputElement).value);
                                     }}
-                                    className="h-9 w-56 rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-3 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500"
+                                    className="h-9 w-52 rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-3 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-indigo-500 dark:focus:bg-neutral-900"
                                 />
                             </div>
                             {filters.search && (
                                 <button
                                     onClick={() => router.get('/admin/responders')}
-                                    className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                                    className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 text-neutral-400 transition-colors hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
                                     title="Clear search"
                                 >
                                     <X className="size-4" />
@@ -144,58 +156,58 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                    <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Responder</th>
-                                    <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Assignments</th>
-                                    <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Status</th>
-                                    <th className="px-6 py-3 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Actions</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Responder</th>
+                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Assignments</th>
+                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Status</th>
+                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                                 {responders.data.map((r) => (
                                     <tr key={r.id} className="group transition-colors hover:bg-neutral-50/60 dark:hover:bg-neutral-800/20">
-                                        <td className="px-6 py-4">
+                                        <td className="px-5 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-sky-100 to-blue-100 text-sm font-bold text-sky-700 dark:from-sky-900/40 dark:to-blue-900/40 dark:text-sky-300">
+                                                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-sm font-bold text-white shadow-sm shadow-indigo-500/20">
                                                     {r.name.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div className="min-w-0">
                                                     <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{r.name}</p>
                                                     <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{r.email}</p>
+                                                    {r.contact_number && (
+                                                        <p className="flex items-center gap-1 text-[11px] text-neutral-400 dark:text-neutral-500">
+                                                            <Phone className="size-3" />
+                                                            {r.contact_number}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-sky-700 dark:text-sky-400">
-                                                <ClipboardList className="size-4 text-sky-500/70 dark:text-sky-500/50" />
+                                        <td className="px-5 py-4 text-center">
+                                            <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-indigo-700 dark:text-indigo-400">
+                                                <ClipboardList className="size-4 text-indigo-500/70 dark:text-indigo-500/50" />
                                                 {r.total_assigned}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="px-5 py-4 text-center">
                                             {r.active_assignments > 0 ? (
-                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
+                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-800/40">
                                                     <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                    active
+                                                    Active
                                                 </span>
                                             ) : (
-                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                                                <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-500 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700">
                                                     <span className="size-1.5 rounded-full bg-neutral-400" />
-                                                    idle
+                                                    Idle
                                                 </span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center justify-center gap-1">
-                                                <button
-                                                    className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-                                                    title="View details"
-                                                >
-                                                    <Eye className="size-4" />
-                                                </button>
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center justify-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                                                 <button
                                                     className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
                                                     title="Edit responder"
                                                 >
-                                                    <Pencil className="size-4" />
+                                                    <Pencil className="size-3.5" />
                                                 </button>
                                             </div>
                                         </td>
@@ -205,59 +217,69 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                         </table>
                     </div>
 
+                    {/* Empty state */}
                     {responders.data.length === 0 && (
                         <div className="flex flex-col items-center gap-3 py-20">
-                            <div className="flex size-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
-                                <ShieldCheck className="size-6 text-neutral-400 dark:text-neutral-500" />
+                            <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/25">
+                                <ShieldCheck className="size-7 text-white" />
                             </div>
-                            <p className="text-sm text-neutral-500 dark:text-neutral-400">No responders found</p>
-                            {filters.search && (
+                            <div className="text-center">
+                                <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">No responders found</p>
+                                <p className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">
+                                    {hasFilters ? 'Try adjusting your search.' : 'Add a responder to get started.'}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Pagination */}
+                    {responders.last_page > 1 && (
+                        <div className="flex items-center justify-between border-t border-neutral-100 px-5 py-3.5 dark:border-neutral-800">
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                {responders.total} responder{responders.total !== 1 ? 's' : ''} total
+                            </p>
+                            <div className="flex items-center gap-1">
                                 <button
-                                    onClick={() => router.get('/admin/responders')}
-                                    className="text-xs font-medium text-sky-600 hover:text-sky-700 transition-colors"
+                                    onClick={() => {
+                                        const prev = responders.links[0];
+                                        if (prev?.url) router.get(prev.url);
+                                    }}
+                                    disabled={responders.current_page === 1}
+                                    className="flex size-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 disabled:pointer-events-none disabled:opacity-30 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                                 >
-                                    Clear search
+                                    <ChevronLeft className="size-4" />
                                 </button>
-                            )}
+                                {responders.links.slice(1, -1).map((link, i) =>
+                                    link.url ? (
+                                        <button
+                                            key={i}
+                                            onClick={() => router.get(link.url!)}
+                                            className={`flex size-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
+                                                link.active
+                                                    ? 'bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-sm'
+                                                    : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
+                                            }`}
+                                        >
+                                            {link.label}
+                                        </button>
+                                    ) : null,
+                                )}
+                                <button
+                                    onClick={() => {
+                                        const next = responders.links[responders.links.length - 1];
+                                        if (next?.url) router.get(next.url);
+                                    }}
+                                    disabled={responders.current_page === responders.last_page}
+                                    className="flex size-8 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 disabled:pointer-events-none disabled:opacity-30 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                                >
+                                    <ChevronRight className="size-4" />
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
-
-                {/* Pagination */}
-                {responders.last_page > 1 && (
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-neutral-500 dark:text-neutral-400">
-                            Page {responders.current_page} of {responders.last_page}
-                        </span>
-                        <div className="flex gap-1">
-                            {responders.links.map((link, i) =>
-                                link.url ? (
-                                    <a
-                                        key={i}
-                                        href={link.url}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            router.get(link.url!);
-                                        }}
-                                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                                            link.active
-                                                ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-sm'
-                                                : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
-                                        }`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ) : (
-                                    <span
-                                        key={i}
-                                        className="rounded-lg px-3 py-1.5 text-xs opacity-30"
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ),
-                            )}
-                        </div>
-                    </div>
-                )}
             </div>
+
             {/* Create Modal */}
             <AnimatePresence>
                 {showCreate && (
@@ -265,34 +287,6 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                 )}
             </AnimatePresence>
         </AppLayout>
-    );
-}
-
-/* ─── Stat Card ─── */
-
-function StatCard({
-    icon: Icon,
-    iconBg,
-    iconColor,
-    label,
-    value,
-}: {
-    icon: typeof ShieldCheck;
-    iconBg: string;
-    iconColor: string;
-    label: string;
-    value: number;
-}) {
-    return (
-        <div className="flex items-center justify-between rounded-2xl border border-neutral-200/60 bg-white px-5 py-4 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-            <div className="flex flex-col gap-1">
-                <div className={`flex size-10 items-center justify-center rounded-xl ${iconBg}`}>
-                    <Icon className={`size-5 ${iconColor}`} />
-                </div>
-                <p className="mt-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">{label}</p>
-            </div>
-            <p className="text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{value}</p>
-        </div>
     );
 }
 
@@ -326,7 +320,7 @@ function ResponderFormModal({ onClose }: { onClose: () => void }) {
     }, [onClose]);
 
     const inputClassName =
-        'w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-sky-500 dark:focus:bg-neutral-900';
+        'w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-indigo-500 dark:focus:bg-neutral-900';
 
     return (
         <motion.div
@@ -347,7 +341,7 @@ function ResponderFormModal({ onClose }: { onClose: () => void }) {
             >
                 {/* Modal header */}
                 <div className="flex items-center gap-3 border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
-                    <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
+                    <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-sm">
                         <Plus className="size-4 text-white" />
                     </div>
                     <div>
@@ -420,7 +414,7 @@ function ResponderFormModal({ onClose }: { onClose: () => void }) {
                         <button
                             type="submit"
                             disabled={form.processing}
-                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
+                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
                         >
                             <Plus className="size-3.5" />
                             {form.processing ? 'Creating...' : 'Create Responder'}

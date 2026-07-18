@@ -84,6 +84,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     // Statistics
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
+    Route::get('/statistics/ai-insights', [StatisticsController::class, 'aiInsights'])->name('statistics.ai-insights');
 
     // Export
     Route::get('/export',          [ExportController::class, 'index'])->name('export.index');
@@ -95,6 +96,16 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     // Settings
     Route::get('/settings',  [SettingsController::class, 'index'])->name('settings.index');
     Route::put('/settings',  [SettingsController::class, 'update'])->name('settings.update');
+
+    // Socket token — issues a short-lived Sanctum token for Socket.IO auth
+    Route::get('/socket-token', function () {
+        $user  = request()->user();
+        $token = $user->tokens()->where('name', 'socket-web')->first();
+        if ($token) $token->delete();
+        return response()->json([
+            'token' => $user->createToken('socket-web')->plainTextToken,
+        ]);
+    })->name('socket-token');
 
     // Notifications (JSON API)
     Route::prefix('notifications')->name('notifications.')->group(function () {

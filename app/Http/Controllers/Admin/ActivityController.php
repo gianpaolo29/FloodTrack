@@ -21,12 +21,20 @@ class ActivityController extends Controller
                 $q2->where('reference_number', 'like', "%{$request->search}%");
             }))
             ->latest()
-            ->paginate(30)
+            ->paginate(20)
             ->withQueryString();
+
+        $stats = [
+            'total'    => ReportStatusUpdate::count(),
+            'today'    => ReportStatusUpdate::whereDate('created_at', today())->count(),
+            'resolved' => ReportStatusUpdate::where('status', 'resolved')->count(),
+            'pending'  => ReportStatusUpdate::where('status', 'pending')->count(),
+        ];
 
         return Inertia::render('admin/activity/index', [
             'activities' => $activities,
             'filters'    => $request->only(['status', 'search']),
+            'stats'      => $stats,
         ]);
     }
 }

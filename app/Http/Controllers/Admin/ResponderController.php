@@ -26,7 +26,7 @@ class ResponderController extends Controller
                 'assignedReports as resolved_count'     => fn ($q) => $q->where('status', 'resolved'),
             ])
             ->latest()
-            ->paginate(25)
+            ->paginate(20)
             ->withQueryString();
 
         return Inertia::render('admin/responders/index', [

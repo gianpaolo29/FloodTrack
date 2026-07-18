@@ -101,6 +101,7 @@ export interface EvacuationCenter {
     address: string;
     type: EvacuationCenterType;
     capacity: number;
+    current_occupancy: number;
     latitude: number;
     longitude: number;
     is_active: boolean;

@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
-import { Input } from '@/components/ui/input';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 import type { EvacuationCenter, EvacuationCenterType } from '@/types/admin';
@@ -46,9 +45,17 @@ interface Filters {
     active?: string;
 }
 
+interface CenterStats {
+    total: number;
+    active: number;
+    total_capacity: number;
+    total_occupancy: number;
+}
+
 interface Props {
     centers: Paginated<EvacuationCenter>;
     filters: Filters;
+    stats: CenterStats;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -89,7 +96,7 @@ const TYPE_ICON: Record<EvacuationCenterType, React.ElementType> = {
 
 /* ─── Main Component ─── */
 
-export default function AdminEvacuationCentersIndex({ centers, filters }: Props) {
+export default function AdminEvacuationCentersIndex({ centers, filters, stats }: Props) {
     const [selected, setSelected] = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -140,8 +147,9 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
         );
     };
 
-    const activeCount = centers.data.filter((c) => c.is_active).length;
-    const totalCapacity = centers.data.reduce((sum, c) => sum + (c.capacity ?? 0), 0);
+    const occupancyPct = stats.total_capacity > 0
+        ? Math.round((stats.total_occupancy / stats.total_capacity) * 100)
+        : 0;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -177,30 +185,83 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
                 </div>
 
                 {/* ── Stats Row ── */}
-                <div className="grid grid-cols-3 gap-4">
-                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Total Centers</p>
-                        <p className="mt-1 text-2xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{centers.total}</p>
-                        <div className="mt-2 flex items-center gap-1.5">
-                            <Building2 className="size-3.5 text-sky-500" />
-                            <span className="text-xs text-neutral-400">registered</span>
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                    {/* Total Centers */}
+                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Total</p>
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-sky-50 dark:bg-sky-950/30">
+                                <Building2 className="size-4 text-sky-500" />
+                            </div>
                         </div>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{stats.total}</p>
+                        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">registered centers</p>
                     </div>
-                    <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50 to-teal-50/60 p-4 shadow-sm dark:border-emerald-800/40 dark:from-emerald-950/30 dark:to-teal-950/20">
-                        <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400">Active</p>
-                        <p className="mt-1 text-2xl font-bold tabular-nums text-emerald-800 dark:text-emerald-300">{activeCount}</p>
-                        <div className="mt-2 flex items-center gap-1.5">
-                            <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
-                            <span className="text-xs text-emerald-600 dark:text-emerald-500">operational</span>
+
+                    {/* Active Centers */}
+                    <div className="rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-teal-50/60 p-5 shadow-sm dark:border-emerald-800/40 dark:from-emerald-950/30 dark:to-teal-950/20">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-500">Active</p>
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
+                                <span className="size-2.5 animate-pulse rounded-full bg-emerald-500" />
+                            </div>
                         </div>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-emerald-800 dark:text-emerald-300">{stats.active}</p>
+                        <p className="mt-1 text-xs text-emerald-600/70 dark:text-emerald-500/70">operational</p>
                     </div>
-                    <div className="rounded-2xl border border-blue-200/80 bg-gradient-to-br from-blue-50 to-sky-50/60 p-4 shadow-sm dark:border-blue-800/40 dark:from-blue-950/30 dark:to-sky-950/20">
-                        <p className="text-xs font-medium text-blue-700 dark:text-blue-400">Total Capacity</p>
-                        <p className="mt-1 text-2xl font-bold tabular-nums text-blue-800 dark:text-blue-300">{totalCapacity.toLocaleString()}</p>
-                        <div className="mt-2 flex items-center gap-1.5">
-                            <Users className="size-3.5 text-blue-500" />
-                            <span className="text-xs text-blue-600 dark:text-blue-500">persons</span>
+
+                    {/* Total Capacity */}
+                    <div className="rounded-2xl border border-blue-200/60 bg-gradient-to-br from-blue-50 to-sky-50/60 p-5 shadow-sm dark:border-blue-800/40 dark:from-blue-950/30 dark:to-sky-950/20">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-500">Capacity</p>
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                                <Users className="size-4 text-blue-500" />
+                            </div>
                         </div>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-blue-800 dark:text-blue-300">{stats.total_capacity.toLocaleString()}</p>
+                        <p className="mt-1 text-xs text-blue-600/70 dark:text-blue-500/70">total persons</p>
+                    </div>
+
+                    {/* Current Evacuees */}
+                    <div className={`rounded-2xl border p-5 shadow-sm ${
+                        occupancyPct >= 90
+                            ? 'border-red-200/60 bg-gradient-to-br from-red-50 to-rose-50/60 dark:border-red-800/40 dark:from-red-950/30 dark:to-rose-950/20'
+                            : occupancyPct >= 70
+                            ? 'border-amber-200/60 bg-gradient-to-br from-amber-50 to-orange-50/60 dark:border-amber-800/40 dark:from-amber-950/30 dark:to-orange-950/20'
+                            : 'border-violet-200/60 bg-gradient-to-br from-violet-50 to-purple-50/60 dark:border-violet-800/40 dark:from-violet-950/30 dark:to-purple-950/20'
+                    }`}>
+                        <div className="flex items-center justify-between">
+                            <p className={`text-xs font-semibold uppercase tracking-wider ${
+                                occupancyPct >= 90 ? 'text-red-600 dark:text-red-500'
+                                : occupancyPct >= 70 ? 'text-amber-600 dark:text-amber-500'
+                                : 'text-violet-600 dark:text-violet-500'
+                            }`}>Evacuees</p>
+                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                occupancyPct >= 90 ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'
+                                : occupancyPct >= 70 ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400'
+                                : 'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400'
+                            }`}>{occupancyPct}%</span>
+                        </div>
+                        <p className={`mt-3 text-3xl font-bold tabular-nums ${
+                            occupancyPct >= 90 ? 'text-red-800 dark:text-red-300'
+                            : occupancyPct >= 70 ? 'text-amber-800 dark:text-amber-300'
+                            : 'text-violet-800 dark:text-violet-300'
+                        }`}>{stats.total_occupancy.toLocaleString()}</p>
+                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/60 dark:bg-black/20">
+                            <div
+                                className={`h-full rounded-full transition-all ${
+                                    occupancyPct >= 90 ? 'bg-red-500'
+                                    : occupancyPct >= 70 ? 'bg-amber-500'
+                                    : 'bg-violet-500'
+                                }`}
+                                style={{ width: `${Math.min(occupancyPct, 100)}%` }}
+                            />
+                        </div>
+                        <p className={`mt-1 text-xs ${
+                            occupancyPct >= 90 ? 'text-red-600/70 dark:text-red-500/70'
+                            : occupancyPct >= 70 ? 'text-amber-600/70 dark:text-amber-500/70'
+                            : 'text-violet-600/70 dark:text-violet-500/70'
+                        }`}>of {stats.total_capacity.toLocaleString()} capacity</p>
                     </div>
                 </div>
 
@@ -212,7 +273,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -8, scale: 0.99 }}
                             transition={{ duration: 0.18 }}
-                            className="overflow-hidden rounded-2xl border border-sky-200/60 bg-gradient-to-r from-sky-50 to-blue-50/60 px-5 py-3 dark:border-sky-800/40 dark:from-sky-950/30 dark:to-blue-950/20"
+                            className="overflow-hidden rounded-2xl border border-sky-200/60 bg-gradient-to-r from-sky-50 to-blue-50/60 px-5 py-3.5 dark:border-sky-800/40 dark:from-sky-950/30 dark:to-blue-950/20"
                         >
                             <div className="flex flex-wrap items-center gap-3">
                                 <span className="text-sm font-semibold text-sky-900 dark:text-sky-200">
@@ -255,12 +316,12 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Toolbar */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-3.5 dark:border-neutral-800">
-                        <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
+                        <div className="flex items-center gap-2">
                             <select
                                 value={filters.type ?? ''}
                                 onChange={(e) => filter('type', e.target.value)}
-                                className="h-8 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                                className="h-9 rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
                             >
                                 <option value="">All types</option>
                                 {TYPE_OPTIONS.map((t) => (
@@ -270,7 +331,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
                             <select
                                 value={filters.active ?? ''}
                                 onChange={(e) => filter('active', e.target.value)}
-                                className="h-8 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                                className="h-9 rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
                             >
                                 <option value="">All statuses</option>
                                 <option value="1">Active</option>
@@ -280,11 +341,12 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
 
                         <div className="flex items-center gap-2">
                             <div className="relative">
-                                <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
-                                <Input
+                                <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                                <input
+                                    type="text"
                                     placeholder="Search centers..."
                                     defaultValue={filters.search ?? ''}
-                                    className="h-8 w-48 rounded-lg border border-neutral-200 bg-neutral-50 pl-8 pr-3 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500"
+                                    className="h-9 w-52 rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-3 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') {
                                             filter('search', (e.target as HTMLInputElement).value);
@@ -295,7 +357,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
                             {hasFilters && (
                                 <button
                                     onClick={() => router.get('/admin/evacuation-centers')}
-                                    className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-neutral-700 dark:hover:border-red-800/60 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                                    className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-neutral-700 dark:hover:border-red-800/60 dark:hover:bg-red-950/30 dark:hover:text-red-400"
                                     title="Clear filters"
                                 >
                                     <X className="size-3.5" />
@@ -309,7 +371,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-neutral-100 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-800/40">
-                                    <th className="w-10 px-4 py-3 text-center">
+                                    <th className="w-10 px-5 py-3 text-center">
                                         <input
                                             type="checkbox"
                                             checked={allOnPageSelected}
@@ -317,12 +379,12 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
                                             className="size-3.5 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
                                         />
                                     </th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Center</th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Type</th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Capacity</th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Status</th>
-                                    <th className="px-4 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Location</th>
-                                    <th className="px-4 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Center</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Type</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Occupancy</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Status</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Location</th>
+                                    <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/80">
@@ -342,40 +404,28 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
                     {/* Empty state */}
                     {centers.data.length === 0 && (
                         <div className="flex flex-col items-center gap-4 py-20">
-                            <div className="flex size-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
-                                <Building2 className="size-7 text-neutral-400 dark:text-neutral-500" />
+                            <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950/30 dark:to-blue-950/20">
+                                <Building2 className="size-8 text-sky-400 dark:text-sky-500" />
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">No evacuation centers found</p>
-                                <p className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">
+                                <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
                                     {hasFilters ? 'Try adjusting your filters.' : 'Add your first evacuation center to get started.'}
                                 </p>
                             </div>
-                            {hasFilters ? (
-                                <button
-                                    onClick={() => router.get('/admin/evacuation-centers')}
-                                    className="text-xs font-semibold text-sky-600 transition-colors hover:text-sky-700 dark:text-sky-400"
-                                >
-                                    Clear all filters
-                                </button>
-                            ) : (
-                                <button
-                                    onClick={() => setShowCreateModal(true)}
-                                    className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm"
-                                >
-                                    <Plus className="size-4" /> Add Center
-                                </button>
-                            )}
                         </div>
                     )}
 
                     {/* Pagination */}
                     {centers.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t border-neutral-100 px-5 py-3.5 dark:border-neutral-800">
+                        <div className="flex items-center justify-between border-t border-neutral-100 px-5 py-4 dark:border-neutral-800">
                             <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                                Page <span className="font-semibold text-neutral-800 dark:text-neutral-200">{centers.current_page}</span>
+                                Page{' '}
+                                <span className="font-semibold text-neutral-800 dark:text-neutral-200">{centers.current_page}</span>
                                 {' '}of{' '}
                                 <span className="font-semibold text-neutral-800 dark:text-neutral-200">{centers.last_page}</span>
+                                <span className="ml-2 text-neutral-300 dark:text-neutral-600">·</span>
+                                <span className="ml-2">{centers.total} total</span>
                             </span>
                             <div className="flex items-center gap-1">
                                 {centers.links.map((link, i) => {
@@ -386,12 +436,12 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
                                             <button
                                                 key={i}
                                                 onClick={() => router.get(link.url!)}
-                                                className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-sky-700 dark:hover:bg-sky-950/30 dark:hover:text-sky-400"
+                                                className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-sky-700/40 dark:hover:bg-sky-950/20 dark:hover:text-sky-400"
                                             >
                                                 {isPrev ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
                                             </button>
                                         ) : (
-                                            <span key={i} className="flex size-8 items-center justify-center rounded-lg opacity-30">
+                                            <span key={i} className="flex size-8 items-center justify-center rounded-lg opacity-30 text-neutral-400">
                                                 {isPrev ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
                                             </span>
                                         );
@@ -403,14 +453,14 @@ export default function AdminEvacuationCentersIndex({ centers, filters }: Props)
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                                                 link.active
                                                     ? 'bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-sm'
-                                                    : 'border border-neutral-200 text-neutral-500 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-sky-700 dark:hover:bg-sky-950/30'
+                                                    : 'border border-neutral-200 text-neutral-500 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-sky-700/40 dark:hover:bg-sky-950/20'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
                                         />
                                     ) : (
                                         <span
                                             key={i}
-                                            className="flex size-8 items-center justify-center rounded-lg text-xs opacity-30"
+                                            className="flex size-8 items-center justify-center rounded-lg text-xs opacity-30 text-neutral-400"
                                             dangerouslySetInnerHTML={{ __html: link.label }}
                                         />
                                     );
@@ -461,7 +511,7 @@ function CenterRow({
                 : 'hover:bg-neutral-50/60 dark:hover:bg-neutral-800/30'
         }`}>
             {/* Checkbox */}
-            <td className="w-10 px-4 py-3.5 text-center">
+            <td className="w-10 px-5 py-4 text-center">
                 <input
                     type="checkbox"
                     checked={isSelected}
@@ -471,9 +521,9 @@ function CenterRow({
             </td>
 
             {/* Name */}
-            <td className="px-4 py-3.5">
+            <td className="px-5 py-4">
                 <div className="flex items-center gap-3">
-                    <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${
+                    <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
                         center.type === 'gymnasium'        ? 'bg-blue-100 dark:bg-blue-950/60' :
                         center.type === 'school'           ? 'bg-violet-100 dark:bg-violet-950/60' :
                         center.type === 'barangay_hall'    ? 'bg-amber-100 dark:bg-amber-950/60' :
@@ -488,30 +538,25 @@ function CenterRow({
                                                                  'text-teal-600 dark:text-teal-400'
                         }`} />
                     </div>
-                    <div>
-                        <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{center.name}</p>
-                    </div>
+                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{center.name}</p>
                 </div>
             </td>
 
             {/* Type badge */}
-            <td className="px-4 py-3.5">
+            <td className="px-5 py-4">
                 <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold ${TYPE_COLORS[center.type]}`}>
                     <span className={`size-1.5 rounded-full ${TYPE_DOT[center.type]}`} />
                     {EVACUATION_CENTER_TYPE_LABELS[center.type]}
                 </span>
             </td>
 
-            {/* Capacity */}
-            <td className="px-4 py-3.5">
-                <div className="inline-flex items-center gap-1.5">
-                    <Users className="size-3.5 text-neutral-400" />
-                    <span className="text-sm font-bold tabular-nums text-neutral-800 dark:text-neutral-200">{center.capacity?.toLocaleString()}</span>
-                </div>
+            {/* Occupancy */}
+            <td className="px-5 py-4">
+                <OccupancyCell current={center.current_occupancy ?? 0} capacity={center.capacity ?? 0} />
             </td>
 
             {/* Status */}
-            <td className="px-4 py-3.5">
+            <td className="px-5 py-4">
                 {center.is_active ? (
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-700/40">
                         <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
@@ -526,10 +571,10 @@ function CenterRow({
             </td>
 
             {/* Location */}
-            <td className="max-w-[200px] px-4 py-3.5">
+            <td className="max-w-[200px] px-5 py-4">
                 {center.address ? (
                     <div className="flex items-start gap-1.5">
-                        <MapPin className="mt-0.5 size-3 shrink-0 text-neutral-400" />
+                        <MapPin className="mt-0.5 size-3.5 shrink-0 text-neutral-400" />
                         <span className="truncate text-xs text-neutral-500 dark:text-neutral-400" title={center.address}>
                             {center.address}
                         </span>
@@ -540,8 +585,8 @@ function CenterRow({
             </td>
 
             {/* Actions */}
-            <td className="px-4 py-3.5">
-                <div className="flex items-center justify-end gap-0.5 opacity-60 transition-opacity group-hover:opacity-100">
+            <td className="px-5 py-4">
+                <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                         onClick={() =>
                             router.post(`/admin/evacuation-centers/${center.id}/toggle`, {}, { preserveState: true })
@@ -578,6 +623,28 @@ function CenterRow({
                 </div>
             </td>
         </tr>
+    );
+}
+
+/* ─── Occupancy Cell ─── */
+
+function OccupancyCell({ current, capacity }: { current: number; capacity: number }) {
+    const pct = capacity > 0 ? Math.round((current / capacity) * 100) : 0;
+    const barColor = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-emerald-500';
+    const textColor = pct >= 90 ? 'text-red-600 dark:text-red-400' : pct >= 70 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400';
+
+    return (
+        <div className="flex flex-col gap-1 min-w-[120px]">
+            <div className="flex items-center gap-1">
+                <Users className="size-3.5 text-neutral-400 shrink-0" />
+                <span className="text-sm font-bold tabular-nums text-neutral-800 dark:text-neutral-200">{current.toLocaleString()}</span>
+                <span className="text-xs text-neutral-400">/ {capacity.toLocaleString()}</span>
+                <span className={`ml-auto text-[10px] font-semibold ${textColor}`}>{pct}%</span>
+            </div>
+            <div className="h-1.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
+                <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+            </div>
+        </div>
     );
 }
 
@@ -681,6 +748,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
         address: center?.address ?? '',
         type: (center?.type ?? 'gymnasium') as EvacuationCenterType,
         capacity: center?.capacity?.toString() ?? '',
+        current_occupancy: center?.current_occupancy?.toString() ?? '0',
         latitude: center?.latitude?.toString() ?? '',
         longitude: center?.longitude?.toString() ?? '',
     });
@@ -847,6 +915,49 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                         className={`${inputClass} pl-8`}
                                         required
                                     />
+                                </div>
+                            </FormField>
+
+                            {/* 5. Current Occupancy */}
+                            <FormField
+                                label="Current Evacuees"
+                                hint={form.data.capacity
+                                    ? `Max: ${Number(form.data.capacity).toLocaleString()} persons`
+                                    : undefined}
+                                error={form.errors.current_occupancy}
+                            >
+                                <div className="flex flex-col gap-1.5">
+                                    <div className="relative">
+                                        <Users className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-violet-400" />
+                                        <input
+                                            type="number"
+                                            value={form.data.current_occupancy}
+                                            onChange={(e) => form.setData('current_occupancy', e.target.value)}
+                                            placeholder="0"
+                                            min="0"
+                                            max={form.data.capacity || undefined}
+                                            className={`${inputClass} pl-8 focus:border-violet-400 focus:ring-violet-500/15`}
+                                        />
+                                    </div>
+                                    {form.data.capacity && Number(form.data.capacity) > 0 && (
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
+                                                <div
+                                                    className={`h-full rounded-full transition-all ${
+                                                        (Number(form.data.current_occupancy) / Number(form.data.capacity)) >= 0.9
+                                                            ? 'bg-red-500'
+                                                            : (Number(form.data.current_occupancy) / Number(form.data.capacity)) >= 0.7
+                                                            ? 'bg-amber-500'
+                                                            : 'bg-violet-500'
+                                                    }`}
+                                                    style={{ width: `${Math.min(Math.round((Number(form.data.current_occupancy) / Number(form.data.capacity)) * 100), 100)}%` }}
+                                                />
+                                            </div>
+                                            <span className="text-[10px] font-semibold text-neutral-400 tabular-nums">
+                                                {Math.min(Math.round((Number(form.data.current_occupancy) / Number(form.data.capacity)) * 100), 100)}%
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
                             </FormField>
                         </div>

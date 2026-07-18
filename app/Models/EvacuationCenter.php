@@ -11,6 +11,7 @@ class EvacuationCenter extends Model
         'address',
         'type',
         'capacity',
+        'current_occupancy',
         'latitude',
         'longitude',
         'is_active',
@@ -19,10 +20,11 @@ class EvacuationCenter extends Model
     protected function casts(): array
     {
         return [
-            'capacity'  => 'integer',
-            'latitude'  => 'float',
-            'longitude' => 'float',
-            'is_active' => 'boolean',
+            'capacity'          => 'integer',
+            'current_occupancy' => 'integer',
+            'latitude'          => 'float',
+            'longitude'         => 'float',
+            'is_active'         => 'boolean',
         ];
     }
 }

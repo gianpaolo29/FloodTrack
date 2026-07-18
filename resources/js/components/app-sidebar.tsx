@@ -1,5 +1,4 @@
-import { Link } from '@inertiajs/react';
-import { usePage } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import {
     AlertTriangle,
     BarChart3,
@@ -11,7 +10,6 @@ import {
     History,
     LayoutDashboard,
     LayoutGrid,
-    Settings,
     ShieldAlert,
     ShieldCheck,
     Users,
@@ -19,11 +17,9 @@ import {
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavSection } from '@/components/nav-section';
-import { NavUser } from '@/components/nav-user';
 import {
     Sidebar,
     SidebarContent,
-    SidebarFooter,
     SidebarHeader,
     SidebarMenu,
     SidebarMenuButton,
@@ -66,6 +62,14 @@ const managementItems: NavItem[] = [
         title: 'Reports',
         href: '/admin/reports',
         icon: FileText,
+        children: [
+            { title: 'All',      href: '/admin/reports' },
+            { title: 'Pending',  href: '/admin/reports?status=pending' },
+            { title: 'Verified', href: '/admin/reports?status=verified' },
+            { title: 'Assigned', href: '/admin/reports?status=assigned' },
+            { title: 'Resolved', href: '/admin/reports?status=resolved' },
+            { title: 'Rejected', href: '/admin/reports?status=rejected' },
+        ],
     },
     {
         title: 'Hazards',
@@ -113,11 +117,6 @@ const systemItems: NavItem[] = [
         href: '/admin/activity',
         icon: History,
     },
-    {
-        title: 'Settings',
-        href: '/admin/settings',
-        icon: Settings,
-    },
 ];
 
 export function AppSidebar() {
@@ -126,10 +125,11 @@ export function AppSidebar() {
 
     return (
         <Sidebar collapsible="icon" variant="sidebar">
-            <SidebarHeader>
+            {/* Logo */}
+            <SidebarHeader className="p-2">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild>
+                        <SidebarMenuButton size="lg" asChild className="hover:bg-sidebar-foreground/5 rounded-xl group-data-[collapsible=icon]:justify-center">
                             <Link href={isAdmin ? '/admin' : dashboard()} prefetch>
                                 <AppLogo />
                             </Link>
@@ -138,15 +138,18 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent>
+            <SidebarSeparator className="mx-4 opacity-30" />
+
+            {/* Nav */}
+            <SidebarContent className="py-2 gap-1">
                 {isAdmin ? (
                     <>
                         <NavSection label="Overview" items={mainItems} />
-                        <SidebarSeparator className="mx-3 opacity-50" />
+                        <SidebarSeparator className="mx-4 my-1 opacity-20" />
                         <NavSection label="Management" items={managementItems} />
-                        <SidebarSeparator className="mx-3 opacity-50" />
+                        <SidebarSeparator className="mx-4 my-1 opacity-20" />
                         <NavSection label="Analytics" items={analyticsItems} />
-                        <SidebarSeparator className="mx-3 opacity-50" />
+                        <SidebarSeparator className="mx-4 my-1 opacity-20" />
                         <NavSection label="System" items={systemItems} />
                     </>
                 ) : (
@@ -154,9 +157,6 @@ export function AppSidebar() {
                 )}
             </SidebarContent>
 
-            <SidebarFooter>
-                <NavUser />
-            </SidebarFooter>
         </Sidebar>
     );
 }

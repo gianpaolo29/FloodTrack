@@ -1,6 +1,6 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, router, useForm } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, Megaphone, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Bell, ChevronLeft, ChevronRight, Megaphone, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { swalDelete, swalSuccess } from '@/lib/swal';
@@ -26,9 +26,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const TYPE_STYLES: Record<string, string> = {
-    critical: 'bg-red-50 text-red-700 ring-1 ring-red-600/10 dark:bg-red-950/40 dark:text-red-400 dark:ring-red-500/20',
-    advisory: 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/10 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-blue-500/20',
-    update: 'bg-neutral-100 text-neutral-600 ring-1 ring-neutral-500/10 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-600/20',
+    critical: 'bg-red-50 text-red-700 ring-1 ring-red-200 dark:bg-red-950/40 dark:text-red-400 dark:ring-red-500/20',
+    advisory: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:ring-blue-500/20',
+    update:   'bg-neutral-100 text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-600/20',
 };
 
 const inputClass =
@@ -92,99 +92,133 @@ export default function AdminAlertsIndex({ alerts }: Props) {
         );
     };
 
+    const criticalCount = alerts.data.filter((a) => a.type === 'critical' || a.is_critical).length;
+    const pinnedCount   = alerts.data.filter((a) => a.is_critical).length;
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Alerts" />
 
             <div className="flex flex-col gap-6 p-6 lg:p-8">
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Alerts</h1>
-                        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                            Publish advisories and critical notifications to all users.
-                        </p>
+
+                {/* ── Page Header ── */}
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/25">
+                            <Bell className="size-6 text-white" />
+                            <span className="absolute -right-1 -top-1 flex size-3.5 items-center justify-center rounded-full bg-red-500 ring-2 ring-white dark:ring-neutral-900">
+                                <span className="size-1.5 animate-pulse rounded-full bg-white" />
+                            </span>
+                        </div>
+                        <div>
+                            <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                                Alerts
+                            </h1>
+                            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                                Publish advisories and critical notifications to all users
+                            </p>
+                        </div>
                     </div>
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
+                        className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-amber-500/20 transition-all hover:shadow-lg hover:shadow-amber-500/30 hover:brightness-110 active:scale-[0.97]"
                     >
                         <Plus className="size-4" />
-                        Add Alert
+                        Publish Alert
                     </button>
                 </div>
 
-                {/* Bulk action bar */}
+                {/* ── Stats Row ── */}
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Total</p>
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/30">
+                                <Bell className="size-4 text-amber-500" />
+                            </div>
+                        </div>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{alerts.total}</p>
+                        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">published alerts</p>
+                    </div>
+                    <div className="rounded-2xl border border-red-200/60 bg-gradient-to-br from-red-50 to-orange-50/60 p-5 shadow-sm dark:border-red-800/40 dark:from-red-950/30 dark:to-orange-950/20">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-red-600 dark:text-red-500">Critical</p>
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/40">
+                                <AlertTriangle className="size-4 text-red-500" />
+                            </div>
+                        </div>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-red-800 dark:text-red-300">{criticalCount}</p>
+                        <p className="mt-1 text-xs text-red-600/70 dark:text-red-500/70">critical alerts</p>
+                    </div>
+                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <div className="flex items-center justify-between">
+                            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Pinned</p>
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-800">
+                                <Megaphone className="size-4 text-neutral-400" />
+                            </div>
+                        </div>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-700 dark:text-neutral-300">{pinnedCount}</p>
+                        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">pinned at top</p>
+                    </div>
+                </div>
+
+                {/* ── Bulk action bar ── */}
                 <AnimatePresence>
                     {selected.length > 0 && (
                         <motion.div
-                            initial={{ opacity: 0, y: -8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -8 }}
-                            transition={{ duration: 0.2 }}
-                            className="rounded-2xl border border-sky-200/60 bg-sky-50/80 px-5 py-3 dark:border-sky-800/40 dark:bg-sky-950/30"
+                            initial={{ opacity: 0, y: -8, scale: 0.99 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -8, scale: 0.99 }}
+                            transition={{ duration: 0.18 }}
+                            className="overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-r from-amber-50 to-orange-50/60 px-5 py-3.5 dark:border-amber-800/40 dark:from-amber-950/30 dark:to-orange-950/20"
                         >
                             <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-sm font-semibold text-sky-900 dark:text-sky-200">{selected.length} selected</span>
-                                <div className="h-5 w-px bg-sky-200 dark:bg-sky-800" />
+                                <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                                    {selected.length} selected
+                                </span>
+                                <div className="h-4 w-px bg-amber-300/60 dark:bg-amber-700/60" />
                                 <button
                                     onClick={runBulkDelete}
                                     disabled={bulkProcessing}
-                                    className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-100 disabled:opacity-50 dark:border-red-800/40 dark:bg-red-950/40 dark:text-red-400 dark:hover:bg-red-950/60"
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-red-700 disabled:opacity-50"
                                 >
                                     <Trash2 className="size-3.5" /> Delete
                                 </button>
-                                <div className="ml-auto">
-                                    <button
-                                        onClick={() => {
-                                            setSelected([]);
-                                        }}
-                                        className="rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-500 transition-colors hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200"
-                                    >
-                                        Clear selection
-                                    </button>
-                                </div>
+                                <button
+                                    onClick={() => setSelected([])}
+                                    className="ml-auto rounded-lg px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/40"
+                                >
+                                    Clear selection
+                                </button>
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                {/* Alert list card */}
-                <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                    {/* Card header */}
-                    <div className="flex items-center gap-3 border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
-                            <Bell className="size-4 text-white" />
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <h2 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Published Alerts</h2>
-                            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                                {alerts.total}
-                            </span>
-                        </div>
-                    </div>
+                {/* ── Table Card ── */}
+                <div className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Table */}
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                    <th className="w-12 px-5 py-4 text-center">
+                                <tr className="border-b border-neutral-100 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-800/40">
+                                    <th className="w-12 px-5 py-3 text-center">
                                         <input
                                             type="checkbox"
                                             checked={allOnPageSelected}
                                             onChange={toggleAll}
-                                            className="size-3.5 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
+                                            className="size-3.5 rounded border-neutral-300 text-amber-500 focus:ring-amber-500/20 dark:border-neutral-600"
                                         />
                                     </th>
-                                    <th className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Alert</th>
-                                    <th className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Type</th>
-                                    <th className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Published</th>
-                                    <th className="px-4 py-4 text-left text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Expires</th>
-                                    <th className="px-4 py-4 text-center text-[11px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Actions</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Alert</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Type</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Published</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Expires</th>
+                                    <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                            <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/80">
                                 {alerts.data.map((alert) => (
                                     <AlertRow
                                         key={alert.id}
@@ -198,46 +232,64 @@ export default function AdminAlertsIndex({ alerts }: Props) {
                         </table>
                     </div>
 
+                    {/* Empty state */}
                     {alerts.data.length === 0 && (
-                        <div className="flex flex-col items-center gap-3 py-20">
-                            <div className="flex size-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
-                                <Bell className="size-6 text-neutral-400 dark:text-neutral-500" />
+                        <div className="flex flex-col items-center gap-4 py-20">
+                            <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20">
+                                <Bell className="size-8 text-amber-400 dark:text-amber-500" />
                             </div>
-                            <p className="text-sm text-neutral-500 dark:text-neutral-400">No alerts published yet</p>
+                            <div className="text-center">
+                                <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">No alerts published yet</p>
+                                <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">Publish your first alert to notify all users.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Pagination */}
+                    {alerts.last_page > 1 && (
+                        <div className="flex items-center justify-between border-t border-neutral-100 px-5 py-4 dark:border-neutral-800">
+                            <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                                Page{' '}
+                                <span className="font-semibold text-neutral-800 dark:text-neutral-200">{alerts.current_page}</span>
+                                {' '}of{' '}
+                                <span className="font-semibold text-neutral-800 dark:text-neutral-200">{alerts.last_page}</span>
+                                <span className="ml-2 text-neutral-300 dark:text-neutral-600">·</span>
+                                <span className="ml-2">{alerts.total} total</span>
+                            </span>
+                            <div className="flex items-center gap-1">
+                                {alerts.links.map((link, i) => {
+                                    const isPrev = link.label.includes('Previous') || link.label.includes('&laquo;');
+                                    const isNext = link.label.includes('Next')     || link.label.includes('&raquo;');
+                                    if (isPrev || isNext) {
+                                        return link.url ? (
+                                            <button key={i} onClick={() => router.get(link.url!)}
+                                                className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-amber-700/40 dark:hover:bg-amber-950/20 dark:hover:text-amber-400">
+                                                {isPrev ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
+                                            </button>
+                                        ) : (
+                                            <span key={i} className="flex size-8 items-center justify-center rounded-lg opacity-30 text-neutral-400">
+                                                {isPrev ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
+                                            </span>
+                                        );
+                                    }
+                                    return link.url ? (
+                                        <button key={i} onClick={() => router.get(link.url!)}
+                                            className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                                                link.active
+                                                    ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-sm'
+                                                    : 'border border-neutral-200 text-neutral-500 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-amber-700/40 dark:hover:bg-amber-950/20'
+                                            }`}
+                                            dangerouslySetInnerHTML={{ __html: link.label }}
+                                        />
+                                    ) : (
+                                        <span key={i} className="flex size-8 items-center justify-center rounded-lg text-xs opacity-30 text-neutral-400"
+                                            dangerouslySetInnerHTML={{ __html: link.label }} />
+                                    );
+                                })}
+                            </div>
                         </div>
                     )}
                 </div>
-
-                {/* Pagination */}
-                {alerts.last_page > 1 && (
-                    <div className="flex items-center justify-between text-sm">
-                        <span className="text-neutral-500 dark:text-neutral-400">
-                            Page {alerts.current_page} of {alerts.last_page}
-                        </span>
-                        <div className="flex gap-1">
-                            {alerts.links.map((link, i) =>
-                                link.url ? (
-                                    <Link
-                                        key={i}
-                                        href={link.url}
-                                        className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                                            link.active
-                                                ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow-sm'
-                                                : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
-                                        }`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ) : (
-                                    <span
-                                        key={i}
-                                        className="rounded-lg px-3 py-1.5 text-xs opacity-30"
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ),
-                            )}
-                        </div>
-                    </div>
-                )}
             </div>
 
             {/* Create Modal */}
@@ -546,10 +598,10 @@ function AlertRow({
         : null;
 
     return (
-        <tr className={`transition-colors ${
+        <tr className={`group transition-colors ${
             isSelected
-                ? 'bg-sky-50/60 dark:bg-sky-950/20'
-                : 'hover:bg-neutral-50/60 dark:hover:bg-neutral-800/20'
+                ? 'bg-amber-50/60 dark:bg-amber-950/20'
+                : 'hover:bg-neutral-50/60 dark:hover:bg-neutral-800/30'
         }`}>
             {/* Checkbox */}
             <td className="w-12 px-5 py-4 text-center">
@@ -557,56 +609,69 @@ function AlertRow({
                     type="checkbox"
                     checked={isSelected}
                     onChange={onToggle}
-                    className="size-3.5 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
+                    className="size-3.5 rounded border-neutral-300 text-amber-500 focus:ring-amber-500/20 dark:border-neutral-600"
                 />
             </td>
 
             {/* Alert title + body preview */}
-            <td className="px-4 py-4">
-                <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{alert.title}</p>
-                <p className="mt-0.5 max-w-[320px] truncate text-xs text-neutral-400 dark:text-neutral-500">{alert.body}</p>
+            <td className="px-5 py-4">
+                <div className="flex items-center gap-3">
+                    <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                        alert.type === 'critical' ? 'bg-red-100 dark:bg-red-950/50' :
+                        alert.type === 'advisory' ? 'bg-blue-100 dark:bg-blue-950/50' :
+                                                    'bg-neutral-100 dark:bg-neutral-800'
+                    }`}>
+                        <Bell className={`size-4 ${
+                            alert.type === 'critical' ? 'text-red-500' :
+                            alert.type === 'advisory' ? 'text-blue-500' :
+                                                        'text-neutral-400'
+                        }`} />
+                    </div>
+                    <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{alert.title}</p>
+                        <p className="mt-0.5 max-w-xs truncate text-xs text-neutral-400 dark:text-neutral-500">{alert.body}</p>
+                    </div>
+                </div>
             </td>
 
             {/* Type badge + optional PINNED pill */}
-            <td className="px-4 py-4">
+            <td className="px-5 py-4">
                 <div className="flex flex-wrap items-center gap-1.5">
-                    <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${TYPE_STYLES[alert.type] ?? TYPE_STYLES.update}`}
-                    >
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${TYPE_STYLES[alert.type] ?? TYPE_STYLES.update}`}>
                         {alert.type}
                     </span>
                     {alert.is_critical && (
-                        <span className="inline-flex items-center rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
-                            PINNED
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white shadow-sm">
+                            Pinned
                         </span>
                     )}
                 </div>
             </td>
 
             {/* Published */}
-            <td className="whitespace-nowrap px-4 py-4">
-                <p className="text-xs text-neutral-500 dark:text-neutral-400">{publishedDate}</p>
-                <p className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">{publishedTime}</p>
+            <td className="whitespace-nowrap px-5 py-4">
+                <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">{publishedDate}</p>
+                <p className="mt-0.5 text-[11px] text-neutral-400 dark:text-neutral-500">{publishedTime}</p>
             </td>
 
             {/* Expires */}
-            <td className="whitespace-nowrap px-4 py-4">
+            <td className="whitespace-nowrap px-5 py-4">
                 {expiresDate ? (
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400">{expiresDate}</p>
+                    <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">{expiresDate}</p>
                 ) : (
                     <span className="text-xs text-neutral-300 dark:text-neutral-600">—</span>
                 )}
             </td>
 
             {/* Actions */}
-            <td className="px-4 py-4">
-                <div className="flex items-center justify-center gap-1">
+            <td className="px-5 py-4">
+                <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                         onClick={onEdit}
-                        className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                        className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400"
                         title="Edit alert"
                     >
-                        <Pencil className="size-4" />
+                        <Pencil className="size-3.5" />
                     </button>
                     <button
                         onClick={async () => {
@@ -615,10 +680,10 @@ function AlertRow({
                                 onSuccess: () => swalSuccess('Deleted', 'Alert has been deleted.'),
                             });
                         }}
-                        className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                        className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
                         title="Delete alert"
                     >
-                        <Trash2 className="size-4" />
+                        <Trash2 className="size-3.5" />
                     </button>
                 </div>
             </td>

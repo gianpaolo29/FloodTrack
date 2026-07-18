@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { LogOut, Settings } from 'lucide-react';
+import { LogOut, Settings, UserCircle } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -10,7 +10,7 @@ import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { swalConfirm } from '@/lib/swal';
 import { logout } from '@/routes';
-import { edit } from '@/routes/profile';
+import { edit as editProfile } from '@/routes/profile';
 import type { User } from '@/types';
 
 type Props = {
@@ -40,12 +40,23 @@ export function UserMenuContent({ user }: Props) {
             <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
                     <Link
-                        className="block w-full cursor-pointer"
-                        href={edit()}
+                        className="flex w-full cursor-pointer items-center"
+                        href={editProfile()}
                         prefetch
                         onClick={cleanup}
                     >
-                        <Settings className="mr-2" />
+                        <UserCircle className="mr-2 size-4" />
+                        Profile
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link
+                        className="flex w-full cursor-pointer items-center"
+                        href="/settings"
+                        prefetch
+                        onClick={cleanup}
+                    >
+                        <Settings className="mr-2 size-4" />
                         Settings
                     </Link>
                 </DropdownMenuItem>
@@ -57,7 +68,7 @@ export function UserMenuContent({ user }: Props) {
                     onClick={handleLogout}
                     data-test="logout-button"
                 >
-                    <LogOut className="mr-2" />
+                    <LogOut className="mr-2 size-4" />
                     Log out
                 </button>
             </DropdownMenuItem>

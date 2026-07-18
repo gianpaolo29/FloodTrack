@@ -14,9 +14,15 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Breadcrumbs } from '@/components/breadcrumbs';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useInitials } from '@/hooks/use-initials';
+import { UserMenuContent } from '@/components/user-menu-content';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
 interface NotificationData {
@@ -265,20 +271,27 @@ export function AppSidebarHeader({
                 {/* Divider */}
                 <div className="hidden h-5 w-px bg-border/40 sm:block" />
 
-                {/* User avatar */}
+                {/* User avatar dropdown */}
                 {auth.user && (
-                    <div className="flex items-center gap-2.5 pl-1">
-                        <div className="hidden text-right sm:block">
-                            <p className="text-sm font-medium leading-tight">{auth.user.name}</p>
-                            <p className="text-[11px] leading-tight text-muted-foreground">{auth.user.role}</p>
-                        </div>
-                        <Avatar className="size-8 ring-2 ring-primary/10 transition-all hover:ring-primary/30">
-                            <AvatarImage src={auth.user.avatar} alt={auth.user.name} />
-                            <AvatarFallback className="bg-gradient-to-br from-primary/80 to-primary text-[11px] font-semibold text-primary-foreground">
-                                {getInitials(auth.user.name)}
-                            </AvatarFallback>
-                        </Avatar>
-                    </div>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="flex items-center gap-2.5 rounded-xl pl-1 pr-2 py-1 transition-all hover:bg-muted/50 focus:outline-none">
+                                <div className="hidden text-right sm:block">
+                                    <p className="text-sm font-medium leading-tight">{auth.user.name}</p>
+                                    <p className="text-[11px] leading-tight text-muted-foreground capitalize">{auth.user.role}</p>
+                                </div>
+                                <Avatar className="size-8 ring-2 ring-primary/10 transition-all hover:ring-primary/30">
+                                    <AvatarImage src={auth.user.avatar} alt={auth.user.name} />
+                                    <AvatarFallback className="bg-gradient-to-br from-primary/80 to-primary text-[11px] font-semibold text-primary-foreground">
+                                        {getInitials(auth.user.name)}
+                                    </AvatarFallback>
+                                </Avatar>
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="min-w-56 rounded-xl" align="end" sideOffset={8}>
+                            <UserMenuContent user={auth.user} />
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 )}
             </div>
         </header>
