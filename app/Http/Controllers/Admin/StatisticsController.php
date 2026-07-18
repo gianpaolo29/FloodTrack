@@ -226,7 +226,7 @@ Please analyze this flood situation and respond ONLY with a JSON object in this 
 }
 PROMPT;
 
-            $client   = OpenAI::client(env('OPENAI_API_KEY'));
+            $client   = OpenAI::client(config('services.openai.key'));
             $response = $client->chat()->create([
                 'model'       => 'gpt-4o-mini',
                 'temperature' => 0.4,

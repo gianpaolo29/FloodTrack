@@ -11,8 +11,8 @@ interface Activity {
     status: string;
     notes: string | null;
     created_at: string;
-    user: { id: number; name: string; role: string };
-    report: { id: number; reference_number: string; severity: Severity };
+    user: { id: number; name: string; role: string } | null;
+    report: { id: number; reference_number: string; severity: Severity } | null;
 }
 
 interface Paginated<T> {
@@ -191,37 +191,50 @@ export default function AdminActivityLog({ activities, filters, stats }: Props) 
                                 </div>
                             </div>
                         ) : (
-                            activities.data.map((a) => (
+                            activities.data.map((a) => {
+                                const userName = a.user?.name ?? 'Deleted User';
+                                const userRole = a.user?.role ?? 'resident';
+                                const reportId = a.report?.id;
+                                const refNumber = a.report?.reference_number ?? '—';
+                                const severity = a.report?.severity;
+
+                                return (
                                 <div
                                     key={a.id}
                                     className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30"
                                 >
                                     {/* Avatar */}
-                                    <div className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${ROLE_AVATAR[a.user.role] ?? ROLE_AVATAR.resident} text-xs font-bold text-white shadow-sm`}>
-                                        {a.user.name.charAt(0).toUpperCase()}
+                                    <div className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${ROLE_AVATAR[userRole] ?? ROLE_AVATAR.resident} text-xs font-bold text-white shadow-sm`}>
+                                        {userName.charAt(0).toUpperCase()}
                                     </div>
 
                                     {/* Content */}
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                                            <span className="font-semibold text-neutral-900 dark:text-neutral-100">{a.user.name}</span>
-                                            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${ROLE_STYLES[a.user.role] ?? ROLE_STYLES.resident}`}>
-                                                {a.user.role}
+                                            <span className="font-semibold text-neutral-900 dark:text-neutral-100">{userName}</span>
+                                            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${ROLE_STYLES[userRole] ?? ROLE_STYLES.resident}`}>
+                                                {userRole}
                                             </span>
                                             <span className="text-neutral-400 dark:text-neutral-500">changed status to</span>
                                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[a.status as ReportStatus] ?? 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
                                                 {a.status.replace('_', ' ')}
                                             </span>
                                             <span className="text-neutral-400 dark:text-neutral-500">on</span>
+                                            {reportId ? (
                                             <Link
-                                                href={`/admin/reports/${a.report.id}`}
+                                                href={`/admin/reports/${reportId}`}
                                                 className="font-mono text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                                             >
-                                                {a.report.reference_number}
+                                                {refNumber}
                                             </Link>
-                                            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${SEVERITY_COLORS[a.report.severity]}`}>
-                                                {a.report.severity}
+                                            ) : (
+                                            <span className="font-mono text-xs font-semibold text-neutral-400">Deleted Report</span>
+                                            )}
+                                            {severity && (
+                                            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${SEVERITY_COLORS[severity]}`}>
+                                                {severity}
                                             </span>
+                                            )}
                                         </div>
                                         {a.notes && (
                                             <p className="mt-1 text-xs leading-relaxed text-neutral-400 dark:text-neutral-500">
@@ -238,7 +251,8 @@ export default function AdminActivityLog({ activities, filters, stats }: Props) 
                                         })}
                                     </span>
                                 </div>
-                            ))
+                                );
+                            })
                         )}
                     </div>
 
