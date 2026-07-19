@@ -16,7 +16,7 @@ class AuthController extends Controller
             'first_name'     => 'required|string|max:255',
             'last_name'      => 'required|string|max:255',
             'email'          => 'required|email|unique:users',
-            'password'       => 'required|string|min:8|confirmed',
+            'password'       => 'required|string|min:8|max:16|confirmed',
             'role'           => 'required|in:resident,responder',
             'contact_number' => 'nullable|string|max:20',
             'home_latitude'  => 'nullable|numeric|between:-90,90',
@@ -85,7 +85,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'email'    => 'required|email|exists:users,email',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string|min:8|max:16',
         ]);
 
         $user = User::where('email', $request->email)->firstOrFail();
