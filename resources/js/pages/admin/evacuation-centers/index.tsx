@@ -155,7 +155,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats }:
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Evacuation Centers" />
 
-            <div className="flex flex-col gap-6 p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* ── Page Header ── */}
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
@@ -366,8 +366,64 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats }:
                         </div>
                     </div>
 
-                    {/* Table */}
-                    <div className="overflow-x-auto">
+                    {/* Mobile card view */}
+                    <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {centers.data.map((center) => {
+                            const TypeIcon = TYPE_ICON[center.type];
+                            const current = center.current_occupancy ?? 0;
+                            const capacity = center.capacity ?? 0;
+                            return (
+                                <div key={center.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
+                                    <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                                        center.type === 'gymnasium'     ? 'bg-blue-100 dark:bg-blue-950/60' :
+                                        center.type === 'school'        ? 'bg-violet-100 dark:bg-violet-950/60' :
+                                        center.type === 'barangay_hall' ? 'bg-amber-100 dark:bg-amber-950/60' :
+                                        center.type === 'church'        ? 'bg-rose-100 dark:bg-rose-950/60' :
+                                                                          'bg-teal-100 dark:bg-teal-950/60'
+                                    }`}>
+                                        <TypeIcon className={`size-4 ${
+                                            center.type === 'gymnasium'     ? 'text-blue-600 dark:text-blue-400' :
+                                            center.type === 'school'        ? 'text-violet-600 dark:text-violet-400' :
+                                            center.type === 'barangay_hall' ? 'text-amber-600 dark:text-amber-400' :
+                                            center.type === 'church'        ? 'text-rose-600 dark:text-rose-400' :
+                                                                              'text-teal-600 dark:text-teal-400'
+                                        }`} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{center.name}</p>
+                                            {center.is_active ? (
+                                                <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-700/40">
+                                                    <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" /> Active
+                                                </span>
+                                            ) : (
+                                                <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700">
+                                                    Inactive
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="mt-0.5 flex items-center gap-2">
+                                            <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${TYPE_COLORS[center.type]}`}>
+                                                <span className={`size-1.5 rounded-full ${TYPE_DOT[center.type]}`} />
+                                                {EVACUATION_CENTER_TYPE_LABELS[center.type]}
+                                            </span>
+                                            <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{current}/{capacity}</span>
+                                        </div>
+                                        {center.address && (
+                                            <p className="mt-0.5 truncate text-[11px] text-neutral-400 dark:text-neutral-500">{center.address}</p>
+                                        )}
+                                    </div>
+                                    <button onClick={() => setEditingCenter(center)}
+                                        className="shrink-0 rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400">
+                                        <Pencil className="size-3.5" />
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Desktop table */}
+                    <div className="hidden sm:block overflow-x-auto">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-neutral-100 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-800/40">
@@ -835,10 +891,10 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                 {/* Body */}
                 <form onSubmit={submit} className="flex flex-col">
                     {/* Two-column layout */}
-                    <div className="grid grid-cols-[1fr_1.15fr]">
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.15fr]">
 
                         {/* LEFT — form fields */}
-                        <div className="flex flex-col gap-3 border-r border-neutral-100 px-5 py-4 dark:border-neutral-800">
+                        <div className="flex flex-col gap-3 border-b border-neutral-100 px-5 py-4 lg:border-b-0 lg:border-r dark:border-neutral-800">
 
                             {/* 1. Address first — pin on map + auto-fills name */}
                             <FormField label="Location" error={form.errors.address}>

@@ -51,7 +51,7 @@ export default function AdminSettings({ settings }: Props) {
             <Head title="Settings" />
 
             <form onSubmit={handleSubmit}>
-                <div className="flex flex-col gap-6 p-6 lg:p-8">
+                <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
 
                     {/* ─── Header ─── */}
                     <div className="flex items-center justify-between">
@@ -250,7 +250,7 @@ function SettingsCard({
 /* ─── Setting Row Components ─── */
 
 const inputCls =
-    'h-9 w-44 shrink-0 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm text-right outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-sky-500 dark:focus:bg-neutral-800';
+    'h-9 w-full shrink-0 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm text-right outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 sm:w-44 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-sky-500 dark:focus:bg-neutral-800';
 
 function SettingInput({
     title, description, value, onChange, type = 'text',

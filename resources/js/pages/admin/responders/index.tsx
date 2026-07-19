@@ -56,10 +56,10 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Responders" />
 
-            <div className="flex flex-col gap-6 p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
                         <div className="relative flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/25">
                             <ShieldCheck className="size-5 text-white" />
@@ -81,7 +81,7 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                 </div>
 
                 {/* Stat cards */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                         <div className="flex items-start justify-between">
                             <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 shadow-sm shadow-indigo-500/20">
@@ -151,8 +151,45 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                         </div>
                     </div>
 
-                    {/* Table */}
-                    <div className="overflow-x-auto">
+                    {/* Mobile card view */}
+                    <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {responders.data.map((r) => (
+                            <div key={r.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
+                                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-sm font-bold text-white shadow-sm shadow-indigo-500/20">
+                                    {r.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{r.name}</p>
+                                        {r.active_assignments > 0 ? (
+                                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-800/40">
+                                                <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                Active
+                                            </span>
+                                        ) : (
+                                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700">
+                                                Idle
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{r.email}</p>
+                                    <div className="mt-1 flex items-center gap-3 text-[11px] text-neutral-400 dark:text-neutral-500">
+                                        <span>{r.total_assigned} assigned</span>
+                                        <span>{r.resolved_count} resolved</span>
+                                        {r.contact_number && (
+                                            <span className="flex items-center gap-1">
+                                                <Phone className="size-3" />
+                                                {r.contact_number}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop table */}
+                    <div className="hidden sm:block overflow-x-auto">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">

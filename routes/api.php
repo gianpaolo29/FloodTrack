@@ -24,8 +24,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 // ── Public ──────────────────────────────────────────────────────────────
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login',    [AuthController::class, 'login']);
+Route::post('/register',    [AuthController::class, 'register']);
+Route::post('/login',       [AuthController::class, 'login']);
+Route::post('/check-email', [AuthController::class, 'checkEmail']);
 
 // ── Authenticated (all roles) ───────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {

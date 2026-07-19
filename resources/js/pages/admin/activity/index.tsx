@@ -70,10 +70,10 @@ export default function AdminActivityLog({ activities, filters, stats }: Props) 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Activity Log" />
 
-            <div className="flex flex-col gap-6 p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
                         <div className="relative flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25">
                             <History className="size-5 text-white" />
@@ -88,7 +88,7 @@ export default function AdminActivityLog({ activities, filters, stats }: Props) 
                 </div>
 
                 {/* Stats cards */}
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                     <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                         <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 shadow-sm shadow-blue-500/20">
                             <History className="size-4 text-white" />
@@ -177,21 +177,75 @@ export default function AdminActivityLog({ activities, filters, stats }: Props) 
                     </div>
 
                     {/* Activity list */}
-                    <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                        {activities.data.length === 0 ? (
-                            <div className="flex flex-col items-center gap-4 py-20">
-                                <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25">
-                                    <History className="size-7 text-white" />
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">No activity found</p>
-                                    <p className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">
-                                        {hasFilters ? 'Try adjusting your filters.' : 'No events have been recorded yet.'}
-                                    </p>
-                                </div>
+                    {activities.data.length === 0 ? (
+                        <div className="flex flex-col items-center gap-4 py-20">
+                            <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25">
+                                <History className="size-7 text-white" />
                             </div>
-                        ) : (
-                            activities.data.map((a) => {
+                            <div className="text-center">
+                                <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">No activity found</p>
+                                <p className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">
+                                    {hasFilters ? 'Try adjusting your filters.' : 'No events have been recorded yet.'}
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                        {/* Mobile card view */}
+                        <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
+                            {activities.data.map((a) => {
+                                const userName = a.user?.name ?? 'Deleted User';
+                                const userRole = a.user?.role ?? 'resident';
+                                const reportId = a.report?.id;
+                                const refNumber = a.report?.reference_number ?? '—';
+                                const severity = a.report?.severity;
+
+                                return (
+                                    <div key={a.id} className="flex flex-col gap-1.5 px-4 py-3.5 transition-colors hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <div className={`flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${ROLE_AVATAR[userRole] ?? ROLE_AVATAR.resident} text-[10px] font-bold text-white shadow-sm`}>
+                                                    {userName.charAt(0).toUpperCase()}
+                                                </div>
+                                                <span className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{userName}</span>
+                                                <span className={`shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${ROLE_STYLES[userRole] ?? ROLE_STYLES.resident}`}>
+                                                    {userRole}
+                                                </span>
+                                            </div>
+                                            <span className="shrink-0 text-[10px] text-neutral-400 dark:text-neutral-500">
+                                                {new Date(a.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-1.5 pl-9 text-xs text-neutral-400 dark:text-neutral-500">
+                                            <span>changed to</span>
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[a.status as ReportStatus] ?? 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                                                {a.status.replace('_', ' ')}
+                                            </span>
+                                            <span>on</span>
+                                            {reportId ? (
+                                                <Link href={`/admin/reports/${reportId}`} className="font-mono text-xs font-semibold text-blue-600 dark:text-blue-400">
+                                                    {refNumber}
+                                                </Link>
+                                            ) : (
+                                                <span className="font-mono text-xs font-semibold text-neutral-400">Deleted Report</span>
+                                            )}
+                                            {severity && (
+                                                <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${SEVERITY_COLORS[severity]}`}>
+                                                    {severity}
+                                                </span>
+                                            )}
+                                        </div>
+                                        {a.notes && (
+                                            <p className="pl-9 text-[11px] leading-relaxed text-neutral-400 dark:text-neutral-500">{a.notes}</p>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Desktop list view */}
+                        <div className="hidden sm:block divide-y divide-neutral-100 dark:divide-neutral-800">
+                            {activities.data.map((a) => {
                                 const userName = a.user?.name ?? 'Deleted User';
                                 const userRole = a.user?.role ?? 'resident';
                                 const reportId = a.report?.id;
@@ -252,9 +306,10 @@ export default function AdminActivityLog({ activities, filters, stats }: Props) 
                                     </span>
                                 </div>
                                 );
-                            })
-                        )}
-                    </div>
+                            })}
+                        </div>
+                        </>
+                    )}
 
                     {/* Pagination */}
                     {activities.last_page > 1 && (

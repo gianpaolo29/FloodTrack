@@ -182,7 +182,7 @@ export default function AdminHazardsIndex({ hazards }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Hazards" />
 
-            <div className="flex flex-col gap-6 p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* ── Page Header ── */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -212,7 +212,7 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                 </div>
 
                 {/* ── Stats Row ── */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Total</p>
@@ -321,8 +321,51 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                         </div>
                     </div>
 
-                    {/* Table */}
-                    <div className="overflow-x-auto">
+                    {/* Mobile card view */}
+                    <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {filtered.map((hazard) => {
+                            const CatIcon = CATEGORY_ICON[hazard.category] ?? ShieldAlert;
+                            const isFlood = hazard.category === 'flood';
+                            return (
+                                <div key={hazard.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
+                                    <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
+                                        isFlood ? 'bg-blue-100 dark:bg-blue-950/50' : 'bg-orange-100 dark:bg-orange-950/50'
+                                    }`}>
+                                        <CatIcon className={`size-4 ${isFlood ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400'}`} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <p className="truncate text-sm font-semibold text-neutral-800 dark:text-neutral-200">{hazard.title}</p>
+                                            {hazard.active ? (
+                                                <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-700/40">
+                                                    <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" /> Active
+                                                </span>
+                                            ) : (
+                                                <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700">
+                                                    Inactive
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className="mt-0.5 flex items-center gap-2">
+                                            <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${CATEGORY_COLORS[hazard.category]}`}>
+                                                {getTypeLabel(hazard.category, hazard.type)}
+                                            </span>
+                                        </div>
+                                        {hazard.address && (
+                                            <p className="mt-0.5 truncate text-[11px] text-neutral-400 dark:text-neutral-500">{hazard.address}</p>
+                                        )}
+                                    </div>
+                                    <button onClick={() => setEditingHazard(hazard)}
+                                        className="shrink-0 rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400">
+                                        <Pencil className="size-3.5" />
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Desktop table */}
+                    <div className="hidden sm:block overflow-x-auto">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-neutral-100 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-800/40">
@@ -644,10 +687,10 @@ function HazardFormModal({ hazard, onClose }: { hazard?: Hazard; onClose: () => 
 
                 {/* Body — two-column */}
                 <form onSubmit={submit} className="flex flex-col">
-                    <div className="grid grid-cols-[1fr_1.15fr]">
+                    <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.15fr]">
 
                         {/* LEFT — form fields */}
-                        <div className="flex flex-col gap-3 border-r border-neutral-100 px-5 py-4 dark:border-neutral-800">
+                        <div className="flex flex-col gap-3 border-b border-neutral-100 px-5 py-4 lg:border-b-0 lg:border-r dark:border-neutral-800">
 
                             {/* 1. Location (address autocomplete) */}
                             <FormField label="Location" error={form.errors.address}>

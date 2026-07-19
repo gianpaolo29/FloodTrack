@@ -128,10 +128,10 @@ export default function AdminReportsIndex({ reports, filters, stats }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Reports" />
 
-            <div className="flex flex-col gap-6 p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
                         <div className="relative flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg shadow-teal-500/25">
                             <FileText className="size-5 text-white" />
@@ -155,7 +155,7 @@ export default function AdminReportsIndex({ reports, filters, stats }: Props) {
                 </div>
 
                 {/* Stats cards */}
-                <div className="grid grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                     <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                         <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 shadow-sm shadow-teal-500/20">
                             <FileText className="size-4 text-white" />
@@ -324,7 +324,34 @@ export default function AdminReportsIndex({ reports, filters, stats }: Props) {
                             </div>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
+                        <>
+                        {/* Mobile card view */}
+                        <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
+                            {reports.data.map((report) => (
+                                <Link key={report.id} href={`/admin/reports/${report.id}`} className="flex flex-col gap-2 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="font-mono text-xs font-bold tracking-wide text-neutral-800 dark:text-neutral-200">{report.reference_number}</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold capitalize ${SEVERITY_COLORS[report.severity as Severity]}`}>{report.severity}</span>
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold capitalize ${STATUS_COLORS[report.status as ReportStatus]}`}>{STATUS_LABEL[report.status] ?? report.status}</span>
+                                        </div>
+                                    </div>
+                                    {report.address && (
+                                        <div className="flex items-center gap-1.5">
+                                            <MapPin className="size-3 shrink-0 text-neutral-300 dark:text-neutral-600" />
+                                            <span className="truncate text-[11px] text-neutral-500 dark:text-neutral-400">{report.address}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex items-center justify-between text-[10px] text-neutral-400 dark:text-neutral-500">
+                                        <span>{report.user?.name ?? 'Unknown'}</span>
+                                        <span>{new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+
+                        {/* Desktop table */}
+                        <div className="hidden sm:block overflow-x-auto">
                             <table className="w-full min-w-[680px] border-collapse text-sm">
                                 <thead>
                                     <tr className="border-b border-neutral-100 bg-neutral-50/70 dark:border-neutral-800 dark:bg-neutral-800/40">
@@ -355,6 +382,7 @@ export default function AdminReportsIndex({ reports, filters, stats }: Props) {
                                 </tbody>
                             </table>
                         </div>
+                        </>
                     )}
 
                     {/* Pagination */}

@@ -229,7 +229,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                         ? 'bg-[#06090f]/70 border-b border-white/[0.04] shadow-2xl shadow-black/40 backdrop-blur-2xl backdrop-saturate-150'
                         : 'bg-transparent'
                 }`}>
-                    <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-10">
+                    <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4 lg:px-10">
                         <Link href="/" className="group flex items-center gap-3">
                             <div className="logo-float relative flex size-10 items-center justify-center rounded-[14px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-xl shadow-blue-500/20 transition-all duration-300 group-hover:shadow-blue-500/40 group-hover:scale-110">
                                 <AppLogoIcon className="size-5 fill-current text-white drop-shadow-sm" />
@@ -260,7 +260,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 <main>
 
                     {/* ── HERO ─────────────────────────────────────────── */}
-                    <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-6 pt-28 pb-20">
+                    <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-4 pt-24 pb-16 sm:px-6 sm:pt-28 sm:pb-20">
 
                         {/* Canvas particles */}
                         <div className="pointer-events-none absolute inset-0 opacity-60">
@@ -323,7 +323,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                             {/* CTA */}
                             <div className={`flex flex-wrap items-center justify-center gap-4 transition-all duration-1000 delay-500 ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
                                 {canRegister && !auth.user && (
-                                    <Link href={register()} className="hero-cta group relative overflow-hidden rounded-2xl px-10 py-4 text-[15px] font-bold text-white shadow-2xl transition-all duration-300 hover:scale-[1.04] hover:shadow-cyan-500/25 active:scale-[0.97]">
+                                    <Link href={register()} className="hero-cta group relative overflow-hidden rounded-2xl px-7 py-3.5 text-sm font-bold text-white shadow-2xl transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:scale-[1.04] hover:shadow-cyan-500/25 active:scale-[0.97]">
                                         <span className="relative z-10 flex items-center gap-2.5">
                                             Create free account
                                             <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -332,7 +332,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                 )}
                                 <Link
                                     href={auth.user ? (auth.user.role === 'admin' ? '/admin' : dashboard()) : login()}
-                                    className="group flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-10 py-4 text-[15px] font-semibold text-white/60 backdrop-blur-md transition-all duration-300 hover:bg-white/[0.06] hover:text-white/90 hover:border-white/[0.12] hover:scale-[1.04] active:scale-[0.97]"
+                                    className="group flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-7 py-3.5 text-sm font-semibold text-white/60 backdrop-blur-md transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:bg-white/[0.06] hover:text-white/90 hover:border-white/[0.12] hover:scale-[1.04] active:scale-[0.97]"
                                 >
                                     {auth.user ? 'Go to dashboard' : 'Sign in'}
                                     <ArrowUpRight className="size-4 opacity-40 transition-all duration-300 group-hover:opacity-80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -348,7 +348,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                     </section>
 
                     {/* ── BENTO STATS ────────────────────────────────────── */}
-                    <section className="relative px-6 py-10" ref={bentoRef}>
+                    <section className="relative px-4 py-10 sm:px-6" ref={bentoRef}>
                         <div className="mx-auto max-w-5xl">
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                                 {([
@@ -381,7 +381,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                     </section>
 
                     {/* ── FEATURES ───────────────────────────────────────── */}
-                    <section className="relative px-6 py-32" ref={featRef}>
+                    <section className="relative px-4 py-16 sm:px-6 sm:py-32" ref={featRef}>
                         <GlowDivider />
 
                         <div className="mx-auto max-w-7xl">
@@ -407,7 +407,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                     return (
                                         <div
                                             key={f.title}
-                                            className={`feat-card group relative overflow-hidden rounded-[20px] border border-white/[0.04] bg-[#0a0e17] p-8 transition-all duration-500 hover:border-white/[0.1] hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/30 ${featIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                                            className={`feat-card group relative overflow-hidden rounded-[20px] border border-white/[0.04] bg-[#0a0e17] p-5 transition-all duration-500 sm:p-8 hover:border-white/[0.1] hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/30 ${featIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                                             style={{ transitionDelay: `${i * 70}ms` }}
                                         >
                                             {/* Mouse-follow glow */}
@@ -437,7 +437,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                     </section>
 
                     {/* ── HOW IT WORKS ───────────────────────────────────── */}
-                    <section className="relative px-6 py-32" ref={stepsRef}>
+                    <section className="relative px-4 py-16 sm:px-6 sm:py-32" ref={stepsRef}>
                         <GlowDivider />
 
                         <div className="mx-auto max-w-5xl">
@@ -469,7 +469,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                         <div key={s.n} className={`relative flex flex-col items-center text-center transition-all duration-[800ms] ease-out ${stepsIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
                                             style={{ transitionDelay: `${i * 200 + 200}ms` }}
                                         >
-                                            <div className={`group/step relative z-10 mb-8 flex size-36 flex-col items-center justify-center rounded-[28px] border border-white/[0.05] bg-[#0a0e17] shadow-2xl ${s.ring} transition-all duration-500 hover:scale-110 hover:border-white/[0.1] hover:shadow-3xl cursor-pointer`}>
+                                            <div className={`group/step relative z-10 mb-8 flex size-28 flex-col items-center justify-center rounded-[28px] border border-white/[0.05] bg-[#0a0e17] shadow-2xl sm:size-36 ${s.ring} transition-all duration-500 hover:scale-110 hover:border-white/[0.1] hover:shadow-3xl cursor-pointer`}>
                                                 {/* Pulse ring on hover */}
                                                 <div className="absolute inset-0 rounded-[28px] opacity-0 group-hover/step:opacity-100 transition-opacity duration-500 group-hover/step:animate-[ringPulse_1.5s_ease-out_infinite]"
                                                     style={{ boxShadow: `0 0 0 0 ${s.grad.includes('sky') ? 'rgba(56,189,248,0.3)' : s.grad.includes('cyan') ? 'rgba(6,182,212,0.3)' : 'rgba(52,211,153,0.3)'}` }}
@@ -490,7 +490,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                     </section>
 
                     {/* ── SEVERITY ───────────────────────────────────────── */}
-                    <section className="relative px-6 py-32" ref={sevRef}>
+                    <section className="relative px-4 py-16 sm:px-6 sm:py-32" ref={sevRef}>
                         <GlowDivider />
 
                         {/* Background warmth */}
@@ -523,7 +523,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                         <div
                                             key={s.level}
                                             onClick={() => setActiveSev(open ? null : i)}
-                                            className={`group cursor-pointer relative overflow-hidden rounded-[20px] border border-white/[0.04] bg-[#0a0e17] p-7 transition-all duration-500 hover:border-white/[0.1] hover:-translate-y-2 hover:shadow-2xl ${sevIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} ${open ? 'scale-[1.03] border-white/[0.12] shadow-2xl' : ''}`}
+                                            className={`group cursor-pointer relative overflow-hidden rounded-[20px] border border-white/[0.04] bg-[#0a0e17] p-5 transition-all duration-500 sm:p-7 hover:border-white/[0.1] hover:-translate-y-2 hover:shadow-2xl ${sevIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} ${open ? 'scale-[1.03] border-white/[0.12] shadow-2xl' : ''}`}
                                             style={{ transitionDelay: `${i * 100}ms` }}
                                         >
                                             {/* Colored top glow on hover */}
@@ -561,7 +561,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                     </section>
 
                     {/* ── ROLES ──────────────────────────────────────────── */}
-                    <section className="relative px-6 py-32" ref={rolesRef}>
+                    <section className="relative px-4 py-16 sm:px-6 sm:py-32" ref={rolesRef}>
                         <GlowDivider />
 
                         <div className="mx-auto max-w-6xl">
@@ -582,7 +582,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                 ] as const).map((r, i) => (
                                     <div
                                         key={r.role}
-                                        className={`group relative overflow-hidden rounded-[20px] border border-white/[0.04] bg-[#0a0e17] p-9 transition-all duration-500 hover:border-white/[0.1] hover:-translate-y-3 hover:shadow-2xl hover:shadow-black/30 ${rolesIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+                                        className={`group relative overflow-hidden rounded-[20px] border border-white/[0.04] bg-[#0a0e17] p-6 transition-all duration-500 sm:p-9 hover:border-white/[0.1] hover:-translate-y-3 hover:shadow-2xl hover:shadow-black/30 ${rolesIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
                                         style={{ transitionDelay: `${i * 120}ms` }}
                                     >
                                         {/* Shimmer sweep */}
@@ -614,7 +614,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
 
                     {/* ── CTA ────────────────────────────────────────────── */}
                     {!auth.user && canRegister && (
-                        <section className="relative overflow-hidden px-6 py-40" ref={ctaRef}>
+                        <section className="relative overflow-hidden px-4 py-20 sm:px-6 sm:py-40" ref={ctaRef}>
                             <GlowDivider />
 
                             {/* CTA glow */}
@@ -637,13 +637,13 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                     Join residents and responders already using FloodTrack. Free to use, forever.
                                 </p>
                                 <div className="flex flex-wrap justify-center gap-4">
-                                    <Link href={register()} className="hero-cta group relative overflow-hidden rounded-2xl px-12 py-4.5 text-[15px] font-bold text-white shadow-2xl transition-all duration-300 hover:scale-[1.04] hover:shadow-cyan-500/25 active:scale-[0.97]">
+                                    <Link href={register()} className="hero-cta group relative overflow-hidden rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-2xl transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:scale-[1.04] hover:shadow-cyan-500/25 active:scale-[0.97]">
                                         <span className="relative z-10 flex items-center gap-2.5">
                                             Create free account
                                             <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
                                         </span>
                                     </Link>
-                                    <Link href={login()} className="group flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-12 py-4.5 text-[15px] font-bold text-white/50 backdrop-blur-md transition-all duration-300 hover:bg-white/[0.06] hover:text-white/80 hover:scale-[1.04] active:scale-[0.97]">
+                                    <Link href={login()} className="group flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-8 py-3.5 text-sm font-bold text-white/50 backdrop-blur-md transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:bg-white/[0.06] hover:text-white/80 hover:scale-[1.04] active:scale-[0.97]">
                                         Sign in
                                     </Link>
                                 </div>
@@ -653,7 +653,7 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 </main>
 
                 {/* ── Footer ─────────────────────────────────────────── */}
-                <footer className="relative border-t border-white/[0.03] px-6 py-14">
+                <footer className="relative border-t border-white/[0.03] px-4 py-10 sm:px-6 sm:py-14">
                     <div className="absolute inset-x-0 top-0 h-px animated-border" />
                     <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 sm:flex-row">
                         <div className="flex items-center gap-3">
@@ -843,7 +843,7 @@ function SectionHead({ visible, badge, badgeIcon, badgeColor, title, sub }: {
     visible: boolean; badge: string; badgeIcon: ReactNode; badgeColor: string; title: ReactNode; sub: string;
 }) {
     return (
-        <div className={`mb-20 text-center transition-all duration-[800ms] ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div className={`mb-10 text-center transition-all duration-[800ms] sm:mb-20 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <span className={`mb-5 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] ${badgeColor}`}>
                 {badgeIcon}
                 {badge}

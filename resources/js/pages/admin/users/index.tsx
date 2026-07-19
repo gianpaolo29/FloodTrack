@@ -109,7 +109,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Residents" />
 
-            <div className="flex flex-col gap-6 p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* ── Page Header ── */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -136,7 +136,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                 </div>
 
                 {/* ── Stats Row ── */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Total</p>
@@ -238,8 +238,49 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                         </div>
                     </div>
 
-                    {/* Table */}
-                    <div className="overflow-x-auto">
+                    {/* Mobile card view */}
+                    <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {users.data.map((user) => (
+                            <div key={user.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
+                                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-sm font-bold text-white shadow-sm">
+                                    {user.name.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{user.name}</p>
+                                        <span className={`shrink-0 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums ${
+                                            (user.reports_count ?? 0) > 0
+                                                ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:ring-violet-700/40'
+                                                : 'text-neutral-400 dark:text-neutral-500'
+                                        }`}>
+                                            {user.reports_count ?? 0} reports
+                                        </span>
+                                    </div>
+                                    <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{user.email}</p>
+                                    {user.contact_number && (
+                                        <p className="text-[11px] text-neutral-400 dark:text-neutral-500">{user.contact_number}</p>
+                                    )}
+                                </div>
+                                <div className="flex shrink-0 items-center gap-1">
+                                    <button
+                                        onClick={() => setEditingUser(user)}
+                                        className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400"
+                                    >
+                                        <Pencil className="size-3.5" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDelete(user.id)}
+                                        className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                                    >
+                                        <Trash2 className="size-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Desktop table */}
+                    <div className="hidden sm:block overflow-x-auto">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-neutral-100 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-800/40">

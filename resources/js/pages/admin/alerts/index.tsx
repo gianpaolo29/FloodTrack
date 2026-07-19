@@ -99,7 +99,7 @@ export default function AdminAlertsIndex({ alerts }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Alerts" />
 
-            <div className="flex flex-col gap-6 p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* ── Page Header ── */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -129,7 +129,7 @@ export default function AdminAlertsIndex({ alerts }: Props) {
                 </div>
 
                 {/* ── Stats Row ── */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                     <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                         <div className="flex items-center justify-between">
                             <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Total</p>
@@ -198,8 +198,60 @@ export default function AdminAlertsIndex({ alerts }: Props) {
                 {/* ── Table Card ── */}
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
-                    {/* Table */}
-                    <div className="overflow-x-auto">
+                    {/* Mobile card view */}
+                    <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
+                        {alerts.data.map((alert) => {
+                            const published = new Date(alert.created_at);
+                            const publishedStr = published.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            const expires = alert.expires_at ? new Date(alert.expires_at) : null;
+                            const expiresStr = expires ? expires.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : null;
+
+                            return (
+                                <div key={alert.id} className="flex flex-col gap-2 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div className="flex items-center gap-2.5 min-w-0">
+                                            <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${
+                                                alert.type === 'critical' ? 'bg-red-100 dark:bg-red-950/50' :
+                                                alert.type === 'advisory' ? 'bg-blue-100 dark:bg-blue-950/50' :
+                                                                            'bg-neutral-100 dark:bg-neutral-800'
+                                            }`}>
+                                                <Bell className={`size-3.5 ${
+                                                    alert.type === 'critical' ? 'text-red-500' :
+                                                    alert.type === 'advisory' ? 'text-blue-500' :
+                                                                                'text-neutral-400'
+                                                }`} />
+                                            </div>
+                                            <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{alert.title}</p>
+                                        </div>
+                                        <div className="flex shrink-0 items-center gap-1">
+                                            <button
+                                                onClick={() => setEditingAlert(alert)}
+                                                className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400"
+                                            >
+                                                <Pencil className="size-3.5" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-neutral-400 line-clamp-2 dark:text-neutral-500">{alert.body}</p>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold capitalize ${TYPE_STYLES[alert.type] ?? TYPE_STYLES.update}`}>{alert.type}</span>
+                                            {alert.is_critical && (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-1.5 py-0.5 text-[9px] font-bold uppercase text-white">Pinned</span>
+                                            )}
+                                        </div>
+                                        <div className="text-[10px] text-neutral-400 dark:text-neutral-500">
+                                            <span>{publishedStr}</span>
+                                            {expiresStr && <span> · exp {expiresStr}</span>}
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    {/* Desktop table */}
+                    <div className="hidden sm:block overflow-x-auto">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-neutral-100 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-800/40">

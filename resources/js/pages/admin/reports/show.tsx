@@ -102,7 +102,7 @@ export default function AdminReportShow({ report, responders }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={report.reference_number} />
 
-            <div className="flex flex-col gap-6 p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

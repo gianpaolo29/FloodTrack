@@ -42,7 +42,7 @@ export default function AdminExport({ counts }: Props) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Export" />
 
-            <div className="flex flex-col gap-6 p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* ─── Header ─── */}
                 <div>
