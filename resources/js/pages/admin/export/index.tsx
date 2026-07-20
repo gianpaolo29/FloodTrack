@@ -1,5 +1,5 @@
 import { Head } from '@inertiajs/react';
-import { CheckCircle2, Clock, Download, FileDown, FileText, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, Download, FileDown, FileText, X } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -26,7 +26,34 @@ export default function AdminExport({ counts }: Props) {
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo,   setDateTo]   = useState('');
 
+    const [errors, setErrors] = useState<Record<string, string>>({});
+
     const hasFilters = !!(status || severity || dateFrom || dateTo);
+    const today = new Date().toISOString().split('T')[0];
+
+    function validate(): boolean {
+        const errs: Record<string, string> = {};
+
+        if (counts.total === 0) {
+            errs.general = 'No reports available to export.';
+        }
+
+        if (dateFrom && dateTo && dateFrom > dateTo) {
+            errs.dateFrom = '"From" date cannot be after "To" date.';
+            errs.dateTo = '"To" date cannot be before "From" date.';
+        }
+
+        if (dateFrom && dateFrom > today) {
+            errs.dateFrom = '"From" date cannot be in the future.';
+        }
+
+        if (dateTo && dateTo > today) {
+            errs.dateTo = '"To" date cannot be in the future.';
+        }
+
+        setErrors(errs);
+        return Object.keys(errs).length === 0;
+    }
 
     function buildUrl() {
         const params = new URLSearchParams();
@@ -36,6 +63,12 @@ export default function AdminExport({ counts }: Props) {
         if (dateTo)   params.set('date_to',   dateTo);
         const qs = params.toString();
         return `/admin/export/download${qs ? `?${qs}` : ''}`;
+    }
+
+    function handleDownload(e: React.MouseEvent<HTMLAnchorElement>) {
+        if (!validate()) {
+            e.preventDefault();
+        }
     }
 
     return (
@@ -105,29 +138,40 @@ export default function AdminExport({ counts }: Props) {
                                 </select>
                             </FilterField>
 
-                            <FilterField label="From date">
+                            <FilterField label="From date" error={errors.dateFrom}>
                                 <input
                                     type="date"
                                     value={dateFrom}
-                                    onChange={(e) => setDateFrom(e.target.value)}
-                                    className={selectCls}
+                                    max={dateTo || today}
+                                    onChange={(e) => { setDateFrom(e.target.value); setErrors((prev) => { const { dateFrom: _, general: __, ...rest } = prev; return rest; }); }}
+                                    className={`${selectCls} ${errors.dateFrom ? '!border-red-400 !ring-red-500/10' : ''}`}
                                 />
                             </FilterField>
 
-                            <FilterField label="To date">
+                            <FilterField label="To date" error={errors.dateTo}>
                                 <input
                                     type="date"
                                     value={dateTo}
-                                    onChange={(e) => setDateTo(e.target.value)}
-                                    className={selectCls}
+                                    min={dateFrom || undefined}
+                                    max={today}
+                                    onChange={(e) => { setDateTo(e.target.value); setErrors((prev) => { const { dateTo: _, general: __, ...rest } = prev; return rest; }); }}
+                                    className={`${selectCls} ${errors.dateTo ? '!border-red-400 !ring-red-500/10' : ''}`}
                                 />
                             </FilterField>
                         </div>
 
+                        {/* Validation error */}
+                        {errors.general && (
+                            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
+                                <AlertCircle className="size-4 shrink-0" />
+                                {errors.general}
+                            </div>
+                        )}
+
                         {/* Actions */}
                         <div className="flex items-center gap-3 border-t border-neutral-100 pt-5 dark:border-neutral-800">
-                            <a href={buildUrl()}>
-                                <button className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]">
+                            <a href={buildUrl()} onClick={handleDownload}>
+                                <button className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97] disabled:opacity-60" disabled={counts.total === 0}>
                                     <FileDown className="size-4" />
                                     Download CSV
                                 </button>
@@ -139,6 +183,7 @@ export default function AdminExport({ counts }: Props) {
                                         setSeverity('');
                                         setDateFrom('');
                                         setDateTo('');
+                                        setErrors({});
                                     }}
                                     className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                                 >
@@ -159,13 +204,14 @@ export default function AdminExport({ counts }: Props) {
 const selectCls =
     'h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 py-2 text-sm outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-sky-500 dark:focus:bg-neutral-800';
 
-function FilterField({ label, children }: { label: string; children: React.ReactNode }) {
+function FilterField({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
         <div className="flex flex-col gap-1.5">
             <label className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                 {label}
             </label>
             {children}
+            {error && <p className="text-[11px] text-red-500 dark:text-red-400">{error}</p>}
         </div>
     );
 }

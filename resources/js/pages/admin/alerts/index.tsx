@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, Bell, ChevronLeft, ChevronRight, Megaphone, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Bell, ChevronLeft, ChevronRight, FileText, Megaphone, Pencil, Plus, Save, Send, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { swalDelete, swalSuccess } from '@/lib/swal';
@@ -31,16 +31,50 @@ const TYPE_STYLES: Record<string, string> = {
     update:   'bg-neutral-100 text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-600/20',
 };
 
+const TYPE_COLORS: Record<string, { active: string; dot: string }> = {
+    advisory: { active: 'border-blue-400 bg-blue-50 dark:border-blue-500 dark:bg-blue-950/30', dot: 'bg-blue-500' },
+    update:   { active: 'border-emerald-400 bg-emerald-50 dark:border-emerald-500 dark:bg-emerald-950/30', dot: 'bg-emerald-500' },
+    critical: { active: 'border-red-400 bg-red-50 dark:border-red-500 dark:bg-red-950/30', dot: 'bg-red-500' },
+};
+
 const inputClass =
-    'w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-sky-500 dark:focus:bg-neutral-800 dark:focus:ring-sky-500/20';
+    'w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/10 dark:border-neutral-700 dark:bg-neutral-800/60 dark:placeholder:text-neutral-500 dark:focus:border-amber-500 dark:focus:ring-amber-500/15';
 
 const modalSpring = { type: 'spring' as const, stiffness: 400, damping: 28 };
+
+/* ─── Single Alert Template ─── */
+
+const ALERT_TEMPLATE = {
+    title: '[Alert Type] — [Area/Subject]',
+    body: `[Summary of the situation — what happened, current status]
+
+Details:
+- [Detail 1, e.g., location, water level, wind speed]
+- [Detail 2, e.g., affected areas or barangays]
+- [Detail 3, e.g., expected duration or next update time]
+
+Actions required:
+- [Action 1, e.g., monitor FloodTrack for real-time updates]
+- [Action 2, e.g., prepare for possible evacuation]
+- [Action 3, e.g., report incidents via the app]
+
+Stay safe. Follow instructions from your local DRRMO.
+
+Source: [DOST-PAGASA / Local DRRMO / FloodTrack]`,
+};
+
+/** Returns true if the date string is in the past */
+function isDateInPast(dateStr: string): boolean {
+    if (!dateStr) return false;
+    return new Date(dateStr) <= new Date();
+}
 
 export default function AdminAlertsIndex({ alerts }: Props) {
     const [selected, setSelected] = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
+    const [dateError, setDateError] = useState('');
 
     const form = useForm({
         title: '',
@@ -52,12 +86,27 @@ export default function AdminAlertsIndex({ alerts }: Props) {
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
+        if (form.data.expires_at && isDateInPast(form.data.expires_at)) {
+            setDateError('Expiry date must be in the future.');
+            return;
+        }
+        setDateError('');
         form.post('/admin/alerts', {
             onSuccess: () => {
                 form.reset();
                 setShowCreateModal(false);
                 swalSuccess('Alert Published', 'The alert has been published successfully.');
             },
+        });
+    }
+
+    function applyTemplate() {
+        form.setData({
+            title: ALERT_TEMPLATE.title,
+            body: ALERT_TEMPLATE.body,
+            type: form.data.type,
+            is_critical: form.data.is_critical,
+            expires_at: form.data.expires_at,
         });
     }
 
@@ -120,7 +169,7 @@ export default function AdminAlertsIndex({ alerts }: Props) {
                         </div>
                     </div>
                     <button
-                        onClick={() => setShowCreateModal(true)}
+                        onClick={() => { form.reset(); setDateError(''); setShowCreateModal(true); }}
                         className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-amber-500/20 transition-all hover:shadow-lg hover:shadow-amber-500/30 hover:brightness-110 active:scale-[0.97]"
                     >
                         <Plus className="size-4" />
@@ -344,7 +393,7 @@ export default function AdminAlertsIndex({ alerts }: Props) {
                 </div>
             </div>
 
-            {/* Create Modal */}
+            {/* ═══ Create Modal ═══ */}
             <AnimatePresence>
                 {showCreateModal && (
                     <motion.div
@@ -361,33 +410,46 @@ export default function AdminAlertsIndex({ alerts }: Props) {
                             exit={{ opacity: 0, scale: 0.95, y: 12 }}
                             transition={modalSpring}
                             onClick={(e) => e.stopPropagation()}
-                            className="w-full max-w-lg overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-2xl dark:border-neutral-700/60 dark:bg-neutral-900"
+                            className="flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-2xl dark:border-neutral-700/60 dark:bg-neutral-900"
+                            style={{ maxHeight: 'min(90vh, 760px)' }}
                         >
-                            {/* Modal header */}
-                            <div className="flex items-center gap-3 border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
-                                <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
-                                    <Megaphone className="size-4.5 text-white" />
+                            {/* Header */}
+                            <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-sm">
+                                        <Megaphone className="size-4 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Publish Alert</h3>
+                                        <p className="text-[11px] text-neutral-400 dark:text-neutral-500">Broadcasts to all users</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Publish New Alert</h3>
-                                    <p className="text-xs text-neutral-500 dark:text-neutral-400">Visible to all FloodTrack users</p>
-                                </div>
-                                <button
-                                    onClick={() => setShowCreateModal(false)}
-                                    className="ml-auto rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-                                >
+                                <button onClick={() => setShowCreateModal(false)} className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800">
                                     <X className="size-4" />
                                 </button>
                             </div>
 
-                            {/* Modal body */}
-                            <form onSubmit={submit} className="flex flex-col gap-4 px-6 py-5">
+                            {/* Body */}
+                            <form onSubmit={submit} className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
+                                {/* Template button */}
+                                <button
+                                    type="button"
+                                    onClick={applyTemplate}
+                                    className="flex items-center gap-2.5 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 px-4 py-2.5 text-left transition-all hover:border-amber-400 hover:bg-amber-50 dark:border-amber-700/50 dark:bg-amber-950/20 dark:hover:border-amber-600/60 dark:hover:bg-amber-950/30"
+                                >
+                                    <FileText className="size-4 shrink-0 text-amber-500" />
+                                    <div>
+                                        <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">Use Template</p>
+                                        <p className="text-[10px] text-amber-600/70 dark:text-amber-400/60">Fill form with a ready-made alert structure</p>
+                                    </div>
+                                </button>
+
                                 <FormField label="Title" error={form.errors.title}>
                                     <input
                                         type="text"
                                         value={form.data.title}
                                         onChange={(e) => form.setData('title', e.target.value)}
-                                        placeholder="e.g. Flood advisory — Brgy. Reparo"
+                                        placeholder="e.g. Flood Advisory — Brgy. Reparo"
                                         className={inputClass}
                                         required
                                     />
@@ -397,62 +459,85 @@ export default function AdminAlertsIndex({ alerts }: Props) {
                                     <textarea
                                         value={form.data.body}
                                         onChange={(e) => form.setData('body', e.target.value)}
-                                        rows={4}
+                                        rows={7}
                                         placeholder="Alert details visible to all app users..."
-                                        className={`${inputClass} resize-none`}
+                                        className={`${inputClass} resize-y`}
                                         required
                                     />
                                 </FormField>
 
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                    <FormField label="Type">
-                                        <select
-                                            value={form.data.type}
-                                            onChange={(e) => form.setData('type', e.target.value as typeof form.data.type)}
-                                            className={inputClass}
-                                        >
-                                            <option value="advisory">Advisory</option>
-                                            <option value="update">Update</option>
-                                            <option value="critical">Critical</option>
-                                        </select>
-                                    </FormField>
+                                {/* Type selector */}
+                                <FormField label="Type">
+                                    <div className="flex gap-2">
+                                        {(['advisory', 'update', 'critical'] as const).map((t) => {
+                                            const active = form.data.type === t;
+                                            const colors = TYPE_COLORS[t];
+                                            return (
+                                                <button
+                                                    key={t}
+                                                    type="button"
+                                                    onClick={() => form.setData('type', t)}
+                                                    className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-xs font-semibold capitalize transition-all ${
+                                                        active
+                                                            ? colors.active
+                                                            : 'border-neutral-200 bg-neutral-50/50 text-neutral-500 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-400 dark:hover:border-neutral-600'
+                                                    }`}
+                                                >
+                                                    <span className={`size-2 rounded-full ${active ? colors.dot : 'bg-neutral-300 dark:bg-neutral-600'}`} />
+                                                    {t}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </FormField>
 
-                                    <FormField label="Expires at (optional)">
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <FormField label="Expires at (optional)" error={dateError || form.errors.expires_at}>
                                         <input
                                             type="datetime-local"
                                             value={form.data.expires_at}
-                                            onChange={(e) => form.setData('expires_at', e.target.value)}
-                                            className={inputClass}
+                                            onChange={(e) => {
+                                                form.setData('expires_at', e.target.value);
+                                                if (e.target.value && isDateInPast(e.target.value)) {
+                                                    setDateError('Must be a future date.');
+                                                } else {
+                                                    setDateError('');
+                                                }
+                                            }}
+                                            min={new Date().toISOString().slice(0, 16)}
+                                            className={`${inputClass} ${dateError ? '!border-red-400 !ring-red-500/10' : ''}`}
                                         />
                                     </FormField>
+
+                                    <div className="flex items-end">
+                                        <label className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 px-4 py-2.5 transition-colors hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:bg-neutral-800/70">
+                                            <input
+                                                type="checkbox"
+                                                checked={form.data.is_critical}
+                                                onChange={(e) => form.setData('is_critical', e.target.checked)}
+                                                className="size-4 rounded border-neutral-300 text-red-600 focus:ring-red-500/20 dark:border-neutral-600"
+                                            />
+                                            <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Pin as critical</span>
+                                        </label>
+                                    </div>
                                 </div>
 
-                                <label className="flex items-center gap-2.5 text-sm">
-                                    <input
-                                        type="checkbox"
-                                        checked={form.data.is_critical}
-                                        onChange={(e) => form.setData('is_critical', e.target.checked)}
-                                        className="size-4 rounded border-neutral-300 accent-red-600 dark:border-neutral-600"
-                                    />
-                                    <span className="text-neutral-600 dark:text-neutral-400">Pin as critical (shown at top of app)</span>
-                                </label>
-
-                                {/* Modal footer */}
-                                <div className="flex items-center justify-end gap-3 border-t border-neutral-200/60 pt-4 dark:border-neutral-700/60">
+                                {/* Footer */}
+                                <div className="flex items-center justify-end gap-3 border-t border-neutral-100 pt-4 dark:border-neutral-800">
                                     <button
                                         type="button"
                                         onClick={() => setShowCreateModal(false)}
-                                        className="rounded-xl px-4 py-2.5 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                                        className="rounded-xl px-4 py-2.5 text-sm font-medium text-neutral-500 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                                     >
                                         Cancel
                                     </button>
                                     <button
                                         type="submit"
-                                        disabled={form.processing}
-                                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
+                                        disabled={form.processing || !!dateError}
+                                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
                                     >
-                                        <Megaphone className="size-4" />
-                                        {form.processing ? 'Publishing...' : 'Publish Alert'}
+                                        <Send className="size-4" />
+                                        {form.processing ? 'Publishing...' : 'Publish'}
                                     </button>
                                 </div>
                             </form>
@@ -461,7 +546,7 @@ export default function AdminAlertsIndex({ alerts }: Props) {
                 )}
             </AnimatePresence>
 
-            {/* Edit Modal */}
+            {/* ═══ Edit Modal ═══ */}
             <AnimatePresence>
                 {editingAlert && (
                     <EditModal
@@ -478,6 +563,7 @@ export default function AdminAlertsIndex({ alerts }: Props) {
 
 function EditModal({ alert, onClose }: { alert: Alert; onClose: () => void }) {
     const deleteForm = useForm({});
+    const [dateError, setDateError] = useState('');
     const editForm = useForm({
         title: alert.title,
         body: alert.body,
@@ -488,6 +574,11 @@ function EditModal({ alert, onClose }: { alert: Alert; onClose: () => void }) {
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
+        if (editForm.data.expires_at && isDateInPast(editForm.data.expires_at)) {
+            setDateError('Expiry date must be in the future.');
+            return;
+        }
+        setDateError('');
         editForm.put(`/admin/alerts/${alert.id}`, {
             onSuccess: () => {
                 onClose();
@@ -511,27 +602,27 @@ function EditModal({ alert, onClose }: { alert: Alert; onClose: () => void }) {
                 exit={{ opacity: 0, scale: 0.95, y: 12 }}
                 transition={modalSpring}
                 onClick={(e) => e.stopPropagation()}
-                className="w-full max-w-lg overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-2xl dark:border-neutral-700/60 dark:bg-neutral-900"
+                className="flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-2xl dark:border-neutral-700/60 dark:bg-neutral-900"
+                style={{ maxHeight: 'min(90vh, 720px)' }}
             >
                 {/* Header */}
-                <div className="flex items-center gap-3 border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
-                    <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
-                        <Pencil className="size-4 text-white" />
+                <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
+                    <div className="flex items-center gap-3">
+                        <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
+                            <Pencil className="size-4 text-white" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Edit Alert</h3>
+                            <p className="max-w-[200px] truncate text-[11px] text-neutral-400 dark:text-neutral-500">{alert.title}</p>
+                        </div>
                     </div>
-                    <div>
-                        <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Edit Alert</h3>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">Update alert details</p>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="ml-auto rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-                    >
+                    <button onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800">
                         <X className="size-4" />
                     </button>
                 </div>
 
                 {/* Body */}
-                <form onSubmit={handleSave} className="flex flex-col gap-4 px-6 py-5">
+                <form onSubmit={handleSave} className="flex flex-1 flex-col gap-4 overflow-y-auto px-6 py-5">
                     <FormField label="Title" error={editForm.errors.title}>
                         <input
                             type="text"
@@ -546,72 +637,93 @@ function EditModal({ alert, onClose }: { alert: Alert; onClose: () => void }) {
                         <textarea
                             value={editForm.data.body}
                             onChange={(e) => editForm.setData('body', e.target.value)}
-                            rows={4}
-                            className={`${inputClass} resize-none`}
+                            rows={7}
+                            className={`${inputClass} resize-y`}
                             required
                         />
                     </FormField>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <FormField label="Type">
-                            <select
-                                value={editForm.data.type}
-                                onChange={(e) => editForm.setData('type', e.target.value as typeof editForm.data.type)}
-                                className={inputClass}
-                            >
-                                <option value="advisory">Advisory</option>
-                                <option value="update">Update</option>
-                                <option value="critical">Critical</option>
-                            </select>
-                        </FormField>
+                    {/* Type selector */}
+                    <FormField label="Type">
+                        <div className="flex gap-2">
+                            {(['advisory', 'update', 'critical'] as const).map((t) => {
+                                const active = editForm.data.type === t;
+                                const colors = TYPE_COLORS[t];
+                                return (
+                                    <button
+                                        key={t}
+                                        type="button"
+                                        onClick={() => editForm.setData('type', t)}
+                                        className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-xs font-semibold capitalize transition-all ${
+                                            active
+                                                ? colors.active
+                                                : 'border-neutral-200 bg-neutral-50/50 text-neutral-500 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-400 dark:hover:border-neutral-600'
+                                        }`}
+                                    >
+                                        <span className={`size-2 rounded-full ${active ? colors.dot : 'bg-neutral-300 dark:bg-neutral-600'}`} />
+                                        {t}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </FormField>
 
-                        <FormField label="Expires at">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <FormField label="Expires at" error={dateError || editForm.errors.expires_at}>
                             <input
                                 type="datetime-local"
                                 value={editForm.data.expires_at}
-                                onChange={(e) => editForm.setData('expires_at', e.target.value)}
-                                className={inputClass}
+                                onChange={(e) => {
+                                    editForm.setData('expires_at', e.target.value);
+                                    if (e.target.value && isDateInPast(e.target.value)) {
+                                        setDateError('Must be a future date.');
+                                    } else {
+                                        setDateError('');
+                                    }
+                                }}
+                                min={new Date().toISOString().slice(0, 16)}
+                                className={`${inputClass} ${dateError ? '!border-red-400 !ring-red-500/10' : ''}`}
                             />
                         </FormField>
+
+                        <div className="flex items-end">
+                            <label className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 px-4 py-2.5 transition-colors hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800/50 dark:hover:bg-neutral-800/70">
+                                <input
+                                    type="checkbox"
+                                    checked={editForm.data.is_critical}
+                                    onChange={(e) => editForm.setData('is_critical', e.target.checked)}
+                                    className="size-4 rounded border-neutral-300 text-red-600 focus:ring-red-500/20 dark:border-neutral-600"
+                                />
+                                <span className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Pin as critical</span>
+                            </label>
+                        </div>
                     </div>
 
-                    <label className="flex items-center gap-2.5 text-sm">
-                        <input
-                            type="checkbox"
-                            checked={editForm.data.is_critical}
-                            onChange={(e) => editForm.setData('is_critical', e.target.checked)}
-                            className="size-4 rounded border-neutral-300 accent-red-600 dark:border-neutral-600"
-                        />
-                        <span className="text-neutral-600 dark:text-neutral-400">Pin as critical</span>
-                    </label>
-
                     {/* Footer */}
-                    <div className="flex items-center justify-between border-t border-neutral-200/60 pt-4 dark:border-neutral-700/60">
-                        <div>
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    const confirmed = await swalDelete('this alert');
-                                    if (confirmed) deleteForm.delete(`/admin/alerts/${alert.id}`, {
-                                        onSuccess: () => swalSuccess('Deleted', 'Alert has been deleted.'),
-                                    });
-                                }}
-                                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
-                            >
-                                <Trash2 className="size-3.5" /> Delete alert
-                            </button>
-                        </div>
+                    <div className="flex items-center justify-between border-t border-neutral-100 pt-4 dark:border-neutral-800">
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                const confirmed = await swalDelete('this alert');
+                                if (confirmed) deleteForm.delete(`/admin/alerts/${alert.id}`, {
+                                    onSuccess: () => swalSuccess('Deleted', 'Alert has been deleted.'),
+                                });
+                            }}
+                            className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                        >
+                            <Trash2 className="size-3.5" /> Delete
+                        </button>
                         <div className="flex items-center gap-3">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="rounded-xl px-4 py-2.5 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                                className="rounded-xl px-4 py-2.5 text-sm font-medium text-neutral-500 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
-                                disabled={editForm.processing || !editForm.isDirty}
+                                disabled={editForm.processing || !editForm.isDirty || !!dateError}
                                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
                             >
                                 <Save className="size-4" />

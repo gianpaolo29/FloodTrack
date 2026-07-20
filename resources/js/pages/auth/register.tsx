@@ -1,5 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
-import { ArrowRight, Check, Lock, Mail, Phone, Shield, User, X } from 'lucide-react';
+import { ArrowRight, Check, Lock, Mail, Phone, User, X } from 'lucide-react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
@@ -29,34 +29,35 @@ function getStrength(pw: string) {
     return { score: 5, label: 'Excellent', color: 'bg-emerald-500', textColor: 'text-emerald-500' };
 }
 
-const inputCls = 'h-11 rounded-xl border-neutral-200 bg-neutral-50/80 pl-11 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 transition-colors focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:placeholder:text-neutral-500 dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20';
-const pwInputCls = 'h-11 rounded-xl border-neutral-200 bg-neutral-50/80 pl-11 pr-10 text-sm text-neutral-900 transition-colors focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20';
-const labelCls = 'text-[13px] font-medium text-neutral-600 dark:text-neutral-400';
-const iconCls = 'pointer-events-none absolute left-3.5 top-1/2 size-[16px] -translate-y-1/2 text-neutral-400 dark:text-neutral-500';
-
 function formatPhoneNumber(value: string) {
-    const digits = value.replace(/\D/g, '').slice(0, 11);
+    let digits = value.replace(/\D/g, '').slice(0, 11);
+    if (!digits.startsWith('09')) digits = '09';
     if (digits.length <= 4) return digits;
     if (digits.length <= 7) return `${digits.slice(0, 4)} ${digits.slice(4)}`;
     return `${digits.slice(0, 4)} ${digits.slice(4, 7)} ${digits.slice(7)}`;
 }
 
+const fieldCls = 'flex flex-col gap-1.5';
+const inputCls = 'h-11 rounded-xl border-neutral-200 bg-neutral-50/80 pl-11 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 transition-colors focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:placeholder:text-neutral-500 dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20';
+const pwInputCls = 'h-11 rounded-xl border-neutral-200 bg-neutral-50/80 pl-11 pr-10 text-sm text-neutral-900 transition-colors focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20';
+const labelCls = 'text-[13px] font-medium text-neutral-600 dark:text-neutral-400';
+const iconCls = 'pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500';
+
 export default function Register() {
     const [password, setPassword] = useState('');
-    const [phone, setPhone] = useState('');
+    const [phone, setPhone] = useState('09');
     const strength = getStrength(password);
 
     return (
         <>
             <Head title="Create account" />
 
-            {/* Header */}
-            <div className="mb-6">
+            <div className="mb-8">
                 <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">
                     Create your account
                 </h1>
-                <p className="mt-1 text-[13px] text-neutral-500 dark:text-neutral-400">
-                    Fill in your details to get started
+                <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">
+                    Start reporting and tracking hazards in your area.
                 </p>
             </div>
 
@@ -64,13 +65,13 @@ export default function Register() {
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
-                className="flex flex-col gap-4"
+                className="flex flex-col gap-5"
             >
                 {({ processing, errors }) => (
                     <>
-                        {/* Name row */}
+                        {/* Name */}
                         <div className="grid grid-cols-2 gap-3">
-                            <div className="flex flex-col gap-1.5">
+                            <div className={fieldCls}>
                                 <Label htmlFor="first_name" className={labelCls}>First name</Label>
                                 <div className="relative">
                                     <User className={iconCls} />
@@ -78,7 +79,7 @@ export default function Register() {
                                 </div>
                                 <InputError message={(errors as Record<string, string>).first_name} />
                             </div>
-                            <div className="flex flex-col gap-1.5">
+                            <div className={fieldCls}>
                                 <Label htmlFor="last_name" className={labelCls}>Last name</Label>
                                 <div className="relative">
                                     <User className={iconCls} />
@@ -88,96 +89,62 @@ export default function Register() {
                             </div>
                         </div>
 
-                        {/* Email & Phone row */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="email" className={labelCls}>Email address</Label>
-                                <div className="relative">
-                                    <Mail className={iconCls} />
-                                    <Input id="email" type="email" required tabIndex={3} autoComplete="email" name="email" placeholder="you@example.com" className={inputCls} />
-                                </div>
-                                <InputError message={errors.email} />
+                        {/* Email */}
+                        <div className={fieldCls}>
+                            <Label htmlFor="email" className={labelCls}>Email address</Label>
+                            <div className="relative">
+                                <Mail className={iconCls} />
+                                <Input id="email" type="email" required tabIndex={3} autoComplete="email" name="email" placeholder="you@example.com" className={inputCls} />
                             </div>
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="contact_number" className={labelCls}>
-                                    Phone <span className="text-neutral-400 dark:text-neutral-500">(optional)</span>
-                                </Label>
-                                <div className="relative">
-                                    <Phone className={iconCls} />
-                                    <input type="hidden" name="contact_number" value={phone.replace(/\D/g, '')} />
-                                    <Input
-                                        id="contact_number"
-                                        type="tel"
-                                        tabIndex={4}
-                                        autoComplete="tel"
-                                        placeholder="0917 123 4567"
-                                        value={phone}
-                                        onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
-                                        maxLength={13}
-                                        className={inputCls}
-                                    />
-                                </div>
-                                <InputError message={(errors as Record<string, string>).contact_number} />
+                            <InputError message={errors.email} />
+                        </div>
+
+                        {/* Phone */}
+                        <div className={fieldCls}>
+                            <Label htmlFor="contact_number" className={labelCls}>
+                                Phone number <span className="text-neutral-400 dark:text-neutral-500">(optional)</span>
+                            </Label>
+                            <div className="relative">
+                                <Phone className={iconCls} />
+                                <input type="hidden" name="contact_number" value={phone.replace(/\D/g, '')} />
+                                <Input
+                                    id="contact_number"
+                                    type="tel"
+                                    tabIndex={4}
+                                    autoComplete="tel"
+                                    placeholder="0917 123 4567"
+                                    value={phone}
+                                    onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
+                                    maxLength={13}
+                                    className={inputCls}
+                                />
                             </div>
+                            <InputError message={(errors as Record<string, string>).contact_number} />
                         </div>
 
                         <input type="hidden" name="role" value="resident" />
 
-                        {/* Divider */}
-                        <div className="relative">
-                            <div className="absolute inset-0 flex items-center">
-                                <div className="w-full border-t border-neutral-100 dark:border-neutral-800" />
+                        {/* Password */}
+                        <div className={fieldCls}>
+                            <Label htmlFor="password" className={labelCls}>Password</Label>
+                            <div className="relative">
+                                <Lock className={`${iconCls} z-10`} />
+                                <PasswordInput
+                                    id="password"
+                                    required
+                                    tabIndex={5}
+                                    autoComplete="new-password"
+                                    name="password"
+                                    placeholder="Create a strong password"
+                                    className={pwInputCls}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                />
                             </div>
-                            <div className="relative flex justify-center">
-                                <span className="flex items-center gap-1.5 bg-white px-3 text-[11px] font-medium text-neutral-400 dark:bg-neutral-900 dark:text-neutral-500">
-                                    <Shield className="size-3" />
-                                    Secure your account
-                                </span>
-                            </div>
-                        </div>
+                            <InputError message={errors.password} />
 
-                        {/* Password row */}
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="password" className={labelCls}>Password</Label>
-                                <div className="relative">
-                                    <Lock className={`${iconCls} z-10`} />
-                                    <PasswordInput
-                                        id="password"
-                                        required
-                                        tabIndex={5}
-                                        autoComplete="new-password"
-                                        name="password"
-                                        placeholder="Create password"
-                                        className={pwInputCls}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                    />
-                                </div>
-                                <InputError message={errors.password} />
-                            </div>
-                            <div className="flex flex-col gap-1.5">
-                                <Label htmlFor="password_confirmation" className={labelCls}>Confirm password</Label>
-                                <div className="relative">
-                                    <Lock className={`${iconCls} z-10`} />
-                                    <PasswordInput
-                                        id="password_confirmation"
-                                        required
-                                        tabIndex={6}
-                                        autoComplete="new-password"
-                                        name="password_confirmation"
-                                        placeholder="Re-enter password"
-                                        className={pwInputCls}
-                                    />
-                                </div>
-                                <InputError message={errors.password_confirmation} />
-                            </div>
-                        </div>
-
-                        {/* Strength bar + validation */}
-                        <div className={`overflow-hidden transition-all duration-300 ${password ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'}`}>
-                            <div className="rounded-xl border border-neutral-100 bg-neutral-50/50 px-3.5 py-2.5 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                {/* Bar */}
-                                <div className="mb-2 flex items-center gap-2">
+                            {/* Strength indicator */}
+                            <div className={`overflow-hidden transition-all duration-300 ${password ? 'max-h-16 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
+                                <div className="flex items-center gap-2 mb-1.5">
                                     <div className="flex flex-1 gap-0.5">
                                         {Array.from({ length: 5 }).map((_, i) => (
                                             <div
@@ -190,7 +157,6 @@ export default function Register() {
                                         {strength.label}
                                     </span>
                                 </div>
-                                {/* Rules inline */}
                                 <div className="flex flex-wrap gap-x-3 gap-y-0.5">
                                     {pwRules.map((rule) => {
                                         const passed = rule.test(password);
@@ -211,18 +177,36 @@ export default function Register() {
                             </div>
                         </div>
 
+                        {/* Confirm password */}
+                        <div className={fieldCls}>
+                            <Label htmlFor="password_confirmation" className={labelCls}>Confirm password</Label>
+                            <div className="relative">
+                                <Lock className={`${iconCls} z-10`} />
+                                <PasswordInput
+                                    id="password_confirmation"
+                                    required
+                                    tabIndex={6}
+                                    autoComplete="new-password"
+                                    name="password_confirmation"
+                                    placeholder="Re-enter your password"
+                                    className={pwInputCls}
+                                />
+                            </div>
+                            <InputError message={errors.password_confirmation} />
+                        </div>
+
                         {/* Submit */}
                         <Button
                             type="submit"
                             tabIndex={7}
                             data-test="register-user-button"
-                            className="h-11 w-full rounded-xl bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:shadow-blue-500/30 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+                            className="mt-1 h-11 w-full rounded-xl bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:shadow-blue-500/30 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
                         >
                             {processing ? (
                                 <Spinner />
                             ) : (
                                 <span className="flex items-center justify-center gap-2">
-                                    Create my account
+                                    Create account
                                     <ArrowRight className="size-4" />
                                 </span>
                             )}

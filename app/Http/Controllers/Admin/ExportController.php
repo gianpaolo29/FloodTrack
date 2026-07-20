@@ -29,8 +29,8 @@ class ExportController extends Controller
         $request->validate([
             'status'      => 'nullable|in:pending,verified,assigned,resolved,rejected',
             'severity'    => 'nullable|in:low,moderate,high,critical',
-            'date_from'   => 'nullable|date',
-            'date_to'     => 'nullable|date',
+            'date_from'   => 'nullable|date|before_or_equal:today|before_or_equal:date_to',
+            'date_to'     => 'nullable|date|before_or_equal:today|after_or_equal:date_from',
         ]);
 
         $reports = Report::with(['user:id,name', 'assignedResponder:id,name'])
