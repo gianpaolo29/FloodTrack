@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head, router } from '@inertiajs/react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { update } from '@/routes/password';
+import { swalSuccess } from '@/lib/swal';
 
 type Props = {
     token: string;
@@ -13,6 +14,11 @@ type Props = {
 };
 
 export default function ResetPassword({ token, email }: Props) {
+    const handleSuccess = async () => {
+        await swalSuccess('Password Reset!', 'Your password has been updated successfully.');
+        router.visit('/login');
+    };
+
     return (
         <>
             <Head title="Reset password" />
@@ -21,6 +27,7 @@ export default function ResetPassword({ token, email }: Props) {
                 {...update.form()}
                 transform={(data) => ({ ...data, token, email })}
                 resetOnSuccess={['password', 'password_confirmation']}
+                onSuccess={handleSuccess}
             >
                 {({ processing, errors }) => (
                     <div className="grid gap-6">
