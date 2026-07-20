@@ -1,7 +1,7 @@
 import { swalSuccess } from '@/lib/swal';
 import { Head, router, useForm } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Pencil, Phone, Plus, Search, ShieldCheck, Users, X } from 'lucide-react';
+import { Activity, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, MapPin, Pencil, Phone, Plus, Search, ShieldCheck, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -13,6 +13,8 @@ interface Responder {
     name: string;
     email: string;
     contact_number: string | null;
+    home_address: string | null;
+    avatar_url: string | null;
     total_assigned: number;
     active_assignments: number;
     resolved_count: number;
@@ -155,9 +157,13 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                     <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
                         {responders.data.map((r) => (
                             <div key={r.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
-                                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-sm font-bold text-white shadow-sm shadow-indigo-500/20">
-                                    {r.name.charAt(0).toUpperCase()}
-                                </div>
+                                {r.avatar_url ? (
+                                    <img src={r.avatar_url} alt={r.name} className="size-9 shrink-0 rounded-xl object-cover shadow-sm shadow-indigo-500/20" />
+                                ) : (
+                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-sm font-bold text-white shadow-sm shadow-indigo-500/20">
+                                        {r.name.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center justify-between gap-2">
                                         <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{r.name}</p>
@@ -173,6 +179,12 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                                         )}
                                     </div>
                                     <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{r.email}</p>
+                                    {r.home_address && (
+                                        <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-neutral-400 dark:text-neutral-500">
+                                            <MapPin className="size-3 shrink-0" />
+                                            {r.home_address}
+                                        </p>
+                                    )}
                                     <div className="mt-1 flex items-center gap-3 text-[11px] text-neutral-400 dark:text-neutral-500">
                                         <span>{r.total_assigned} assigned</span>
                                         <span>{r.resolved_count} resolved</span>
@@ -194,6 +206,7 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                             <thead>
                                 <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Responder</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Home Address</th>
                                     <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Assignments</th>
                                     <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Status</th>
                                     <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
@@ -204,9 +217,13 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                                     <tr key={r.id} className="group transition-colors hover:bg-neutral-50/60 dark:hover:bg-neutral-800/20">
                                         <td className="px-5 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-sm font-bold text-white shadow-sm shadow-indigo-500/20">
-                                                    {r.name.charAt(0).toUpperCase()}
-                                                </div>
+                                                {r.avatar_url ? (
+                                                    <img src={r.avatar_url} alt={r.name} className="size-9 shrink-0 rounded-xl object-cover shadow-sm shadow-indigo-500/20" />
+                                                ) : (
+                                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-sm font-bold text-white shadow-sm shadow-indigo-500/20">
+                                                        {r.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
                                                 <div className="min-w-0">
                                                     <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{r.name}</p>
                                                     <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{r.email}</p>
@@ -218,6 +235,18 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                                                     )}
                                                 </div>
                                             </div>
+                                        </td>
+                                        <td className="max-w-[200px] px-5 py-4">
+                                            {r.home_address ? (
+                                                <div className="flex items-start gap-1.5">
+                                                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-neutral-400" />
+                                                    <span className="truncate text-xs text-neutral-500 dark:text-neutral-400" title={r.home_address}>
+                                                        {r.home_address}
+                                                    </span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-neutral-300 dark:text-neutral-600">—</span>
+                                            )}
                                         </td>
                                         <td className="px-5 py-4 text-center">
                                             <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-indigo-700 dark:text-indigo-400">

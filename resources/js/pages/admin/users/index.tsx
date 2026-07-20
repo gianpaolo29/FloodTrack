@@ -242,9 +242,13 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                     <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
                         {users.data.map((user) => (
                             <div key={user.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
-                                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-sm font-bold text-white shadow-sm">
-                                    {user.name.charAt(0).toUpperCase()}
-                                </div>
+                                {user.avatar_url ? (
+                                    <img src={user.avatar_url} alt={user.name} className="size-9 shrink-0 rounded-full object-cover shadow-sm" />
+                                ) : (
+                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-sm font-bold text-white shadow-sm">
+                                        {user.name.charAt(0).toUpperCase()}
+                                    </div>
+                                )}
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center justify-between gap-2">
                                         <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{user.name}</p>
@@ -259,6 +263,12 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                     <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{user.email}</p>
                                     {user.contact_number && (
                                         <p className="text-[11px] text-neutral-400 dark:text-neutral-500">{user.contact_number}</p>
+                                    )}
+                                    {user.home_address && (
+                                        <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-neutral-400 dark:text-neutral-500">
+                                            <MapPin className="size-3 shrink-0" />
+                                            {user.home_address}
+                                        </p>
                                     )}
                                 </div>
                                 <div className="flex shrink-0 items-center gap-1">
@@ -539,9 +549,13 @@ function UserFormModal({
             >
                 {/* Modal header */}
                 <div className="flex items-center gap-3 border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
-                    <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
-                        {isEdit ? <Pencil className="size-4 text-white" /> : <Plus className="size-4 text-white" />}
-                    </div>
+                    {isEdit && user?.avatar_url ? (
+                        <img src={user.avatar_url} alt={user.name} className="size-9 shrink-0 rounded-xl object-cover shadow-sm" />
+                    ) : (
+                        <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
+                            {isEdit ? <Pencil className="size-4 text-white" /> : <Plus className="size-4 text-white" />}
+                        </div>
+                    )}
                     <div>
                         <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">{title}</h3>
                         <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -602,17 +616,26 @@ function UserFormModal({
                         </FormField>
                     </div>
 
-                    <FormField label="Home Address" error={form.errors.home_address}>
-                        <HomeAddressAutocomplete
-                            value={form.data.home_address}
-                            onChange={(addr, lat, lng) => {
-                                form.setData('home_address', addr);
-                                form.setData('home_latitude', lat);
-                                form.setData('home_longitude', lng);
-                            }}
-                            className={inputClassName}
-                        />
-                    </FormField>
+                    {isEdit ? (
+                        <FormField label="Home Address">
+                            <div className="flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-100/60 px-3.5 py-2.5 text-sm text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800/30 dark:text-neutral-400">
+                                <MapPin className="size-3.5 shrink-0 text-neutral-400" />
+                                {user?.home_address || <span className="italic text-neutral-400 dark:text-neutral-500">Not set by resident</span>}
+                            </div>
+                        </FormField>
+                    ) : (
+                        <FormField label="Home Address" error={form.errors.home_address}>
+                            <HomeAddressAutocomplete
+                                value={form.data.home_address}
+                                onChange={(addr, lat, lng) => {
+                                    form.setData('home_address', addr);
+                                    form.setData('home_latitude', lat);
+                                    form.setData('home_longitude', lng);
+                                }}
+                                className={inputClassName}
+                            />
+                        </FormField>
+                    )}
 
                     {/* Modal footer */}
                     <div className="flex items-center justify-end gap-3 border-t border-neutral-200/60 pt-5 dark:border-neutral-700/60">
