@@ -13,6 +13,7 @@ use App\Notifications\ReportStatusChanged;
 use App\Services\ExpoPushService;
 use App\Services\ReportAnalysisService;
 use App\Services\SocketService;
+use App\Services\WeatherService;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Notification;
@@ -70,12 +71,23 @@ class ReportController extends Controller
         $report->update($aiFlags);
 
         // Auto-process based on AI verdict
+        // Check if there's a thunderstorm at the report location
+        $hasThunderstorm = false;
+        try {
+            $weather = app(WeatherService::class)->current($report->latitude, $report->longitude);
+            $hasThunderstorm = str_contains(strtolower($weather['main'] ?? ''), 'thunderstorm');
+        } catch (\Throwable $e) {
+            // Weather check failed — proceed without it
+        }
+
+        $exifFailed = $aiFlags['ai_exif_status'] === 'fail';
+
         $autoVerified = $aiFlags['ai_image_verified'] === true
-            && $aiFlags['ai_flagged'] === false
-            && $aiFlags['potential_duplicate_of'] === null;
+            && !$exifFailed
+            && ($hasThunderstorm || ($aiFlags['ai_flagged'] === false && $aiFlags['potential_duplicate_of'] === null));
 
         $autoRejected = $aiFlags['ai_image_verified'] === false
-            && $aiFlags['potential_duplicate_of'] === null;
+            || $exifFailed;
 
         if ($autoVerified) {
             $report->update([
@@ -107,21 +119,29 @@ class ReportController extends Controller
             SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'verified']);
 
         } elseif ($autoRejected) {
+            $rejectReason = $exifFailed
+                ? 'Auto-rejected: Photo metadata indicates it may not be an original photo from this location.'
+                : 'Auto-rejected: No flood detected in submitted photo.';
+
             $report->update(['status' => 'rejected']);
 
             ReportStatusUpdate::create([
                 'report_id' => $report->id,
                 'user_id'   => null,
                 'status'    => 'rejected',
-                'notes'     => 'Auto-rejected: No flood detected in submitted photo.',
+                'notes'     => $rejectReason,
             ]);
+
+            $userMessage = $exifFailed
+                ? 'Your report could not be verified. The photo does not appear to be taken at the reported location.'
+                : 'Your report could not be verified. The photo does not show flooding.';
 
             $report->user->notify(new \App\Notifications\ReportStatusChanged($report, 'pending', 'rejected'));
 
             ExpoPushService::sendToUsers(
                 $report->user_id,
                 "Report {$report->reference_number} Not Verified",
-                'Your report could not be verified. The photo does not show flooding.',
+                $userMessage,
                 [
                     'type'     => 'status_update',
                     'reportId' => $report->id,
@@ -257,6 +277,18 @@ class ReportController extends Controller
             ]
         );
 
+        // Notify resident that a responder has been assigned
+        ExpoPushService::sendToUsers(
+            $report->user_id,
+            "Report {$report->reference_number} — Responder Assigned",
+            "A responder has been assigned to your report. Help is on the way.",
+            [
+                'type'     => 'status_update',
+                'reportId' => $report->id,
+                'status'   => 'assigned',
+            ]
+        );
+
         SocketService::toUser($data['responder_id'], 'new-notification', ['type' => 'incident_assigned', 'reportId' => $report->id]);
         SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'assigned']);
         SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'assigned']);
@@ -286,6 +318,17 @@ class ReportController extends Controller
             'verified',
             $request->user()->name,
         ));
+
+        ExpoPushService::sendToUsers(
+            $report->user_id,
+            "Report {$report->reference_number} Verified",
+            'Your flood report has been verified. Responders will be dispatched shortly.',
+            [
+                'type'     => 'status_update',
+                'reportId' => $report->id,
+                'status'   => 'verified',
+            ]
+        );
 
         SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'verified']);
         SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'verified']);
@@ -378,6 +421,17 @@ class ReportController extends Controller
             'rejected',
             $request->user()->name,
         ));
+
+        ExpoPushService::sendToUsers(
+            $report->user_id,
+            "Report {$report->reference_number} Not Verified",
+            $request->notes ?? 'Your report could not be verified.',
+            [
+                'type'     => 'status_update',
+                'reportId' => $report->id,
+                'status'   => 'rejected',
+            ]
+        );
 
         SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'rejected']);
         SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'rejected']);

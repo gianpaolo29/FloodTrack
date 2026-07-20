@@ -55,6 +55,8 @@ export interface Report {
     ai_flag_reason: string | null;
     ai_image_verified: boolean | null;
     ai_image_notes: string | null;
+    ai_exif_status: 'pass' | 'fail' | 'no_data' | null;
+    ai_exif_notes: string | null;
     potential_duplicate_of: number | null;
 }
 

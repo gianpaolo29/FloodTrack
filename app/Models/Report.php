@@ -27,6 +27,8 @@ class Report extends Model
         'ai_flag_reason',
         'ai_image_verified',
         'ai_image_notes',
+        'ai_exif_status',
+        'ai_exif_notes',
         'potential_duplicate_of',
     ];
 

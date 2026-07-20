@@ -4,6 +4,8 @@ import {
     ArrowLeft,
     Bot,
     Calendar,
+    Camera,
+    CameraOff,
     CheckCircle2,
     Clock,
     Copy,
@@ -644,7 +646,7 @@ export default function AdminReportShow({ report, responders }: Props) {
 /* ─── AI Analysis Panel ─── */
 
 function AiAnalysisPanel({ report }: { report: Report }) {
-    const { ai_flagged, ai_flag_reason, ai_image_verified, ai_image_notes, potential_duplicate_of } = report;
+    const { ai_flagged, ai_flag_reason, ai_image_verified, ai_image_notes, ai_exif_status, ai_exif_notes, potential_duplicate_of } = report;
 
     // Don't show if AI hasn't run (no flag, no image result)
     if (!ai_flagged && ai_image_verified === null) return null;
@@ -652,8 +654,11 @@ function AiAnalysisPanel({ report }: { report: Report }) {
     const isDuplicate  = potential_duplicate_of != null;
     const imageFailed  = ai_image_verified === false;
     const imageOk      = ai_image_verified === true;
-    const textFlagged  = ai_flagged && !isDuplicate && !imageFailed;
-    const allClear     = !ai_flagged && imageOk;
+    const exifPass     = ai_exif_status === 'pass';
+    const exifFail     = ai_exif_status === 'fail';
+    const exifNoData   = ai_exif_status === 'no_data';
+    const textFlagged  = ai_flagged && !isDuplicate && !imageFailed && !exifFail;
+    const allClear     = !ai_flagged && imageOk && !exifFail;
 
     return (
         <div className={`rounded-2xl border p-5 ${
@@ -699,6 +704,15 @@ function AiAnalysisPanel({ report }: { report: Report }) {
                 {isDuplicate && (
                     <AiBadge icon={<Copy className="size-3" />} label={`Possible duplicate of #${potential_duplicate_of}`} color="amber" />
                 )}
+                {exifPass && (
+                    <AiBadge icon={<Camera className="size-3" />} label="EXIF metadata verified" color="emerald" />
+                )}
+                {exifFail && (
+                    <AiBadge icon={<CameraOff className="size-3" />} label="EXIF check failed — possible internet photo" color="amber" />
+                )}
+                {exifNoData && (
+                    <AiBadge icon={<CameraOff className="size-3" />} label="No EXIF data — may be downloaded" color="amber" />
+                )}
                 {textFlagged && (
                     <AiBadge icon={<XCircle className="size-3" />} label="Suspicious content detected" color="amber" />
                 )}
@@ -710,6 +724,12 @@ function AiAnalysisPanel({ report }: { report: Report }) {
                     <div className="rounded-lg bg-white/60 px-3.5 py-2.5 dark:bg-black/20">
                         <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Image notes</p>
                         <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">{ai_image_notes}</p>
+                    </div>
+                )}
+                {ai_exif_notes && (
+                    <div className="rounded-lg bg-white/60 px-3.5 py-2.5 dark:bg-black/20">
+                        <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">EXIF metadata</p>
+                        <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">{ai_exif_notes}</p>
                     </div>
                 )}
                 {ai_flag_reason && (

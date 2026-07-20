@@ -7,6 +7,8 @@ use App\Models\Report;
 use App\Models\ReportStatusUpdate;
 use App\Models\User;
 use App\Notifications\ReportStatusChanged;
+use App\Services\ExpoPushService;
+use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -319,8 +321,41 @@ class ReportController extends Controller
     {
         $report->loadMissing('user');
 
-        if ($report->user) {
-            $report->user->notify(new ReportStatusChanged($report, $oldStatus, $newStatus, $changedBy));
+        if (!$report->user) {
+            return;
         }
+
+        // Database notification
+        $report->user->notify(new ReportStatusChanged($report, $oldStatus, $newStatus, $changedBy));
+
+        // Push notification
+        $titles = [
+            'verified' => "Report {$report->reference_number} Verified",
+            'rejected' => "Report {$report->reference_number} Not Verified",
+            'assigned' => "Report {$report->reference_number} — Responder Assigned",
+        ];
+
+        $bodies = [
+            'verified' => 'Your flood report has been verified. Responders will be dispatched shortly.',
+            'rejected' => 'Your report could not be verified.',
+            'assigned' => 'A responder has been assigned to your report. Help is on the way.',
+        ];
+
+        if (isset($titles[$newStatus])) {
+            ExpoPushService::sendToUsers(
+                $report->user_id,
+                $titles[$newStatus],
+                $bodies[$newStatus],
+                [
+                    'type'     => 'status_update',
+                    'reportId' => $report->id,
+                    'status'   => $newStatus,
+                ]
+            );
+        }
+
+        // Real-time socket
+        SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => $newStatus]);
+        SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => $newStatus]);
     }
 }
