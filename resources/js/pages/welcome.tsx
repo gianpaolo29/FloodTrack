@@ -8,7 +8,6 @@ import {
     CheckCircle2,
     ChevronDown,
     Droplets,
-    Layers,
     Map,
     MapPin,
     Navigation,
@@ -20,10 +19,39 @@ import {
     Sparkles,
     Users,
     Zap,
+    Building2,
+    Activity,
+    TrendingUp,
+    PhoneCall,
+    Home,
+    Truck,
+    Globe,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { dashboard, login, register } from '@/routes';
+
+/* ─── Types ─────────────────────────────────────────────────────────────── */
+
+interface WelcomeStats {
+    total_reports: number;
+    resolved_reports: number;
+    active_responders: number;
+    total_responders: number;
+    active_incidents: number;
+    evacuation_centers: number;
+}
+
+interface EvacuationCenterData {
+    id: number;
+    name: string;
+    address: string;
+    type: string;
+    capacity: number;
+    current_occupancy: number;
+    latitude: number;
+    longitude: number;
+}
 
 /* ─── Hooks ──────────────────────────────────────────────────────────────── */
 
@@ -175,7 +203,11 @@ function ParticleField() {
 
 /* ─── Page ───────────────────────────────────────────────────────────────── */
 
-export default function Welcome({ canRegister = true }: { canRegister?: boolean }) {
+export default function Welcome({ canRegister = true, stats, evacuationCenters = [] }: {
+    canRegister?: boolean;
+    stats?: WelcomeStats;
+    evacuationCenters?: EvacuationCenterData[];
+}) {
     const { auth } = usePage().props;
     const scrolled = useScrolled();
     const mouse = useMouse();
@@ -186,6 +218,9 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
     const [rolesRef, rolesIn]   = useInView();
     const [ctaRef, ctaIn]       = useInView();
     const [bentoRef, bentoIn]   = useInView();
+    const [evacRef, evacIn]     = useInView();
+
+    const [demoRef, demoIn]     = useInView();
 
     const [heroVis, setHeroVis] = useState(false);
     const [activeSev, setActiveSev] = useState<number | null>(null);
@@ -204,11 +239,6 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
         window.addEventListener('mousemove', handler, { passive: true });
         return () => window.removeEventListener('mousemove', handler);
     }, []);
-
-    const ani = useCallback((visible: boolean, delay = 0) =>
-        `transition-all duration-[800ms] ease-out ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`
-        + (delay ? ` [transition-delay:${delay}ms]` : ''),
-    []);
 
     return (
         <>
@@ -347,35 +377,52 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                         </div>
                     </section>
 
-                    {/* ── BENTO STATS ────────────────────────────────────── */}
-                    <section className="relative px-4 py-10 sm:px-6" ref={bentoRef}>
-                        <div className="mx-auto max-w-5xl">
-                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                                {([
-                                    { value: 4, suffix: '', label: 'Severity Levels', sub: 'Classification', icon: Layers, color: 'from-amber-500/10 to-orange-500/5', accent: 'text-amber-400' },
-                                    { value: 0, suffix: 'Real-time', label: 'Live Map', sub: 'GIS & Heatmap', icon: Map, color: 'from-cyan-500/10 to-blue-500/5', accent: 'text-cyan-400', isText: true },
-                                    { value: 0, suffix: 'Instant', label: 'Dispatch', sub: 'MDRRMO Response', icon: Zap, color: 'from-emerald-500/10 to-green-500/5', accent: 'text-emerald-400', isText: true },
-                                    { value: 0, suffix: 'Official', label: 'MDRRMO', sub: 'Verified Platform', icon: Shield, color: 'from-violet-500/10 to-purple-500/5', accent: 'text-violet-400', isText: true },
-                                ] as const).map((s, i) => {
-                                    const Icon = s.icon;
-                                    const count = useCountUp(s.value, bentoIn);
-                                    return (
-                                        <div
-                                            key={s.label}
-                                            className={`group relative overflow-hidden rounded-2xl border border-white/[0.04] bg-gradient-to-b ${s.color} p-6 transition-all duration-500 hover:border-white/[0.1] hover:-translate-y-1 hover:shadow-xl hover:shadow-black/20 ${bentoIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-                                            style={{ transitionDelay: `${i * 80}ms` }}
-                                        >
-                                            {/* Shimmer sweep */}
-                                            <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/[0.04] to-transparent skew-x-[-20deg]" />
-                                            <Icon className={`size-5 ${s.accent} mb-4 opacity-60 transition-all duration-500 group-hover:opacity-100 group-hover:scale-125 group-hover:rotate-12`} />
-                                            <p className="text-2xl font-bold tracking-tight text-white">
-                                                {('isText' in s && s.isText) ? s.suffix : `${count}${s.suffix}`}
-                                            </p>
-                                            <p className="mt-0.5 text-sm font-medium text-white/50">{s.label}</p>
-                                            <p className="text-[11px] text-white/20">{s.sub}</p>
-                                        </div>
-                                    );
-                                })}
+                    {/* ── LIVE STATS ──────────────────────────────────────── */}
+                    <section className="relative px-4 py-12 sm:px-6 sm:py-16" ref={bentoRef}>
+                        <div className="mx-auto max-w-6xl">
+                            {/* Glass container */}
+                            <div className={`relative overflow-hidden rounded-[28px] border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-white/[0.01] p-1 backdrop-blur-xl transition-all duration-[1000ms] ${bentoIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                                {/* Animated top border glow */}
+                                <div className="absolute inset-x-0 top-0 h-px animated-border" />
+
+                                <div className="grid grid-cols-2 sm:grid-cols-4 divide-white/[0.04] sm:divide-x">
+                                    {([
+                                        { value: stats?.total_reports ?? 0, label: 'Reports Filed', sub: 'Community submissions', icon: TrendingUp, accentColor: '#22d3ee', gradient: 'from-cyan-400 to-blue-500' },
+                                        { value: stats?.resolved_reports ?? 0, label: 'Resolved', sub: 'Hazards addressed', icon: CheckCircle2, accentColor: '#34d399', gradient: 'from-emerald-400 to-teal-500' },
+                                        { value: stats?.active_incidents ?? 0, label: 'Active Now', sub: 'Being monitored', icon: Activity, accentColor: '#fbbf24', gradient: 'from-amber-400 to-orange-500', pulse: true },
+                                        { value: stats?.evacuation_centers ?? 0, label: 'Evacuation Centers', sub: 'Ready & active', icon: Building2, accentColor: '#a78bfa', gradient: 'from-violet-400 to-purple-500' },
+                                    ] as const).map((s, i) => {
+                                        const Icon = s.icon;
+                                        const count = useCountUp(s.value, bentoIn);
+                                        return (
+                                            <div
+                                                key={s.label}
+                                                className={`group relative flex flex-col items-center justify-center px-4 py-8 text-center transition-all duration-500 sm:py-10 hover:bg-white/[0.02] ${bentoIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'} ${i < 2 ? 'border-b border-white/[0.04] sm:border-b-0' : ''} ${i % 2 === 0 ? 'border-r border-white/[0.04] sm:border-r-0' : ''}`}
+                                                style={{ transitionDelay: `${i * 100}ms` }}
+                                            >
+                                                {/* Hover glow */}
+                                                <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-700 group-hover:opacity-100"
+                                                    style={{ background: `radial-gradient(ellipse at 50% 0%, ${s.accentColor}0a, transparent 70%)` }}
+                                                />
+                                                <div className={`relative mb-4 inline-flex rounded-2xl bg-gradient-to-br ${s.gradient} p-3 shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:shadow-xl`}>
+                                                    <Icon className="size-5 text-white" />
+                                                    <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/25 to-transparent" />
+                                                </div>
+                                                <div className="relative flex items-center gap-1.5">
+                                                    <p className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">{count.toLocaleString()}</p>
+                                                    {'pulse' in s && s.pulse && s.value > 0 && (
+                                                        <span className="relative flex size-2">
+                                                            <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber-400 opacity-50" />
+                                                            <span className="relative inline-flex size-2 rounded-full bg-amber-400" />
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <p className="mt-1.5 text-[13px] font-semibold text-white/50">{s.label}</p>
+                                                <p className="mt-0.5 text-[11px] text-white/20">{s.sub}</p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -489,6 +536,34 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                         </div>
                     </section>
 
+                    {/* ── PHONE DEMO ────────────────────────────────────── */}
+                    <section className="relative px-4 py-16 sm:px-6 sm:py-32 overflow-hidden" ref={demoRef}>
+                        <GlowDivider />
+
+                        {/* Background orbs */}
+                        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                            <div className="absolute right-[-10%] top-[20%] w-[700px] h-[700px] rounded-full opacity-[0.06] blur-[140px]"
+                                style={{ background: 'conic-gradient(from 120deg, #8b5cf6, #3b82f6, #06b6d4, #8b5cf6)' }}
+                            />
+                            <div className="absolute left-[-10%] bottom-[10%] w-[500px] h-[500px] rounded-full opacity-[0.04] blur-[100px]"
+                                style={{ background: 'radial-gradient(circle, #06b6d4, transparent 70%)' }}
+                            />
+                        </div>
+
+                        <div className="relative mx-auto max-w-6xl">
+                            <SectionHead
+                                visible={demoIn}
+                                badge="See it in action"
+                                badgeIcon={<Smartphone className="size-3" />}
+                                badgeColor="border-blue-500/20 bg-blue-500/[0.06] text-blue-400"
+                                title={<>Report a hazard <Gradient>in seconds</Gradient></>}
+                                sub="Four taps from your phone to a verified report on the MDRRMO dashboard."
+                            />
+
+                            <PhoneDemo visible={demoIn} />
+                        </div>
+                    </section>
+
                     {/* ── SEVERITY ───────────────────────────────────────── */}
                     <section className="relative px-4 py-16 sm:px-6 sm:py-32" ref={sevRef}>
                         <GlowDivider />
@@ -576,10 +651,12 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
 
                             <div className="grid gap-4 sm:grid-cols-3">
                                 {([
-                                    { role: 'Residents',     emoji: '🏘️', grad: 'from-sky-500/40 to-blue-600/40', accent: 'bg-sky-500',    points: ['Report hazards with GPS + photos', 'Track your report status live', 'Receive official MDRRMO alerts', 'View all hazards on the map'] },
-                                    { role: 'Responders',    emoji: '🚒', grad: 'from-cyan-500/40 to-teal-600/40', accent: 'bg-cyan-500',   points: ['Receive assigned incident queue', 'Navigate directly to hazard', 'Update status en route / on scene', 'Upload field evidence'] },
-                                    { role: 'MDRRMO Admin',  emoji: '🛡️', grad: 'from-violet-500/40 to-indigo-600/40', accent: 'bg-violet-500', points: ['Verify & triage incoming reports', 'Assign responders from dashboard', 'Publish official public advisories', 'Monitor all active incidents'] },
-                                ] as const).map((r, i) => (
+                                    { role: 'Residents',     icon: Home, grad: 'from-sky-500 to-blue-600', accent: 'bg-sky-500', accentColor: '#38bdf8', points: ['Report hazards with GPS + photos', 'Track your report status live', 'Receive official MDRRMO alerts', 'View all hazards on the map'] },
+                                    { role: 'Responders',    icon: Truck, grad: 'from-cyan-500 to-teal-600', accent: 'bg-cyan-500', accentColor: '#06b6d4', points: ['Receive assigned incident queue', 'Navigate directly to hazard', 'Update status en route / on scene', 'Upload field evidence'] },
+                                    { role: 'MDRRMO Admin',  icon: Shield, grad: 'from-violet-500 to-indigo-600', accent: 'bg-violet-500', accentColor: '#a78bfa', points: ['Verify & triage incoming reports', 'Assign responders from dashboard', 'Publish official public advisories', 'Monitor all active incidents'] },
+                                ] as const).map((r, i) => {
+                                    const Icon = r.icon;
+                                    return (
                                     <div
                                         key={r.role}
                                         className={`group relative overflow-hidden rounded-[20px] border border-white/[0.04] bg-[#0a0e17] p-6 transition-all duration-500 sm:p-9 hover:border-white/[0.1] hover:-translate-y-3 hover:shadow-2xl hover:shadow-black/30 ${rolesIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
@@ -588,7 +665,15 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                         {/* Shimmer sweep */}
                                         <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1200ms] ease-in-out bg-gradient-to-r from-transparent via-white/[0.03] to-transparent skew-x-[-20deg]" />
 
-                                        <div className="mb-6 text-5xl drop-shadow-lg transition-transform duration-500 group-hover:scale-125 group-hover:-rotate-6 group-hover:drop-shadow-2xl">{r.emoji}</div>
+                                        {/* Top hover glow */}
+                                        <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full blur-[80px] opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+                                            style={{ backgroundColor: r.accentColor + '10' }}
+                                        />
+
+                                        <div className={`relative mb-6 inline-flex rounded-[22px] bg-gradient-to-br ${r.grad} p-4 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-2xl`}>
+                                            <Icon className="size-7 text-white transition-transform duration-500 group-hover:scale-110" />
+                                            <div className="absolute inset-[1px] rounded-[21px] bg-gradient-to-b from-white/20 to-transparent" />
+                                        </div>
                                         <h3 className="mb-1.5 text-xl font-bold text-white/90 transition-colors duration-300 group-hover:text-white">{r.role}</h3>
                                         <div className={`mb-6 h-[3px] w-10 rounded-full ${r.accent} opacity-50 transition-all duration-700 group-hover:w-24 group-hover:opacity-100`} />
                                         <ul className="space-y-3.5">
@@ -602,15 +687,139 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                                             ))}
                                         </ul>
 
-                                        {/* Corner gradient glow */}
-                                        <div className="pointer-events-none absolute -right-20 -top-20 size-60 rounded-full opacity-0 blur-[80px] transition-all duration-700 group-hover:opacity-100 group-hover:scale-110"
-                                            style={{ background: `linear-gradient(135deg, ${r.grad.includes('sky') ? 'rgba(14,165,233,0.1)' : r.grad.includes('cyan') ? 'rgba(6,182,212,0.1)' : 'rgba(139,92,246,0.1)'}, transparent)` }}
-                                        />
                                     </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     </section>
+
+                    {/* ── EVACUATION CENTERS MAP ─────────────────────────── */}
+                    {evacuationCenters.length > 0 && (
+                        <section className="relative px-4 py-16 sm:px-6 sm:py-32" ref={evacRef}>
+                            <GlowDivider />
+
+                            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                                <div className="absolute left-1/2 top-1/3 -translate-x-1/2 w-[1000px] h-[500px] rounded-full opacity-[0.05] blur-[140px]"
+                                    style={{ background: 'conic-gradient(from 240deg, #06b6d4, #22c55e, #06b6d4)' }}
+                                />
+                            </div>
+
+                            <div className="relative mx-auto max-w-6xl">
+                                <SectionHead
+                                    visible={evacIn}
+                                    badge="Safety"
+                                    badgeIcon={<Building2 className="size-3" />}
+                                    badgeColor="border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-400"
+                                    title={<>Evacuation centers <GradientAlt>near you</GradientAlt></>}
+                                    sub="Know where to go before disaster strikes. All centers are verified by MDRRMO."
+                                />
+
+                                <div className={`grid gap-5 lg:grid-cols-5 transition-all duration-[800ms] ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                                    {/* Map — glass frame */}
+                                    <div className="lg:col-span-3 relative group/map">
+                                        <div className="absolute -inset-px rounded-[24px] bg-gradient-to-b from-white/[0.08] via-white/[0.02] to-transparent opacity-0 transition-opacity duration-700 group-hover/map:opacity-100" />
+                                        <div className="relative overflow-hidden rounded-[24px] border border-white/[0.06] bg-[#080c14] shadow-2xl shadow-black/40">
+                                            {/* Map header bar */}
+                                            <div className="flex items-center gap-3 border-b border-white/[0.04] bg-white/[0.02] px-5 py-3">
+                                                <div className="flex gap-1.5">
+                                                    <div className="size-[10px] rounded-full bg-red-500/40" />
+                                                    <div className="size-[10px] rounded-full bg-amber-500/40" />
+                                                    <div className="size-[10px] rounded-full bg-emerald-500/40" />
+                                                </div>
+                                                <div className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-white/[0.03] px-3 py-1">
+                                                    <MapPin className="size-3 text-emerald-400/60" />
+                                                    <span className="text-[10px] font-medium text-white/25 tracking-wide">Nasugbu, Batangas</span>
+                                                </div>
+                                                <div className="w-[52px]" />
+                                            </div>
+                                            <EvacuationMap centers={evacuationCenters} />
+                                        </div>
+                                    </div>
+
+                                    {/* List — glass cards with capacity bars */}
+                                    <div className="lg:col-span-2 flex flex-col gap-2 max-h-[474px] overflow-y-auto pr-1 custom-scrollbar">
+                                        {evacuationCenters.map((center, i) => {
+                                            const ratio = center.capacity > 0 ? center.current_occupancy / center.capacity : 0;
+                                            const statusColor = ratio > 0.8 ? '#ef4444' : ratio > 0.5 ? '#eab308' : '#22c55e';
+                                            const statusLabel = ratio > 0.8 ? 'Near full' : ratio > 0.5 ? 'Moderate' : 'Available';
+                                            return (
+                                                <div
+                                                    key={center.id}
+                                                    className={`group relative overflow-hidden rounded-2xl border border-white/[0.04] bg-[#0a0e17] transition-all duration-500 hover:border-white/[0.1] hover:bg-white/[0.02] ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+                                                    style={{ transitionDelay: `${i * 60 + 200}ms` }}
+                                                >
+                                                    {/* Colored left accent */}
+                                                    <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl transition-all duration-500 opacity-0 group-hover:opacity-100"
+                                                        style={{ backgroundColor: statusColor }}
+                                                    />
+
+                                                    <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/[0.02] to-transparent skew-x-[-20deg]" />
+
+                                                    <div className="relative p-4">
+                                                        <div className="flex items-start gap-3">
+                                                            <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.04] transition-all duration-300 group-hover:bg-white/[0.06] group-hover:scale-105"
+                                                                style={{ color: statusColor }}
+                                                            >
+                                                                <Building2 className="size-4" />
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <h4 className="text-[13px] font-semibold text-white/80 truncate transition-colors duration-300 group-hover:text-white">{center.name}</h4>
+                                                                    <span className="shrink-0 text-[10px] font-bold rounded-md px-1.5 py-0.5 transition-colors duration-300"
+                                                                        style={{ backgroundColor: statusColor + '15', color: statusColor }}
+                                                                    >
+                                                                        {statusLabel}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="mt-0.5 text-[11px] text-white/25 truncate">{center.address}</p>
+
+                                                                {/* Capacity bar */}
+                                                                <div className="mt-3 flex items-center gap-2.5">
+                                                                    <div className="relative h-[5px] flex-1 rounded-full overflow-hidden bg-white/[0.04]">
+                                                                        <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
+                                                                            style={{ width: evacIn ? `${Math.min(ratio * 100, 100)}%` : '0%', backgroundColor: statusColor, boxShadow: `0 0 8px ${statusColor}40`, transitionDelay: `${i * 60 + 400}ms` }}
+                                                                        />
+                                                                    </div>
+                                                                    <span className="text-[10px] font-mono text-white/30 tabular-nums shrink-0">{center.current_occupancy}/{center.capacity}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Emergency contact strip — glass */}
+                                <div className={`mt-10 relative overflow-hidden rounded-2xl border border-white/[0.05] bg-white/[0.02] backdrop-blur-md transition-all duration-[800ms] delay-300 ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
+                                    <div className="flex flex-wrap items-center justify-center gap-8 px-6 py-5">
+                                        {([
+                                            { icon: PhoneCall, color: 'text-red-400', label: 'Emergency', value: '911', bg: 'bg-red-500/[0.06]' },
+                                            { icon: Shield, color: 'text-cyan-400', label: 'MDRRMO Nasugbu', value: '', bg: 'bg-cyan-500/[0.06]' },
+                                            { icon: Siren, color: 'text-amber-400', label: 'Red Cross', value: '143', bg: 'bg-amber-500/[0.06]' },
+                                        ] as const).map((c, i) => {
+                                            const Icon = c.icon;
+                                            return (
+                                                <div key={c.label} className="flex items-center gap-3">
+                                                    {i > 0 && <div className="hidden sm:block h-5 w-px bg-white/[0.05] -ml-4 mr-1" />}
+                                                    <div className={`flex size-8 items-center justify-center rounded-lg ${c.bg}`}>
+                                                        <Icon className={`size-3.5 ${c.color}`} />
+                                                    </div>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <span className="text-[13px] font-medium text-white/40">{c.label}</span>
+                                                        {c.value && <span className="text-[13px] font-bold text-white/70">{c.value}</span>}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        </section>
+                    )}
 
                     {/* ── CTA ────────────────────────────────────────────── */}
                     {!auth.user && canRegister && (
@@ -653,18 +862,63 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 </main>
 
                 {/* ── Footer ─────────────────────────────────────────── */}
-                <footer className="relative border-t border-white/[0.03] px-4 py-10 sm:px-6 sm:py-14">
+                <footer className="relative border-t border-white/[0.03] px-4 py-12 sm:px-6 sm:py-16">
                     <div className="absolute inset-x-0 top-0 h-px animated-border" />
-                    <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-5 sm:flex-row">
-                        <div className="flex items-center gap-3">
-                            <div className="logo-float flex size-9 items-center justify-center rounded-[12px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-lg shadow-blue-500/15">
-                                <AppLogoIcon className="size-[18px] fill-current text-white" />
+                    <div className="mx-auto max-w-7xl">
+                        <div className="grid gap-10 sm:grid-cols-3">
+                            {/* Brand */}
+                            <div>
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="flex size-9 items-center justify-center rounded-[12px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-lg shadow-blue-500/15">
+                                        <AppLogoIcon className="size-[18px] fill-current text-white" />
+                                    </div>
+                                    <span className="text-sm font-bold text-white/50">FloodTrack</span>
+                                </div>
+                                <p className="text-[13px] leading-relaxed text-white/20 max-w-[260px]">
+                                    Community-driven flood and hazard reporting for Nasugbu, Batangas. In partnership with MDRRMO.
+                                </p>
                             </div>
-                            <span className="text-sm font-semibold text-white/40">FloodTrack</span>
-                            <span className="text-white/[0.06]">|</span>
-                            <span className="text-sm text-white/20">MDRRMO Nasugbu, Batangas</span>
+
+                            {/* Quick links */}
+                            <div>
+                                <h4 className="text-[11px] font-bold tracking-[0.15em] uppercase text-white/25 mb-4">Quick Links</h4>
+                                <ul className="space-y-2.5">
+                                    {([
+                                        { label: 'Sign in', href: login() },
+                                        ...(canRegister ? [{ label: 'Create account', href: register() }] : []),
+                                    ]).map(l => (
+                                        <li key={l.label}>
+                                            <Link href={l.href} className="text-[13px] text-white/30 hover:text-white/60 transition-colors duration-200">{l.label}</Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            {/* Emergency */}
+                            <div>
+                                <h4 className="text-[11px] font-bold tracking-[0.15em] uppercase text-white/25 mb-4">Emergency</h4>
+                                <ul className="space-y-2.5">
+                                    <li className="flex items-center gap-2">
+                                        <PhoneCall className="size-3 text-red-400/50" />
+                                        <span className="text-[13px] text-white/30">Emergency: <span className="font-bold text-white/50">911</span></span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <Shield className="size-3 text-cyan-400/50" />
+                                        <span className="text-[13px] text-white/30">MDRRMO Nasugbu</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <Siren className="size-3 text-amber-400/50" />
+                                        <span className="text-[13px] text-white/30">Red Cross: <span className="font-bold text-white/50">143</span></span>
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
-                        <p className="text-sm text-white/15">&copy; {new Date().getFullYear()} FloodTrack. All rights reserved.</p>
+
+                        {/* Bottom bar */}
+                        <div className="mt-10 pt-6 border-t border-white/[0.03] flex flex-col items-center justify-between gap-3 sm:flex-row">
+                            <p className="text-[12px] text-white/15">&copy; {new Date().getFullYear()} FloodTrack. All rights reserved.</p>
+                            <p className="text-[12px] text-white/10">Built for the community of Nasugbu, Batangas</p>
+                        </div>
                     </div>
                 </footer>
             </div>
@@ -774,6 +1028,51 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                     100% { background-position: 200% 0; }
                 }
 
+                /* Phone float */
+                .phone-float {
+                    animation: phoneFloat 8s ease-in-out infinite;
+                }
+                @keyframes phoneFloat {
+                    0%, 100% { transform: rotateY(-4deg) rotateX(2deg) translateY(0); }
+                    50% { transform: rotateY(-4deg) rotateX(2deg) translateY(-10px); }
+                }
+
+                /* Pin bounce */
+                .phone-pin-bounce {
+                    animation: pinBounce 2s ease-in-out infinite;
+                }
+                @keyframes pinBounce {
+                    0%, 100% { transform: translateY(0); }
+                    50% { transform: translateY(-8px); }
+                }
+
+                /* Ping ring for map */
+                @keyframes pingRing {
+                    0% { transform: translate(-50%, -50%) scale(1); opacity: 0.4; }
+                    100% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+                }
+
+                /* Custom scrollbar */
+                .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+                /* Leaflet popup override */
+                .evac-popup .leaflet-popup-content-wrapper {
+                    background: #0f1420;
+                    color: #e2e8f0;
+                    border: 1px solid rgba(255,255,255,0.08);
+                    border-radius: 14px;
+                    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+                }
+                .evac-popup .leaflet-popup-tip { background: #0f1420; }
+                .evac-popup .leaflet-popup-close-button { color: rgba(255,255,255,0.3); }
+                .evac-popup .leaflet-popup-close-button:hover { color: white; }
+
+                /* Evacuation marker */
+                .custom-evac-marker { background: none !important; border: none !important; }
+
                 /* Water ripple effect */
                 .water-ripple::before {
                     content: '';
@@ -797,6 +1096,435 @@ export default function Welcome({ canRegister = true }: { canRegister?: boolean 
                 }
             `}</style>
         </>
+    );
+}
+
+/* ─── Phone Demo (synced phone + timeline) ─────────────────────────────── */
+
+const DEMO_STEPS = [
+    { icon: MapPin, gradient: 'from-sky-500 to-blue-600', color: '#38bdf8', title: 'Pin your location', desc: 'GPS auto-detects where you are. Drag the marker to fine-tune the exact position.' },
+    { icon: Camera, gradient: 'from-violet-500 to-indigo-600', color: '#a78bfa', title: 'Snap photo evidence', desc: 'Take a photo or pick from gallery. AI verifies it matches a real hazard scene.' },
+    { icon: AlertTriangle, gradient: 'from-amber-500 to-orange-600', color: '#fbbf24', title: 'Set severity level', desc: 'Choose from Low to Critical. Each level triggers different response priorities.' },
+    { icon: Zap, gradient: 'from-emerald-500 to-green-600', color: '#34d399', title: 'Submit & track', desc: 'Your report goes live instantly. Track verification and resolution in real time.' },
+] as const;
+
+function PhoneDemo({ visible }: { visible: boolean }) {
+    const [active, setActive] = useState(0);
+
+    useEffect(() => {
+        if (!visible) return;
+        const t = setInterval(() => setActive(p => (p + 1) % 4), 3500);
+        return () => clearInterval(t);
+    }, [visible]);
+
+    return (
+        <div className={`grid items-center gap-8 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_380px] transition-all duration-[800ms] ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            {/* Left — Timeline steps */}
+            <div className="relative order-2 lg:order-1">
+                {/* Vertical connector line */}
+                <div className="absolute left-[23px] top-8 bottom-8 hidden lg:block">
+                    <div className="h-full w-px bg-gradient-to-b from-white/[0.04] via-white/[0.06] to-white/[0.04]" />
+                    {/* Animated fill */}
+                    <div className="absolute top-0 left-0 w-px transition-all duration-700 ease-out rounded-full"
+                        style={{ height: `${(active / 3) * 100}%`, background: `linear-gradient(to bottom, ${DEMO_STEPS[0].color}60, ${DEMO_STEPS[active].color}80)` }}
+                    />
+                </div>
+
+                <div className="space-y-3 sm:space-y-4">
+                    {DEMO_STEPS.map((s, i) => {
+                        const Icon = s.icon;
+                        const isActive = active === i;
+                        const isPast = i < active;
+                        return (
+                            <button
+                                key={i}
+                                onClick={() => setActive(i)}
+                                className={`group relative flex w-full items-start gap-5 rounded-2xl border p-4 text-left transition-all duration-500 sm:p-5 ${
+                                    isActive
+                                        ? 'border-white/[0.08] bg-white/[0.03] scale-[1.02] shadow-xl shadow-black/20'
+                                        : 'border-transparent hover:border-white/[0.04] hover:bg-white/[0.01]'
+                                } ${visible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}
+                                style={{ transitionDelay: `${i * 100 + 200}ms` }}
+                            >
+                                {/* Active indicator glow */}
+                                {isActive && (
+                                    <div className="pointer-events-none absolute -inset-px rounded-2xl opacity-60"
+                                        style={{ background: `radial-gradient(ellipse at 0% 50%, ${s.color}08, transparent 60%)` }}
+                                    />
+                                )}
+
+                                {/* Icon node */}
+                                <div className={`relative z-10 flex size-[46px] shrink-0 items-center justify-center rounded-2xl transition-all duration-500 ${
+                                    isActive
+                                        ? `bg-gradient-to-br ${s.gradient} shadow-lg`
+                                        : isPast
+                                            ? 'bg-white/[0.06]'
+                                            : 'bg-white/[0.03]'
+                                }`} style={isActive ? { boxShadow: `0 8px 24px ${s.color}25` } : {}}>
+                                    {isActive && <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />}
+                                    <Icon className={`size-5 transition-all duration-500 ${isActive ? 'text-white scale-110' : isPast ? 'text-white/40' : 'text-white/20'}`} />
+                                    {/* Step number */}
+                                    <span className={`absolute -top-1 -right-1 flex size-[18px] items-center justify-center rounded-full text-[9px] font-bold transition-all duration-300 ${
+                                        isActive ? 'bg-white text-[#06090f] shadow-md' : isPast ? 'bg-white/10 text-white/40' : 'bg-white/[0.05] text-white/20'
+                                    }`}>{i + 1}</span>
+                                </div>
+
+                                {/* Text */}
+                                <div className="relative min-w-0 pt-0.5">
+                                    <h4 className={`text-[15px] font-semibold transition-colors duration-300 ${isActive ? 'text-white' : 'text-white/40'}`}>{s.title}</h4>
+                                    <p className={`mt-1 text-[13px] leading-relaxed font-[350] transition-all duration-500 overflow-hidden ${
+                                        isActive ? 'text-white/45 max-h-20 opacity-100' : 'text-white/20 max-h-0 sm:max-h-20 opacity-0 sm:opacity-100'
+                                    }`}>{s.desc}</p>
+                                </div>
+
+                                {/* Active arrow indicator */}
+                                <ArrowRight className={`hidden lg:block ml-auto mt-3 size-4 shrink-0 transition-all duration-300 ${isActive ? 'text-white/30 translate-x-0 opacity-100' : 'text-white/0 -translate-x-2 opacity-0'}`} />
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Right — Phone */}
+            <div className="relative order-1 lg:order-2 flex justify-center lg:justify-end" style={{ perspective: '1200px' }}>
+                <div className={`phone-float relative transition-all duration-[1200ms] ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}
+                    style={{ transform: visible ? 'rotateY(-4deg) rotateX(2deg)' : 'rotateY(-4deg) rotateX(2deg) translateY(40px)', transitionDelay: '300ms' }}
+                >
+                    {/* Ambient glow */}
+                    <div className="absolute -inset-12 rounded-[60px] opacity-50 blur-[80px] transition-colors duration-700"
+                        style={{ background: `radial-gradient(circle, ${DEMO_STEPS[active].color}12, transparent 70%)` }}
+                    />
+
+                    {/* Phone body */}
+                    <div className="relative w-[280px] sm:w-[300px]">
+                        {/* Side buttons */}
+                        <div className="absolute -left-[3px] top-[100px] h-8 w-[3px] rounded-l-sm bg-[#1a1f2e]" />
+                        <div className="absolute -left-[3px] top-[150px] h-14 w-[3px] rounded-l-sm bg-[#1a1f2e]" />
+                        <div className="absolute -left-[3px] top-[175px] h-14 w-[3px] rounded-l-sm bg-[#1a1f2e]" />
+                        <div className="absolute -right-[3px] top-[130px] h-16 w-[3px] rounded-r-sm bg-[#1a1f2e]" />
+
+                        {/* Frame */}
+                        <div className="relative rounded-[44px] bg-[#0c1019] p-[6px] shadow-[0_0_0_1px_rgba(255,255,255,0.06),0_30px_60px_-12px_rgba(0,0,0,0.7)]">
+                            {/* Edge highlight */}
+                            <div className="pointer-events-none absolute inset-0 rounded-[44px] bg-gradient-to-b from-white/[0.08] via-transparent to-white/[0.02] p-px">
+                                <div className="size-full rounded-[43px] bg-[#0c1019]" />
+                            </div>
+
+                            {/* Screen */}
+                            <div className="relative overflow-hidden rounded-[38px] bg-[#080c14]">
+                                {/* Dynamic Island */}
+                                <div className="absolute left-1/2 top-[10px] z-30 -translate-x-1/2 flex h-[28px] w-[100px] items-center justify-center rounded-full bg-black shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
+                                    <div className="mr-3 size-[8px] rounded-full bg-[#1a1f2e] ring-1 ring-white/[0.03]" />
+                                </div>
+
+                                {/* Status bar */}
+                                <div className="relative z-20 flex items-center justify-between px-7 pt-[14px] pb-1">
+                                    <span className="text-[11px] font-semibold text-white/40 tabular-nums">9:41</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <div className="flex gap-px">
+                                            <div className="h-[10px] w-[3px] rounded-[1px] bg-white/30" />
+                                            <div className="h-[10px] w-[3px] rounded-[1px] bg-white/30" />
+                                            <div className="h-[10px] w-[3px] rounded-[1px] bg-white/25" />
+                                            <div className="h-[10px] w-[3px] rounded-[1px] bg-white/15" />
+                                        </div>
+                                        <div className="h-[11px] w-[22px] rounded-[3px] border border-white/25 flex items-center p-[2px]">
+                                            <div className="h-full w-[65%] rounded-[1.5px] bg-emerald-400" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* App chrome */}
+                                <div className="relative z-20 mx-3 mb-2 mt-1 flex items-center gap-2.5 rounded-2xl bg-white/[0.03] px-3 py-2.5 border border-white/[0.04]">
+                                    <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 shadow-md">
+                                        <AppLogoIcon className="size-4 fill-current text-white" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-[12px] font-bold text-white/80 transition-all duration-300">{DEMO_STEPS[active].title}</p>
+                                        <p className="text-[9px] text-white/25 font-medium">Step {active + 1} of 4</p>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        {[0, 1, 2, 3].map(i => (
+                                            <div key={i} className={`h-[4px] rounded-full transition-all duration-500 ${i <= active ? 'w-3' : 'w-[4px]'}`}
+                                                style={{ backgroundColor: i <= active ? DEMO_STEPS[Math.min(i, 3)].color : 'rgba(255,255,255,0.06)' }}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Screen content */}
+                                <div className="relative h-[380px] sm:h-[410px]">
+                                    {/* Screen 0: Location */}
+                                    <div className={`absolute inset-0 transition-all duration-500 ${active === 0 ? 'opacity-100 translate-y-0' : active > 0 ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                                        <div className="relative h-full bg-[#070b12] overflow-hidden">
+                                            {/* Map grid */}
+                                            <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'linear-gradient(rgba(56,189,248,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,.06) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+                                            {/* Roads */}
+                                            <div className="absolute left-0 right-0 top-[45%] h-px bg-white/[0.06]" />
+                                            <div className="absolute top-0 bottom-0 left-[35%] w-px bg-white/[0.06]" />
+                                            <div className="absolute top-0 bottom-0 left-[70%] w-px bg-white/[0.04]" />
+                                            {/* Gradient fade */}
+                                            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#070b12]/90" />
+                                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,#070b12_100%)]" />
+                                            {/* Pin */}
+                                            <div className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                                                <div className="phone-pin-bounce">
+                                                    <MapPin className="size-9 text-red-500 fill-red-500 drop-shadow-[0_4px_12px_rgba(239,68,68,0.4)]" />
+                                                </div>
+                                                <div className="mt-0.5 h-[6px] w-5 rounded-full bg-red-500/15 blur-[3px]" />
+                                            </div>
+                                            {/* Ripple rings around pin */}
+                                            <div className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 size-20 rounded-full border border-sky-400/10 animate-[pingRing_3s_ease-out_infinite]" />
+                                            <div className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 size-20 rounded-full border border-sky-400/10 animate-[pingRing_3s_ease-out_infinite_1s]" />
+                                            {/* GPS bar */}
+                                            <div className="absolute bottom-4 left-3 right-3 flex items-center gap-2.5 rounded-2xl bg-[#0c1019]/90 px-4 py-3 backdrop-blur-xl border border-white/[0.06] shadow-xl">
+                                                <div className="flex size-7 items-center justify-center rounded-lg bg-sky-500/15">
+                                                    <Navigation className="size-3.5 text-sky-400" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[11px] font-semibold text-white/70">Nasugbu, Batangas</p>
+                                                    <p className="text-[9px] text-white/25 font-mono tabular-nums">14.0714, 120.6328</p>
+                                                </div>
+                                                <div className="flex size-6 items-center justify-center rounded-full bg-cyan-500/15">
+                                                    <CheckCircle2 className="size-3 text-cyan-400" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Screen 1: Evidence */}
+                                    <div className={`absolute inset-0 transition-all duration-500 ${active === 1 ? 'opacity-100 translate-y-0' : active > 1 ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                                        <div className="flex flex-col h-full p-3.5 gap-2.5">
+                                            <div className="grid grid-cols-2 gap-2 flex-1">
+                                                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-950/50 to-cyan-950/30 border border-white/[0.06] flex items-center justify-center">
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-sky-500/[0.03] to-transparent" />
+                                                    <div className="flex flex-col items-center gap-1.5">
+                                                        <Droplets className="size-8 text-cyan-400/30" />
+                                                        <span className="text-[9px] font-medium text-white/20">flood_01.jpg</span>
+                                                    </div>
+                                                    {/* Checkmark badge */}
+                                                    <div className="absolute top-2 right-2 flex size-5 items-center justify-center rounded-full bg-emerald-500/20">
+                                                        <CheckCircle2 className="size-3 text-emerald-400" />
+                                                    </div>
+                                                </div>
+                                                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-950/40 to-violet-950/20 border border-white/[0.06] flex items-center justify-center">
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.03] to-transparent" />
+                                                    <div className="flex flex-col items-center gap-1.5">
+                                                        <Droplets className="size-8 text-violet-400/30" />
+                                                        <span className="text-[9px] font-medium text-white/20">flood_02.jpg</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            {/* Upload area */}
+                                            <div className="flex items-center justify-center gap-2.5 rounded-2xl bg-white/[0.02] py-3.5 border border-dashed border-white/[0.06] transition-colors hover:border-white/[0.1]">
+                                                <div className="flex size-7 items-center justify-center rounded-lg bg-white/[0.04]">
+                                                    <Camera className="size-3.5 text-white/25" />
+                                                </div>
+                                                <span className="text-[11px] font-medium text-white/25">Add more photos</span>
+                                            </div>
+                                            {/* AI banner */}
+                                            <div className="flex items-center gap-2.5 rounded-2xl bg-emerald-500/[0.05] px-4 py-3 border border-emerald-500/[0.08]">
+                                                <div className="relative flex size-6 items-center justify-center">
+                                                    <Sparkles className="size-4 text-emerald-400" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-[11px] font-semibold text-emerald-400/80">AI Verified</p>
+                                                    <p className="text-[9px] text-emerald-400/40">Flood pattern detected with high confidence</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Screen 2: Severity */}
+                                    <div className={`absolute inset-0 transition-all duration-500 ${active === 2 ? 'opacity-100 translate-y-0' : active > 2 ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                                        <div className="flex flex-col h-full p-3.5 gap-2">
+                                            <p className="text-[11px] font-semibold text-white/30 px-1 mb-1">Select severity level</p>
+                                            {([
+                                                { level: 'Low', color: '#22c55e', sub: 'Passable, monitor only', selected: false },
+                                                { level: 'Moderate', color: '#eab308', sub: 'Caution, may worsen', selected: false },
+                                                { level: 'High', color: '#f97316', sub: 'Unsafe, prompt action', selected: true },
+                                                { level: 'Critical', color: '#ef4444', sub: 'Life-threatening', selected: false },
+                                            ] as const).map((s) => (
+                                                <div
+                                                    key={s.level}
+                                                    className={`flex items-center gap-3 rounded-2xl px-4 py-3 border transition-all duration-300 ${
+                                                        s.selected
+                                                            ? 'border-white/[0.1] bg-white/[0.04] shadow-lg'
+                                                            : 'border-white/[0.03] bg-white/[0.01]'
+                                                    }`}
+                                                >
+                                                    <div className={`relative size-4 rounded-full border-2 transition-all duration-300 ${s.selected ? 'border-transparent' : 'border-white/10'}`}
+                                                        style={s.selected ? { backgroundColor: s.color, boxShadow: `0 0 12px ${s.color}50` } : {}}
+                                                    >
+                                                        {!s.selected && <div className="absolute inset-1 rounded-full bg-white/[0.04]" />}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className={`text-[12px] font-semibold transition-colors ${s.selected ? 'text-white/85' : 'text-white/30'}`}>{s.level}</span>
+                                                        <p className={`text-[9px] ${s.selected ? 'text-white/30' : 'text-white/15'}`}>{s.sub}</p>
+                                                    </div>
+                                                    {s.selected && (
+                                                        <div className="flex size-5 items-center justify-center rounded-full" style={{ backgroundColor: s.color + '20' }}>
+                                                            <CheckCircle2 className="size-3" style={{ color: s.color }} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            {/* Description field */}
+                                            <div className="mt-1 flex-1 rounded-2xl bg-white/[0.02] border border-white/[0.04] p-3">
+                                                <p className="text-[10px] text-white/15 leading-relaxed">Road flooding near barangay hall. Water level approximately knee-deep...</p>
+                                                <div className="mt-2 h-px bg-white/[0.03] w-8 animate-pulse" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Screen 3: Success */}
+                                    <div className={`absolute inset-0 transition-all duration-500 ${active === 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                                        <div className="flex flex-col h-full items-center justify-center p-5 text-center">
+                                            {/* Success icon */}
+                                            <div className="relative mb-5">
+                                                <div className="flex size-20 items-center justify-center rounded-full bg-emerald-500/10 border border-emerald-500/15">
+                                                    <CheckCircle2 className="size-10 text-emerald-400" />
+                                                </div>
+                                                <div className="absolute inset-0 rounded-full animate-[pingRing_2s_ease-out_infinite] border-2 border-emerald-400/20" />
+                                            </div>
+
+                                            <p className="text-[16px] font-bold text-white/85">Report submitted!</p>
+                                            <div className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white/[0.04] px-3 py-1 border border-white/[0.05]">
+                                                <span className="text-[10px] text-white/30">Ref:</span>
+                                                <span className="text-[11px] font-mono font-bold text-cyan-400/70">FT-A7X2K9M1</span>
+                                            </div>
+
+                                            {/* Status timeline */}
+                                            <div className="w-full mt-6 space-y-0">
+                                                {([
+                                                    { label: 'Submitted', done: true },
+                                                    { label: 'Under MDRRMO review', done: true },
+                                                    { label: 'Responder dispatched', done: false },
+                                                    { label: 'Resolved', done: false },
+                                                ] as const).map((st, i) => (
+                                                    <div key={st.label} className="flex items-center gap-3 relative">
+                                                        {/* Connector */}
+                                                        {i > 0 && (
+                                                            <div className={`absolute left-[11px] -top-2 h-2 w-px ${st.done ? 'bg-emerald-500/30' : 'bg-white/[0.04]'}`} />
+                                                        )}
+                                                        <div className={`relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full ${st.done ? 'bg-emerald-500/15' : 'bg-white/[0.03]'}`}>
+                                                            {st.done ? <CheckCircle2 className="size-3.5 text-emerald-400" /> : <div className="size-1.5 rounded-full bg-white/[0.08]" />}
+                                                        </div>
+                                                        <span className={`text-[11px] py-2 ${st.done ? 'text-white/50 font-medium' : 'text-white/20'}`}>{st.label}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Bottom home bar */}
+                                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 h-[4px] w-[100px] rounded-full bg-white/[0.12]" />
+
+                                {/* Screen glass reflection */}
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* ─── Evacuation Map ────────────────────────────────────────────────────── */
+
+function EvacuationMap({ centers }: { centers: EvacuationCenterData[] }) {
+    const mapRef = useRef<HTMLDivElement>(null);
+    const mapInstance = useRef<any>(null);
+
+    useEffect(() => {
+        if (!mapRef.current || mapInstance.current || centers.length === 0) return;
+
+        // Dynamically import Leaflet to avoid SSR issues
+        const initMap = async () => {
+            const L = await import('leaflet');
+            await import('leaflet/dist/leaflet.css');
+
+            // Nasugbu, Batangas center coordinates
+            const nasugbuCenter: [number, number] = [14.0714, 120.6328];
+
+            // Find center from evacuation centers if available
+            const avgLat = centers.reduce((s, c) => s + Number(c.latitude), 0) / centers.length;
+            const avgLng = centers.reduce((s, c) => s + Number(c.longitude), 0) / centers.length;
+            const center: [number, number] = avgLat && avgLng ? [avgLat, avgLng] : nasugbuCenter;
+
+            const map = L.map(mapRef.current!, {
+                center,
+                zoom: 13,
+                zoomControl: false,
+                attributionControl: false,
+                scrollWheelZoom: false,
+            });
+
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            // Dark map tiles
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+            }).addTo(map);
+
+            // Custom marker icon
+            const createIcon = (occupancyRatio: number) => {
+                const color = occupancyRatio > 0.8 ? '#ef4444' : occupancyRatio > 0.5 ? '#eab308' : '#22c55e';
+                return L.divIcon({
+                    className: 'custom-evac-marker',
+                    html: `<div style="
+                        width: 32px; height: 32px;
+                        background: ${color}20;
+                        border: 2px solid ${color};
+                        border-radius: 50%;
+                        display: flex; align-items: center; justify-content: center;
+                        box-shadow: 0 0 12px ${color}40;
+                    ">
+                        <div style="width: 10px; height: 10px; background: ${color}; border-radius: 50%;"></div>
+                    </div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 16],
+                    popupAnchor: [0, -18],
+                });
+            };
+
+            centers.forEach((c) => {
+                const ratio = c.capacity > 0 ? c.current_occupancy / c.capacity : 0;
+                const marker = L.marker([Number(c.latitude), Number(c.longitude)], {
+                    icon: createIcon(ratio),
+                }).addTo(map);
+
+                const status = ratio > 0.8 ? 'Near Full' : ratio > 0.5 ? 'Moderate' : 'Available';
+                const statusColor = ratio > 0.8 ? '#ef4444' : ratio > 0.5 ? '#eab308' : '#22c55e';
+
+                marker.bindPopup(`
+                    <div style="font-family: system-ui; min-width: 180px;">
+                        <div style="font-weight: 700; font-size: 13px; margin-bottom: 4px;">${c.name}</div>
+                        <div style="font-size: 11px; color: #888; margin-bottom: 8px;">${c.address}</div>
+                        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                            <span style="color: ${statusColor}; font-weight: 600;">${status}</span>
+                            <span style="color: #666;">${c.current_occupancy}/${c.capacity}</span>
+                        </div>
+                    </div>
+                `, { className: 'evac-popup' });
+            });
+
+            mapInstance.current = map;
+        };
+
+        initMap();
+
+        return () => {
+            if (mapInstance.current) {
+                mapInstance.current.remove();
+                mapInstance.current = null;
+            }
+        };
+    }, [centers]);
+
+    return (
+        <div ref={mapRef} className="h-[420px] w-full" style={{ background: '#0a0e17' }} />
     );
 }
 
