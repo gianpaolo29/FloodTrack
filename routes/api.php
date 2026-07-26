@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\EvacuationCenterController;
 use App\Http\Controllers\Api\ProtocolController;
 use App\Http\Controllers\Api\AdminStatsController;
 use App\Http\Controllers\Api\UserNotificationController;
+use App\Http\Controllers\Api\EmailOtpController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,6 +29,8 @@ Route::post('/register',       [AuthController::class, 'register']);
 Route::post('/login',          [AuthController::class, 'login']);
 Route::post('/check-email',    [AuthController::class, 'checkEmail']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/email/send-otp',   [EmailOtpController::class, 'send']);
+Route::post('/email/verify-otp', [EmailOtpController::class, 'verify']);
 
 // ── Authenticated (all roles) ───────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
