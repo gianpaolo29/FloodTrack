@@ -298,20 +298,18 @@ export default function AdminWeather({ current, daily_forecast, hourly_forecast,
                     <div className="px-5 py-3 border-b border-neutral-100 dark:border-neutral-800">
                         <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest dark:text-neutral-400">Hourly Forecast</span>
                     </div>
-                    <div className="overflow-x-auto">
-                        <div className="flex min-w-max">
-                            {hourly_forecast.map((h, i) => (
-                                <div key={i} className="flex flex-col items-center gap-1 px-4 py-3 min-w-[72px] border-r border-neutral-100/60 last:border-r-0 hover:bg-neutral-50/50 transition-colors cursor-default dark:border-neutral-800/60 dark:hover:bg-neutral-800/30">
-                                    <span className="text-[9px] text-neutral-400 font-medium">{fmtHour(h.dt)}</span>
-                                    <img src={iconUrl(h.icon)} alt={h.description} className="size-7 opacity-80" />
-                                    <span className="text-xs font-bold text-neutral-900 tabular-nums dark:text-white">{h.temperature}°</span>
-                                    <div className="flex items-center gap-0.5 text-[9px] text-sky-500">
-                                        <Droplets className="size-2" />
-                                        <span>{h.pop}%</span>
-                                    </div>
+                    <div className="flex">
+                        {hourly_forecast.map((h, i) => (
+                            <div key={i} className="flex flex-1 flex-col items-center gap-1 px-1 py-3 border-r border-neutral-100/60 last:border-r-0 hover:bg-neutral-50/50 transition-colors cursor-default dark:border-neutral-800/60 dark:hover:bg-neutral-800/30">
+                                <span className="text-[9px] text-neutral-400 font-medium">{fmtHour(h.dt)}</span>
+                                <img src={iconUrl(h.icon)} alt={h.description} className="size-7 opacity-80" />
+                                <span className="text-xs font-bold text-neutral-900 tabular-nums dark:text-white">{h.temperature}°</span>
+                                <div className="flex items-center gap-0.5 text-[9px] text-sky-500">
+                                    <Droplets className="size-2" />
+                                    <span>{h.pop}%</span>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
 

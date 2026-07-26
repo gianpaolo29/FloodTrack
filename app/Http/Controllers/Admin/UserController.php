@@ -37,13 +37,17 @@ class UserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'           => 'required|string|max:255',
+            'name'           => 'required|string|max:255|unique:users,name',
             'email'          => 'required|email|unique:users,email',
             'password'       => ['required', Password::defaults()],
-            'contact_number' => 'nullable|string|max:20',
+            'contact_number' => ['nullable', 'regex:/^09\d{9}$/', 'unique:users,contact_number'],
             'home_address'   => 'nullable|string|max:500',
             'home_latitude'  => 'nullable|numeric|between:-90,90',
             'home_longitude' => 'nullable|numeric|between:-180,180',
+        ], [
+            'name.unique'           => 'A user with this name already exists.',
+            'contact_number.regex'  => 'Contact number must start with 09 followed by 9 digits.',
+            'contact_number.unique' => 'This contact number is already in use.',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
@@ -65,13 +69,17 @@ class UserController extends Controller
         }
 
         $validated = $request->validate([
-            'name'           => 'required|string|max:255',
+            'name'           => "required|string|max:255|unique:users,name,{$user->id}",
             'email'          => "required|email|unique:users,email,{$user->id}",
-            'contact_number' => 'nullable|string|max:20',
+            'contact_number' => ['nullable', 'regex:/^09\d{9}$/', "unique:users,contact_number,{$user->id}"],
             'password'       => ['nullable', Password::defaults()],
             'home_address'   => 'nullable|string|max:500',
             'home_latitude'  => 'nullable|numeric|between:-90,90',
             'home_longitude' => 'nullable|numeric|between:-180,180',
+        ], [
+            'name.unique'           => 'A user with this name already exists.',
+            'contact_number.regex'  => 'Contact number must start with 09 followed by 9 digits.',
+            'contact_number.unique' => 'This contact number is already in use.',
         ]);
 
         if (!empty($validated['password'])) {

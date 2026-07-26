@@ -19,6 +19,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'team_id',
         'contact_number',
         'avatar',
         'is_on_duty',
@@ -53,6 +54,11 @@ class User extends Authenticatable
             'is_on_duty' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
         ];
+    }
+
+    public function team()
+    {
+        return $this->belongsTo(Team::class);
     }
 
     public function reports()

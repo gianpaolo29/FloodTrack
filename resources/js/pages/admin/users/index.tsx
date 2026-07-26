@@ -6,6 +6,8 @@ import {
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    Eye,
+    EyeOff,
     MapPin,
     Pencil,
     Plus,
@@ -336,9 +338,13 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                         {/* Resident */}
                                         <td className="px-5 py-4">
                                             <div className="flex items-center gap-3">
-                                                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-sm font-bold text-white shadow-sm">
-                                                    {user.name.charAt(0).toUpperCase()}
-                                                </div>
+                                                {user.avatar_url ? (
+                                                    <img src={user.avatar_url} alt={user.name} className="size-9 shrink-0 rounded-full object-cover shadow-sm" />
+                                                ) : (
+                                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-sm font-bold text-white shadow-sm">
+                                                        {user.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
                                                 <div className="min-w-0">
                                                     <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{user.name}</p>
                                                     <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{user.email}</p>
@@ -507,17 +513,31 @@ function UserFormModal({
     onClose: () => void;
 }) {
     const isEdit = !!user;
+    const [showPassword, setShowPassword] = useState(false);
 
     const form = useForm({
         name:           user?.name           ?? '',
         email:          user?.email          ?? '',
         role:           'resident',
-        contact_number: user?.contact_number ?? '',
+        contact_number: user?.contact_number ?? '09',
         password:       '',
         home_address:   user?.home_address   ?? '',
         home_latitude:  user?.home_latitude?.toString()  ?? '',
         home_longitude: user?.home_longitude?.toString() ?? '',
     });
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const digits = e.target.value.replace(/\D/g, '');
+        const val = (digits.startsWith('09') ? digits : '09').slice(0, 11);
+        form.setData('contact_number', val);
+    };
+
+    const handlePhoneKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        const input = e.currentTarget;
+        if (e.key === 'Backspace' && (input.selectionStart ?? 0) <= 2 && (input.selectionEnd ?? 0) <= 2) {
+            e.preventDefault();
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -607,21 +627,35 @@ function UserFormModal({
                         <FormField label="Contact Number" error={form.errors.contact_number}>
                             <input
                                 type="text"
+                                inputMode="numeric"
                                 value={form.data.contact_number}
-                                onChange={(e) => form.setData('contact_number', e.target.value)}
+                                onChange={handlePhoneChange}
+                                onKeyDown={handlePhoneKeyDown}
+                                onFocus={(e) => { if (!e.target.value) form.setData('contact_number', '09'); }}
                                 className={inputClassName}
-                                placeholder="+63 917 123 4567"
+                                placeholder="09XXXXXXXXX"
+                                maxLength={11}
                             />
                         </FormField>
                         <FormField label={isEdit ? 'New Password' : 'Password'} error={form.errors.password}>
-                            <input
-                                type="password"
-                                value={form.data.password}
-                                onChange={(e) => form.setData('password', e.target.value)}
-                                className={inputClassName}
-                                placeholder={isEdit ? 'Leave blank to keep' : 'Min 8 characters'}
-                                required={!isEdit}
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={form.data.password}
+                                    onChange={(e) => form.setData('password', e.target.value)}
+                                    className={inputClassName + ' pr-10'}
+                                    placeholder={isEdit ? 'Leave blank to keep' : 'Min 8 characters'}
+                                    required={!isEdit}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((v) => !v)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                </button>
+                            </div>
                         </FormField>
                     </div>
 

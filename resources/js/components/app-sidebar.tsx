@@ -13,6 +13,7 @@ import {
     ShieldAlert,
     ShieldCheck,
     Users,
+    UsersRound,
 } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
@@ -96,6 +97,11 @@ const managementItems: NavItem[] = [
         href: '/admin/responders',
         icon: ShieldCheck,
     },
+    {
+        title: 'Teams',
+        href: '/admin/teams',
+        icon: UsersRound,
+    },
 ];
 
 const analyticsItems: NavItem[] = [
@@ -126,10 +132,10 @@ export function AppSidebar() {
     return (
         <Sidebar collapsible="icon" variant="sidebar">
             {/* Logo */}
-            <SidebarHeader className="p-2">
+            <SidebarHeader className="p-2 pb-2.5">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild className="hover:bg-sidebar-foreground/5 rounded-xl group-data-[collapsible=icon]:justify-center">
+                        <SidebarMenuButton size="lg" asChild className="rounded-xl transition-all duration-200 hover:bg-sidebar-foreground/[0.04] hover:shadow-sm active:scale-[0.97] group-data-[collapsible=icon]:justify-center">
                             <Link href={isAdmin ? '/admin' : dashboard()} prefetch>
                                 <AppLogo />
                             </Link>

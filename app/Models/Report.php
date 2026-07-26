@@ -20,6 +20,7 @@ class Report extends Model
         'longitude',
         'address',
         'assigned_to',
+        'assigned_team_id',
         'verified_by',
         'verified_at',
         'resolved_at',
@@ -59,6 +60,11 @@ class Report extends Model
     public function assignedResponder()
     {
         return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    public function assignedTeam()
+    {
+        return $this->belongsTo(Team::class, 'assigned_team_id');
     }
 
     public function verifier()

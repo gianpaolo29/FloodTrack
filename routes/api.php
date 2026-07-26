@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ResponderStatsController;
 use App\Http\Controllers\Api\IncidentMessageController;
 use App\Http\Controllers\Api\FieldReportController;
+use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\WeatherController;
 use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\EvacuationCenterController;
@@ -106,6 +107,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/stats', [ResponderStatsController::class, 'index']);
         Route::get('/reports/{report}/field-report', [FieldReportController::class, 'show']);
         Route::post('/reports/{report}/field-report', [FieldReportController::class, 'store']);
+
+        // Team
+        Route::get('/team',                                   [TeamController::class, 'myTeam']);
+        Route::get('/reports/{report}/member-statuses',       [TeamController::class, 'memberStatuses']);
+        Route::patch('/reports/{report}/member-status',       [TeamController::class, 'submitMemberStatus']);
+        Route::patch('/reports/{report}/confirm-status',      [TeamController::class, 'confirmTeamStatus']);
     });
 
     // ── Admin only ───────────────────────────────────────────────────────

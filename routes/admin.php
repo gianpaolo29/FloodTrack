@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ResponderController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\StatisticsController;
+use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\WeatherController;
 use Illuminate\Support\Facades\Route;
@@ -79,6 +80,14 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         Route::post('/', [ResponderController::class, 'store'])->name('store');
     });
 
+    // Teams
+    Route::prefix('teams')->name('teams.')->group(function () {
+        Route::get('/',          [TeamController::class, 'index'])->name('index');
+        Route::post('/',         [TeamController::class, 'store'])->name('store');
+        Route::put('/{team}',    [TeamController::class, 'update'])->name('update');
+        Route::delete('/{team}', [TeamController::class, 'destroy'])->name('destroy');
+    });
+
     // Weather
     Route::get('/weather', [WeatherController::class, 'index'])->name('weather.index');
 
@@ -89,6 +98,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     // Export
     Route::get('/export',          [ExportController::class, 'index'])->name('export.index');
     Route::get('/export/download', [ExportController::class, 'download'])->name('export.download');
+    Route::get('/export/pdf',      [ExportController::class, 'pdf'])->name('export.pdf');
 
     // Activity Log
     Route::get('/activity', [ActivityController::class, 'index'])->name('activity.index');
@@ -113,4 +123,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         Route::post('/{id}/read',        [NotificationController::class, 'markAsRead'])->name('read');
         Route::post('/mark-all-read',    [NotificationController::class, 'markAllAsRead'])->name('read-all');
     });
+
+    // Global search
+    Route::get('/search', \App\Http\Controllers\Admin\SearchController::class)->name('search');
 });

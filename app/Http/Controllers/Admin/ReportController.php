@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Report;
+use App\Models\ReportResponder;
 use App\Models\ReportStatusUpdate;
-use App\Models\User;
+use App\Models\Team;
 use App\Notifications\ReportStatusChanged;
 use App\Services\ExpoPushService;
 use App\Services\SocketService;
@@ -41,9 +42,16 @@ class ReportController extends Controller
             ->latest()
             ->get();
 
+        $evacuationCenters = \App\Models\EvacuationCenter::where('is_active', true)
+            ->select(['id', 'name', 'address', 'type', 'capacity', 'current_occupancy', 'latitude', 'longitude'])
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get();
+
         return Inertia::render('admin/reports/map', [
-            'reports' => $reports,
-            'filters' => $request->only(['status', 'severity', 'date_from', 'date_to']),
+            'reports'            => $reports,
+            'filters'            => $request->only(['status', 'severity', 'date_from', 'date_to']),
+            'evacuation_centers' => $evacuationCenters,
         ]);
     }
 
@@ -68,24 +76,47 @@ class ReportController extends Controller
         ];
 
         return Inertia::render('admin/reports/index', [
-            'reports'    => $reports,
-            'responders' => User::where('role', 'responder')->get(['id', 'name']),
-            'filters'    => $request->only(['status', 'severity', 'search']),
-            'stats'      => $stats,
+            'reports' => $reports,
+            'filters' => $request->only(['status', 'severity', 'search']),
+            'stats'   => $stats,
         ]);
     }
 
     public function show(Report $report): Response
     {
+        $report->load([
+            'user:id,name,email,contact_number',
+            'media',
+            'statusUpdates.user:id,name,role',
+            'assignedResponder:id,name,contact_number',
+            'assignedTeam:id,name,leader_id',
+            'verifier:id,name',
+            'responderUsers',
+        ]);
+
+        // Build member_statuses from the pivot rows
+        $memberStatuses = $report->responderUsers->map(fn ($u) => [
+            'user_id'    => $u->id,
+            'user_name'  => $u->name,
+            'avatar_url' => $u->avatar_url,
+            'status'     => $u->pivot->status,
+            'updated_at' => $u->pivot->updated_at,
+        ]);
+
+        // Build team_members with is_leader flag
+        $teamMembers = $report->responderUsers->map(fn ($u) => [
+            'id'         => $u->id,
+            'name'       => $u->name,
+            'avatar_url' => $u->avatar_url,
+            'is_leader'  => $report->assignedTeam && $report->assignedTeam->leader_id === $u->id,
+        ]);
+
         return Inertia::render('admin/reports/show', [
-            'report'     => $report->load([
-                'user:id,name,email,contact_number',
-                'media',
-                'statusUpdates.user:id,name,role',
-                'assignedResponder:id,name,contact_number',
-                'verifier:id,name',
+            'report' => array_merge($report->toArray(), [
+                'team_members'    => $teamMembers,
+                'member_statuses' => $memberStatuses,
             ]),
-            'responders' => User::where('role', 'responder')->get(['id', 'name']),
+            'teams'  => Team::with('members:id,name,team_id')->get(['id', 'name', 'leader_id']),
         ]);
     }
 
@@ -263,29 +294,43 @@ class ReportController extends Controller
     public function assign(Report $report, Request $request): RedirectResponse
     {
         $request->validate([
-            'responder_id' => 'required|exists:users,id',
+            'team_id' => 'required|exists:teams,id',
         ]);
 
         $oldStatus = $report->status;
-        $responder = User::findOrFail($request->responder_id);
+        $team      = Team::with('members:id,name')->findOrFail($request->team_id);
 
         $report->update([
-            'assigned_to' => $responder->id,
-            'status'      => 'assigned',
+            'assigned_team_id' => $team->id,
+            'assigned_to'      => $team->leader_id,
+            'status'           => 'assigned',
         ]);
+
+        // Upsert each team member into report_responders
+        foreach ($team->members as $member) {
+            ReportResponder::updateOrCreate(
+                ['report_id' => $report->id, 'user_id' => $member->id],
+                [
+                    'role'   => $member->id === $team->leader_id ? 'lead' : 'support',
+                    'status' => 'pending',
+                ]
+            );
+        }
 
         ReportStatusUpdate::create([
             'report_id' => $report->id,
             'user_id'   => $request->user()->id,
             'status'    => 'assigned',
-            'notes'     => "Assigned to {$responder->name}.",
+            'notes'     => "Assigned to team \"{$team->name}\".",
         ]);
 
-        // Notify the assigned responder
-        $responder->notify(new ReportStatusChanged($report, $oldStatus, 'assigned', $request->user()->name));
+        foreach ($team->members as $member) {
+            $member->notify(new ReportStatusChanged($report, $oldStatus, 'assigned', $request->user()->name));
+        }
+
         $this->notifyStatusChange($report, $oldStatus, 'assigned', $request->user()->name);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => "Assigned to {$responder->name}."]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Assigned to team \"{$team->name}\"."]);
 
         return back();
     }

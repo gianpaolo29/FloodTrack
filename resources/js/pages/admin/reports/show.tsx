@@ -25,6 +25,7 @@ import {
     Trash2,
     User,
     UserCheck,
+    Users,
     Video,
     X,
     XCircle,
@@ -33,12 +34,12 @@ import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
-import type { Report, ReportStatus, Responder, Severity } from '@/types/admin';
-import { SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
+import type { MemberStatus, Report, ReportStatus, ResponderStatus, Severity, Team } from '@/types/admin';
+import { RESPONDER_STATUS_COLORS, RESPONDER_STATUS_LABELS, SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
 
 interface Props {
     report: Report;
-    responders: Responder[];
+    teams: Team[];
 }
 
 const SEVERITY_OPTIONS = ['low', 'moderate', 'high', 'critical'] as const;
@@ -53,7 +54,7 @@ const STATUS_FLOW: { status: ReportStatus; label: string; color: string }[] = [
     { status: 'resolved', label: 'Resolved', color: 'emerald' },
 ];
 
-export default function AdminReportShow({ report, responders }: Props) {
+export default function AdminReportShow({ report, teams }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Admin', href: '/admin' },
         { title: 'Reports', href: '/admin/reports' },
@@ -65,7 +66,7 @@ export default function AdminReportShow({ report, responders }: Props) {
 
     const verifyForm  = useForm({});
     const rejectForm  = useForm({ notes: '' });
-    const assignForm  = useForm({ responder_id: '' });
+    const assignForm  = useForm({ team_id: '' });
     const reopenForm  = useForm({});
     const editForm    = useForm({
         severity: report.severity,
@@ -508,14 +509,54 @@ export default function AdminReportShow({ report, responders }: Props) {
                             </div>
                         </div>
 
-                        {/* Assigned responder */}
+                        {/* Assigned team / responder */}
                         <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                             <div className="flex items-center gap-2 border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
-                                <ShieldCheck className="size-4 text-neutral-500" />
-                                <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Responder</h3>
+                                <Users className="size-4 text-neutral-500" />
+                                <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Assigned Team</h3>
+                                {report.assigned_team && (
+                                    <span className="ml-auto inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700 ring-1 ring-indigo-600/10 dark:bg-indigo-950/40 dark:text-indigo-300">
+                                        {report.assigned_team.name}
+                                    </span>
+                                )}
                             </div>
                             <div className="p-5">
-                                {report.assigned_responder ? (
+                                {report.team_members && report.team_members.length > 0 ? (
+                                    <div className="flex flex-col gap-3">
+                                        {/* Team readiness summary */}
+                                        <TeamReadinessSummary
+                                            members={report.team_members}
+                                            memberStatuses={report.member_statuses ?? []}
+                                        />
+                                        {/* Member list */}
+                                        <div className="flex flex-col divide-y divide-neutral-100 rounded-xl border border-neutral-100 dark:divide-neutral-800 dark:border-neutral-800">
+                                            {report.team_members.map((m) => {
+                                                const ms = report.member_statuses?.find(s => s.user_id === m.id);
+                                                const status: ResponderStatus = ms?.status ?? 'pending';
+                                                return (
+                                                    <div key={m.id} className="flex items-center gap-3 px-4 py-2.5">
+                                                        <div className={`relative flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white shadow-sm ${m.is_leader ? 'bg-gradient-to-br from-indigo-500 to-purple-600' : 'bg-gradient-to-br from-neutral-400 to-neutral-500'}`}>
+                                                            {m.name.charAt(0).toUpperCase()}
+                                                            {m.is_leader && (
+                                                                <span className="absolute -bottom-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-amber-400 text-[8px] font-bold text-white ring-1 ring-white">★</span>
+                                                            )}
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="truncate text-xs font-semibold text-neutral-900 dark:text-neutral-100">
+                                                                {m.name}
+                                                                {m.is_leader && <span className="ml-1.5 text-[10px] font-normal text-indigo-500">Leader</span>}
+                                                            </p>
+                                                        </div>
+                                                        <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${RESPONDER_STATUS_COLORS[status]}`}>
+                                                            {RESPONDER_STATUS_LABELS[status]}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                ) : report.assigned_responder ? (
+                                    /* Legacy single-responder fallback */
                                     <div className="flex items-center gap-3">
                                         <div className="flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-sm font-bold text-white shadow-sm">
                                             {report.assigned_responder.name.charAt(0).toUpperCase()}
@@ -530,9 +571,9 @@ export default function AdminReportShow({ report, responders }: Props) {
                                 ) : (
                                     <div className="flex flex-col items-center gap-2 py-3">
                                         <div className="flex size-10 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
-                                            <ShieldCheck className="size-5 text-neutral-400 dark:text-neutral-500" />
+                                            <Users className="size-5 text-neutral-400 dark:text-neutral-500" />
                                         </div>
-                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">Not yet assigned</p>
+                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">No team assigned yet</p>
                                     </div>
                                 )}
                             </div>
@@ -560,21 +601,28 @@ export default function AdminReportShow({ report, responders }: Props) {
 
                                 {(canAssign || report.status === 'assigned') && (
                                     <form
-                                        onSubmit={(e) => { e.preventDefault(); assignForm.post(`/admin/reports/${report.id}/assign`, { onSuccess: () => swalSuccess('Assigned', 'Responder has been assigned.') }); }}
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            assignForm.post(`/admin/reports/${report.id}/assign`, {
+                                                onSuccess: () => swalSuccess('Assigned', 'Team has been assigned.'),
+                                            });
+                                        }}
                                         className="flex flex-col gap-3"
                                     >
                                         <label className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
-                                            {report.assigned_responder ? 'Reassign responder' : 'Assign to responder'}
+                                            {report.assigned_team ? 'Reassign team' : 'Assign team'}
                                         </label>
                                         <select
-                                            value={assignForm.data.responder_id}
-                                            onChange={(e) => assignForm.setData('responder_id', e.target.value)}
+                                            value={assignForm.data.team_id}
+                                            onChange={(e) => assignForm.setData('team_id', e.target.value)}
                                             className={inputClass}
                                             required
                                         >
-                                            <option value="">Select responder...</option>
-                                            {responders.map((r) => (
-                                                <option key={r.id} value={r.id}>{r.name}</option>
+                                            <option value="">Select team...</option>
+                                            {teams.map((t) => (
+                                                <option key={t.id} value={t.id}>
+                                                    {t.name} ({t.members.length} members)
+                                                </option>
                                             ))}
                                         </select>
                                         <button
@@ -583,7 +631,7 @@ export default function AdminReportShow({ report, responders }: Props) {
                                             className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition-all hover:bg-neutral-50 hover:shadow-md disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                                         >
                                             <UserCheck className="size-4" />
-                                            {report.assigned_responder ? 'Reassign' : 'Assign'}
+                                            {report.assigned_team ? 'Reassign' : 'Assign'}
                                         </button>
                                     </form>
                                 )}
@@ -768,6 +816,40 @@ function DetailRow({ icon: Icon, label, children }: { icon: typeof Clock; label:
             <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{label}</p>
                 <div className="mt-0.5">{children}</div>
+            </div>
+        </div>
+    );
+}
+
+/* ─── Team Readiness Summary ─── */
+
+function TeamReadinessSummary({ members, memberStatuses }: { members: import('@/types/admin').TeamMember[]; memberStatuses: MemberStatus[] }) {
+    const STATUS_ORDER: ResponderStatus[] = ['pending', 'en_route', 'on_scene', 'resolved'];
+    const counts: Record<ResponderStatus, number> = { pending: 0, en_route: 0, on_scene: 0, resolved: 0 };
+    members.forEach((m) => {
+        const ms = memberStatuses.find((s) => s.user_id === m.id);
+        const status: ResponderStatus = ms?.status ?? 'pending';
+        counts[status]++;
+    });
+    const mostAdvanced = [...STATUS_ORDER].reverse().find((s) => counts[s] > 0) ?? 'pending';
+    const allResolved = counts.resolved === members.length;
+    return (
+        <div className={`flex items-center justify-between rounded-xl px-4 py-2.5 ${allResolved ? 'bg-emerald-50 dark:bg-emerald-950/20' : 'bg-indigo-50 dark:bg-indigo-950/20'}`}>
+            <div className="flex items-center gap-2">
+                <span className={`text-xs font-semibold ${allResolved ? 'text-emerald-700 dark:text-emerald-400' : 'text-indigo-700 dark:text-indigo-300'}`}>
+                    Team status
+                </span>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${RESPONDER_STATUS_COLORS[mostAdvanced]}`}>
+                    {RESPONDER_STATUS_LABELS[mostAdvanced]}
+                </span>
+            </div>
+            <div className="flex items-center gap-1">
+                {STATUS_ORDER.map((s) => counts[s] > 0 && (
+                    <span key={s} className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${RESPONDER_STATUS_COLORS[s]}`}>
+                        {counts[s]}
+                    </span>
+                ))}
+                <span className="text-[10px] text-neutral-400 ml-1">{members.length} total</span>
             </div>
         </div>
     );

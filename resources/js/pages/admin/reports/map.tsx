@@ -1,12 +1,12 @@
 'use no memo';
 import { Head, Link, router } from '@inertiajs/react';
 import { GoogleMap, InfoWindowF, MarkerF, OverlayViewF, useJsApiLoader } from '@react-google-maps/api';
-import { CalendarDays, Flame, List, MapPin, SlidersHorizontal, X } from 'lucide-react';
-import React, { useCallback, useMemo, useState } from 'react';
+import { Building2, CalendarDays, ChevronDown, Flame, List, MapPin, SlidersHorizontal, X } from 'lucide-react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import type { Report, ReportStatus, Severity } from '@/types/admin';
-import { SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
+import type { EvacuationCenter, Report, ReportStatus, Severity } from '@/types/admin';
+import { EVACUATION_CENTER_TYPE_LABELS, SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
 
 interface Filters {
     status?: string;
@@ -18,6 +18,7 @@ interface Filters {
 interface Props {
     reports: Report[];
     filters: Filters;
+    evacuation_centers: EvacuationCenter[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -48,6 +49,17 @@ function createSvgMarker(severity: Severity): string {
         <filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.3"/></filter>
         <path filter="url(#s)" d="M14 1C6.82 1 1 6.82 1 14c0 9.8 13 21 13 21s13-11.2 13-21C27 6.82 21.18 1 14 1z" fill="${hex}"/>
         <circle cx="14" cy="14" r="5.5" fill="white" opacity="0.9"/>
+    </svg>`;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+/** Teal square pin with a cross for evacuation centers */
+function createEvacMarker(isFull: boolean): string {
+    const fill = isFull ? '#dc2626' : '#0d9488';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
+        <filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.3"/></filter>
+        <rect filter="url(#s)" x="2" y="2" width="26" height="26" rx="7" fill="${fill}"/>
+        <path d="M15 8v14M8 15h14" stroke="white" stroke-width="3" stroke-linecap="round"/>
     </svg>`;
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
@@ -129,31 +141,36 @@ function FilterSelect({ value, onChange, options, placeholder }: {
     value: string; onChange: (v: string) => void; options: string[]; placeholder: string;
 }) {
     return (
-        <select
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full h-8 rounded-lg border border-neutral-200 bg-white px-2.5 text-xs text-neutral-700 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-        >
-            <option value="">{placeholder}</option>
-            {options.filter(Boolean).map((opt) => (
-                <option key={opt} value={opt}>
-                    {opt.charAt(0).toUpperCase() + opt.slice(1).replace('_', ' ')}
-                </option>
+        <div className="relative">
+            <select
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                className="h-8 w-full appearance-none rounded-lg border border-neutral-200 bg-white pl-2.5 pr-7 text-xs text-neutral-700 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+            >
+                <option value="">{placeholder}</option>
+                {options.filter(Boolean).map((opt) => (
+                    <option key={opt} value={opt}>
+                        {opt.charAt(0).toUpperCase() + opt.slice(1).replace('_', ' ')}
+                    </option>
             ))}
-        </select>
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+        </div>
     );
 }
 
 /* ─── Main page ─── */
-export default function AdminReportsMap({ reports, filters }: Props) {
+export default function AdminReportsMap({ reports, filters, evacuation_centers }: Props) {
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY ?? '',
         libraries: ['places'] as ('places')[],
     });
 
-    const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-    const [viewMode, setViewMode]             = useState<ViewMode>('markers');
-    const [zoom, setZoom]                     = useState(12);
+    const [selectedReport, setSelectedReport]       = useState<Report | null>(null);
+    const [selectedEvacCenter, setSelectedEvacCenter] = useState<EvacuationCenter | null>(null);
+    const [viewMode, setViewMode]                   = useState<ViewMode>('markers');
+    const [showEvacCenters, setShowEvacCenters]     = useState(true);
+    const [zoom, setZoom]                           = useState(12);
 
     const showMarkers = viewMode === 'markers' || viewMode === 'both';
     const showHeatmap = viewMode === 'heatmap' || viewMode === 'both';
@@ -165,12 +182,31 @@ export default function AdminReportsMap({ reports, filters }: Props) {
         });
     }, [filters]);
 
-    const center = { lat: 14.0681, lng: 120.6236 }; // Nasugbu, Batangas
+    const DEFAULT_CENTER = { lat: 14.0681, lng: 120.6236 }; // Nasugbu, Batangas — fallback
+
+    const mapRef = useRef<google.maps.Map | null>(null);
+
+    const focusOnLocation = useCallback((lat: number, lng: number) => {
+        if (!mapRef.current) return;
+        mapRef.current.panTo({ lat, lng });
+        mapRef.current.setZoom(17);
+    }, []);
 
     const onMapLoad = useCallback((map: google.maps.Map) => {
-        map.setCenter({ lat: 14.0681, lng: 120.6236 });
-        map.setZoom(13);
-    }, []);
+        mapRef.current = map;
+        const allPoints = [
+            ...reports.map((r) => ({ lat: r.latitude, lng: r.longitude })),
+            ...evacuation_centers.map((e) => ({ lat: e.latitude, lng: e.longitude })),
+        ];
+        if (allPoints.length === 0) {
+            map.setCenter(DEFAULT_CENTER);
+            map.setZoom(13);
+            return;
+        }
+        const bounds = new google.maps.LatLngBounds();
+        allPoints.forEach((p) => bounds.extend(p));
+        map.fitBounds(bounds, 60);
+    }, [reports, evacuation_centers]);
 
     const heatPoints = useMemo((): HeatPoint[] => {
         return reports.flatMap((r) => {
@@ -261,6 +297,28 @@ export default function AdminReportsMap({ reports, filters }: Props) {
                         </div>
                     </div>
 
+                    {/* Layers */}
+                    <div className="border-b border-neutral-100 px-5 py-3 dark:border-neutral-800">
+                        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Layers</p>
+                        <button
+                            onClick={() => { setShowEvacCenters((v) => !v); setSelectedEvacCenter(null); }}
+                            className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
+                                showEvacCenters
+                                    ? 'border-teal-300 bg-teal-50 text-teal-700 dark:border-teal-700 dark:bg-teal-950/30 dark:text-teal-400'
+                                    : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400'
+                            }`}
+                        >
+                            <span className="flex size-5 shrink-0 items-center justify-center rounded bg-teal-600 text-white">
+                                <Building2 className="size-3" />
+                            </span>
+                            Evacuation Centers
+                            <span className="ml-auto text-[10px] font-semibold">{evacuation_centers.length}</span>
+                            <span className={`size-4 shrink-0 rounded border-2 transition-colors ${showEvacCenters ? 'border-teal-500 bg-teal-500' : 'border-neutral-300 dark:border-neutral-600'}`}>
+                                {showEvacCenters && <svg viewBox="0 0 16 16" className="size-full text-white" fill="currentColor"><path d="M13.5 3.5l-7 7-3-3-1.5 1.5 4.5 4.5 8.5-8.5z"/></svg>}
+                            </span>
+                        </button>
+                    </div>
+
                     {/* Filters */}
                     <div className="border-b border-neutral-100 px-5 py-3 dark:border-neutral-800">
                         <div className="mb-2 flex items-center justify-between">
@@ -304,6 +362,18 @@ export default function AdminReportsMap({ reports, filters }: Props) {
                                         {SEVERITY_META[s].label}
                                     </span>
                                 ))}
+                                {showEvacCenters && (
+                                    <>
+                                        <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                                            <span className="h-2.5 w-2.5 rounded-sm bg-teal-600" />
+                                            Evac Center
+                                        </span>
+                                        <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                                            <span className="h-2.5 w-2.5 rounded-sm bg-red-600" />
+                                            Full
+                                        </span>
+                                    </>
+                                )}
                             </div>
                             {showHeatmap && (
                                 <div className="mt-2 flex flex-wrap gap-3">
@@ -331,7 +401,7 @@ export default function AdminReportsMap({ reports, filters }: Props) {
                             {sortedReports.map((r) => (
                                 <button
                                     key={r.id}
-                                    onClick={() => setSelectedReport(selectedReport?.id === r.id ? null : r)}
+                                    onClick={() => { setSelectedEvacCenter(null); setSelectedReport(selectedReport?.id === r.id ? null : r); if (selectedReport?.id !== r.id) focusOnLocation(r.latitude, r.longitude); }}
                                     className={`w-full rounded-xl border p-2.5 text-left transition-all ${
                                         selectedReport?.id === r.id
                                             ? 'border-sky-300 bg-sky-50 ring-1 ring-sky-200 dark:border-sky-700 dark:bg-sky-950/30'
@@ -381,12 +451,12 @@ export default function AdminReportsMap({ reports, filters }: Props) {
                     {isLoaded ? (
                         <GoogleMap
                             mapContainerStyle={mapContainerStyle}
-                            center={center}
+                            center={DEFAULT_CENTER}
                             zoom={13}
                             options={mapOptions}
                             onLoad={onMapLoad}
                             onZoomChanged={function (this: google.maps.Map) { setZoom(this.getZoom() ?? 12); }}
-                            onClick={() => setSelectedReport(null)}
+                            onClick={() => { setSelectedReport(null); setSelectedEvacCenter(null); }}
                         >
                             {showMarkers && reports.map((report) => (
                                 <MarkerF
@@ -398,7 +468,7 @@ export default function AdminReportsMap({ reports, filters }: Props) {
                                         anchor: new google.maps.Point(14, 36),
                                     }}
                                     zIndex={SEVERITY_WEIGHT[report.severity]}
-                                    onClick={() => setSelectedReport(report)}
+                                    onClick={() => { setSelectedEvacCenter(null); setSelectedReport(report); focusOnLocation(report.latitude, report.longitude); }}
                                 />
                             ))}
 
@@ -408,7 +478,7 @@ export default function AdminReportsMap({ reports, filters }: Props) {
                                     onCloseClick={() => setSelectedReport(null)}
                                     options={{ maxWidth: 280, minWidth: 240, pixelOffset: new google.maps.Size(0, -36) }}
                                 >
-                                    <div className="flex flex-col gap-2 p-1">
+                                    <div className="flex flex-col gap-2 p-3 pt-3">
                                         <div className="flex items-center justify-between gap-2">
                                             <span className="font-mono text-xs font-bold text-neutral-900">
                                                 {selectedReport.reference_number}
@@ -437,6 +507,87 @@ export default function AdminReportsMap({ reports, filters }: Props) {
                                             className="mt-0.5 block rounded-lg bg-sky-600 px-3 py-2 text-center text-[11px] font-semibold text-white transition hover:bg-sky-700"
                                         >
                                             View full report →
+                                        </Link>
+                                    </div>
+                                </InfoWindowF>
+                            )}
+
+                            {/* Evacuation center markers */}
+                            {showEvacCenters && evacuation_centers.map((ec) => {
+                                const isFull = ec.current_occupancy >= ec.capacity;
+                                return (
+                                    <MarkerF
+                                        key={`evac-${ec.id}`}
+                                        position={{ lat: ec.latitude, lng: ec.longitude }}
+                                        icon={{
+                                            url: createEvacMarker(isFull),
+                                            scaledSize: new google.maps.Size(30, 30),
+                                            anchor: new google.maps.Point(15, 15),
+                                        }}
+                                        zIndex={10}
+                                        onClick={() => {
+                                            setSelectedReport(null);
+                                            setSelectedEvacCenter(selectedEvacCenter?.id === ec.id ? null : ec);
+                                            if (selectedEvacCenter?.id !== ec.id) focusOnLocation(ec.latitude, ec.longitude);
+                                        }}
+                                    />
+                                );
+                            })}
+
+                            {/* Evacuation center info window */}
+                            {showEvacCenters && selectedEvacCenter && (
+                                <InfoWindowF
+                                    position={{ lat: selectedEvacCenter.latitude, lng: selectedEvacCenter.longitude }}
+                                    onCloseClick={() => setSelectedEvacCenter(null)}
+                                    options={{ maxWidth: 280, minWidth: 240, pixelOffset: new google.maps.Size(0, -18) }}
+                                >
+                                    <div className="flex flex-col gap-2 p-3 pt-3">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <p className="text-xs font-bold text-neutral-900 leading-snug">{selectedEvacCenter.name}</p>
+                                            <span className="shrink-0 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700 ring-1 ring-teal-200">
+                                                {EVACUATION_CENTER_TYPE_LABELS[selectedEvacCenter.type]}
+                                            </span>
+                                        </div>
+
+                                        {selectedEvacCenter.address && (
+                                            <p className="text-[11px] text-gray-500 leading-snug">{selectedEvacCenter.address}</p>
+                                        )}
+
+                                        {/* Occupancy bar */}
+                                        <div>
+                                            <div className="mb-1 flex items-center justify-between text-[10px] text-gray-500">
+                                                <span>Occupancy</span>
+                                                <span className="font-semibold">
+                                                    {selectedEvacCenter.current_occupancy} / {selectedEvacCenter.capacity}
+                                                </span>
+                                            </div>
+                                            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                                                <div
+                                                    className={`h-full rounded-full transition-all ${
+                                                        selectedEvacCenter.current_occupancy >= selectedEvacCenter.capacity
+                                                            ? 'bg-red-500'
+                                                            : selectedEvacCenter.current_occupancy / selectedEvacCenter.capacity > 0.8
+                                                            ? 'bg-amber-400'
+                                                            : 'bg-teal-500'
+                                                    }`}
+                                                    style={{ width: `${Math.min(100, Math.round(selectedEvacCenter.current_occupancy / selectedEvacCenter.capacity * 100))}%` }}
+                                                />
+                                            </div>
+                                            <p className={`mt-1 text-[10px] font-semibold ${
+                                                selectedEvacCenter.current_occupancy >= selectedEvacCenter.capacity
+                                                    ? 'text-red-600' : 'text-teal-600'
+                                            }`}>
+                                                {selectedEvacCenter.current_occupancy >= selectedEvacCenter.capacity
+                                                    ? 'Full — no available space'
+                                                    : `${selectedEvacCenter.capacity - selectedEvacCenter.current_occupancy} slots available`}
+                                            </p>
+                                        </div>
+
+                                        <Link
+                                            href="/admin/evacuation-centers"
+                                            className="mt-0.5 block rounded-lg bg-teal-600 px-3 py-2 text-center text-[11px] font-semibold text-white transition hover:bg-teal-700"
+                                        >
+                                            Manage centers →
                                         </Link>
                                     </div>
                                 </InfoWindowF>

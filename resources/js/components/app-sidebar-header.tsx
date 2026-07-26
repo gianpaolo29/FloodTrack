@@ -2,6 +2,7 @@ import { Link, router, usePage } from '@inertiajs/react';
 import {
     AlertTriangle,
     Bell,
+    Building2,
     CheckCheck,
     FileText,
     Maximize,
@@ -9,7 +10,11 @@ import {
     Minimize,
     Moon,
     Search,
+    Shield,
     Sun,
+    Users,
+    UsersRound,
+    X,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -24,6 +29,21 @@ import { useAppearance } from '@/hooks/use-appearance';
 import { useInitials } from '@/hooks/use-initials';
 import { UserMenuContent } from '@/components/user-menu-content';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
+
+interface SearchItem {
+    id: number;
+    label: string;
+    sub: string;
+    url: string;
+    meta?: string;
+    badge?: string;
+}
+
+interface SearchGroup {
+    category: string;
+    icon: string;
+    items: SearchItem[];
+}
 
 interface NotificationData {
     type: string;
@@ -50,17 +70,49 @@ export function AppSidebarHeader({
     const getInitials = useInitials();
     const { appearance, updateAppearance } = useAppearance();
     const [isFullscreen, setIsFullscreen] = useState(false);
-    const [searchOpen, setSearchOpen] = useState(false);
+    const [searchOpen, setSearchOpen]       = useState(false);
+    const [searchQuery, setSearchQuery]     = useState('');
+    const [searchResults, setSearchResults] = useState<SearchGroup[]>([]);
+    const [searchLoading, setSearchLoading] = useState(false);
+    const searchRef   = useRef<HTMLDivElement>(null);
+    const searchInput = useRef<HTMLInputElement>(null);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [showNotifications, setShowNotifications] = useState(false);
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [loading, setLoading] = useState(false);
     const [localUnread, setLocalUnread] = useState(unreadNotifications as number);
-    const dropdownRef = useRef<HTMLDivElement>(null);
+    const dropdownRef  = useRef<HTMLDivElement>(null);
 
     // Sync from server prop
     useEffect(() => {
         setLocalUnread(unreadNotifications as number);
     }, [unreadNotifications]);
+
+    // Debounced search fetch
+    useEffect(() => {
+        if (!searchOpen) return;
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        if (searchQuery.trim().length < 2) {
+            setSearchResults([]);
+            setSearchLoading(false);
+            return;
+        }
+        setSearchLoading(true);
+        debounceRef.current = setTimeout(async () => {
+            try {
+                const res = await apiFetch(`/admin/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setSearchResults(data.results ?? []);
+                }
+            } catch {
+                setSearchResults([]);
+            } finally {
+                setSearchLoading(false);
+            }
+        }, 300);
+        return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    }, [searchQuery, searchOpen]);
 
     // Close dropdown on outside click
     useEffect(() => {
@@ -74,6 +126,36 @@ export function AppSidebarHeader({
             return () => document.removeEventListener('mousedown', handleClick);
         }
     }, [showNotifications]);
+
+    const closeSearch = useCallback(() => {
+        setSearchOpen(false);
+        setSearchQuery('');
+        setSearchResults([]);
+    }, []);
+
+    useEffect(() => {
+        function handleClick(e: MouseEvent) {
+            if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+                closeSearch();
+            }
+        }
+        if (searchOpen) {
+            document.addEventListener('mousedown', handleClick);
+            return () => document.removeEventListener('mousedown', handleClick);
+        }
+    }, [searchOpen, closeSearch]);
+
+    const openSearch = useCallback(() => {
+        setSearchOpen(true);
+        setSearchQuery('');
+        setSearchResults([]);
+        setTimeout(() => searchInput.current?.focus(), 50);
+    }, []);
+
+    const handleSearchNavigate = useCallback((url: string) => {
+        closeSearch();
+        router.visit(url);
+    }, [closeSearch]);
 
     const toggleFullscreen = useCallback(() => {
         if (document.fullscreenElement) {
@@ -152,7 +234,7 @@ export function AppSidebarHeader({
     }, [showNotifications]);
 
     return (
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-4 rounded-tl-2xl rounded-tr-2xl border-b border-border/40 bg-background/80 px-6 backdrop-blur-xl">
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-4 rounded-tl-2xl rounded-tr-2xl border-b border-border/[0.35] bg-background/90 px-6 shadow-sm shadow-black/[0.025] backdrop-blur-2xl">
             {/* Left — trigger + breadcrumbs */}
             <div className="flex items-center gap-3">
                 <SidebarTrigger className="-ml-1 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white transition-colors" />
@@ -162,26 +244,85 @@ export function AppSidebarHeader({
 
             {/* Right — search, notifications, avatar */}
             <div className="flex items-center gap-2">
-                {/* Expandable Search */}
-                <div className="relative flex items-center">
+                {/* Search */}
+                <div ref={searchRef} className="relative">
                     {searchOpen ? (
-                        <div className="flex items-center gap-2">
-                            <div className="relative">
-                                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/60" />
+                        <div className="relative w-64">
+                            {/* Input */}
+                            <div className="relative flex items-center">
+                                {searchLoading ? (
+                                    <div className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+                                        <div className="size-4 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-primary" />
+                                    </div>
+                                ) : (
+                                    <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/50" />
+                                )}
                                 <input
+                                    ref={searchInput}
                                     type="text"
-                                    placeholder="Search..."
-                                    autoFocus
-                                    onBlur={() => setSearchOpen(false)}
-                                    onKeyDown={(e) => { if (e.key === 'Escape') setSearchOpen(false); }}
-                                    className="h-9 w-64 rounded-xl border-0 bg-muted/50 pl-9 pr-4 text-sm text-foreground shadow-sm ring-1 ring-border/40 placeholder:text-muted-foreground/50 focus:bg-background focus:shadow-md focus:ring-2 focus:ring-primary/30 focus:outline-none transition-all"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Escape') closeSearch(); }}
+                                    placeholder="Search…"
+                                    className="h-9 w-full rounded-xl border-0 bg-muted/50 pl-9 pr-8 text-sm text-foreground shadow-sm ring-1 ring-border/40 placeholder:text-muted-foreground/40 focus:bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none transition-all"
                                 />
+                                <button
+                                    onClick={closeSearch}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-muted-foreground"
+                                >
+                                    <X className="size-3.5" />
+                                </button>
                             </div>
+
+                            {/* Dropdown — same width as input (w-full) */}
+                            {searchQuery.trim().length >= 2 && (
+                                <div className="absolute left-0 top-full z-50 mt-1.5 w-full overflow-hidden rounded-xl border border-border/50 bg-card shadow-xl shadow-black/10">
+                                    {searchLoading ? (
+                                        <div className="flex items-center justify-center gap-2 py-6 text-sm text-muted-foreground">
+                                            <div className="size-4 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-primary" />
+                                            Searching…
+                                        </div>
+                                    ) : searchResults.length === 0 ? (
+                                        <div className="flex flex-col items-center gap-1.5 py-8">
+                                            <Search className="size-7 text-muted-foreground/20" />
+                                            <p className="text-xs text-muted-foreground">No results for "<span className="font-medium text-foreground">{searchQuery}</span>"</p>
+                                        </div>
+                                    ) : (
+                                        <div className="max-h-80 overflow-y-auto">
+                                            {searchResults.map((group, gi) => (
+                                                <div key={group.category}>
+                                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 ${gi > 0 ? 'border-t border-border/30' : ''}`}>
+                                                        <SearchCategoryIcon icon={group.icon} />
+                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{group.category}</span>
+                                                    </div>
+                                                    {group.items.map((item) => (
+                                                        <button
+                                                            key={item.id}
+                                                            onMouseDown={(e) => { e.preventDefault(); handleSearchNavigate(item.url); }}
+                                                            className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left transition-colors hover:bg-muted/50"
+                                                        >
+                                                            <div className="min-w-0 flex-1">
+                                                                <p className="truncate text-sm font-semibold text-foreground">{item.label}</p>
+                                                                <p className="truncate text-xs text-muted-foreground">{item.sub}</p>
+                                                            </div>
+                                                            {item.meta && (
+                                                                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${SEVERITY_BADGE[item.meta] ?? 'bg-muted text-muted-foreground'}`}>
+                                                                    {item.meta}
+                                                                </span>
+                                                            )}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <button
-                            onClick={() => setSearchOpen(true)}
-                            className="flex size-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
+                            onClick={openSearch}
+                            className="flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
                         >
                             <Search className="size-[18px]" />
                         </button>
@@ -195,7 +336,7 @@ export function AppSidebarHeader({
                 <div className="relative" ref={dropdownRef}>
                     <button
                         onClick={toggleDropdown}
-                        className="group relative flex size-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:shadow-sm transition-all"
+                        className="group relative flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
                     >
                         <Bell className={`size-[18px] transition-transform group-hover:scale-105 ${showNotifications ? 'text-foreground' : ''}`} />
                         {localUnread > 0 && (
@@ -210,7 +351,7 @@ export function AppSidebarHeader({
 
                     {/* Dropdown */}
                     {showNotifications && (
-                        <div className="absolute right-0 top-full mt-2 w-96 max-h-[28rem] overflow-hidden rounded-2xl border border-border/50 bg-card shadow-xl shadow-black/10 z-50">
+                        <div className="absolute right-0 top-full mt-2 w-96 max-h-[28rem] overflow-hidden rounded-2xl border border-border/50 bg-card shadow-xl shadow-black/10 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
                             {/* Header */}
                             <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
                                 <h3 className="text-sm font-semibold">Notifications</h3>
@@ -253,7 +394,7 @@ export function AppSidebarHeader({
                 {/* Dark mode toggle */}
                 <button
                     onClick={() => updateAppearance(appearance === 'dark' ? 'light' : 'dark')}
-                    className="flex size-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
+                    className="flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
                     title={appearance === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                 >
                     {appearance === 'dark' ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
@@ -262,7 +403,7 @@ export function AppSidebarHeader({
                 {/* Fullscreen toggle */}
                 <button
                     onClick={toggleFullscreen}
-                    className="hidden md:flex size-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all"
+                    className="hidden md:flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
                     title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
                 >
                     {isFullscreen ? <Minimize className="size-[18px]" /> : <Maximize className="size-[18px]" />}
@@ -275,13 +416,13 @@ export function AppSidebarHeader({
                 {auth.user && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <button className="flex items-center gap-2.5 rounded-xl pl-1 pr-2 py-1 transition-all hover:bg-muted/50 focus:outline-none">
+                            <button className="flex items-center gap-2.5 rounded-xl pl-1 pr-2 py-1 transition-all hover:bg-muted/60 hover:shadow-sm active:scale-[0.97] focus:outline-none">
                                 <div className="hidden text-right sm:block">
                                     <p className="text-sm font-medium leading-tight">{auth.user.name}</p>
                                     <p className="text-[11px] leading-tight text-muted-foreground capitalize">{auth.user.role}</p>
                                 </div>
-                                <Avatar className="size-8 ring-2 ring-primary/10 transition-all hover:ring-primary/30">
-                                    <AvatarImage src={auth.user.avatar} alt={auth.user.name} />
+                                <Avatar className="size-8 ring-2 ring-primary/15 transition-all duration-200 group-hover:ring-primary/35 group-hover:shadow-md group-hover:shadow-primary/10">
+                                    <AvatarImage src={auth.user.avatar_url ?? undefined} alt={auth.user.name} />
                                     <AvatarFallback className="bg-gradient-to-br from-primary/80 to-primary text-[11px] font-semibold text-primary-foreground">
                                         {getInitials(auth.user.name)}
                                     </AvatarFallback>
@@ -320,7 +461,7 @@ function NotificationItem({ notification, onClick }: { notification: AppNotifica
     return (
         <button
             onClick={onClick}
-            className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/30 ${isUnread ? 'bg-primary/[0.03]' : ''}`}
+            className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-all duration-150 hover:bg-muted/40 active:bg-muted/60 ${isUnread ? 'bg-primary/[0.03]' : ''}`}
         >
             <div className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl ${bgMap[data.type] ?? 'bg-muted'}`}>
                 {iconMap[data.type] ?? <Bell className="size-4 text-muted-foreground" />}
@@ -339,6 +480,27 @@ function NotificationItem({ notification, onClick }: { notification: AppNotifica
             </div>
         </button>
     );
+}
+
+/* ─── Search helpers ─── */
+
+const SEVERITY_BADGE: Record<string, string> = {
+    critical: 'bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400',
+    high:     'bg-orange-100 text-orange-700 dark:bg-orange-950/40 dark:text-orange-400',
+    moderate: 'bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
+    low:      'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
+};
+
+function SearchCategoryIcon({ icon }: { icon: string }) {
+    const cls = 'size-3.5 text-muted-foreground/60';
+    switch (icon) {
+        case 'file-text':   return <FileText className={cls} />;
+        case 'users':       return <Users className={cls} />;
+        case 'shield':      return <Shield className={cls} />;
+        case 'users-round': return <UsersRound className={cls} />;
+        case 'building2':   return <Building2 className={cls} />;
+        default:            return <Search className={cls} />;
+    }
 }
 
 /* ─── Helpers ─── */

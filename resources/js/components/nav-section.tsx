@@ -46,7 +46,7 @@ export function NavSection({ label, items }: NavSectionProps) {
 
     return (
         <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel className="mb-1 px-2 text-[10px] font-bold uppercase tracking-[0.12em] text-sidebar-foreground/30">
+            <SidebarGroupLabel className="mb-1 px-2 text-[10px] font-bold uppercase tracking-[0.15em] text-sidebar-foreground/25">
                 {label}
             </SidebarGroupLabel>
             <SidebarMenu className="gap-0.5">
@@ -61,10 +61,10 @@ export function NavSection({ label, items }: NavSectionProps) {
                                         <SidebarMenuButton
                                             tooltip={{ children: item.title }}
                                             isActive={anyChildActive}
-                                            className={`h-9 w-full rounded-xl text-[13px] transition-all group-data-[collapsible=icon]:justify-center ${
+                                            className={`h-9 w-full rounded-xl text-[13px] transition-all duration-150 group-data-[collapsible=icon]:justify-center ${
                                                 anyChildActive
-                                                    ? 'bg-primary/10 font-semibold text-primary dark:bg-primary/15 [&>svg]:text-primary'
-                                                    : 'font-medium text-sidebar-foreground/60 hover:bg-sidebar-foreground/6 hover:text-sidebar-foreground [&>svg]:text-sidebar-foreground/50'
+                                                    ? 'bg-primary/[0.08] font-semibold text-primary dark:bg-primary/[0.13] [&>svg]:text-primary [&>svg]:drop-shadow-[0_0_5px_rgba(99,102,241,0.45)]'
+                                                    : 'font-medium text-sidebar-foreground/55 hover:bg-sidebar-foreground/[0.05] hover:text-sidebar-foreground/90 [&>svg]:text-sidebar-foreground/40 hover:[&>svg]:text-sidebar-foreground/70'
                                             }`}
                                         >
                                             {item.icon && <item.icon />}
@@ -95,10 +95,10 @@ export function NavSection({ label, items }: NavSectionProps) {
                                                             <SidebarMenuSubButton
                                                                 asChild
                                                                 isActive={childActive}
-                                                                className={`h-7 rounded-lg text-[12px] transition-all ${
+                                                                className={`h-7 rounded-lg text-[12px] transition-all duration-150 ${
                                                                     childActive
                                                                         ? 'font-semibold text-primary'
-                                                                        : 'font-medium text-sidebar-foreground/50 hover:bg-sidebar-foreground/5 hover:text-sidebar-foreground'
+                                                                        : 'font-medium text-sidebar-foreground/45 hover:bg-sidebar-foreground/[0.04] hover:text-sidebar-foreground/80'
                                                                 }`}
                                                             >
                                                                 <a href={href} onClick={handleClick}>
@@ -126,10 +126,10 @@ export function NavSection({ label, items }: NavSectionProps) {
                                 asChild
                                 isActive={active}
                                 tooltip={{ children: item.title }}
-                                className={`h-9 rounded-xl text-[13px] transition-all group-data-[collapsible=icon]:justify-center ${
+                                className={`h-9 rounded-xl text-[13px] transition-all duration-150 group-data-[collapsible=icon]:justify-center ${
                                     active
-                                        ? 'bg-primary/10 font-semibold text-primary dark:bg-primary/15 [&>svg]:text-primary'
-                                        : 'font-medium text-sidebar-foreground/60 hover:bg-sidebar-foreground/6 hover:text-sidebar-foreground [&>svg]:text-sidebar-foreground/50'
+                                        ? 'bg-primary/[0.08] font-semibold text-primary dark:bg-primary/[0.13] [&>svg]:text-primary [&>svg]:drop-shadow-[0_0_5px_rgba(99,102,241,0.45)]'
+                                        : 'font-medium text-sidebar-foreground/55 hover:bg-sidebar-foreground/[0.05] hover:text-sidebar-foreground/90 [&>svg]:text-sidebar-foreground/40 hover:[&>svg]:text-sidebar-foreground/70'
                                 }`}
                             >
                                 <Link href={item.href} prefetch>

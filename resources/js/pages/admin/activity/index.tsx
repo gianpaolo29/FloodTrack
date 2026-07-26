@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { CheckCircle2, ChevronLeft, ChevronRight, Clock, History, Search, Sparkles, X } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, History, Search, Sparkles, X } from 'lucide-react';
 import { useCallback } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -151,18 +151,21 @@ export default function AdminActivityLog({ activities, filters, stats }: Props) 
                             </div>
 
                             {/* Status filter */}
-                            <select
-                                value={filters.status ?? ''}
-                                onChange={(e) => filter('status', e.target.value)}
-                                className="h-9 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 text-sm outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100"
-                            >
-                                <option value="">All actions</option>
-                                {STATUS_OPTIONS.map((opt) => (
-                                    <option key={opt} value={opt}>
-                                        {opt.charAt(0).toUpperCase() + opt.slice(1).replace('_', ' ')}
-                                    </option>
-                                ))}
-                            </select>
+                            <div className="relative">
+                                <select
+                                    value={filters.status ?? ''}
+                                    onChange={(e) => filter('status', e.target.value)}
+                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50/50 pl-3 pr-8 text-sm outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100"
+                                >
+                                    <option value="">All actions</option>
+                                    {STATUS_OPTIONS.map((opt) => (
+                                        <option key={opt} value={opt}>
+                                            {opt.charAt(0).toUpperCase() + opt.slice(1).replace('_', ' ')}
+                                        </option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+                            </div>
 
                             {hasFilters && (
                                 <button

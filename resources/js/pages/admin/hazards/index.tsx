@@ -287,18 +287,24 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                     {/* Toolbar */}
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
                         <div className="flex items-center gap-2">
-                            <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
-                                className="h-9 rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                                <option value="">All categories</option>
-                                <option value="flood">Flood</option>
-                                <option value="road">Road</option>
-                            </select>
-                            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-                                className="h-9 rounded-xl border border-neutral-200 bg-neutral-50 px-3 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                                <option value="">All statuses</option>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
-                            </select>
+                            <div className="relative">
+                                <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
+                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                                    <option value="">All categories</option>
+                                    <option value="flood">Flood</option>
+                                    <option value="road">Road</option>
+                                </select>
+                                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+                            </div>
+                            <div className="relative">
+                                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                                    <option value="">All statuses</option>
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+                            </div>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="relative">

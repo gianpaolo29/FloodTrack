@@ -1,7 +1,7 @@
 import { swalSuccess } from '@/lib/swal';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, MapPin, Pencil, Phone, Plus, Search, ShieldCheck, Users, X } from 'lucide-react';
+import { Activity, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Eye, EyeOff, MapPin, Pencil, Phone, Plus, Search, ShieldCheck, Star, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -19,6 +19,9 @@ interface Responder {
     active_assignments: number;
     resolved_count: number;
     created_at: string;
+    team_id: number | null;
+    team_name: string | null;
+    is_leader: boolean;
 }
 
 interface Paginated<T> {
@@ -33,6 +36,7 @@ interface Paginated<T> {
 interface Props {
     responders: Paginated<Responder>;
     filters: { search?: string };
+    teams_count: number;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -40,7 +44,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Responders', href: '/admin/responders' },
 ];
 
-export default function AdminRespondersIndex({ responders, filters }: Props) {
+export default function AdminRespondersIndex({ responders, filters, teams_count }: Props) {
     const [showCreate, setShowCreate] = useState(false);
 
     const search = useCallback((value: string) => {
@@ -73,17 +77,26 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => setShowCreate(true)}
-                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
-                    >
-                        <Plus className="size-4" />
-                        Add Responder
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <Link
+                            href="/admin/teams"
+                            className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition-all hover:bg-neutral-50 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                        >
+                            <Users className="size-4" />
+                            Manage Teams
+                        </Link>
+                        <button
+                            onClick={() => setShowCreate(true)}
+                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
+                        >
+                            <Plus className="size-4" />
+                            Add Responder
+                        </button>
+                    </div>
                 </div>
 
                 {/* Stat cards */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
                     <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                         <div className="flex items-start justify-between">
                             <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 shadow-sm shadow-indigo-500/20">
@@ -114,6 +127,19 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                         <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Total Resolved</p>
                         <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">Completed assignments</p>
                     </div>
+                    <Link
+                        href="/admin/teams"
+                        className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900"
+                    >
+                        <div className="flex items-start justify-between">
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm shadow-violet-500/20">
+                                <Users className="size-4 text-white" />
+                            </div>
+                        </div>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{teams_count}</p>
+                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Teams</p>
+                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">Manage teams →</p>
+                    </Link>
                 </div>
 
                 {/* Table card */}
@@ -206,6 +232,7 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                             <thead>
                                 <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Responder</th>
+                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Team</th>
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Home Address</th>
                                     <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Assignments</th>
                                     <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Status</th>
@@ -235,6 +262,27 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
                                                     )}
                                                 </div>
                                             </div>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            {r.team_name ? (
+                                                <div className="flex items-center gap-1.5">
+                                                    <Link
+                                                        href="/admin/teams"
+                                                        className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-violet-200 transition-colors hover:bg-violet-100 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-800/40"
+                                                    >
+                                                        <Users className="size-3" />
+                                                        {r.team_name}
+                                                    </Link>
+                                                    {r.is_leader && (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-800/40">
+                                                            <Star className="size-2.5" />
+                                                            Leader
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-neutral-300 dark:text-neutral-600">No team</span>
+                                            )}
                                         </td>
                                         <td className="max-w-[200px] px-5 py-4">
                                             {r.home_address ? (
@@ -359,12 +407,27 @@ export default function AdminRespondersIndex({ responders, filters }: Props) {
 /* ─── Responder Form Modal (Create) ─── */
 
 function ResponderFormModal({ onClose }: { onClose: () => void }) {
+    const [showPassword, setShowPassword] = useState(false);
+
     const form = useForm({
         name: '',
         email: '',
-        contact_number: '',
+        contact_number: '09',
         password: '',
     });
+
+    const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const digits = e.target.value.replace(/\D/g, '');
+        const val = (digits.startsWith('09') ? digits : '09').slice(0, 11);
+        form.setData('contact_number', val);
+    };
+
+    const handlePhoneKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        const input = e.currentTarget;
+        if (e.key === 'Backspace' && (input.selectionStart ?? 0) <= 2 && (input.selectionEnd ?? 0) <= 2) {
+            e.preventDefault();
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -450,21 +513,35 @@ function ResponderFormModal({ onClose }: { onClose: () => void }) {
                         <FormField label="Contact Number" error={form.errors.contact_number}>
                             <input
                                 type="text"
+                                inputMode="numeric"
                                 value={form.data.contact_number}
-                                onChange={(e) => form.setData('contact_number', e.target.value)}
+                                onChange={handlePhoneChange}
+                                onKeyDown={handlePhoneKeyDown}
+                                onFocus={(e) => { if (!e.target.value) form.setData('contact_number', '09'); }}
                                 className={inputClassName}
-                                placeholder="+63 917 123 4567"
+                                placeholder="09XXXXXXXXX"
+                                maxLength={11}
                             />
                         </FormField>
                         <FormField label="Password" error={form.errors.password}>
-                            <input
-                                type="password"
-                                value={form.data.password}
-                                onChange={(e) => form.setData('password', e.target.value)}
-                                className={inputClassName}
-                                placeholder="Min 8 characters"
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    type={showPassword ? 'text' : 'password'}
+                                    value={form.data.password}
+                                    onChange={(e) => form.setData('password', e.target.value)}
+                                    className={inputClassName + ' pr-10'}
+                                    placeholder="Min 8 characters"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword((v) => !v)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                                    tabIndex={-1}
+                                >
+                                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                                </button>
+                            </div>
                         </FormField>
                     </div>
 

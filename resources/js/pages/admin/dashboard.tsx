@@ -1,4 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
 import type { ApexOptions } from 'apexcharts';
 import {
     AlertTriangle,
@@ -79,6 +80,59 @@ function tooltipHtml(label: string, rows: { color: string; name: string; value: 
     </div>`;
 }
 
+/* ─── Count-up hook ─── */
+function useCountUp(target: number, active: boolean, delay = 0) {
+    const [value, setValue] = useState(0);
+    useEffect(() => {
+        if (!active || !target) return;
+        const timeout = setTimeout(() => {
+            const duration = 900;
+            let startTime: number | null = null;
+            const step = (ts: number) => {
+                if (!startTime) startTime = ts;
+                const progress = Math.min((ts - startTime) / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                setValue(Math.round(eased * target));
+                if (progress < 1) requestAnimationFrame(step);
+            };
+            requestAnimationFrame(step);
+        }, delay);
+        return () => clearTimeout(timeout);
+    }, [active, target, delay]);
+    return value;
+}
+
+/* ─── Primary Stat Card (count-up + stagger entrance) ─── */
+function PrimaryStatCard({ label, value, sub, icon: Icon, grad, shadow, alert, index, mounted }: {
+    label: string; value: number; sub: string; icon: React.ElementType;
+    grad: string; shadow: string; alert: boolean; index: number; mounted: boolean;
+}) {
+    const count = useCountUp(value, mounted, index * 90);
+    return (
+        <div
+            className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${grad} p-4 shadow-lg ${shadow} sm:p-5 transition-all duration-700 hover:scale-[1.02] hover:shadow-2xl ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+            style={{ transitionDelay: `${index * 80}ms` }}
+        >
+            <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-xl transition-all duration-500 group-hover:size-32 group-hover:blur-2xl" />
+            <div className="pointer-events-none absolute -bottom-4 -left-4 size-16 rounded-full bg-black/10 blur-xl" />
+            {alert && (
+                <span className="absolute right-3 top-3 flex size-2.5">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-white opacity-60" />
+                    <span className="relative inline-flex size-2.5 rounded-full bg-white shadow-sm" />
+                </span>
+            )}
+            <div className="relative flex size-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm ring-1 ring-white/20 sm:size-11 transition-transform duration-300 group-hover:scale-110">
+                <Icon className="size-5 text-white sm:size-[22px]" />
+            </div>
+            <p className="relative mt-3 text-2xl font-extrabold tabular-nums tracking-tight text-white sm:text-3xl">
+                {count.toLocaleString()}
+            </p>
+            <p className="relative mt-0.5 text-[11px] font-semibold text-white/80 sm:text-xs">{label}</p>
+            <p className="relative mt-0.5 text-[10px] text-white/55">{sub}</p>
+        </div>
+    );
+}
+
 /* ─── Card ─── */
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
@@ -112,6 +166,9 @@ export default function AdminDashboard({
     top_responders, avg_response_time, recent_activity,
     affected_areas, map_reports, period,
 }: Props) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+
     const severityValues = [
         severity_breakdown['critical'] ?? 0,
         severity_breakdown['high'] ?? 0,
@@ -276,7 +333,7 @@ export default function AdminDashboard({
                 )}
 
                 {/* Header */}
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
                     <div className="flex items-center gap-4">
                         <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 shadow-xl shadow-indigo-500/30">
                             <LayoutDashboard className="size-6 text-white" />
@@ -313,25 +370,13 @@ export default function AdminDashboard({
                         { label: 'Pending Review', value: stats.pending,         sub: 'awaiting action',                                                icon: Clock,         grad: 'from-amber-400 via-orange-500 to-rose-500',     shadow: 'shadow-amber-500/40',  alert: stats.pending > 0 },
                         { label: 'Responders',     value: stats.total_responders,sub: `${stats.resolved_today} resolved today`,                        icon: ShieldCheck,   grad: 'from-violet-500 via-purple-500 to-indigo-600',  shadow: 'shadow-violet-500/40', alert: false },
                         { label: 'Active Alerts',  value: active_alerts,         sub: `${critical_alerts.length} critical`,                            icon: AlertTriangle, grad: 'from-rose-500 via-red-500 to-pink-600',         shadow: 'shadow-rose-500/40',   alert: active_alerts > 0 },
-                    ] as const).map(({ label, value, sub, icon: Icon, grad, shadow, alert }) => (
-                        <div key={label} className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${grad} p-4 shadow-lg ${shadow} sm:p-5`}>
-                            {/* Decorative blob */}
-                            <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-xl" />
-                            <div className="pointer-events-none absolute -bottom-4 -left-4 size-16 rounded-full bg-black/10 blur-xl" />
-
-                            {alert && (
-                                <span className="absolute right-3 top-3 flex size-2.5">
-                                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-white opacity-60" />
-                                    <span className="relative inline-flex size-2.5 rounded-full bg-white shadow-sm" />
-                                </span>
-                            )}
-                            <div className="relative flex size-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm sm:size-11">
-                                <Icon className="size-5 text-white sm:size-[22px]" />
-                            </div>
-                            <p className="relative mt-3 text-2xl font-extrabold tabular-nums tracking-tight text-white sm:text-3xl">{value.toLocaleString()}</p>
-                            <p className="relative mt-0.5 text-[11px] font-semibold text-white/80 sm:text-xs">{label}</p>
-                            <p className="relative mt-0.5 text-[10px] text-white/60">{sub}</p>
-                        </div>
+                    ] as const).map(({ label, value, sub, icon: Icon, grad, shadow, alert }, i) => (
+                        <PrimaryStatCard
+                            key={label}
+                            label={label} value={value} sub={sub} icon={Icon}
+                            grad={grad} shadow={shadow} alert={alert}
+                            index={i} mounted={mounted}
+                        />
                     ))}
                 </div>
 
@@ -342,8 +387,8 @@ export default function AdminDashboard({
                         { icon: Clock,        grad: 'from-orange-400 to-amber-500',   shadow: 'shadow-orange-500/20',  value: formatResponseTime(avg_response_time), label: 'Avg Response',   sub: 'Time to action',  accent: 'text-orange-600 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400' },
                         { icon: Globe,        grad: 'from-violet-500 to-purple-600',  shadow: 'shadow-violet-500/20',  value: affected_areas,                    label: 'Affected Areas', sub: 'Active zones',    accent: 'text-violet-600 bg-violet-50 dark:bg-violet-900/20 dark:text-violet-400' },
                         { icon: TrendingUp,   grad: 'from-teal-500 to-cyan-600',      shadow: 'shadow-teal-500/20',    value: `${resolutionRate}%`,              label: 'Resolution Rate', sub: 'All time',       accent: 'text-teal-600 bg-teal-50 dark:bg-teal-900/20 dark:text-teal-400' },
-                    ] as const).map(({ icon: Icon, grad, shadow, value, label, sub, accent }) => (
-                        <div key={label} className="flex items-center gap-4 rounded-2xl border border-white/60 bg-white p-4 shadow-sm shadow-black/[0.04] transition-all hover:shadow-md sm:p-5 dark:border-neutral-700/50 dark:bg-neutral-900">
+                    ] as const).map(({ icon: Icon, grad, shadow, value, label, sub, accent }, i) => (
+                        <div key={label} className={`flex items-center gap-4 rounded-2xl border border-white/60 bg-white p-4 shadow-sm shadow-black/[0.04] transition-all duration-700 hover:shadow-md hover:scale-[1.01] sm:p-5 dark:border-neutral-700/50 dark:bg-neutral-900 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: `${i * 80 + 480}ms` }}>
                             <div className={`flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${grad} shadow-lg ${shadow}`}>
                                 <Icon className="size-5 text-white" />
                             </div>

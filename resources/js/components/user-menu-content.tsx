@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { LogOut, Settings, UserCircle } from 'lucide-react';
+import { LogOut, UserCircle } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -47,17 +47,6 @@ export function UserMenuContent({ user }: Props) {
                     >
                         <UserCircle className="mr-2 size-4" />
                         Profile
-                    </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <Link
-                        className="flex w-full cursor-pointer items-center"
-                        href="/settings"
-                        prefetch
-                        onClick={cleanup}
-                    >
-                        <Settings className="mr-2 size-4" />
-                        Settings
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>

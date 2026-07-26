@@ -18,6 +18,7 @@ trait ProfileValidationRules
         return [
             'name'           => $this->nameRules(),
             'email'          => $this->emailRules($userId),
+            'contact_number' => ['nullable', 'string', 'max:20'],
             'home_address'   => ['nullable', 'string', 'max:500'],
             'home_latitude'  => ['nullable', 'numeric', 'between:-90,90'],
             'home_longitude' => ['nullable', 'numeric', 'between:-180,180'],

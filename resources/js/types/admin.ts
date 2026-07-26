@@ -1,9 +1,48 @@
 // ─── Shared admin domain types ────────────────────────────────────────────────
 
-export type Severity   = 'low' | 'moderate' | 'high' | 'critical';
-export type ReportStatus = 'pending' | 'verified' | 'assigned' | 'resolved' | 'rejected';
-export type AlertType  = 'advisory' | 'update' | 'critical';
-export type UserRole   = 'resident' | 'responder';
+export type Severity        = 'low' | 'moderate' | 'high' | 'critical';
+export type ReportStatus    = 'pending' | 'verified' | 'assigned' | 'resolved' | 'rejected';
+export type ResponderStatus = 'pending' | 'en_route' | 'on_scene' | 'resolved';
+export type AlertType       = 'advisory' | 'update' | 'critical';
+export type UserRole        = 'resident' | 'responder';
+
+export interface TeamMember {
+    id: number;
+    name: string;
+    avatar_url: string | null;
+    is_leader: boolean;
+    member_status?: ResponderStatus;
+}
+
+export interface Team {
+    id: number;
+    name: string;
+    leader_id: number;
+    members: TeamMember[];
+    active_assignments?: number;
+}
+
+export interface MemberStatus {
+    user_id: number;
+    user_name: string;
+    avatar_url: string | null;
+    status: ResponderStatus;
+    updated_at: string;
+}
+
+export const RESPONDER_STATUS_COLORS: Record<ResponderStatus, string> = {
+    pending:  'bg-amber-50 text-amber-700 ring-1 ring-amber-600/10',
+    en_route: 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/10',
+    on_scene: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/10',
+    resolved: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/10',
+};
+
+export const RESPONDER_STATUS_LABELS: Record<ResponderStatus, string> = {
+    pending:  'Pending',
+    en_route: 'En Route',
+    on_scene: 'On Scene',
+    resolved: 'Resolved',
+};
 
 export interface AdminUser {
     id: number;
@@ -47,6 +86,9 @@ export interface Report {
     address: string | null;
     user?: { id: number; name: string; email: string; contact_number: string | null };
     assigned_responder?: { id: number; name: string; contact_number: string | null } | null;
+    assigned_team?: { id: number; name: string } | null;
+    team_members?: TeamMember[];
+    member_statuses?: MemberStatus[];
     verifier?: { id: number; name: string } | null;
     media?: ReportMedia[];
     status_updates?: StatusUpdate[];
@@ -76,6 +118,17 @@ export interface Alert {
 export interface Responder {
     id: number;
     name: string;
+    email?: string;
+    contact_number?: string | null;
+    avatar_url?: string | null;
+    home_address?: string | null;
+    team_id?: number | null;
+    team_name?: string | null;
+    is_leader?: boolean;
+    total_assigned?: number;
+    active_assignments?: number;
+    resolved_count?: number;
+    created_at?: string;
 }
 
 // ─── Premium color tokens ────────────────────────────────────────────────────
