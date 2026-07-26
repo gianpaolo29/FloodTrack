@@ -26,10 +26,13 @@ import {
     Home,
     Truck,
     Globe,
+    Moon,
+    Sun,
 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
-import { dashboard, login, register } from '@/routes';
+import { dashboard, login } from '@/routes';
+import { useAppearance } from '@/hooks/use-appearance';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 
@@ -211,6 +214,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
     const { auth } = usePage().props;
     const scrolled = useScrolled();
     const mouse = useMouse();
+    const { resolvedAppearance, updateAppearance } = useAppearance();
+    const isDark = resolvedAppearance === 'dark';
 
     const [featRef, featIn]     = useInView();
     const [stepsRef, stepsIn]   = useInView();
@@ -246,17 +251,19 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                 <meta name="description" content="FloodTrack helps residents of Nasugbu, Batangas report flood and road hazards in real time." />
             </Head>
 
-            <div className="min-h-screen overflow-x-hidden bg-[#06090f] text-white antialiased selection:bg-cyan-500/30">
+            <div className={`min-h-screen overflow-x-hidden antialiased selection:bg-cyan-500/30 ${isDark ? 'bg-[#06090f] text-white' : 'bg-[#fafbfc] text-neutral-900'}`}>
 
                 {/* Noise texture overlay */}
-                <div className="pointer-events-none fixed inset-0 z-[100] opacity-[0.018]"
+                <div className={`pointer-events-none fixed inset-0 z-[100] ${isDark ? 'opacity-[0.018]' : 'opacity-[0.006]'}`}
                     style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\'/%3E%3C/svg%3E")', backgroundRepeat: 'repeat', backgroundSize: '128px 128px' }}
                 />
 
                 {/* ── Navbar ─────────────────────────────────────────── */}
                 <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
                     scrolled
-                        ? 'bg-[#06090f]/70 border-b border-white/[0.04] shadow-2xl shadow-black/40 backdrop-blur-2xl backdrop-saturate-150'
+                        ? isDark
+                            ? 'bg-[#06090f]/70 border-b border-white/[0.04] shadow-2xl shadow-black/40 backdrop-blur-2xl backdrop-saturate-150'
+                            : 'bg-white/80 border-b border-neutral-200/50 shadow-lg shadow-neutral-200/40 backdrop-blur-2xl backdrop-saturate-150'
                         : 'bg-transparent'
                 }`}>
                     <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4 lg:px-10">
@@ -266,7 +273,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 <div className="absolute inset-[1px] rounded-[13px] bg-gradient-to-b from-white/25 to-transparent" />
                             </div>
                             <span className="text-[1.15rem] font-bold tracking-tight">
-                                <span className="text-white">Flood</span><span className="bg-gradient-to-r from-cyan-300 to-blue-400 bg-clip-text text-transparent">Track</span>
+                                <span className={isDark ? 'text-white' : 'text-slate-900'}>Flood</span><span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-cyan-300 to-blue-400' : 'bg-gradient-to-r from-cyan-500 to-blue-600'}`}>Track</span>
                             </span>
                         </Link>
 
@@ -277,10 +284,10 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 </PremiumButton>
                             ) : (
                                 <>
-                                    <Link href={login()} className="px-5 py-2.5 text-sm font-medium text-white/50 transition-colors duration-200 hover:text-white rounded-xl hover:bg-white/[0.04]">
+                                    <Link href={login()} className={`px-5 py-2.5 text-sm font-medium transition-colors duration-200 rounded-xl ${isDark ? 'text-white/50 hover:text-white hover:bg-white/[0.04]' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'}`}>
                                         Sign in
                                     </Link>
-                                    {canRegister && <PremiumButton href={register.url()}>Get started</PremiumButton>}
+                                    {canRegister && <PremiumButton href="/register">Get started</PremiumButton>}
                                 </>
                             )}
                         </div>
@@ -290,55 +297,64 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                 <main>
 
                     {/* ── HERO ─────────────────────────────────────────── */}
-                    <section className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-4 pt-24 pb-16 sm:px-6 sm:pt-28 sm:pb-20">
+                    <section className={`relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden px-4 pt-24 pb-16 sm:px-6 sm:pt-28 sm:pb-20 ${!isDark ? 'bg-gradient-to-b from-slate-50 via-white to-[#fafbfc]' : ''}`}>
+
+                        {/* Light mode subtle top gradient wash */}
+                        {!isDark && (
+                            <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                                <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[1200px] h-[600px] rounded-full opacity-[0.35] blur-[120px]"
+                                    style={{ background: 'radial-gradient(ellipse, rgba(56,189,248,0.15), rgba(99,102,241,0.08), transparent 70%)' }}
+                                />
+                            </div>
+                        )}
 
                         {/* Canvas particles */}
-                        <div className="pointer-events-none absolute inset-0 opacity-60">
+                        <div className={`pointer-events-none absolute inset-0 ${isDark ? 'opacity-60' : 'opacity-20'}`}>
                             <ParticleField />
                         </div>
 
                         {/* Gradient orbs — parallax */}
                         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                            <div className="absolute -left-40 -top-40 size-[700px] rounded-full opacity-[0.12] blur-[140px]"
+                            <div className={`absolute -left-40 -top-40 size-[700px] rounded-full blur-[140px] ${isDark ? 'opacity-[0.12]' : 'opacity-[0.10]'}`}
                                 style={{ background: 'conic-gradient(from 200deg, #06b6d4, #3b82f6, #8b5cf6, #06b6d4)', transform: `translate(${mouse.x * 4}px, ${mouse.y * 4}px)`, transition: 'transform 0.6s cubic-bezier(.22,1,.36,1)' }}
                             />
-                            <div className="absolute -right-40 top-20 size-[600px] rounded-full opacity-[0.08] blur-[120px]"
+                            <div className={`absolute -right-40 top-20 size-[600px] rounded-full blur-[120px] ${isDark ? 'opacity-[0.08]' : 'opacity-[0.07]'}`}
                                 style={{ background: 'conic-gradient(from 40deg, #22d3ee, #3b82f6, #22d3ee)', transform: `translate(${-mouse.x * 3}px, ${-mouse.y * 3}px)`, transition: 'transform 0.8s cubic-bezier(.22,1,.36,1)' }}
                             />
-                            <div className="absolute left-1/3 bottom-0 size-[500px] rounded-full opacity-[0.06] blur-[100px]"
+                            <div className={`absolute left-1/3 bottom-0 size-[500px] rounded-full blur-[100px] ${isDark ? 'opacity-[0.06]' : 'opacity-[0.06]'}`}
                                 style={{ background: 'radial-gradient(circle, #a78bfa, transparent 70%)' }}
                             />
                         </div>
 
                         {/* Grid */}
-                        <div className="pointer-events-none absolute inset-0 opacity-[0.025]"
-                            style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.15) 1px, transparent 1px)', backgroundSize: '72px 72px', transform: `translate(${mouse.x * 0.5}px, ${mouse.y * 0.5}px)`, transition: 'transform 1s ease-out' }}
+                        <div className={`pointer-events-none absolute inset-0 ${isDark ? 'opacity-[0.025]' : 'opacity-[0.035]'}`}
+                            style={{ backgroundImage: isDark ? 'linear-gradient(rgba(255,255,255,.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.15) 1px, transparent 1px)' : 'linear-gradient(rgba(99,102,241,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,.07) 1px, transparent 1px)', backgroundSize: '72px 72px', transform: `translate(${mouse.x * 0.5}px, ${mouse.y * 0.5}px)`, transition: 'transform 1s ease-out' }}
                         />
 
                         {/* Radial vignette */}
-                        <div className="pointer-events-none absolute inset-0" style={{ background: 'radial-gradient(ellipse 70% 60% at 50% 40%, transparent 0%, #06090f 100%)' }} />
+                        <div className="pointer-events-none absolute inset-0" style={{ background: isDark ? 'radial-gradient(ellipse 70% 60% at 50% 40%, transparent 0%, #06090f 100%)' : 'radial-gradient(ellipse 80% 70% at 50% 40%, transparent 0%, rgba(250,251,252,0.95) 100%)' }} />
 
                         {/* Content */}
                         <div className="relative z-10 mx-auto max-w-5xl text-center">
 
                             {/* Badge */}
-                            <div className={`mb-10 inline-flex items-center gap-3 rounded-full border border-white/[0.06] bg-white/[0.03] px-5 py-2 backdrop-blur-md transition-all duration-1000 ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+                            <div className={`mb-10 inline-flex items-center gap-3 rounded-full border px-5 py-2 backdrop-blur-md transition-all duration-1000 ${isDark ? 'border-white/[0.06] bg-white/[0.03]' : 'border-blue-100/80 bg-white/70 shadow-lg shadow-blue-500/[0.04]'} ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
                                 <span className="relative flex size-[6px]">
                                     <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
                                     <span className="relative inline-flex size-[6px] rounded-full bg-emerald-400 shadow-lg shadow-emerald-400/50" />
                                 </span>
-                                <span className="text-[13px] font-medium text-white/40">Live hazard reporting</span>
-                                <span className="h-3 w-px bg-white/[0.08]" />
-                                <span className="text-[13px] font-semibold bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">Nasugbu, Batangas</span>
+                                <span className={`text-[13px] font-medium ${isDark ? 'text-white/40' : 'text-neutral-500'}`}>Live hazard reporting</span>
+                                <span className={`h-3 w-px ${isDark ? 'bg-white/[0.08]' : 'bg-neutral-300'}`} />
+                                <span className={`text-[13px] font-semibold bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-cyan-300 to-blue-300' : 'bg-gradient-to-r from-cyan-600 to-blue-600'}`}>Nasugbu, Batangas</span>
                             </div>
 
                             {/* Heading */}
                             <h1 className={`mb-8 text-[clamp(2.6rem,6vw,5rem)] font-extrabold leading-[1.08] tracking-[-0.035em] transition-all duration-1000 delay-150 ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
-                                <span className="block bg-gradient-to-b from-white via-white to-white/60 bg-clip-text text-transparent">
+                                <span className={`block bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white via-white to-white/60' : 'bg-gradient-to-b from-slate-900 via-slate-800 to-slate-500'}`}>
                                     Report floods & hazards
                                 </span>
                                 <span className="relative mt-1 inline-block">
-                                    <span className="hero-gradient-text bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400 bg-clip-text text-transparent bg-[length:200%_auto]">
+                                    <span className={`hero-gradient-text bg-clip-text text-transparent bg-[length:200%_auto] ${isDark ? 'bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400' : 'bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600'}`}>
                                         in real time
                                     </span>
                                     <span className="absolute -bottom-2 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-cyan-500/60 via-blue-500/60 to-violet-500/60 blur-sm" />
@@ -346,14 +362,14 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             </h1>
 
                             {/* Sub */}
-                            <p className={`mx-auto mb-14 max-w-[38rem] text-[1.1rem] leading-relaxed text-white/35 font-[350] transition-all duration-1000 delay-300 ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
+                            <p className={`mx-auto mb-14 max-w-[38rem] text-[1.1rem] leading-relaxed font-[350] transition-all duration-1000 delay-300 ${isDark ? 'text-white/35' : 'text-slate-500'} ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
                                 Connect directly with MDRRMO. Submit a hazard report from your phone in seconds — with GPS location, photo evidence, and severity level. Responders are dispatched faster.
                             </p>
 
                             {/* CTA */}
                             <div className={`flex flex-wrap items-center justify-center gap-4 transition-all duration-1000 delay-500 ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
                                 {canRegister && !auth.user && (
-                                    <Link href={register()} className="hero-cta group relative overflow-hidden rounded-2xl px-7 py-3.5 text-sm font-bold text-white shadow-2xl transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:scale-[1.04] hover:shadow-cyan-500/25 active:scale-[0.97]">
+                                    <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-7 py-3.5 text-sm font-bold text-white shadow-2xl transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:scale-[1.04] hover:shadow-cyan-500/25 active:scale-[0.97]">
                                         <span className="relative z-10 flex items-center gap-2.5">
                                             Create free account
                                             <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -362,7 +378,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 )}
                                 <Link
                                     href={auth.user ? (auth.user.role === 'admin' ? '/admin' : dashboard()) : login()}
-                                    className="group flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-7 py-3.5 text-sm font-semibold text-white/60 backdrop-blur-md transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:bg-white/[0.06] hover:text-white/90 hover:border-white/[0.12] hover:scale-[1.04] active:scale-[0.97]"
+                                    className={`group flex items-center gap-2 rounded-2xl border px-7 py-3.5 text-sm font-semibold backdrop-blur-md transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white/90 hover:border-white/[0.12]' : 'border-neutral-200/80 bg-white/70 text-slate-600 hover:bg-white hover:text-slate-900 hover:border-blue-200/60 shadow-lg shadow-blue-500/[0.04] ring-1 ring-neutral-100 hover:ring-blue-100/50'}`}
                                 >
                                     {auth.user ? 'Go to dashboard' : 'Sign in'}
                                     <ArrowUpRight className="size-4 opacity-40 transition-all duration-300 group-hover:opacity-80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -372,8 +388,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                         {/* Scroll cue */}
                         <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2.5 transition-all duration-1000 delay-[900ms] ${heroVis ? 'opacity-30' : 'opacity-0'}`}>
-                            <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-white/30">Scroll</span>
-                            <ChevronDown className="size-4 text-white/20 animate-[bounce-soft_2.5s_ease-in-out_infinite]" />
+                            <span className={`text-[10px] font-semibold tracking-[0.2em] uppercase ${isDark ? 'text-white/30' : 'text-neutral-300'}`}>Scroll</span>
+                            <ChevronDown className={`size-4 animate-[bounce-soft_2.5s_ease-in-out_infinite] ${isDark ? 'text-white/20' : 'text-neutral-300'}`} />
                         </div>
                     </section>
 
@@ -381,11 +397,11 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     <section className="relative px-4 py-12 sm:px-6 sm:py-16" ref={bentoRef}>
                         <div className="mx-auto max-w-6xl">
                             {/* Glass container */}
-                            <div className={`relative overflow-hidden rounded-[28px] border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-white/[0.01] p-1 backdrop-blur-xl transition-all duration-[1000ms] ${bentoIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                            <div className={`relative overflow-hidden rounded-[28px] border p-1 backdrop-blur-xl transition-all duration-[1000ms] ${isDark ? 'border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-white/[0.01]' : 'border-neutral-200/80 bg-white/80 shadow-2xl shadow-blue-500/[0.04] ring-1 ring-neutral-100'} ${bentoIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                                 {/* Animated top border glow */}
                                 <div className="absolute inset-x-0 top-0 h-px animated-border" />
 
-                                <div className="grid grid-cols-2 sm:grid-cols-4 divide-white/[0.04] sm:divide-x">
+                                <div className={`grid grid-cols-2 sm:grid-cols-4 sm:divide-x ${isDark ? 'divide-white/[0.04]' : 'divide-neutral-100'}`}>
                                     {([
                                         { value: stats?.total_reports ?? 0, label: 'Reports Filed', sub: 'Community submissions', icon: TrendingUp, accentColor: '#22d3ee', gradient: 'from-cyan-400 to-blue-500' },
                                         { value: stats?.resolved_reports ?? 0, label: 'Resolved', sub: 'Hazards addressed', icon: CheckCircle2, accentColor: '#34d399', gradient: 'from-emerald-400 to-teal-500' },
@@ -397,7 +413,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                         return (
                                             <div
                                                 key={s.label}
-                                                className={`group relative flex flex-col items-center justify-center px-4 py-8 text-center transition-all duration-500 sm:py-10 hover:bg-white/[0.02] ${bentoIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'} ${i < 2 ? 'border-b border-white/[0.04] sm:border-b-0' : ''} ${i % 2 === 0 ? 'border-r border-white/[0.04] sm:border-r-0' : ''}`}
+                                                className={`group relative flex flex-col items-center justify-center px-4 py-8 text-center transition-all duration-500 sm:py-10 ${isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-neutral-50'} ${bentoIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'} ${i < 2 ? `border-b sm:border-b-0 ${isDark ? 'border-white/[0.04]' : 'border-neutral-100'}` : ''} ${i % 2 === 0 ? `border-r sm:border-r-0 ${isDark ? 'border-white/[0.04]' : 'border-neutral-100'}` : ''}`}
                                                 style={{ transitionDelay: `${i * 100}ms` }}
                                             >
                                                 {/* Hover glow */}
@@ -409,7 +425,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                     <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/25 to-transparent" />
                                                 </div>
                                                 <div className="relative flex items-center gap-1.5">
-                                                    <p className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">{count.toLocaleString()}</p>
+                                                    <p className={`text-3xl font-extrabold tracking-tight sm:text-4xl ${isDark ? 'text-white' : 'text-neutral-900'}`}>{count.toLocaleString()}</p>
                                                     {'pulse' in s && s.pulse && s.value > 0 && (
                                                         <span className="relative flex size-2">
                                                             <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber-400 opacity-50" />
@@ -417,8 +433,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="mt-1.5 text-[13px] font-semibold text-white/50">{s.label}</p>
-                                                <p className="mt-0.5 text-[11px] text-white/20">{s.sub}</p>
+                                                <p className={`mt-1.5 text-[13px] font-semibold ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>{s.label}</p>
+                                                <p className={`mt-0.5 text-[11px] ${isDark ? 'text-white/20' : 'text-neutral-400'}`}>{s.sub}</p>
                                             </div>
                                         );
                                     })}
@@ -428,7 +444,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     </section>
 
                     {/* ── FEATURES ───────────────────────────────────────── */}
-                    <section className="relative px-4 py-16 sm:px-6 sm:py-32" ref={featRef}>
+                    <section className={`relative px-4 py-16 sm:px-6 sm:py-32 ${!isDark ? 'bg-gradient-to-b from-white via-slate-50/50 to-white' : ''}`} ref={featRef}>
                         <GlowDivider />
 
                         <div className="mx-auto max-w-7xl">
@@ -454,7 +470,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     return (
                                         <div
                                             key={f.title}
-                                            className={`feat-card group relative overflow-hidden rounded-[20px] border border-white/[0.04] bg-[#0a0e17] p-5 transition-all duration-500 sm:p-8 hover:border-white/[0.1] hover:-translate-y-2 hover:shadow-2xl hover:shadow-black/30 ${featIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                                            className={`feat-card group relative overflow-hidden rounded-[20px] border p-5 transition-all duration-500 sm:p-8 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'} ${featIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
                                             style={{ transitionDelay: `${i * 70}ms` }}
                                         >
                                             {/* Mouse-follow glow */}
@@ -463,19 +479,19 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                             />
 
                                             {/* Shimmer sweep on hover */}
-                                            <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent via-white/[0.03] to-transparent skew-x-[-20deg]" />
+                                            <div className={`pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent to-transparent skew-x-[-20deg] ${isDark ? 'via-white/[0.03]' : 'via-blue-500/[0.03]'}`} />
 
                                             {/* Animated border glow */}
                                             <div className="pointer-events-none absolute inset-0 rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-                                                style={{ boxShadow: 'inset 0 0 0 1px rgba(56,189,248,0.08)' }}
+                                                style={{ boxShadow: isDark ? 'inset 0 0 0 1px rgba(56,189,248,0.08)' : 'inset 0 0 0 1px rgba(59,130,246,0.08)' }}
                                             />
 
                                             <div className={`relative mb-6 inline-flex rounded-2xl bg-gradient-to-br ${f.grad} p-3.5 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-2xl`}>
                                                 <Icon className="size-[22px] text-white transition-transform duration-500 group-hover:scale-110" />
                                                 <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
                                             </div>
-                                            <h3 className="relative mb-2 text-[17px] font-semibold text-white/90 transition-colors duration-300 group-hover:text-white">{f.title}</h3>
-                                            <p className="relative text-[14px] leading-relaxed text-white/35 font-[350] transition-colors duration-300 group-hover:text-white/50">{f.body}</p>
+                                            <h3 className={`relative mb-2 text-[17px] font-semibold transition-colors duration-300 ${isDark ? 'text-white/90 group-hover:text-white' : 'text-neutral-800 group-hover:text-neutral-900'}`}>{f.title}</h3>
+                                            <p className={`relative text-[14px] leading-relaxed font-[350] transition-colors duration-300 ${isDark ? 'text-white/35 group-hover:text-white/50' : 'text-neutral-500 group-hover:text-neutral-600'}`}>{f.body}</p>
                                         </div>
                                     );
                                 })}
@@ -500,7 +516,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             <div className="relative grid gap-6 sm:grid-cols-3">
                                 {/* Connector */}
                                 <div className="absolute left-[16.6%] right-[16.6%] top-[72px] hidden h-px sm:block">
-                                    <div className="h-full bg-gradient-to-r from-white/[0.03] via-white/[0.06] to-white/[0.03]" />
+                                    <div className={`h-full bg-gradient-to-r ${isDark ? 'from-white/[0.03] via-white/[0.06] to-white/[0.03]' : 'from-neutral-200/30 via-neutral-200/60 to-neutral-200/30'}`} />
                                     <div className="absolute inset-0 h-full bg-gradient-to-r from-cyan-500 via-blue-500 to-emerald-500 rounded-full transition-all ease-out"
                                         style={{ width: stepsIn ? '100%' : '0%', transition: 'width 2s cubic-bezier(.22,1,.36,1) 0.3s', opacity: 0.6 }}
                                     />
@@ -516,7 +532,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                         <div key={s.n} className={`relative flex flex-col items-center text-center transition-all duration-[800ms] ease-out ${stepsIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
                                             style={{ transitionDelay: `${i * 200 + 200}ms` }}
                                         >
-                                            <div className={`group/step relative z-10 mb-8 flex size-28 flex-col items-center justify-center rounded-[28px] border border-white/[0.05] bg-[#0a0e17] shadow-2xl sm:size-36 ${s.ring} transition-all duration-500 hover:scale-110 hover:border-white/[0.1] hover:shadow-3xl cursor-pointer`}>
+                                            <div className={`group/step relative z-10 mb-8 flex size-28 flex-col items-center justify-center rounded-[28px] border shadow-2xl sm:size-36 ${s.ring} transition-all duration-500 hover:scale-110 cursor-pointer ${isDark ? 'border-white/[0.05] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-3xl' : 'border-neutral-200/70 bg-white hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'}`}>
                                                 {/* Pulse ring on hover */}
                                                 <div className="absolute inset-0 rounded-[28px] opacity-0 group-hover/step:opacity-100 transition-opacity duration-500 group-hover/step:animate-[ringPulse_1.5s_ease-out_infinite]"
                                                     style={{ boxShadow: `0 0 0 0 ${s.grad.includes('sky') ? 'rgba(56,189,248,0.3)' : s.grad.includes('cyan') ? 'rgba(6,182,212,0.3)' : 'rgba(52,211,153,0.3)'}` }}
@@ -525,10 +541,10 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                     <Icon className="size-7 text-white transition-transform duration-500 group-hover/step:scale-125 group-hover/step:rotate-6" />
                                                     <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
                                                 </div>
-                                                <span className="mt-3 text-[11px] font-bold tracking-[0.15em] text-white/15 uppercase transition-colors duration-300 group-hover/step:text-white/30">{s.n}</span>
+                                                <span className={`mt-3 text-[11px] font-bold tracking-[0.15em] uppercase transition-colors duration-300 ${isDark ? 'text-white/15 group-hover/step:text-white/30' : 'text-neutral-400 group-hover/step:text-neutral-500'}`}>{s.n}</span>
                                             </div>
-                                            <h3 className="mb-2 text-[1.15rem] font-bold text-white/90">{s.title}</h3>
-                                            <p className="max-w-[260px] text-[14px] leading-relaxed text-white/35 font-[350]">{s.body}</p>
+                                            <h3 className={`mb-2 text-[1.15rem] font-bold ${isDark ? 'text-white/90' : 'text-neutral-800'}`}>{s.title}</h3>
+                                            <p className={`max-w-[260px] text-[14px] leading-relaxed font-[350] ${isDark ? 'text-white/35' : 'text-neutral-500'}`}>{s.body}</p>
                                         </div>
                                     );
                                 })}
@@ -542,10 +558,10 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                         {/* Background orbs */}
                         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                            <div className="absolute right-[-10%] top-[20%] w-[700px] h-[700px] rounded-full opacity-[0.06] blur-[140px]"
+                            <div className={`absolute right-[-10%] top-[20%] w-[700px] h-[700px] rounded-full blur-[140px] ${isDark ? 'opacity-[0.06]' : 'opacity-[0.04]'}`}
                                 style={{ background: 'conic-gradient(from 120deg, #8b5cf6, #3b82f6, #06b6d4, #8b5cf6)' }}
                             />
-                            <div className="absolute left-[-10%] bottom-[10%] w-[500px] h-[500px] rounded-full opacity-[0.04] blur-[100px]"
+                            <div className={`absolute left-[-10%] bottom-[10%] w-[500px] h-[500px] rounded-full blur-[100px] ${isDark ? 'opacity-[0.04]' : 'opacity-[0.03]'}`}
                                 style={{ background: 'radial-gradient(circle, #06b6d4, transparent 70%)' }}
                             />
                         </div>
@@ -565,12 +581,12 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     </section>
 
                     {/* ── SEVERITY ───────────────────────────────────────── */}
-                    <section className="relative px-4 py-16 sm:px-6 sm:py-32" ref={sevRef}>
+                    <section className={`relative px-4 py-16 sm:px-6 sm:py-32 ${!isDark ? 'bg-gradient-to-b from-white via-slate-50/50 to-white' : ''}`} ref={sevRef}>
                         <GlowDivider />
 
                         {/* Background warmth */}
                         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[450px] rounded-full opacity-[0.06] blur-[120px]"
+                            <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[450px] rounded-full blur-[120px] ${isDark ? 'opacity-[0.06]' : 'opacity-[0.04]'}`}
                                 style={{ background: 'radial-gradient(ellipse, #ef4444, #f59e0b, transparent 70%)' }}
                             />
                         </div>
@@ -598,7 +614,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                         <div
                                             key={s.level}
                                             onClick={() => setActiveSev(open ? null : i)}
-                                            className={`group cursor-pointer relative overflow-hidden rounded-[20px] border border-white/[0.04] bg-[#0a0e17] p-5 transition-all duration-500 sm:p-7 hover:border-white/[0.1] hover:-translate-y-2 hover:shadow-2xl ${sevIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} ${open ? 'scale-[1.03] border-white/[0.12] shadow-2xl' : ''}`}
+                                            className={`group cursor-pointer relative overflow-hidden rounded-[20px] border p-5 transition-all duration-500 sm:p-7 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'} ${sevIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} ${open ? isDark ? 'scale-[1.03] border-white/[0.12] shadow-2xl' : 'scale-[1.03] border-blue-200/80 shadow-2xl shadow-blue-500/[0.06] ring-1 ring-blue-100/50' : ''}`}
                                             style={{ transitionDelay: `${i * 100}ms` }}
                                         >
                                             {/* Colored top glow on hover */}
@@ -615,14 +631,14 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                 <Icon className="size-[18px] transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" />
                                                 {s.level}
                                             </div>
-                                            <p className="relative text-[14px] font-medium text-white/70 transition-colors duration-300 group-hover:text-white/85">{s.meaning}</p>
+                                            <p className={`relative text-[14px] font-medium transition-colors duration-300 ${isDark ? 'text-white/70 group-hover:text-white/85' : 'text-neutral-600 group-hover:text-neutral-800'}`}>{s.meaning}</p>
                                             <div className="overflow-hidden transition-all duration-500"
                                                 style={{ maxHeight: open ? '80px' : '0', opacity: open ? 1 : 0 }}
                                             >
-                                                <p className="mt-3 text-[13px] leading-relaxed text-white/30">{s.detail}</p>
+                                                <p className={`mt-3 text-[13px] leading-relaxed ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>{s.detail}</p>
                                             </div>
                                             <div className="relative mt-4 h-[2px] rounded-full overflow-hidden transition-all duration-700"
-                                                style={{ backgroundColor: 'rgba(255,255,255,0.03)', width: '100%' }}
+                                                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)', width: '100%' }}
                                             >
                                                 <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-700"
                                                     style={{ backgroundColor: s.color + '50', width: open ? '100%' : '0%' }}
@@ -659,7 +675,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     return (
                                     <div
                                         key={r.role}
-                                        className={`group relative overflow-hidden rounded-[20px] border border-white/[0.04] bg-[#0a0e17] p-6 transition-all duration-500 sm:p-9 hover:border-white/[0.1] hover:-translate-y-3 hover:shadow-2xl hover:shadow-black/30 ${rolesIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+                                        className={`group relative overflow-hidden rounded-[20px] border p-6 transition-all duration-500 sm:p-9 hover:-translate-y-3 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'} ${rolesIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
                                         style={{ transitionDelay: `${i * 120}ms` }}
                                     >
                                         {/* Shimmer sweep */}
@@ -674,11 +690,11 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                             <Icon className="size-7 text-white transition-transform duration-500 group-hover:scale-110" />
                                             <div className="absolute inset-[1px] rounded-[21px] bg-gradient-to-b from-white/20 to-transparent" />
                                         </div>
-                                        <h3 className="mb-1.5 text-xl font-bold text-white/90 transition-colors duration-300 group-hover:text-white">{r.role}</h3>
+                                        <h3 className={`mb-1.5 text-xl font-bold transition-colors duration-300 ${isDark ? 'text-white/90 group-hover:text-white' : 'text-neutral-800 group-hover:text-neutral-900'}`}>{r.role}</h3>
                                         <div className={`mb-6 h-[3px] w-10 rounded-full ${r.accent} opacity-50 transition-all duration-700 group-hover:w-24 group-hover:opacity-100`} />
                                         <ul className="space-y-3.5">
                                             {r.points.map((p, pi) => (
-                                                <li key={p} className="flex items-start gap-3 text-[14px] text-white/40 font-[350] transition-all duration-500 group-hover:text-white/55"
+                                                <li key={p} className={`flex items-start gap-3 text-[14px] font-[350] transition-all duration-500 ${isDark ? 'text-white/40 group-hover:text-white/55' : 'text-neutral-500 group-hover:text-neutral-600'}`}
                                                     style={{ transitionDelay: `${pi * 50}ms` }}
                                                 >
                                                     <CheckCircle2 className="mt-[3px] size-4 shrink-0 text-emerald-500/50 transition-all duration-500 group-hover:text-emerald-400/80 group-hover:scale-110" />
@@ -696,11 +712,11 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                     {/* ── EVACUATION CENTERS MAP ─────────────────────────── */}
                     {evacuationCenters.length > 0 && (
-                        <section className="relative px-4 py-16 sm:px-6 sm:py-32" ref={evacRef}>
+                        <section className={`relative px-4 py-16 sm:px-6 sm:py-32 ${!isDark ? 'bg-gradient-to-b from-white via-slate-50/50 to-white' : ''}`} ref={evacRef}>
                             <GlowDivider />
 
                             <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                                <div className="absolute left-1/2 top-1/3 -translate-x-1/2 w-[1000px] h-[500px] rounded-full opacity-[0.05] blur-[140px]"
+                                <div className={`absolute left-1/2 top-1/3 -translate-x-1/2 w-[1000px] h-[500px] rounded-full blur-[140px] ${isDark ? 'opacity-[0.05]' : 'opacity-[0.03]'}`}
                                     style={{ background: 'conic-gradient(from 240deg, #06b6d4, #22c55e, #06b6d4)' }}
                                 />
                             </div>
@@ -718,18 +734,18 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 <div className={`grid gap-5 lg:grid-cols-5 transition-all duration-[800ms] ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                                     {/* Map — glass frame */}
                                     <div className="lg:col-span-3 relative group/map">
-                                        <div className="absolute -inset-px rounded-[24px] bg-gradient-to-b from-white/[0.08] via-white/[0.02] to-transparent opacity-0 transition-opacity duration-700 group-hover/map:opacity-100" />
-                                        <div className="relative overflow-hidden rounded-[24px] border border-white/[0.06] bg-[#080c14] shadow-2xl shadow-black/40">
+                                        <div className={`absolute -inset-px rounded-[24px] bg-gradient-to-b to-transparent opacity-0 transition-opacity duration-700 group-hover/map:opacity-100 ${isDark ? 'from-white/[0.08] via-white/[0.02]' : 'from-neutral-200/40 via-neutral-100/20'}`} />
+                                        <div className={`relative overflow-hidden rounded-[24px] border shadow-2xl ${isDark ? 'border-white/[0.06] bg-[#080c14] shadow-black/40' : 'border-neutral-200/70 bg-white ring-1 ring-neutral-100 shadow-blue-500/[0.04]'}`}>
                                             {/* Map header bar */}
-                                            <div className="flex items-center gap-3 border-b border-white/[0.04] bg-white/[0.02] px-5 py-3">
+                                            <div className={`flex items-center gap-3 border-b px-5 py-3 ${isDark ? 'border-white/[0.04] bg-white/[0.02]' : 'border-neutral-100 bg-neutral-50'}`}>
                                                 <div className="flex gap-1.5">
                                                     <div className="size-[10px] rounded-full bg-red-500/40" />
                                                     <div className="size-[10px] rounded-full bg-amber-500/40" />
                                                     <div className="size-[10px] rounded-full bg-emerald-500/40" />
                                                 </div>
-                                                <div className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-white/[0.03] px-3 py-1">
+                                                <div className={`flex-1 flex items-center justify-center gap-2 rounded-lg px-3 py-1 ${isDark ? 'bg-white/[0.03]' : 'bg-neutral-100'}`}>
                                                     <MapPin className="size-3 text-emerald-400/60" />
-                                                    <span className="text-[10px] font-medium text-white/25 tracking-wide">Nasugbu, Batangas</span>
+                                                    <span className={`text-[10px] font-medium tracking-wide ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>Nasugbu, Batangas</span>
                                                 </div>
                                                 <div className="w-[52px]" />
                                             </div>
@@ -746,7 +762,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                             return (
                                                 <div
                                                     key={center.id}
-                                                    className={`group relative overflow-hidden rounded-2xl border border-white/[0.04] bg-[#0a0e17] transition-all duration-500 hover:border-white/[0.1] hover:bg-white/[0.02] ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+                                                    className={`group relative overflow-hidden rounded-2xl border transition-all duration-500 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:bg-white/[0.02]' : 'border-neutral-200/70 bg-white hover:border-blue-200/60 hover:bg-blue-50/30 hover:shadow-lg hover:shadow-blue-500/[0.04]'} ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
                                                     style={{ transitionDelay: `${i * 60 + 200}ms` }}
                                                 >
                                                     {/* Colored left accent */}
@@ -758,30 +774,30 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                                                     <div className="relative p-4">
                                                         <div className="flex items-start gap-3">
-                                                            <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/[0.04] transition-all duration-300 group-hover:bg-white/[0.06] group-hover:scale-105"
+                                                            <div className={`mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-105 ${isDark ? 'bg-white/[0.04] group-hover:bg-white/[0.06]' : 'bg-neutral-100 group-hover:bg-neutral-200'}`}
                                                                 style={{ color: statusColor }}
                                                             >
                                                                 <Building2 className="size-4" />
                                                             </div>
                                                             <div className="min-w-0 flex-1">
                                                                 <div className="flex items-center gap-2">
-                                                                    <h4 className="text-[13px] font-semibold text-white/80 truncate transition-colors duration-300 group-hover:text-white">{center.name}</h4>
+                                                                    <h4 className={`text-[13px] font-semibold truncate transition-colors duration-300 ${isDark ? 'text-white/80 group-hover:text-white' : 'text-neutral-700 group-hover:text-neutral-900'}`}>{center.name}</h4>
                                                                     <span className="shrink-0 text-[10px] font-bold rounded-md px-1.5 py-0.5 transition-colors duration-300"
                                                                         style={{ backgroundColor: statusColor + '15', color: statusColor }}
                                                                     >
                                                                         {statusLabel}
                                                                     </span>
                                                                 </div>
-                                                                <p className="mt-0.5 text-[11px] text-white/25 truncate">{center.address}</p>
+                                                                <p className={`mt-0.5 text-[11px] truncate ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>{center.address}</p>
 
                                                                 {/* Capacity bar */}
                                                                 <div className="mt-3 flex items-center gap-2.5">
-                                                                    <div className="relative h-[5px] flex-1 rounded-full overflow-hidden bg-white/[0.04]">
+                                                                    <div className={`relative h-[5px] flex-1 rounded-full overflow-hidden ${isDark ? 'bg-white/[0.04]' : 'bg-neutral-100'}`}>
                                                                         <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out"
                                                                             style={{ width: evacIn ? `${Math.min(ratio * 100, 100)}%` : '0%', backgroundColor: statusColor, boxShadow: `0 0 8px ${statusColor}40`, transitionDelay: `${i * 60 + 400}ms` }}
                                                                         />
                                                                     </div>
-                                                                    <span className="text-[10px] font-mono text-white/30 tabular-nums shrink-0">{center.current_occupancy}/{center.capacity}</span>
+                                                                    <span className={`text-[10px] font-mono tabular-nums shrink-0 ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>{center.current_occupancy}/{center.capacity}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -793,7 +809,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 </div>
 
                                 {/* Emergency contact strip — glass */}
-                                <div className={`mt-10 relative overflow-hidden rounded-2xl border border-white/[0.05] bg-white/[0.02] backdrop-blur-md transition-all duration-[800ms] delay-300 ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                                <div className={`mt-10 relative overflow-hidden rounded-2xl border backdrop-blur-md transition-all duration-[800ms] delay-300 ${isDark ? 'border-white/[0.05] bg-white/[0.02]' : 'border-neutral-200/70 bg-white/60 ring-1 ring-neutral-100'} ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
                                     <div className="flex flex-wrap items-center justify-center gap-8 px-6 py-5">
                                         {([
@@ -804,13 +820,13 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                             const Icon = c.icon;
                                             return (
                                                 <div key={c.label} className="flex items-center gap-3">
-                                                    {i > 0 && <div className="hidden sm:block h-5 w-px bg-white/[0.05] -ml-4 mr-1" />}
+                                                    {i > 0 && <div className={`hidden sm:block h-5 w-px -ml-4 mr-1 ${isDark ? 'bg-white/[0.05]' : 'bg-neutral-200'}`} />}
                                                     <div className={`flex size-8 items-center justify-center rounded-lg ${c.bg}`}>
                                                         <Icon className={`size-3.5 ${c.color}`} />
                                                     </div>
                                                     <div className="flex items-center gap-1.5">
-                                                        <span className="text-[13px] font-medium text-white/40">{c.label}</span>
-                                                        {c.value && <span className="text-[13px] font-bold text-white/70">{c.value}</span>}
+                                                        <span className={`text-[13px] font-medium ${isDark ? 'text-white/40' : 'text-neutral-500'}`}>{c.label}</span>
+                                                        {c.value && <span className={`text-[13px] font-bold ${isDark ? 'text-white/70' : 'text-neutral-700'}`}>{c.value}</span>}
                                                     </div>
                                                 </div>
                                             );
@@ -828,7 +844,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                             {/* CTA glow */}
                             <div className="pointer-events-none absolute inset-0">
-                                <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] rounded-full opacity-[0.08] blur-[120px]"
+                                <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] rounded-full blur-[120px] ${isDark ? 'opacity-[0.08]' : 'opacity-[0.05]'}`}
                                     style={{ background: 'conic-gradient(from 180deg, #06b6d4, #3b82f6, #8b5cf6, #06b6d4)' }}
                                 />
                             </div>
@@ -839,20 +855,20 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     <div className="absolute inset-[1px] rounded-[27px] bg-gradient-to-b from-white/20 to-transparent" />
                                 </div>
                                 <h2 className="mb-5 text-4xl font-bold tracking-tight sm:text-5xl">
-                                    <span className="bg-gradient-to-b from-white to-white/70 bg-clip-text text-transparent">Ready to help keep </span>
+                                    <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white to-white/70' : 'bg-gradient-to-b from-slate-900 to-slate-500'}`}>Ready to help keep </span>
                                     <Gradient>Nasugbu safe?</Gradient>
                                 </h2>
-                                <p className="mx-auto mb-14 max-w-md text-lg text-white/35 font-[350]">
+                                <p className={`mx-auto mb-14 max-w-md text-lg font-[350] ${isDark ? 'text-white/35' : 'text-neutral-500'}`}>
                                     Join residents and responders already using FloodTrack. Free to use, forever.
                                 </p>
                                 <div className="flex flex-wrap justify-center gap-4">
-                                    <Link href={register()} className="hero-cta group relative overflow-hidden rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-2xl transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:scale-[1.04] hover:shadow-cyan-500/25 active:scale-[0.97]">
+                                    <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-2xl transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:scale-[1.04] hover:shadow-cyan-500/25 active:scale-[0.97]">
                                         <span className="relative z-10 flex items-center gap-2.5">
                                             Create free account
                                             <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
                                         </span>
                                     </Link>
-                                    <Link href={login()} className="group flex items-center gap-2 rounded-2xl border border-white/[0.08] bg-white/[0.03] px-8 py-3.5 text-sm font-bold text-white/50 backdrop-blur-md transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:bg-white/[0.06] hover:text-white/80 hover:scale-[1.04] active:scale-[0.97]">
+                                    <Link href={login()} className={`group flex items-center gap-2 rounded-2xl border px-8 py-3.5 text-sm font-bold backdrop-blur-md transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/80' : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 shadow-sm'}`}>
                                         Sign in
                                     </Link>
                                 </div>
@@ -862,7 +878,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                 </main>
 
                 {/* ── Footer ─────────────────────────────────────────── */}
-                <footer className="relative border-t border-white/[0.03] px-4 py-12 sm:px-6 sm:py-16">
+                <footer className={`relative border-t px-4 py-12 sm:px-6 sm:py-16 ${isDark ? 'border-white/[0.03]' : 'border-neutral-100 bg-gradient-to-b from-[#fafbfc] to-white'}`}>
                     <div className="absolute inset-x-0 top-0 h-px animated-border" />
                     <div className="mx-auto max-w-7xl">
                         <div className="grid gap-10 sm:grid-cols-3">
@@ -872,23 +888,23 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     <div className="flex size-9 items-center justify-center rounded-[12px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-lg shadow-blue-500/15">
                                         <AppLogoIcon className="size-[18px] fill-current text-white" />
                                     </div>
-                                    <span className="text-sm font-bold text-white/50">FloodTrack</span>
+                                    <span className={`text-sm font-bold ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>FloodTrack</span>
                                 </div>
-                                <p className="text-[13px] leading-relaxed text-white/20 max-w-[260px]">
+                                <p className={`text-[13px] leading-relaxed max-w-[260px] ${isDark ? 'text-white/20' : 'text-neutral-400'}`}>
                                     Community-driven flood and hazard reporting for Nasugbu, Batangas. In partnership with MDRRMO.
                                 </p>
                             </div>
 
                             {/* Quick links */}
                             <div>
-                                <h4 className="text-[11px] font-bold tracking-[0.15em] uppercase text-white/25 mb-4">Quick Links</h4>
+                                <h4 className={`text-[11px] font-bold tracking-[0.15em] uppercase mb-4 ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>Quick Links</h4>
                                 <ul className="space-y-2.5">
                                     {([
                                         { label: 'Sign in', href: login() },
-                                        ...(canRegister ? [{ label: 'Create account', href: register() }] : []),
+                                        ...(canRegister ? [{ label: 'Create account', href: '/register' }] : []),
                                     ]).map(l => (
                                         <li key={l.label}>
-                                            <Link href={l.href} className="text-[13px] text-white/30 hover:text-white/60 transition-colors duration-200">{l.label}</Link>
+                                            <Link href={l.href} className={`text-[13px] transition-colors duration-200 ${isDark ? 'text-white/30 hover:text-white/60' : 'text-neutral-400 hover:text-neutral-600'}`}>{l.label}</Link>
                                         </li>
                                     ))}
                                 </ul>
@@ -896,28 +912,28 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                             {/* Emergency */}
                             <div>
-                                <h4 className="text-[11px] font-bold tracking-[0.15em] uppercase text-white/25 mb-4">Emergency</h4>
+                                <h4 className={`text-[11px] font-bold tracking-[0.15em] uppercase mb-4 ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>Emergency</h4>
                                 <ul className="space-y-2.5">
                                     <li className="flex items-center gap-2">
                                         <PhoneCall className="size-3 text-red-400/50" />
-                                        <span className="text-[13px] text-white/30">Emergency: <span className="font-bold text-white/50">911</span></span>
+                                        <span className={`text-[13px] ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Emergency: <span className={`font-bold ${isDark ? 'text-white/50' : 'text-neutral-600'}`}>911</span></span>
                                     </li>
                                     <li className="flex items-center gap-2">
                                         <Shield className="size-3 text-cyan-400/50" />
-                                        <span className="text-[13px] text-white/30">MDRRMO Nasugbu</span>
+                                        <span className={`text-[13px] ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>MDRRMO Nasugbu</span>
                                     </li>
                                     <li className="flex items-center gap-2">
                                         <Siren className="size-3 text-amber-400/50" />
-                                        <span className="text-[13px] text-white/30">Red Cross: <span className="font-bold text-white/50">143</span></span>
+                                        <span className={`text-[13px] ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Red Cross: <span className={`font-bold ${isDark ? 'text-white/50' : 'text-neutral-600'}`}>143</span></span>
                                     </li>
                                 </ul>
                             </div>
                         </div>
 
                         {/* Bottom bar */}
-                        <div className="mt-10 pt-6 border-t border-white/[0.03] flex flex-col items-center justify-between gap-3 sm:flex-row">
-                            <p className="text-[12px] text-white/15">&copy; {new Date().getFullYear()} FloodTrack. All rights reserved.</p>
-                            <p className="text-[12px] text-white/10">Built for the community of Nasugbu, Batangas</p>
+                        <div className={`mt-10 pt-6 border-t flex flex-col items-center justify-between gap-3 sm:flex-row ${isDark ? 'border-white/[0.03]' : 'border-neutral-200'}`}>
+                            <p className={`text-[12px] ${isDark ? 'text-white/15' : 'text-neutral-400'}`}>&copy; {new Date().getFullYear()} FloodTrack. All rights reserved.</p>
+                            <p className={`text-[12px] ${isDark ? 'text-white/10' : 'text-neutral-300'}`}>Built for the community of Nasugbu, Batangas</p>
                         </div>
                     </div>
                 </footer>
@@ -1095,6 +1111,19 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     100% { transform: scale(1.15); opacity: 0; }
                 }
             `}</style>
+
+            {/* Dark/Light mode toggle */}
+            <button
+                onClick={() => updateAppearance(isDark ? 'light' : 'dark')}
+                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                className={`fixed bottom-6 right-6 z-50 flex size-12 items-center justify-center rounded-2xl backdrop-blur-xl transition-all duration-300 hover:scale-110 hover:shadow-xl active:scale-95 ${isDark ? 'border border-white/10 bg-white/[0.06] shadow-lg shadow-black/30 hover:bg-white/[0.12]' : 'border border-neutral-200/80 bg-white/80 shadow-lg shadow-blue-500/[0.06] ring-1 ring-neutral-100 hover:bg-white hover:border-blue-200/60'}`}
+            >
+                {isDark ? (
+                    <Sun className="size-[18px] text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.4)]" />
+                ) : (
+                    <Moon className="size-[18px] text-indigo-500 drop-shadow-[0_0_6px_rgba(99,102,241,0.3)]" />
+                )}
+            </button>
         </>
     );
 }
@@ -1109,6 +1138,8 @@ const DEMO_STEPS = [
 ] as const;
 
 function PhoneDemo({ visible }: { visible: boolean }) {
+    const { resolvedAppearance } = useAppearance();
+    const isDark = resolvedAppearance === 'dark';
     const [active, setActive] = useState(0);
 
     useEffect(() => {
@@ -1123,7 +1154,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
             <div className="relative order-2 lg:order-1">
                 {/* Vertical connector line */}
                 <div className="absolute left-[23px] top-8 bottom-8 hidden lg:block">
-                    <div className="h-full w-px bg-gradient-to-b from-white/[0.04] via-white/[0.06] to-white/[0.04]" />
+                    <div className={`h-full w-px bg-gradient-to-b ${isDark ? 'from-white/[0.04] via-white/[0.06] to-white/[0.04]' : 'from-neutral-200/30 via-neutral-200/60 to-neutral-200/30'}`} />
                     {/* Animated fill */}
                     <div className="absolute top-0 left-0 w-px transition-all duration-700 ease-out rounded-full"
                         style={{ height: `${(active / 3) * 100}%`, background: `linear-gradient(to bottom, ${DEMO_STEPS[0].color}60, ${DEMO_STEPS[active].color}80)` }}
@@ -1141,8 +1172,12 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                 onClick={() => setActive(i)}
                                 className={`group relative flex w-full items-start gap-5 rounded-2xl border p-4 text-left transition-all duration-500 sm:p-5 ${
                                     isActive
-                                        ? 'border-white/[0.08] bg-white/[0.03] scale-[1.02] shadow-xl shadow-black/20'
-                                        : 'border-transparent hover:border-white/[0.04] hover:bg-white/[0.01]'
+                                        ? isDark
+                                            ? 'border-white/[0.08] bg-white/[0.03] scale-[1.02] shadow-xl shadow-black/20'
+                                            : 'border-neutral-200 bg-white scale-[1.02] shadow-xl shadow-neutral-200/50'
+                                        : isDark
+                                            ? 'border-transparent hover:border-white/[0.04] hover:bg-white/[0.01]'
+                                            : 'border-transparent hover:border-neutral-200 hover:bg-neutral-50'
                                 } ${visible ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'}`}
                                 style={{ transitionDelay: `${i * 100 + 200}ms` }}
                             >
@@ -1158,27 +1193,27 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                     isActive
                                         ? `bg-gradient-to-br ${s.gradient} shadow-lg`
                                         : isPast
-                                            ? 'bg-white/[0.06]'
-                                            : 'bg-white/[0.03]'
+                                            ? isDark ? 'bg-white/[0.06]' : 'bg-neutral-100'
+                                            : isDark ? 'bg-white/[0.03]' : 'bg-neutral-50'
                                 }`} style={isActive ? { boxShadow: `0 8px 24px ${s.color}25` } : {}}>
                                     {isActive && <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />}
-                                    <Icon className={`size-5 transition-all duration-500 ${isActive ? 'text-white scale-110' : isPast ? 'text-white/40' : 'text-white/20'}`} />
+                                    <Icon className={`size-5 transition-all duration-500 ${isActive ? 'text-white scale-110' : isPast ? isDark ? 'text-white/40' : 'text-neutral-400' : isDark ? 'text-white/20' : 'text-neutral-300'}`} />
                                     {/* Step number */}
                                     <span className={`absolute -top-1 -right-1 flex size-[18px] items-center justify-center rounded-full text-[9px] font-bold transition-all duration-300 ${
-                                        isActive ? 'bg-white text-[#06090f] shadow-md' : isPast ? 'bg-white/10 text-white/40' : 'bg-white/[0.05] text-white/20'
+                                        isActive ? isDark ? 'bg-white text-[#06090f] shadow-md' : 'bg-neutral-900 text-white shadow-md' : isPast ? isDark ? 'bg-white/10 text-white/40' : 'bg-neutral-200 text-neutral-500' : isDark ? 'bg-white/[0.05] text-white/20' : 'bg-neutral-100 text-neutral-400'
                                     }`}>{i + 1}</span>
                                 </div>
 
                                 {/* Text */}
                                 <div className="relative min-w-0 pt-0.5">
-                                    <h4 className={`text-[15px] font-semibold transition-colors duration-300 ${isActive ? 'text-white' : 'text-white/40'}`}>{s.title}</h4>
+                                    <h4 className={`text-[15px] font-semibold transition-colors duration-300 ${isActive ? isDark ? 'text-white' : 'text-neutral-900' : isDark ? 'text-white/40' : 'text-neutral-400'}`}>{s.title}</h4>
                                     <p className={`mt-1 text-[13px] leading-relaxed font-[350] transition-all duration-500 overflow-hidden ${
-                                        isActive ? 'text-white/45 max-h-20 opacity-100' : 'text-white/20 max-h-0 sm:max-h-20 opacity-0 sm:opacity-100'
+                                        isActive ? isDark ? 'text-white/45 max-h-20 opacity-100' : 'text-neutral-500 max-h-20 opacity-100' : isDark ? 'text-white/20 max-h-0 sm:max-h-20 opacity-0 sm:opacity-100' : 'text-neutral-300 max-h-0 sm:max-h-20 opacity-0 sm:opacity-100'
                                     }`}>{s.desc}</p>
                                 </div>
 
                                 {/* Active arrow indicator */}
-                                <ArrowRight className={`hidden lg:block ml-auto mt-3 size-4 shrink-0 transition-all duration-300 ${isActive ? 'text-white/30 translate-x-0 opacity-100' : 'text-white/0 -translate-x-2 opacity-0'}`} />
+                                <ArrowRight className={`hidden lg:block ml-auto mt-3 size-4 shrink-0 transition-all duration-300 ${isActive ? isDark ? 'text-white/30 translate-x-0 opacity-100' : 'text-neutral-400 translate-x-0 opacity-100' : 'text-transparent -translate-x-2 opacity-0'}`} />
                             </button>
                         );
                     })}
@@ -1436,6 +1471,8 @@ function PhoneDemo({ visible }: { visible: boolean }) {
 function EvacuationMap({ centers }: { centers: EvacuationCenterData[] }) {
     const mapRef = useRef<HTMLDivElement>(null);
     const mapInstance = useRef<any>(null);
+    const { resolvedAppearance } = useAppearance();
+    const isDark = resolvedAppearance === 'dark';
 
     useEffect(() => {
         if (!mapRef.current || mapInstance.current || centers.length === 0) return;
@@ -1463,8 +1500,11 @@ function EvacuationMap({ centers }: { centers: EvacuationCenterData[] }) {
 
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-            // Dark map tiles
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            // Map tiles — dark or light
+            const tileUrl = isDark
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+            L.tileLayer(tileUrl, {
                 maxZoom: 19,
             }).addTo(map);
 
@@ -1524,7 +1564,7 @@ function EvacuationMap({ centers }: { centers: EvacuationCenterData[] }) {
     }, [centers]);
 
     return (
-        <div ref={mapRef} className="h-[420px] w-full" style={{ background: '#0a0e17' }} />
+        <div ref={mapRef} className="h-[420px] w-full" style={{ background: isDark ? '#0a0e17' : '#f0f0f0' }} />
     );
 }
 
@@ -1543,43 +1583,55 @@ function PremiumButton({ href, children }: { href: string; children: ReactNode }
 }
 
 function GlowDivider() {
+    const { resolvedAppearance } = useAppearance();
+    const isDark = resolvedAppearance === 'dark';
     return (
         <div className="absolute inset-x-0 top-0">
-            <div className="h-px bg-gradient-to-r from-transparent via-white/[0.05] to-transparent" />
+            <div className={`h-px bg-gradient-to-r from-transparent to-transparent ${isDark ? 'via-white/[0.05]' : 'via-neutral-200/60'}`} />
             <div className="h-px animated-border" />
         </div>
     );
 }
 
 function Gradient({ children }: { children: ReactNode }) {
-    return <span className="bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-400 bg-clip-text text-transparent">{children}</span>;
+    const { resolvedAppearance } = useAppearance();
+    const isDark = resolvedAppearance === 'dark';
+    return <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-400' : 'bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600'}`}>{children}</span>;
 }
 
 function GradientAlt({ children }: { children: ReactNode }) {
-    return <span className="bg-gradient-to-r from-emerald-300 to-cyan-400 bg-clip-text text-transparent">{children}</span>;
+    const { resolvedAppearance } = useAppearance();
+    const isDark = resolvedAppearance === 'dark';
+    return <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-emerald-300 to-cyan-400' : 'bg-gradient-to-r from-emerald-500 to-cyan-600'}`}>{children}</span>;
 }
 
 function GradientWarm({ children }: { children: ReactNode }) {
-    return <span className="bg-gradient-to-r from-amber-300 via-orange-400 to-red-400 bg-clip-text text-transparent">{children}</span>;
+    const { resolvedAppearance } = useAppearance();
+    const isDark = resolvedAppearance === 'dark';
+    return <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-amber-300 via-orange-400 to-red-400' : 'bg-gradient-to-r from-amber-500 via-orange-500 to-red-500'}`}>{children}</span>;
 }
 
 function GradientPurple({ children }: { children: ReactNode }) {
-    return <span className="bg-gradient-to-r from-violet-300 to-blue-400 bg-clip-text text-transparent">{children}</span>;
+    const { resolvedAppearance } = useAppearance();
+    const isDark = resolvedAppearance === 'dark';
+    return <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-violet-300 to-blue-400' : 'bg-gradient-to-r from-violet-500 to-blue-600'}`}>{children}</span>;
 }
 
 function SectionHead({ visible, badge, badgeIcon, badgeColor, title, sub }: {
     visible: boolean; badge: string; badgeIcon: ReactNode; badgeColor: string; title: ReactNode; sub: string;
 }) {
+    const { resolvedAppearance } = useAppearance();
+    const isDark = resolvedAppearance === 'dark';
     return (
         <div className={`mb-10 text-center transition-all duration-[800ms] sm:mb-20 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <span className={`mb-5 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] ${badgeColor}`}>
+            <span className={`mb-5 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] ${isDark ? badgeColor : badgeColor.replace(/\/20/g, '/30').replace(/\/\[0\.06\]/g, '/[0.08]')}`}>
                 {badgeIcon}
                 {badge}
             </span>
             <h2 className="mt-5 text-[clamp(1.8rem,4vw,3rem)] font-bold tracking-tight">
-                <span className="bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">{title}</span>
+                <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white to-white/60' : 'bg-gradient-to-b from-slate-900 to-slate-400'}`}>{title}</span>
             </h2>
-            <p className="mx-auto mt-4 max-w-xl text-[1.05rem] text-white/30 font-[350]">{sub}</p>
+            <p className={`mx-auto mt-4 max-w-xl text-[1.05rem] font-[350] ${isDark ? 'text-white/30' : 'text-neutral-500'}`}>{sub}</p>
         </div>
     );
 }

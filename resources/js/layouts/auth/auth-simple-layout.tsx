@@ -2,12 +2,15 @@ import { Link } from '@inertiajs/react';
 import {
     Globe,
     MapPin,
+    Moon,
     Sparkles,
+    Sun,
     Zap,
 } from 'lucide-react';
 import { useEffect, useState, type ReactNode } from 'react';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { home } from '@/routes';
+import { useAppearance } from '@/hooks/use-appearance';
 import type { AuthLayoutProps } from '@/types';
 
 export default function AuthSimpleLayout({ children, title, description }: AuthLayoutProps) {
@@ -19,6 +22,8 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
 function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
     const [mounted, setMounted] = useState(false);
     const [textIndex, setTextIndex] = useState(0);
+    const { resolvedAppearance, updateAppearance } = useAppearance();
+    const isDark = resolvedAppearance === 'dark';
 
     const rotatingTexts = [
         { heading: 'Report hazards in real time.', sub: 'Pin dangers on the map so your neighbors stay safe.' },
@@ -172,6 +177,19 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
                     ))}
                 </div>
             </div>
+
+            {/* Dark/Light mode toggle */}
+            <button
+                onClick={() => updateAppearance(isDark ? 'light' : 'dark')}
+                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                className={`fixed bottom-20 right-6 z-50 flex size-12 items-center justify-center rounded-2xl backdrop-blur-xl transition-all duration-300 hover:scale-110 hover:shadow-xl active:scale-95 lg:bottom-6 ${isDark ? 'border border-neutral-700 bg-neutral-800/80 shadow-lg shadow-black/30 hover:bg-neutral-700/80' : 'border border-neutral-200/80 bg-white/80 shadow-lg shadow-blue-500/[0.06] ring-1 ring-neutral-100 hover:bg-white hover:border-blue-200/60'}`}
+            >
+                {isDark ? (
+                    <Sun className="size-[18px] text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.4)]" />
+                ) : (
+                    <Moon className="size-[18px] text-indigo-500 drop-shadow-[0_0_6px_rgba(99,102,241,0.3)]" />
+                )}
+            </button>
 
             {/* Styles */}
             <style>{`

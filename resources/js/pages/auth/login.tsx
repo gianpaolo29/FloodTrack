@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { register } from '@/routes';
+
 import { store } from '@/routes/login';
 import { request } from '@/routes/password';
 
@@ -142,7 +142,7 @@ export default function Login({ status, canResetPassword, canRegister }: Props) 
                                 <p className="text-center text-sm text-neutral-500 dark:text-neutral-400">
                                     Don't have an account?{' '}
                                     <TextLink
-                                        href={register()}
+                                        href="/register"
                                         tabIndex={6}
                                         className="font-semibold text-blue-600 hover:text-blue-700 dark:text-cyan-400 dark:hover:text-cyan-300"
                                     >

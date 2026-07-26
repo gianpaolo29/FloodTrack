@@ -18,6 +18,7 @@ class AlertController extends Controller
         $alerts = Alert::where(function ($q) {
             $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
         })
+        ->where('created_at', '>=', $request->user()->created_at)
         ->orderByDesc('is_critical')
         ->latest()
         ->get();
@@ -80,7 +81,9 @@ class AlertController extends Controller
 
         $alertIds = Alert::where(function ($q) {
             $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
-        })->pluck('id');
+        })
+        ->where('created_at', '>=', $request->user()->created_at)
+        ->pluck('id');
 
         $existing = AlertRead::where('user_id', $userId)
             ->pluck('alert_id')

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Notifications\WelcomeNotification;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
@@ -28,6 +29,7 @@ class AuthController extends Controller
         unset($data['first_name'], $data['last_name']);
 
         $user  = User::create($data);
+        $user->notify(new WelcomeNotification);
         $token = $user->createToken('mobile')->plainTextToken;
 
         return response()->json([
