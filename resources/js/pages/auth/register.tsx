@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
-import { store } from '@/routes/register';
 
 const pwRules = [
     { test: (pw: string) => pw.length >= 8, label: '8+ characters' },
@@ -62,7 +61,8 @@ export default function Register() {
             </div>
 
             <Form
-                {...store.form()}
+                action="/register"
+                method="post"
                 resetOnSuccess={['password', 'password_confirmation']}
                 disableWhileProcessing
                 className="flex flex-col gap-5"
