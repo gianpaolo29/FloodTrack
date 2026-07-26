@@ -1,12 +1,18 @@
-import { swalSuccess } from '@/lib/swal';
+import { swalDelete, swalSuccess } from '@/lib/swal';
 import { Head, Link, router, useForm } from '@inertiajs/react';
+import { useJsApiLoader } from '@react-google-maps/api';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Activity, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Eye, EyeOff, MapPin, Pencil, Phone, Plus, Search, ShieldCheck, Star, Users, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { Activity, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Eye, EyeOff, MapPin, Pencil, Phone, Plus, Search, ShieldCheck, Star, Trash2, Users, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
 const modalSpring = { type: 'spring' as const, stiffness: 400, damping: 28 };
+const NASUGBU_BOUNDS = { north: 14.115, south: 14.010, east: 120.680, west: 120.565 };
+
+function cleanAddress(raw: string): string {
+    return raw.replace(/^[0-9A-Z]{4,8}\+[0-9A-Z]{2,3},?\s*/i, '').trim();
+}
 
 interface Responder {
     id: number;
@@ -14,6 +20,8 @@ interface Responder {
     email: string;
     contact_number: string | null;
     home_address: string | null;
+    home_latitude: number | null;
+    home_longitude: number | null;
     avatar_url: string | null;
     total_assigned: number;
     active_assignments: number;
@@ -46,6 +54,13 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 export default function AdminRespondersIndex({ responders, filters, teams_count }: Props) {
     const [showCreate, setShowCreate] = useState(false);
+    const [editingResponder, setEditingResponder] = useState<Responder | null>(null);
+
+    const handleDelete = async (r: Responder) => {
+        const confirmed = await swalDelete(r.name);
+        if (!confirmed) return;
+        router.delete(`/admin/responders/${r.id}`, { preserveScroll: true });
+    };
 
     const search = useCallback((value: string) => {
         router.get('/admin/responders', { search: value || undefined }, {
@@ -318,10 +333,18 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
                                         <td className="px-5 py-4">
                                             <div className="flex items-center justify-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                                                 <button
-                                                    className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
+                                                    onClick={() => setEditingResponder(r)}
+                                                    className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-indigo-600 dark:hover:bg-neutral-800 dark:hover:text-indigo-400"
                                                     title="Edit responder"
                                                 >
                                                     <Pencil className="size-3.5" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(r)}
+                                                    className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                                                    title="Delete responder"
+                                                >
+                                                    <Trash2 className="size-3.5" />
                                                 </button>
                                             </div>
                                         </td>
@@ -400,20 +423,40 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
                     <ResponderFormModal onClose={() => setShowCreate(false)} />
                 )}
             </AnimatePresence>
+
+            {/* Edit Modal */}
+            <AnimatePresence>
+                {editingResponder && (
+                    <ResponderFormModal
+                        responder={editingResponder}
+                        onClose={() => setEditingResponder(null)}
+                    />
+                )}
+            </AnimatePresence>
         </AppLayout>
     );
 }
 
-/* ─── Responder Form Modal (Create) ─── */
+/* ─── Responder Form Modal (Create / Edit) ─── */
 
-function ResponderFormModal({ onClose }: { onClose: () => void }) {
+function ResponderFormModal({
+    responder,
+    onClose,
+}: {
+    responder?: Responder;
+    onClose: () => void;
+}) {
+    const isEdit = !!responder;
     const [showPassword, setShowPassword] = useState(false);
 
     const form = useForm({
-        name: '',
-        email: '',
-        contact_number: '09',
-        password: '',
+        name:           responder?.name           ?? '',
+        email:          responder?.email          ?? '',
+        contact_number: responder?.contact_number ?? '09',
+        password:       '',
+        home_address:   responder?.home_address   ?? '',
+        home_latitude:  responder?.home_latitude?.toString()  ?? '',
+        home_longitude: responder?.home_longitude?.toString() ?? '',
     });
 
     const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -431,19 +474,20 @@ function ResponderFormModal({ onClose }: { onClose: () => void }) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        form.post('/admin/responders', {
-            onSuccess: () => {
-                form.reset();
-                onClose();
-                swalSuccess('Success', 'Responder created successfully.');
-            },
-        });
+        if (isEdit) {
+            form.put(`/admin/responders/${responder!.id}`, {
+                preserveScroll: true,
+                onSuccess: () => { onClose(); swalSuccess('Success', 'Responder updated successfully.'); },
+            });
+        } else {
+            form.post('/admin/responders', {
+                onSuccess: () => { form.reset(); onClose(); swalSuccess('Success', 'Responder created successfully.'); },
+            });
+        }
     };
 
     useEffect(() => {
-        const handler = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') onClose();
-        };
+        const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
         window.addEventListener('keydown', handler);
         return () => window.removeEventListener('keydown', handler);
     }, [onClose]);
@@ -470,12 +514,20 @@ function ResponderFormModal({ onClose }: { onClose: () => void }) {
             >
                 {/* Modal header */}
                 <div className="flex items-center gap-3 border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
-                    <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-sm">
-                        <Plus className="size-4 text-white" />
-                    </div>
+                    {isEdit && responder?.avatar_url ? (
+                        <img src={responder.avatar_url} alt={responder.name} className="size-9 shrink-0 rounded-xl object-cover shadow-sm" />
+                    ) : (
+                        <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-sm">
+                            {isEdit ? <Pencil className="size-4 text-white" /> : <Plus className="size-4 text-white" />}
+                        </div>
+                    )}
                     <div>
-                        <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">Add Responder</h3>
-                        <p className="text-xs text-neutral-500 dark:text-neutral-400">Create a new responder account</p>
+                        <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+                            {isEdit ? 'Edit Responder' : 'Add Responder'}
+                        </h3>
+                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                            {isEdit ? `Update ${responder!.name}'s account details` : 'Create a new responder account'}
+                        </p>
                     </div>
                     <button
                         onClick={onClose}
@@ -523,15 +575,15 @@ function ResponderFormModal({ onClose }: { onClose: () => void }) {
                                 maxLength={11}
                             />
                         </FormField>
-                        <FormField label="Password" error={form.errors.password}>
+                        <FormField label={isEdit ? 'New Password' : 'Password'} error={form.errors.password}>
                             <div className="relative">
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     value={form.data.password}
                                     onChange={(e) => form.setData('password', e.target.value)}
                                     className={inputClassName + ' pr-10'}
-                                    placeholder="Min 8 characters"
-                                    required
+                                    placeholder={isEdit ? 'Leave blank to keep' : 'Min 8 characters'}
+                                    required={!isEdit}
                                 />
                                 <button
                                     type="button"
@@ -544,6 +596,18 @@ function ResponderFormModal({ onClose }: { onClose: () => void }) {
                             </div>
                         </FormField>
                     </div>
+
+                    <FormField label="Home Address" error={form.errors.home_address}>
+                        <HomeAddressAutocomplete
+                            value={form.data.home_address}
+                            onChange={(addr, lat, lng) => {
+                                form.setData('home_address', addr);
+                                form.setData('home_latitude', lat);
+                                form.setData('home_longitude', lng);
+                            }}
+                            className={inputClassName}
+                        />
+                    </FormField>
 
                     {/* Modal footer */}
                     <div className="flex items-center justify-end gap-3 border-t border-neutral-200/60 pt-5 dark:border-neutral-700/60">
@@ -559,13 +623,143 @@ function ResponderFormModal({ onClose }: { onClose: () => void }) {
                             disabled={form.processing}
                             className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
                         >
-                            <Plus className="size-3.5" />
-                            {form.processing ? 'Creating...' : 'Create Responder'}
+                            {isEdit ? <Pencil className="size-3.5" /> : <Plus className="size-3.5" />}
+                            {form.processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Responder'}
                         </button>
                     </div>
                 </form>
             </motion.div>
         </motion.div>
+    );
+}
+
+/* ─── Home Address Autocomplete ─── */
+
+function HomeAddressAutocomplete({ value, onChange, className }: {
+    value: string;
+    onChange: (address: string, lat: string, lng: string) => void;
+    className?: string;
+}) {
+    const { isLoaded } = useJsApiLoader({
+        googleMapsApiKey: (import.meta.env.VITE_GOOGLE_MAPS_KEY as string) ?? '',
+        libraries: ['places'] as ('places')[],
+    });
+
+    const [inputVal,    setInputVal]    = useState(value);
+    const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
+    const [open,        setOpen]        = useState(false);
+    const [fetching,    setFetching]    = useState(false);
+
+    const acServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
+    const placesRef    = useRef<google.maps.places.PlacesService | null>(null);
+    const placesDivRef = useRef<HTMLDivElement | null>(null);
+    const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const wrapperRef   = useRef<HTMLDivElement>(null);
+
+    useEffect(() => { setInputVal(value); }, [value]);
+
+    useEffect(() => {
+        if (!isLoaded) return;
+        acServiceRef.current = new google.maps.places.AutocompleteService();
+        const div = document.createElement('div');
+        document.body.appendChild(div);
+        placesDivRef.current = div;
+        placesRef.current = new google.maps.places.PlacesService(div);
+        return () => { if (placesDivRef.current) document.body.removeChild(placesDivRef.current); };
+    }, [isLoaded]);
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const fetchPredictions = useCallback((q: string) => {
+        if (!q || q.length < 2 || !acServiceRef.current) { setPredictions([]); setOpen(false); return; }
+        const bounds = new google.maps.LatLngBounds(
+            { lat: NASUGBU_BOUNDS.south, lng: NASUGBU_BOUNDS.west },
+            { lat: NASUGBU_BOUNDS.north, lng: NASUGBU_BOUNDS.east },
+        );
+        setFetching(true);
+        acServiceRef.current.getPlacePredictions(
+            { input: q, bounds, strictBounds: true, componentRestrictions: { country: 'ph' } },
+            (preds, status) => {
+                setFetching(false);
+                if (status === 'OK' && preds) {
+                    const filtered = preds.filter((p) => p.description.toLowerCase().includes('nasugbu'));
+                    setPredictions(filtered);
+                    setOpen(filtered.length > 0);
+                } else {
+                    setPredictions([]); setOpen(false);
+                }
+            },
+        );
+    }, []);
+
+    const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const q = e.target.value;
+        setInputVal(q);
+        onChange(q, '', '');
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => fetchPredictions(q), 300);
+    };
+
+    const selectPrediction = (pred: google.maps.places.AutocompletePrediction) => {
+        setOpen(false);
+        if (!placesRef.current) return;
+        placesRef.current.getDetails(
+            { placeId: pred.place_id, fields: ['formatted_address', 'geometry', 'name'] },
+            (place, status) => {
+                if (status !== 'OK' || !place?.geometry?.location) return;
+                const lat  = place.geometry.location.lat().toFixed(7);
+                const lng  = place.geometry.location.lng().toFixed(7);
+                const addr = cleanAddress(place.formatted_address ?? place.name ?? '');
+                setInputVal(addr);
+                onChange(addr, lat, lng);
+            },
+        );
+    };
+
+    return (
+        <div ref={wrapperRef} className="relative">
+            <div className="relative">
+                <MapPin className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                <input
+                    type="text"
+                    value={inputVal}
+                    onChange={handleInput}
+                    onFocus={() => predictions.length > 0 && setOpen(true)}
+                    placeholder="Search home address in Nasugbu…"
+                    className={`${className} pl-9`}
+                    autoComplete="off"
+                />
+                {fetching && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        <div className="size-3.5 animate-spin rounded-full border-2 border-neutral-200 border-t-indigo-500" />
+                    </div>
+                )}
+            </div>
+            {open && predictions.length > 0 && (
+                <ul className="absolute top-full z-50 mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
+                    {predictions.map((pred) => (
+                        <li
+                            key={pred.place_id}
+                            onMouseDown={(e) => { e.preventDefault(); selectPrediction(pred); }}
+                            className="flex cursor-pointer flex-col gap-0.5 px-3 py-2 transition-colors hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                        >
+                            <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
+                                {pred.structured_formatting.main_text}
+                            </span>
+                            <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                                {pred.structured_formatting.secondary_text}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
     );
 }
 

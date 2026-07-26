@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -116,6 +117,14 @@ class UserController extends Controller
         }
 
         $name = $user->name;
+
+        $user->notifications()->delete();
+        $user->tokens()->delete();
+
+        if ($user->avatar) {
+            Storage::disk('public')->delete($user->avatar);
+        }
+
         $user->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "User \"{$name}\" has been deleted."]);
@@ -137,6 +146,11 @@ class UserController extends Controller
         foreach ($users as $user) {
             switch ($request->action) {
                 case 'delete':
+                    $user->notifications()->delete();
+                    $user->tokens()->delete();
+                    if ($user->avatar) {
+                        Storage::disk('public')->delete($user->avatar);
+                    }
                     $user->delete();
                     $count++;
                     break;

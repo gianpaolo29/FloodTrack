@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Hazard;
+use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -40,6 +41,8 @@ class HazardController extends Controller
             'created_by' => $request->user()->id,
         ]);
 
+        SocketService::toAll('hazard-updated', ['action' => 'refresh']);
+
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Hazard created.']);
 
         return back();
@@ -61,6 +64,8 @@ class HazardController extends Controller
 
         $hazard->update($validated);
 
+        SocketService::toAll('hazard-updated', ['action' => 'refresh']);
+
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Hazard updated.']);
 
         return back();
@@ -70,6 +75,8 @@ class HazardController extends Controller
     {
         $hazard->delete();
 
+        SocketService::toAll('hazard-updated', ['action' => 'refresh']);
+
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Hazard deleted.']);
 
         return back();
@@ -78,6 +85,8 @@ class HazardController extends Controller
     public function toggleActive(Hazard $hazard): RedirectResponse
     {
         $hazard->update(['active' => !$hazard->active]);
+
+        SocketService::toAll('hazard-updated', ['action' => 'refresh']);
 
         $status = $hazard->active ? 'activated' : 'deactivated';
         Inertia::flash('toast', ['type' => 'success', 'message' => "Hazard {$status}."]);
@@ -100,6 +109,8 @@ class HazardController extends Controller
             'activate'   => Hazard::whereIn('id', $ids)->update(['active' => true]),
             'deactivate' => Hazard::whereIn('id', $ids)->update(['active' => false]),
         };
+
+        SocketService::toAll('hazard-updated', ['action' => 'refresh']);
 
         $count = count($ids);
         Inertia::flash('toast', ['type' => 'success', 'message' => "{$count} hazard(s) {$request->action}d."]);

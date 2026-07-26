@@ -76,8 +76,10 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     // Responders
     Route::prefix('responders')->name('responders.')->group(function () {
-        Route::get('/',  [ResponderController::class, 'index'])->name('index');
-        Route::post('/', [ResponderController::class, 'store'])->name('store');
+        Route::get('/',              [ResponderController::class, 'index'])->name('index');
+        Route::post('/',             [ResponderController::class, 'store'])->name('store');
+        Route::put('/{user}',        [ResponderController::class, 'update'])->name('update');
+        Route::delete('/{user}',     [ResponderController::class, 'destroy'])->name('destroy');
     });
 
     // Teams
