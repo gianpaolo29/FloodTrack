@@ -104,6 +104,17 @@ class AuthController extends Controller
         return response()->json(['message' => 'Logged out successfully.']);
     }
 
+    public function markEmailVerified(Request $request)
+    {
+        $user = $request->user();
+
+        if (! $user->email_verified_at) {
+            $user->update(['email_verified_at' => now()]);
+        }
+
+        return response()->json(['message' => 'Email verified.']);
+    }
+
     public function deleteAccount(Request $request)
     {
         $user = $request->user();

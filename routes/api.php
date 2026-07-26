@@ -33,6 +33,7 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/email/mark-verified', [AuthController::class, 'markEmailVerified']);
     Route::delete('/account', [AuthController::class, 'deleteAccount']);
 
     // Profile
