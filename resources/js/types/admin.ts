@@ -15,6 +15,7 @@ export interface AdminUser {
     home_latitude: number | null;
     home_longitude: number | null;
     avatar_url: string | null;
+    email_verified_at: string | null;
     reports_count: number;
     active_assignments: number;
     created_at: string;

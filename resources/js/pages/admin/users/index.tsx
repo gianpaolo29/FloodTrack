@@ -3,9 +3,9 @@ import { Head, router, useForm } from '@inertiajs/react';
 import { useJsApiLoader } from '@react-google-maps/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+    CheckCircle2,
     ChevronLeft,
     ChevronRight,
-    FileText,
     MapPin,
     Pencil,
     Plus,
@@ -13,6 +13,7 @@ import {
     Trash2,
     Users2,
     X,
+    XCircle,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
@@ -103,7 +104,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
     };
 
     const withAddressCount  = users.data.filter((u) => !!u.home_address).length;
-    const totalReportsCount = users.data.reduce((sum, u) => sum + (u.reports_count ?? 0), 0);
+    const verifiedCount = users.data.filter((u) => !!u.email_verified_at).length;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -159,13 +160,13 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                     </div>
                     <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                         <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Reports</p>
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-800">
-                                <FileText className="size-4 text-neutral-400" />
+                            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Verified</p>
+                            <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
+                                <CheckCircle2 className="size-4 text-emerald-500" />
                             </div>
                         </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-700 dark:text-neutral-300">{totalReportsCount}</p>
-                        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">filed this page</p>
+                        <p className="mt-3 text-3xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300">{verifiedCount}</p>
+                        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">verified emails on this page</p>
                     </div>
                 </div>
 
@@ -252,13 +253,17 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                 <div className="min-w-0 flex-1">
                                     <div className="flex items-center justify-between gap-2">
                                         <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{user.name}</p>
-                                        <span className={`shrink-0 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-[10px] font-semibold tabular-nums ${
-                                            (user.reports_count ?? 0) > 0
-                                                ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:ring-violet-700/40'
-                                                : 'text-neutral-400 dark:text-neutral-500'
-                                        }`}>
-                                            {user.reports_count ?? 0} reports
-                                        </span>
+                                        {user.email_verified_at ? (
+                                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-600/10 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-700/40">
+                                                <CheckCircle2 className="size-2.5" />
+                                                Verified
+                                            </span>
+                                        ) : (
+                                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-600/10 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-700/40">
+                                                <XCircle className="size-2.5" />
+                                                Unverified
+                                            </span>
+                                        )}
                                     </div>
                                     <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{user.email}</p>
                                     {user.contact_number && (
@@ -305,7 +310,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Resident</th>
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Contact</th>
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Home Address</th>
-                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Reports</th>
+                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Status</th>
                                     <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
                                 </tr>
                             </thead>
@@ -364,15 +369,19 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                             )}
                                         </td>
 
-                                        {/* Reports */}
+                                        {/* Status */}
                                         <td className="px-5 py-4 text-center">
-                                            <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums ${
-                                                (user.reports_count ?? 0) > 0
-                                                    ? 'bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:ring-violet-700/40'
-                                                    : 'text-neutral-400 dark:text-neutral-500'
-                                            }`}>
-                                                {user.reports_count ?? 0}
-                                            </span>
+                                            {user.email_verified_at ? (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-600/10 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-700/40">
+                                                    <CheckCircle2 className="size-3" />
+                                                    Verified
+                                                </span>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 ring-1 ring-amber-600/10 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-700/40">
+                                                    <XCircle className="size-3" />
+                                                    Unverified
+                                                </span>
+                                            )}
                                         </td>
 
                                         {/* Actions */}
