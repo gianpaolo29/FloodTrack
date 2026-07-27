@@ -111,9 +111,16 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Team
         Route::get('/team',                                   [TeamController::class, 'myTeam']);
+        Route::get('/team/stats',                             [ResponderStatsController::class, 'teamStats']);
         Route::get('/reports/{report}/member-statuses',       [TeamController::class, 'memberStatuses']);
         Route::patch('/reports/{report}/member-status',       [TeamController::class, 'submitMemberStatus']);
         Route::patch('/reports/{report}/confirm-status',      [TeamController::class, 'confirmTeamStatus']);
+
+        // Chat messages (responder-side)
+        Route::get('/reports/{report}/messages',              [IncidentMessageController::class, 'index']);
+        Route::post('/reports/{report}/messages',             [IncidentMessageController::class, 'store'])->middleware('throttle:30,1');
+        Route::post('/reports/{report}/messages/read',        [IncidentMessageController::class, 'markRead']);
+        Route::get('/reports/{report}/messages/unread-count', [IncidentMessageController::class, 'unreadCount']);
     });
 
     // ── Admin only ───────────────────────────────────────────────────────

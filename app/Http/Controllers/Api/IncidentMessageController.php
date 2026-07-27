@@ -21,7 +21,7 @@ class IncidentMessageController extends Controller
     {
         $user = $request->user();
 
-        // Only the report owner, assigned responder, or admin can view messages
+        // Only the report owner (resident) or assigned responder/team members can view messages
         if (! $this->canAccess($user, $report)) {
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
@@ -36,7 +36,7 @@ class IncidentMessageController extends Controller
 
     /**
      * Create a message for a report.
-     * The report owner (resident), assigned responder, or admin can message.
+     * Only the report owner (resident) and assigned responder/team members can message.
      */
     public function store(Request $request, Report $report)
     {
@@ -60,13 +60,13 @@ class IncidentMessageController extends Controller
 
         $message->load('user:id,name,role');
 
-        // Determine which user IDs should be notified (everyone except the sender)
-        $snippet   = \Illuminate\Support\Str::limit($data['body'], 100);
-        $adminIds  = User::where('role', 'admin')->pluck('id')->toArray();
+        // Notify only the resident and responder team (no admins)
+        $snippet = \Illuminate\Support\Str::limit($data['body'], 100);
 
+        $responderIds = $report->responders()->pluck('user_id')->toArray();
         $recipientIds = array_unique(array_filter(array_merge(
             [$report->user_id, $report->assigned_to],
-            $adminIds,
+            $responderIds,
         )));
         $recipientIds = array_values(array_filter($recipientIds, fn ($id) => (int) $id !== (int) $user->id));
 
@@ -74,9 +74,6 @@ class IncidentMessageController extends Controller
             // Push notification
             if ((int) $user->id === (int) $report->user_id) {
                 $pushTitle = 'Message from ' . $user->name;
-                $pushBody  = $snippet;
-            } elseif ($user->isAdmin()) {
-                $pushTitle = 'Message from dispatch';
                 $pushBody  = $snippet;
             } else {
                 $pushTitle = 'Update on Report #' . $report->reference_number;
@@ -166,12 +163,12 @@ class IncidentMessageController extends Controller
             return response()->json(['message' => 'Unauthorized.'], 403);
         }
 
-        $participantIds = array_filter([
-            $report->user_id,
-            $report->assigned_to,
-        ]);
-        $adminIds = User::where('role', 'admin')->pluck('id')->toArray();
-        $allIds = array_unique(array_merge($participantIds, $adminIds));
+        $responderIds   = $report->responders()->pluck('user_id')->toArray();
+        $participantIds = array_filter(array_merge(
+            [$report->user_id, $report->assigned_to],
+            $responderIds,
+        ));
+        $allIds = array_unique($participantIds);
 
         $typing = [];
         foreach ($allIds as $uid) {
@@ -185,12 +182,14 @@ class IncidentMessageController extends Controller
 
     /**
      * Check if a user can access messages for a report.
+     * Allowed: report owner (resident), directly assigned responder,
+     * any team member in the pivot, or any member of the assigned team.
      */
     private function canAccess(User $user, Report $report): bool
     {
-        return $user->isAdmin()
-            || (int) $report->user_id    === (int) $user->id   // report owner (resident)
+        return (int) $report->user_id    === (int) $user->id   // report owner (resident)
             || (int) $report->assigned_to === (int) $user->id  // team leader (direct assignment)
-            || $report->responders()->where('user_id', $user->id)->exists(); // any team member
+            || $report->responders()->where('user_id', $user->id)->exists() // any team member in pivot
+            || ($user->team_id && (int) $report->assigned_team_id === (int) $user->team_id); // member of assigned team
     }
 }
