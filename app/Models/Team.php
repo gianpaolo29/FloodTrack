@@ -9,6 +9,11 @@ class Team extends Model
     protected $fillable = [
         'name',
         'leader_id',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     public function leader()

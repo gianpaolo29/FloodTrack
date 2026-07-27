@@ -121,7 +121,7 @@ class ReportController extends Controller
                 'team_members'    => $teamMembers,
                 'member_statuses' => $memberStatuses,
             ]),
-            'teams'       => Team::with('members:id,name,team_id')->get(['id', 'name', 'leader_id']),
+            'teams'       => Team::with('members:id,name,team_id')->where('is_active', true)->get(['id', 'name', 'leader_id']),
             'field_report' => $fieldReport,
         ]);
     }

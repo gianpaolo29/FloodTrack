@@ -8,6 +8,7 @@ import {
     ClipboardList,
     Pencil,
     Plus,
+    PowerOff,
     Search,
     Shield,
     ShieldCheck,
@@ -46,6 +47,7 @@ interface Team {
     leader_id: number;
     members: TeamMember[];
     active_assignments: number;
+    is_active: boolean;
     created_at: string;
 }
 
@@ -84,6 +86,12 @@ export default function AdminTeamsIndex({ teams, responders, filters }: Props) {
         if (!confirmed) return;
         router.delete(`/admin/teams/${team.id}`, {
             onSuccess: () => swalSuccess('Deleted', 'Team has been deleted.'),
+        });
+    }, []);
+
+    const handleToggle = useCallback((team: Team) => {
+        router.post(`/admin/teams/${team.id}/toggle`, {}, {
+            preserveScroll: true,
         });
     }, []);
 
@@ -203,6 +211,7 @@ export default function AdminTeamsIndex({ teams, responders, filters }: Props) {
                                     team={team}
                                     onEdit={() => setEditTarget(team)}
                                     onDelete={() => handleDelete(team)}
+                                    onToggle={() => handleToggle(team)}
                                 />
                             ))}
                         </div>
@@ -276,7 +285,7 @@ export default function AdminTeamsIndex({ teams, responders, filters }: Props) {
 
 // ─── Team Card ────────────────────────────────────────────────────────────────
 
-function TeamCard({ team, onEdit, onDelete }: { team: Team; onEdit: () => void; onDelete: () => void }) {
+function TeamCard({ team, onEdit, onDelete, onToggle }: { team: Team; onEdit: () => void; onDelete: () => void; onToggle: () => void }) {
     const leader = team.members.find((m) => m.id === team.leader_id);
 
     return (
@@ -284,22 +293,35 @@ function TeamCard({ team, onEdit, onDelete }: { team: Team; onEdit: () => void; 
             layout
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            className="group flex flex-col gap-4 rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900"
+            className={`group flex flex-col gap-4 rounded-2xl border bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:bg-neutral-900 ${team.is_active ? 'border-neutral-200/60 dark:border-neutral-700/60' : 'border-neutral-300/60 opacity-70 dark:border-neutral-600/60'}`}
         >
             {/* Header */}
             <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm shadow-violet-500/20">
+                    <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl shadow-sm ${team.is_active ? 'bg-gradient-to-br from-violet-500 to-purple-600 shadow-violet-500/20' : 'bg-neutral-300 dark:bg-neutral-600'}`}>
                         <Shield className="size-5 text-white" />
                     </div>
                     <div>
-                        <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">{team.name}</p>
+                        <div className="flex items-center gap-2">
+                            <p className="text-sm font-bold text-neutral-900 dark:text-neutral-100">{team.name}</p>
+                            <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ring-1 ${team.is_active ? 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-800' : 'bg-neutral-100 text-neutral-500 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700'}`}>
+                                <span className={`size-1.5 rounded-full ${team.is_active ? 'bg-emerald-500' : 'bg-neutral-400'}`} />
+                                {team.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                        </div>
                         <p className="text-xs text-neutral-400 dark:text-neutral-500">
                             {team.members.length} member{team.members.length !== 1 ? 's' : ''}
                         </p>
                     </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                        onClick={onToggle}
+                        className={`rounded-lg p-1.5 transition-colors ${team.is_active ? 'text-neutral-400 hover:bg-amber-50 hover:text-amber-500 dark:hover:bg-amber-950/30' : 'text-neutral-400 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-950/30'}`}
+                        title={team.is_active ? 'Deactivate team' : 'Activate team'}
+                    >
+                        <PowerOff className="size-3.5" />
+                    </button>
                     <button
                         onClick={onEdit}
                         className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800"

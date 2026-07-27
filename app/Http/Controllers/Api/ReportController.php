@@ -25,12 +25,17 @@ class ReportController extends Controller
     {
         $query = Report::with(['user:id,name,contact_number', 'media', 'statusUpdates.user:id,name,role'])
             ->when($request->my, fn ($q) => $q->where('user_id', $request->user()->id))
-            ->when($request->assigned === 'me', fn ($q) => $q
-                ->where(fn ($sub) => $sub
-                    ->where('assigned_to', $request->user()->id)
-                    ->orWhereHas('responders', fn ($r) => $r->where('user_id', $request->user()->id))
-                )
-            )
+            ->when($request->assigned === 'me', function ($q) use ($request) {
+                $user = $request->user();
+                $q->where(fn ($sub) => $sub
+                    // Leader — direct assignment column
+                    ->where('assigned_to', $user->id)
+                    // Any member recorded in report_responders pivot
+                    ->orWhereHas('responders', fn ($r) => $r->where('user_id', $user->id))
+                    // Any member whose team is assigned — works even without pivot rows
+                    ->when($user->team_id, fn ($t) => $t->orWhere('assigned_team_id', $user->team_id))
+                );
+            })
             ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->latest();

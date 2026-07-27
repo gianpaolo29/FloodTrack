@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Report;
 use App\Models\Team;
 use App\Models\User;
+use App\Notifications\WelcomeNotification;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\RedirectResponse;
@@ -71,7 +72,8 @@ class ResponderController extends Controller
         $validated['password'] = Hash::make($validated['password']);
         $validated['email_verified_at'] = now();
 
-        User::create($validated);
+        $user = User::create($validated);
+        $user->notify(new WelcomeNotification);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Responder created.']);
 

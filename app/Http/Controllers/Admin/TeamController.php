@@ -114,6 +114,16 @@ class TeamController extends Controller
         return back();
     }
 
+    public function toggleActive(Team $team): RedirectResponse
+    {
+        $team->update(['is_active' => ! $team->is_active]);
+
+        $status = $team->is_active ? 'activated' : 'deactivated';
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Team \"{$team->name}\" {$status}."]);
+
+        return back();
+    }
+
     public function destroy(Team $team): RedirectResponse
     {
         $name = $team->name;

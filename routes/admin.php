@@ -84,10 +84,11 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     // Teams
     Route::prefix('teams')->name('teams.')->group(function () {
-        Route::get('/',          [TeamController::class, 'index'])->name('index');
-        Route::post('/',         [TeamController::class, 'store'])->name('store');
-        Route::put('/{team}',    [TeamController::class, 'update'])->name('update');
-        Route::delete('/{team}', [TeamController::class, 'destroy'])->name('destroy');
+        Route::get('/',                    [TeamController::class, 'index'])->name('index');
+        Route::post('/',                   [TeamController::class, 'store'])->name('store');
+        Route::put('/{team}',              [TeamController::class, 'update'])->name('update');
+        Route::post('/{team}/toggle',      [TeamController::class, 'toggleActive'])->name('toggle');
+        Route::delete('/{team}',           [TeamController::class, 'destroy'])->name('destroy');
     });
 
     // Weather
