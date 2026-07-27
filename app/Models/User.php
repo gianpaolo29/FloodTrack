@@ -26,6 +26,7 @@ class User extends Authenticatable
         'home_address',
         'home_latitude',
         'home_longitude',
+        'notification_prefs',
         'email_verified_at',
     ];
 
@@ -49,10 +50,11 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'is_on_duty' => 'boolean',
+            'email_verified_at'    => 'datetime',
+            'password'             => 'hashed',
+            'is_on_duty'           => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
+            'notification_prefs'   => 'array',
         ];
     }
 

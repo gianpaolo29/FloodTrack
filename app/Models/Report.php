@@ -33,6 +33,13 @@ class Report extends Model
         'potential_duplicate_of',
     ];
 
+    protected $appends = ['hazard_type'];
+
+    public function getHazardTypeAttribute(): string
+    {
+        return 'flood';
+    }
+
     protected function casts(): array
     {
         return [

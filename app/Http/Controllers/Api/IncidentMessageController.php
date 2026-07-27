@@ -29,7 +29,7 @@ class IncidentMessageController extends Controller
         $messages = IncidentMessage::where('report_id', $report->id)
             ->with('user:id,name,role')
             ->orderBy('created_at', 'asc')
-            ->cursorPaginate($request->input('per_page', 50));
+            ->get();
 
         return response()->json($messages);
     }
@@ -87,7 +87,8 @@ class IncidentMessageController extends Controller
                 $recipientIds,
                 $pushTitle,
                 $pushBody,
-                ['type' => 'incident_message', 'reportId' => $report->id]
+                ['type' => 'incident_message', 'reportId' => $report->id],
+                'my_reports'
             );
 
             // Database notification + real-time socket nudge to each recipient
@@ -188,7 +189,8 @@ class IncidentMessageController extends Controller
     private function canAccess(User $user, Report $report): bool
     {
         return $user->isAdmin()
-            || (int) $report->user_id === (int) $user->id          // report owner (resident)
-            || (int) $report->assigned_to === (int) $user->id;      // assigned responder
+            || (int) $report->user_id    === (int) $user->id   // report owner (resident)
+            || (int) $report->assigned_to === (int) $user->id  // team leader (direct assignment)
+            || $report->responders()->where('user_id', $user->id)->exists(); // any team member
     }
 }

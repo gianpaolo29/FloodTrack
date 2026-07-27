@@ -60,6 +60,19 @@ class UserController extends Controller
         return response()->json(['message' => 'Password updated successfully.']);
     }
 
+    public function updateNotificationPrefs(Request $request)
+    {
+        $data = $request->validate([
+            'critical'   => 'required|boolean',
+            'advisory'   => 'required|boolean',
+            'my_reports' => 'required|boolean',
+        ]);
+
+        $request->user()->update(['notification_prefs' => $data]);
+
+        return response()->json(['message' => 'Preferences saved.']);
+    }
+
     public function updateAvatar(Request $request)
     {
         $request->validate([

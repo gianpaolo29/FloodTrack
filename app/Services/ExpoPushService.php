@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\DeviceToken;
+use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -13,14 +14,29 @@ class ExpoPushService
     /**
      * Send a push notification to specific users.
      *
-     * @param  array|int  $userIds  Single user ID or array of user IDs
-     * @param  string     $title    Notification title
-     * @param  string     $body     Notification body
-     * @param  array      $data     Extra data payload (for navigation on tap)
+     * @param  array|int       $userIds  Single user ID or array of user IDs
+     * @param  string          $title    Notification title
+     * @param  string          $body     Notification body
+     * @param  array           $data     Extra data payload (for navigation on tap)
+     * @param  string|null     $prefKey  If set, skip users who disabled this pref (critical|advisory|my_reports)
      */
-    public static function sendToUsers(array|int $userIds, string $title, string $body, array $data = []): void
+    public static function sendToUsers(array|int $userIds, string $title, string $body, array $data = [], ?string $prefKey = null): void
     {
         $userIds = (array) $userIds;
+
+        if ($prefKey !== null) {
+            $userIds = User::whereIn('id', $userIds)
+                ->where(function ($q) use ($prefKey) {
+                    $q->whereNull('notification_prefs')
+                      ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(notification_prefs, '$.{$prefKey}')) != 'false'");
+                })
+                ->pluck('id')
+                ->toArray();
+        }
+
+        if (empty($userIds)) {
+            return;
+        }
 
         $tokens = DeviceToken::whereIn('user_id', $userIds)
             ->pluck('token')
@@ -35,10 +51,25 @@ class ExpoPushService
 
     /**
      * Send a push notification to all users with a registered device.
+     *
+     * @param  string      $title    Notification title
+     * @param  string      $body     Notification body
+     * @param  array       $data     Extra data payload
+     * @param  string|null $prefKey  If set, skip users who disabled this pref (critical|advisory|my_reports)
      */
-    public static function sendToAll(string $title, string $body, array $data = []): void
+    public static function sendToAll(string $title, string $body, array $data = [], ?string $prefKey = null): void
     {
-        $tokens = DeviceToken::pluck('token')->toArray();
+        if ($prefKey !== null) {
+            $tokens = DeviceToken::join('users', 'users.id', '=', 'device_tokens.user_id')
+                ->where(function ($q) use ($prefKey) {
+                    $q->whereNull('users.notification_prefs')
+                      ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(users.notification_prefs, '$.{$prefKey}')) != 'false'");
+                })
+                ->pluck('device_tokens.token')
+                ->toArray();
+        } else {
+            $tokens = DeviceToken::pluck('token')->toArray();
+        }
 
         if (empty($tokens)) {
             return;

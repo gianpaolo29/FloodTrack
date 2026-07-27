@@ -49,14 +49,16 @@ class AlertController extends Controller
         // Real-time alert to all connected users (residents, responders)
         SocketService::toAll('new-alert', $alert->toArray());
 
-        // Push notification to all users
+        // Push notification to all users (respecting notification preferences)
+        $prefKey = ($alert->type === 'critical' || $request->boolean('is_critical')) ? 'critical' : 'advisory';
         ExpoPushService::sendToAll(
             $alert->title,
             $alert->body,
             [
                 'type'    => 'alert',
                 'alertId' => $alert->id,
-            ]
+            ],
+            $prefKey
         );
 
         // Notify all admins about the new alert
@@ -91,14 +93,16 @@ class AlertController extends Controller
         // Real-time alert update to all connected users
         SocketService::toAll('alert-updated', $alert->fresh()->toArray());
 
-        // Push notification for updated alert
+        // Push notification for updated alert (respecting notification preferences)
+        $updatedPrefKey = ($alert->type === 'critical' || $request->boolean('is_critical')) ? 'critical' : 'advisory';
         ExpoPushService::sendToAll(
             $alert->title,
             $alert->body,
             [
                 'type'    => 'alert',
                 'alertId' => $alert->id,
-            ]
+            ],
+            $updatedPrefKey
         );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Alert updated.']);

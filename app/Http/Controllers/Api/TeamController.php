@@ -72,8 +72,10 @@ class TeamController extends Controller
     public function submitMemberStatus(Report $report, Request $request): JsonResponse
     {
         $request->validate([
-            'status' => 'required|in:pending,en_route,on_scene,resolved',
-            'notes'  => 'nullable|string|max:1000',
+            'status'   => 'required|in:pending,en_route,on_scene,resolved',
+            'notes'    => 'nullable|string|max:1000',
+            'media'    => 'nullable|array|max:5',
+            'media.*'  => 'file|mimes:jpg,jpeg,png,mp4,mov|max:51200',
         ]);
 
         $user = $request->user();
@@ -88,13 +90,24 @@ class TeamController extends Controller
 
         $pivot->update(['status' => $request->status]);
 
-        if ($request->notes) {
+        if ($request->notes || $request->hasFile('media')) {
             ReportStatusUpdate::create([
                 'report_id' => $report->id,
                 'user_id'   => $user->id,
                 'status'    => $request->status,
                 'notes'     => $request->notes,
             ]);
+        }
+
+        if ($request->hasFile('media')) {
+            foreach ($request->file('media') as $file) {
+                $path = $file->store('reports/' . $report->id . '/updates', 'public');
+                $report->media()->create([
+                    'file_path' => $path,
+                    'file_type' => str_starts_with($file->getMimeType(), 'video') ? 'video' : 'image',
+                    'file_size' => $file->getSize(),
+                ]);
+            }
         }
 
         // Broadcast updated member statuses to all clients watching this report

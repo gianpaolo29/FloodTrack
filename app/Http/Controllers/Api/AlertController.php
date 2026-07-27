@@ -52,14 +52,16 @@ class AlertController extends Controller
 
         SocketService::toAll('new-alert', $alert->toArray());
 
-        // Push notification to all users
+        // Push notification to all users (respecting notification preferences)
+        $prefKey = ($alert->type === 'critical' || $alert->is_critical) ? 'critical' : 'advisory';
         ExpoPushService::sendToAll(
             $alert->title,
             $alert->body,
             [
                 'type'    => 'alert',
                 'alertId' => $alert->id,
-            ]
+            ],
+            $prefKey
         );
 
         return response()->json($alert, 201);

@@ -122,7 +122,8 @@ class ReportController extends Controller
                     'type'     => 'status_update',
                     'reportId' => $report->id,
                     'status'   => 'verified',
-                ]
+                ],
+                'my_reports'
             );
 
             SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'verified']);
@@ -156,7 +157,8 @@ class ReportController extends Controller
                     'type'     => 'status_update',
                     'reportId' => $report->id,
                     'status'   => 'rejected',
-                ]
+                ],
+                'my_reports'
             );
 
             SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'rejected']);
@@ -242,7 +244,8 @@ class ReportController extends Controller
                 'type'     => 'status_update',
                 'reportId' => $report->id,
                 'status'   => $data['status'],
-            ]
+            ],
+            'my_reports'
         );
 
         SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => $data['status']]);
@@ -296,7 +299,8 @@ class ReportController extends Controller
                 'type'     => 'status_update',
                 'reportId' => $report->id,
                 'status'   => 'assigned',
-            ]
+            ],
+            'my_reports'
         );
 
         SocketService::toUser($data['responder_id'], 'new-notification', ['type' => 'incident_assigned', 'reportId' => $report->id]);
@@ -337,7 +341,8 @@ class ReportController extends Controller
                 'type'     => 'status_update',
                 'reportId' => $report->id,
                 'status'   => 'verified',
-            ]
+            ],
+            'my_reports'
         );
 
         SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'verified']);
@@ -440,7 +445,8 @@ class ReportController extends Controller
                 'type'     => 'status_update',
                 'reportId' => $report->id,
                 'status'   => 'rejected',
-            ]
+            ],
+            'my_reports'
         );
 
         SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'rejected']);

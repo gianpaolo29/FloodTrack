@@ -419,7 +419,8 @@ class ReportController extends Controller
                     'type'     => 'status_update',
                     'reportId' => $report->id,
                     'status'   => $newStatus,
-                ]
+                ],
+                'my_reports'
             );
         }
 
