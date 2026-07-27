@@ -33,8 +33,9 @@ interface Stats {
 
 interface Props {
     activities: Paginated<Activity>;
-    filters: { status?: string; search?: string };
+    filters: { status?: string; search?: string; team_id?: string };
     stats: Stats;
+    teams: { id: number; name: string }[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -56,7 +57,7 @@ const ROLE_AVATAR: Record<string, string> = {
     resident:  'from-slate-400 to-slate-500',
 };
 
-export default function AdminActivityLog({ activities, filters, stats }: Props) {
+export default function AdminActivityLog({ activities, filters, stats, teams }: Props) {
     const filter = useCallback((key: string, value: string) => {
         router.get('/admin/activity', { ...filters, [key]: value || undefined }, {
             preserveState: true,
@@ -64,7 +65,7 @@ export default function AdminActivityLog({ activities, filters, stats }: Props) 
         });
     }, [filters]);
 
-    const hasFilters = !!(filters.status || filters.search);
+    const hasFilters = !!(filters.status || filters.search || filters.team_id);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -166,6 +167,20 @@ export default function AdminActivityLog({ activities, filters, stats }: Props) 
                                 </select>
                                 <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
                             </div>
+
+                            {/* Team filter */}
+                            {teams.length > 0 && (
+                                <select
+                                    value={filters.team_id ?? ''}
+                                    onChange={(e) => filter('team_id', e.target.value)}
+                                    className="h-9 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 text-sm outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100"
+                                >
+                                    <option value="">All Teams</option>
+                                    {teams.map((t) => (
+                                        <option key={t.id} value={String(t.id)}>{t.name}</option>
+                                    ))}
+                                </select>
+                            )}
 
                             {hasFilters && (
                                 <button

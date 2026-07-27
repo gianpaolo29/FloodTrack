@@ -29,6 +29,7 @@ interface Responder {
     created_at: string;
     team_id: number | null;
     team_name: string | null;
+    team_is_active: boolean | null;
     is_leader: boolean;
 }
 
@@ -280,7 +281,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
                                         </td>
                                         <td className="px-5 py-4">
                                             {r.team_name ? (
-                                                <div className="flex items-center gap-1.5">
+                                                <div className="flex flex-wrap items-center gap-1.5">
                                                     <Link
                                                         href="/admin/teams"
                                                         className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-violet-200 transition-colors hover:bg-violet-100 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-800/40"
@@ -288,6 +289,11 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
                                                         <Users className="size-3" />
                                                         {r.team_name}
                                                     </Link>
+                                                    {r.team_is_active === false && (
+                                                        <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                                                            Inactive
+                                                        </span>
+                                                    )}
                                                     {r.is_leader && (
                                                         <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-800/40">
                                                             <Star className="size-2.5" />

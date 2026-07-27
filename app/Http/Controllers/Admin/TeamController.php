@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Report;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,22 +16,34 @@ class TeamController extends Controller
 {
     public function index(Request $request): Response
     {
+        $avgExpr = DB::getDriverName() === 'sqlite'
+            ? "(julianday(resolved_at) - julianday(created_at)) * 1440"
+            : "TIMESTAMPDIFF(MINUTE, created_at, resolved_at)";
+
         $teams = Team::with(['leader:id,name,avatar', 'members:id,name,avatar,team_id'])
             ->withCount([
                 'reports as active_assignments' => fn ($q) => $q->where('status', 'assigned'),
+                'reports as total_assigned',
+                'reports as resolved_count' => fn ($q) => $q->whereNotNull('resolved_at'),
             ])
             ->when($request->search, fn ($q) => $q->where('name', 'like', "%{$request->search}%"))
             ->latest()
             ->paginate(12)
             ->withQueryString();
 
-        // Add is_leader and avatar_url to each member
-        $teams->getCollection()->transform(function ($team) {
+        // Add is_leader, avatar_url, and performance metrics to each team
+        $teams->getCollection()->transform(function ($team) use ($avgExpr) {
             $team->members->each(function ($m) use ($team) {
                 $m->append('avatar_url');
                 $m->is_leader = $m->id === $team->leader_id;
             });
             $team->leader?->append('avatar_url');
+            $team->avg_response_minutes = round((float) (
+                Report::where('assigned_team_id', $team->id)
+                    ->whereNotNull('resolved_at')
+                    ->selectRaw("AVG($avgExpr) as avg_minutes")
+                    ->value('avg_minutes') ?? 0
+            ), 1);
             return $team;
         });
 

@@ -10,6 +10,7 @@ import {
     Clock,
     FileText,
     RefreshCw,
+    Shield,
     Sparkles,
     TrendingUp,
     Trophy,
@@ -34,12 +35,14 @@ interface MonthlyPoint { month: string; total: number; critical: number; high: n
 interface BacklogPoint { date: string; new_reports: number; resolved: number; }
 interface TopArea { address: string; count: number; }
 interface TopResponder { id: number; name: string; resolved_count: number; total_assigned: number; efficiency: number; avg_response: number; }
+interface TeamPerformance { id: number; name: string; is_active: boolean; total_assigned: number; resolved_count: number; efficiency: number; avg_response: number; }
 interface Props {
     daily_reports: Record<string, number>;
     avg_response_time: number;
     severity_breakdown: Record<string, number>;
     status_breakdown: Record<string, number>;
     top_responders: TopResponder[];
+    team_performance: TeamPerformance[];
     monthly_trend: MonthlyPoint[];
     peak_hours: Record<number, number>;
     top_areas: TopArea[];
@@ -152,6 +155,7 @@ export default function StatisticsPage({
     severity_breakdown,
     status_breakdown,
     top_responders,
+    team_performance,
     monthly_trend,
     peak_hours,
     top_areas,
@@ -878,6 +882,65 @@ export default function StatisticsPage({
                         </div>
                     </Card>
                 </div>
+
+                {/* Team Performance */}
+                <Card>
+                    <CardHeader icon={Shield} gradient="from-teal-500 to-cyan-600" title="Team Performance" subtitle="All-time by resolved reports" />
+                    {team_performance.length === 0 ? (
+                        <div className="px-5 py-10"><EmptyState text="No teams yet" /></div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[600px] border-collapse text-sm">
+                                <thead>
+                                    <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                        {['Team', 'Status', 'Assigned', 'Resolved', 'Rate', 'Avg Time'].map((h) => (
+                                            <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/60">
+                                    {team_performance.map((t) => (
+                                        <tr key={t.id} className="transition-colors hover:bg-neutral-50/70 dark:hover:bg-neutral-800/25">
+                                            <td className="px-5 py-3.5">
+                                                <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{t.name}</span>
+                                            </td>
+                                            <td className="px-5 py-3.5">
+                                                {t.is_active ? (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-800/40">
+                                                        <span className="size-1.5 rounded-full bg-emerald-500" />
+                                                        Active
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                                                        Inactive
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="px-5 py-3.5 text-xs font-medium tabular-nums text-neutral-600 dark:text-neutral-300">{t.total_assigned}</td>
+                                            <td className="px-5 py-3.5 text-xs font-medium tabular-nums text-emerald-600 dark:text-emerald-400">{t.resolved_count}</td>
+                                            <td className="px-5 py-3.5">
+                                                <span className={`rounded-lg px-2 py-1 text-[11px] font-bold tabular-nums ${
+                                                    t.efficiency >= 70
+                                                        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
+                                                        : t.efficiency >= 40
+                                                            ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
+                                                            : t.total_assigned === 0
+                                                                ? 'bg-neutral-100 text-neutral-400 dark:bg-neutral-800'
+                                                                : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'
+                                                }`}>
+                                                    {t.total_assigned === 0 ? '—' : `${t.efficiency}%`}
+                                                </span>
+                                            </td>
+                                            <td className="px-5 py-3.5 text-[11px] tabular-nums text-neutral-400 dark:text-neutral-500">
+                                                {t.total_assigned === 0 ? '—' : formatResponseTime(t.avg_response)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </Card>
 
             </div>
             </div>

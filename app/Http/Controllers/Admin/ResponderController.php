@@ -21,7 +21,7 @@ class ResponderController extends Controller
     public function index(Request $request): Response
     {
         $responders = User::where('role', 'responder')
-            ->with('team:id,name,leader_id')
+            ->with('team:id,name,leader_id,is_active')
             ->when($request->search, fn ($q) => $q->where(function ($q2) use ($request) {
                 $q2->where('name', 'like', "%{$request->search}%")
                    ->orWhere('email', 'like', "%{$request->search}%");
@@ -39,6 +39,7 @@ class ResponderController extends Controller
         $responders->getCollection()->transform(function ($r) {
             $r->team_id        = $r->team?->id;
             $r->team_name      = $r->team?->name;
+            $r->team_is_active = $r->team?->is_active;
             $r->is_leader      = $r->team && $r->team->leader_id === $r->id;
             $r->home_latitude  = $r->home_latitude  ? (float) $r->home_latitude  : null;
             $r->home_longitude = $r->home_longitude ? (float) $r->home_longitude : null;

@@ -41,6 +41,7 @@ interface Filters {
     status?: string;
     severity?: string;
     search?: string;
+    team_id?: string;
 }
 
 interface Stats {
@@ -54,6 +55,7 @@ interface Props {
     reports: Paginated<Report>;
     filters: Filters;
     stats: Stats;
+    teams: { id: number; name: string }[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -127,7 +129,7 @@ function StatCard({ icon: Icon, grad, shadow, value, label, sub, index, mounted,
 }
 
 /* ─── Main page ─── */
-export default function AdminReportsIndex({ reports, filters, stats }: Props) {
+export default function AdminReportsIndex({ reports, filters, stats, teams }: Props) {
     const [selected, setSelected]             = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [searchValue, setSearchValue]       = useState(filters.search ?? '');
@@ -148,7 +150,7 @@ export default function AdminReportsIndex({ reports, filters, stats }: Props) {
         router.get('/admin/reports', { status: filters.status }, { preserveState: false, replace: true });
     };
 
-    const hasExtraFilters = !!(filters.severity || filters.search);
+    const hasExtraFilters = !!(filters.severity || filters.search || filters.team_id);
     const allOnPageSelected = reports.data.length > 0 && reports.data.every((r) => selected.includes(r.id));
 
     const toggleAll = () => {
@@ -310,7 +312,39 @@ export default function AdminReportsIndex({ reports, filters, stats }: Props) {
                                 })}
                             </div>
 
-                            {/* Active filter chip */}
+                            {/* Team filter */}
+                            {teams.length > 0 && (
+                                <select
+                                    value={filters.team_id ?? ''}
+                                    onChange={(e) => filter('team_id', e.target.value)}
+                                    className="h-9 rounded-xl border border-neutral-200/80 bg-white px-3 text-xs font-medium text-neutral-600 shadow-sm outline-none transition-all focus:border-teal-400 focus:ring-2 focus:ring-teal-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                                >
+                                    <option value="">All Teams</option>
+                                    {teams.map((t) => (
+                                        <option key={t.id} value={String(t.id)}>{t.name}</option>
+                                    ))}
+                                </select>
+                            )}
+
+                            {/* Active filter chips */}
+                            <AnimatePresence>
+                                {filters.team_id && (
+                                    <motion.span
+                                        key="team-chip"
+                                        initial={{ opacity: 0, scale: 0.88 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.88 }}
+                                        transition={{ duration: 0.15 }}
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-violet-200/80 bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 dark:border-violet-800/40 dark:bg-violet-950/30 dark:text-violet-400"
+                                    >
+                                        <Filter className="size-3" />
+                                        {teams.find((t) => String(t.id) === filters.team_id)?.name ?? 'Team'}
+                                        <button onClick={() => filter('team_id', '')} className="rounded-full hover:bg-violet-100 dark:hover:bg-violet-900/40">
+                                            <X className="size-3" />
+                                        </button>
+                                    </motion.span>
+                                )}
+                            </AnimatePresence>
                             <AnimatePresence>
                                 {filters.search && (
                                     <motion.span
@@ -399,7 +433,7 @@ export default function AdminReportsIndex({ reports, filters, stats }: Props) {
                                                 className="size-3.5 rounded border-neutral-300 text-teal-600 focus:ring-teal-500/20 dark:border-neutral-600"
                                             />
                                         </th>
-                                        {['Report', 'Location', 'Severity', 'Status', 'Reporter', 'Date', ''].map((h) => (
+                                        {['Report', 'Location', 'Severity', 'Status', 'Team', 'Reporter', 'Date', ''].map((h) => (
                                             <th key={h} className="px-4 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 dark:text-neutral-500">
                                                 {h}
                                             </th>
@@ -551,6 +585,17 @@ function ReportRow({ report, isSelected, onToggle }: {
                     <span className="size-1.5 rounded-full bg-current opacity-60" />
                     {STATUS_LABEL[report.status] ?? report.status}
                 </span>
+            </td>
+
+            {/* Team */}
+            <td className="px-4 py-4">
+                {report.assigned_team ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-200/60 dark:bg-violet-950/30 dark:text-violet-400 dark:ring-violet-800/40">
+                        {report.assigned_team.name}
+                    </span>
+                ) : (
+                    <span className="text-[11px] text-neutral-300 dark:text-neutral-600">—</span>
+                )}
             </td>
 
             {/* Reporter */}

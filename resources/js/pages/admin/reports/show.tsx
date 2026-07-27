@@ -680,10 +680,19 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
                                             <option value="">Select team...</option>
                                             {teams.map((t) => (
                                                 <option key={t.id} value={t.id}>
-                                                    {t.name} ({t.members.length} members)
+                                                    {t.name} — {t.members.length} member{t.members.length !== 1 ? 's' : ''}
+                                                    {(t.active_assignments ?? 0) > 0 ? ` · ${t.active_assignments} active` : ''}
                                                 </option>
                                             ))}
                                         </select>
+                                        <p className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                                            Only active teams are shown.
+                                        </p>
+                                        {report.assigned_team && (t => t && (t.active_assignments ?? 0) > 1)(teams.find(t => t.id === report.assigned_team!.id)) && (
+                                            <p className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
+                                                <span>⚠</span> This team is currently deployed on another report.
+                                            </p>
+                                        )}
                                         <button
                                             type="submit"
                                             disabled={assignForm.processing}

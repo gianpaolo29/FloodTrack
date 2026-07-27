@@ -47,6 +47,9 @@ interface Team {
     leader_id: number;
     members: TeamMember[];
     active_assignments: number;
+    total_assigned: number;
+    resolved_count: number;
+    avg_response_minutes: number;
     is_active: boolean;
     created_at: string;
 }
@@ -365,6 +368,29 @@ function TeamCard({ team, onEdit, onDelete, onToggle }: { team: Team; onEdit: ()
                     <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">
                         +{team.members.length - 4} more
                     </p>
+                )}
+            </div>
+
+            {/* Performance metrics */}
+            <div className="rounded-xl border border-neutral-100 bg-neutral-50/60 px-3 py-2 dark:border-neutral-800 dark:bg-neutral-800/40">
+                {team.total_assigned === 0 ? (
+                    <p className="text-center text-[10px] text-neutral-400 dark:text-neutral-500">Not yet deployed</p>
+                ) : (
+                    <div className="flex items-center justify-between gap-2 text-[10px]">
+                        <span className="text-emerald-600 dark:text-emerald-400">
+                            ✓ {team.resolved_count} resolved
+                        </span>
+                        <span className="text-neutral-400">·</span>
+                        <span className="font-semibold text-neutral-600 dark:text-neutral-300">
+                            {team.total_assigned > 0 ? Math.round((team.resolved_count / team.total_assigned) * 100) : 0}% rate
+                        </span>
+                        <span className="text-neutral-400">·</span>
+                        <span className="text-neutral-500 dark:text-neutral-400">
+                            ~{team.avg_response_minutes >= 60
+                                ? `${Math.floor(team.avg_response_minutes / 60)}h ${Math.round(team.avg_response_minutes % 60)}m`
+                                : `${Math.round(team.avg_response_minutes)}m`} avg
+                        </span>
+                    </div>
                 )}
             </div>
 

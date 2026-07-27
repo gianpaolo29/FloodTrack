@@ -58,9 +58,10 @@ class ReportController extends Controller
 
     public function index(Request $request): Response
     {
-        $reports = Report::with(['user:id,name', 'assignedResponder:id,name'])
+        $reports = Report::with(['user:id,name', 'assignedResponder:id,name', 'assignedTeam:id,name'])
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
+            ->when($request->team_id, fn ($q) => $q->where('assigned_team_id', $request->team_id))
             ->when($request->search, fn ($q) => $q->where(function ($q2) use ($request) {
                 $q2->where('address', 'like', "%{$request->search}%")
                    ->orWhere('reference_number', 'like', "%{$request->search}%");
@@ -78,8 +79,9 @@ class ReportController extends Controller
 
         return Inertia::render('admin/reports/index', [
             'reports' => $reports,
-            'filters' => $request->only(['status', 'severity', 'search']),
+            'filters' => $request->only(['status', 'severity', 'search', 'team_id']),
             'stats'   => $stats,
+            'teams'   => Team::orderBy('name')->get(['id', 'name']),
         ]);
     }
 
@@ -121,7 +123,10 @@ class ReportController extends Controller
                 'team_members'    => $teamMembers,
                 'member_statuses' => $memberStatuses,
             ]),
-            'teams'       => Team::with('members:id,name,team_id')->where('is_active', true)->get(['id', 'name', 'leader_id']),
+            'teams'       => Team::with('members:id,name,team_id')
+                ->where('is_active', true)
+                ->withCount(['reports as active_assignments' => fn ($q) => $q->where('status', 'assigned')])
+                ->get(['id', 'name', 'leader_id']),
             'field_report' => $fieldReport,
         ]);
     }

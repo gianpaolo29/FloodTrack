@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\ReportStatusUpdate;
+use App\Models\Team;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -17,6 +18,9 @@ class ActivityController extends Controller
                 'report:id,reference_number,severity',
             ])
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
+            ->when($request->team_id, fn ($q) => $q->whereHas('report', function ($q2) use ($request) {
+                $q2->where('assigned_team_id', $request->team_id);
+            }))
             ->when($request->search, fn ($q) => $q->whereHas('report', function ($q2) use ($request) {
                 $q2->where('reference_number', 'like', "%{$request->search}%");
             }))
@@ -33,8 +37,9 @@ class ActivityController extends Controller
 
         return Inertia::render('admin/activity/index', [
             'activities' => $activities,
-            'filters'    => $request->only(['status', 'search']),
+            'filters'    => $request->only(['status', 'search', 'team_id']),
             'stats'      => $stats,
+            'teams'      => Team::orderBy('name')->get(['id', 'name']),
         ]);
     }
 }

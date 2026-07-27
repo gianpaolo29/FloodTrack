@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\EvacuationCenter;
 use App\Models\Report;
+use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -137,6 +138,35 @@ class StatisticsController extends Controller
                 ];
             });
 
+        // Team performance
+        $teamAvgExpr = DB::getDriverName() === 'sqlite'
+            ? 'AVG((julianday(resolved_at) - julianday(created_at)) * 1440)'
+            : 'AVG(TIMESTAMPDIFF(MINUTE, created_at, resolved_at))';
+
+        $team_performance = Team::withCount([
+                'reports as total_assigned',
+                'reports as resolved_count' => fn ($q) => $q->whereNotNull('resolved_at'),
+            ])
+            ->orderByDesc('resolved_count')
+            ->get(['id', 'name', 'is_active'])
+            ->map(function ($team) use ($teamAvgExpr) {
+                $avg = Report::where('assigned_team_id', $team->id)
+                    ->whereNotNull('resolved_at')
+                    ->selectRaw("$teamAvgExpr as avg_minutes")
+                    ->value('avg_minutes');
+                return [
+                    'id'             => $team->id,
+                    'name'           => $team->name,
+                    'is_active'      => $team->is_active,
+                    'total_assigned' => $team->total_assigned,
+                    'resolved_count' => $team->resolved_count,
+                    'efficiency'     => $team->total_assigned > 0
+                        ? round(($team->resolved_count / $team->total_assigned) * 100)
+                        : 0,
+                    'avg_response'   => round((float) ($avg ?? 0), 1),
+                ];
+            });
+
         // Evacuation center stats
         $evacuation_stats = [
             'total_centers'   => EvacuationCenter::count(),
@@ -158,6 +188,7 @@ class StatisticsController extends Controller
             'resolution_rate'    => $resolution_rate,
             'critical_count'     => $critical_count,
             'evacuation_stats'   => $evacuation_stats,
+            'team_performance'   => $team_performance,
             'period'             => $period,
         ]);
     }

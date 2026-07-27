@@ -14,6 +14,7 @@ import {
     LayoutDashboard,
     MapPin,
     ShieldCheck,
+    Shield,
     TrendingUp,
     Trophy,
     Waves,
@@ -32,6 +33,7 @@ interface MonthlyReport { month: string; total: number; critical: number; high: 
 interface TopResponder { id: number; name: string; email: string; resolved_count: number; total_assigned: number }
 interface ActivityItem { id: number; status: string; notes: string | null; created_at: string; user: { id: number; name: string; role: string }; report: { id: number; reference_number: string; severity: string } }
 interface MapReport { id: number; reference_number: string; severity: string; status: string; latitude: number; longitude: number; address: string | null }
+interface TeamStats { active: number; deployed: number; inactive: number }
 
 interface Props {
     stats: Stats;
@@ -48,6 +50,7 @@ interface Props {
     recent_activity: ActivityItem[];
     affected_areas: number;
     map_reports: MapReport[];
+    team_stats: TeamStats;
     period: string;
 }
 
@@ -164,7 +167,7 @@ export default function AdminDashboard({
     severity_breakdown, status_breakdown,
     recent_reports, active_alerts, critical_alerts,
     top_responders, avg_response_time, recent_activity,
-    affected_areas, map_reports, period,
+    affected_areas, map_reports, team_stats, period,
 }: Props) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
@@ -381,7 +384,7 @@ export default function AdminDashboard({
                 </div>
 
                 {/* Secondary Stats */}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
                     {([
                         { icon: CheckCircle2, grad: 'from-emerald-500 to-teal-600',   shadow: 'shadow-emerald-500/20', value: stats.resolved_today,              label: 'Resolved Today', sub: 'Closed reports',  accent: 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400' },
                         { icon: Clock,        grad: 'from-orange-400 to-amber-500',   shadow: 'shadow-orange-500/20',  value: formatResponseTime(avg_response_time), label: 'Avg Response',   sub: 'Time to action',  accent: 'text-orange-600 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400' },
@@ -399,6 +402,19 @@ export default function AdminDashboard({
                             </div>
                         </div>
                     ))}
+                    {/* Active Teams card */}
+                    <div className={`flex items-center gap-4 rounded-2xl border border-white/60 bg-white p-4 shadow-sm shadow-black/[0.04] transition-all duration-700 hover:shadow-md hover:scale-[1.01] sm:p-5 dark:border-neutral-700/50 dark:bg-neutral-900 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '800ms' }}>
+                        <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400 to-cyan-500 shadow-lg shadow-teal-500/20">
+                            <Shield className="size-5 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xl font-extrabold tabular-nums tracking-tight text-neutral-900 sm:text-2xl dark:text-white">{team_stats.active}</p>
+                            <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">Active Teams</p>
+                            <span className="mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold text-teal-600 bg-teal-50 dark:bg-teal-900/20 dark:text-teal-400">
+                                {team_stats.deployed} deployed{team_stats.inactive > 0 ? ` · ${team_stats.inactive} inactive` : ''}
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Charts: Area + Donut */}

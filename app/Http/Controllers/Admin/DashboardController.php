@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Alert;
 use App\Models\Report;
 use App\Models\ReportStatusUpdate;
+use App\Models\Team;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -176,8 +177,17 @@ class DashboardController extends Controller
             ->limit(50)
             ->get(['id', 'reference_number', 'severity', 'status', 'latitude', 'longitude', 'address']);
 
+        $team_stats = [
+            'active'   => Team::where('is_active', true)->count(),
+            'deployed' => Team::where('is_active', true)
+                ->whereHas('reports', fn ($q) => $q->where('status', 'assigned'))
+                ->count(),
+            'inactive' => Team::where('is_active', false)->count(),
+        ];
+
         return Inertia::render('admin/dashboard', [
             'stats'              => $stats,
+            'team_stats'         => $team_stats,
             'trends'             => [
                 'reports'  => $reportsTrend,
                 'resolved' => $resolvedTrend,
