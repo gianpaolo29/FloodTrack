@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\IncidentMessage;
 use App\Models\Report;
 use App\Models\User;
+use App\Notifications\NewIncidentMessage;
 use App\Services\ExpoPushService;
 use App\Services\SocketService;
 use Illuminate\Http\Request;
@@ -59,48 +60,47 @@ class IncidentMessageController extends Controller
 
         $message->load('user:id,name,role');
 
-        // Send push notifications to the other parties
-        $snippet = \Illuminate\Support\Str::limit($data['body'], 100);
+        // Determine which user IDs should be notified (everyone except the sender)
+        $snippet   = \Illuminate\Support\Str::limit($data['body'], 100);
+        $adminIds  = User::where('role', 'admin')->pluck('id')->toArray();
 
-        if ((int) $user->id === (int) $report->user_id) {
-            // Resident sent message -> notify assigned responder + admins
-            $notifyIds = [];
-            if ($report->assigned_to) $notifyIds[] = $report->assigned_to;
-            $adminIds = User::where('role', 'admin')->pluck('id')->toArray();
-            $notifyIds = array_unique(array_merge($notifyIds, $adminIds));
+        $recipientIds = array_unique(array_filter(array_merge(
+            [$report->user_id, $report->assigned_to],
+            $adminIds,
+        )));
+        $recipientIds = array_values(array_filter($recipientIds, fn ($id) => (int) $id !== (int) $user->id));
 
-            if (! empty($notifyIds)) {
-                ExpoPushService::sendToUsers(
-                    $notifyIds,
-                    'Message from ' . $user->name,
-                    $snippet,
-                    ['type' => 'incident_message', 'reportId' => $report->id]
-                );
+        if (! empty($recipientIds)) {
+            // Push notification
+            if ((int) $user->id === (int) $report->user_id) {
+                $pushTitle = 'Message from ' . $user->name;
+                $pushBody  = $snippet;
+            } elseif ($user->isAdmin()) {
+                $pushTitle = 'Message from dispatch';
+                $pushBody  = $snippet;
+            } else {
+                $pushTitle = 'Update on Report #' . $report->reference_number;
+                $pushBody  = $user->name . ': ' . $snippet;
             }
-        } elseif ((int) $report->assigned_to === (int) $user->id) {
-            // Responder sent message -> notify reporter + admins
-            $notifyIds = [$report->user_id];
-            $adminIds = User::where('role', 'admin')->pluck('id')->toArray();
-            $notifyIds = array_unique(array_merge($notifyIds, $adminIds));
 
             ExpoPushService::sendToUsers(
-                $notifyIds,
-                'Update on Report #' . $report->reference_number,
-                $user->name . ': ' . $snippet,
+                $recipientIds,
+                $pushTitle,
+                $pushBody,
                 ['type' => 'incident_message', 'reportId' => $report->id]
             );
-        } elseif ($user->isAdmin()) {
-            // Admin sent message -> notify reporter + assigned responder
-            $notifyIds = [$report->user_id];
-            if ($report->assigned_to) $notifyIds[] = $report->assigned_to;
-            $notifyIds = array_unique(array_filter($notifyIds));
 
-            ExpoPushService::sendToUsers(
-                $notifyIds,
-                'Message from dispatch',
-                $snippet,
-                ['type' => 'incident_message', 'reportId' => $report->id]
-            );
+            // Database notification + real-time socket nudge to each recipient
+            $recipients = User::whereIn('id', $recipientIds)->get();
+            foreach ($recipients as $recipient) {
+                $recipient->notify(new NewIncidentMessage($report, $message, $user));
+
+                SocketService::toUser($recipient->id, 'new-notification', [
+                    'type'     => 'new_message',
+                    'reportId' => $report->id,
+                    'senderId' => $user->id,
+                ]);
+            }
         }
 
         SocketService::toReport($report->id, 'new-message', $message->toArray());

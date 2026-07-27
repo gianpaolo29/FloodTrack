@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\FieldReport;
 use App\Models\Report;
 use App\Models\ReportResponder;
 use App\Models\ReportStatusUpdate;
@@ -111,12 +112,17 @@ class ReportController extends Controller
             'is_leader'  => $report->assignedTeam && $report->assignedTeam->leader_id === $u->id,
         ]);
 
+        $fieldReport = FieldReport::where('report_id', $report->id)
+            ->with('user:id,name,role')
+            ->first();
+
         return Inertia::render('admin/reports/show', [
             'report' => array_merge($report->toArray(), [
                 'team_members'    => $teamMembers,
                 'member_statuses' => $memberStatuses,
             ]),
-            'teams'  => Team::with('members:id,name,team_id')->get(['id', 'name', 'leader_id']),
+            'teams'       => Team::with('members:id,name,team_id')->get(['id', 'name', 'leader_id']),
+            'field_report' => $fieldReport,
         ]);
     }
 
@@ -326,6 +332,24 @@ class ReportController extends Controller
 
         foreach ($team->members as $member) {
             $member->notify(new ReportStatusChanged($report, $oldStatus, 'assigned', $request->user()->name));
+        }
+
+        // Push notification to all team members
+        ExpoPushService::sendToUsers(
+            $team->members->pluck('id')->toArray(),
+            "New Assignment — {$report->reference_number}",
+            "You have been assigned to a {$report->severity} flood report. Open the app for details.",
+            ['type' => 'assignment', 'reportId' => $report->id]
+        );
+
+        // Real-time socket event to each team member
+        foreach ($team->members as $member) {
+            SocketService::toUser($member->id, 'new-assignment', [
+                'reportId'  => $report->id,
+                'reference' => $report->reference_number,
+                'severity'  => $report->severity,
+                'address'   => $report->address,
+            ]);
         }
 
         $this->notifyStatusChange($report, $oldStatus, 'assigned', $request->user()->name);

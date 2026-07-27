@@ -25,7 +25,12 @@ class ReportController extends Controller
     {
         $query = Report::with(['user:id,name,contact_number', 'media', 'statusUpdates.user:id,name,role'])
             ->when($request->my, fn ($q) => $q->where('user_id', $request->user()->id))
-            ->when($request->assigned === 'me', fn ($q) => $q->where('assigned_to', $request->user()->id))
+            ->when($request->assigned === 'me', fn ($q) => $q
+                ->where(fn ($sub) => $sub
+                    ->where('assigned_to', $request->user()->id)
+                    ->orWhereHas('responders', fn ($r) => $r->where('user_id', $request->user()->id))
+                )
+            )
             ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->latest();

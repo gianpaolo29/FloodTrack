@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Report;
 use App\Models\ReportResponder;
 use App\Models\ReportStatusUpdate;
+use App\Notifications\ReportStatusChanged;
+use App\Services\ExpoPushService;
 use App\Services\SocketService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -146,12 +148,49 @@ class TeamController extends Controller
             'status'   => $request->status,
         ]);
 
-        // Also notify the report owner
+        // Notify the report owner (resident)
         if ($report->user_id) {
+            // Real-time socket
             SocketService::toUser($report->user_id, 'report-status', [
                 'reportId' => $report->id,
                 'status'   => $request->status,
             ]);
+
+            $pushTitles = [
+                'en_route' => "Responder En Route — {$report->reference_number}",
+                'on_scene' => "Responder On Scene — {$report->reference_number}",
+                'resolved' => "Report Resolved — {$report->reference_number}",
+            ];
+            $pushBodies = [
+                'en_route' => 'A responder is on the way to your location. Please stay safe.',
+                'on_scene' => 'A responder has arrived at your location.',
+                'resolved' => 'Your report has been resolved. Thank you for keeping your community safe.',
+            ];
+
+            // Push notification
+            if (isset($pushTitles[$request->status])) {
+                ExpoPushService::sendToUsers(
+                    $report->user_id,
+                    $pushTitles[$request->status],
+                    $pushBodies[$request->status],
+                    ['type' => 'status_update', 'reportId' => $report->id, 'status' => $request->status]
+                );
+            }
+
+            // Database notification
+            $report->loadMissing('user');
+            if ($report->user) {
+                $report->user->notify(
+                    new ReportStatusChanged($report, $report->status, $request->status, $user->name)
+                );
+
+                // Socket nudge so the resident's alerts list refreshes immediately
+                SocketService::toUser($report->user_id, 'new-notification', [
+                    'type'     => 'status_update',
+                    'reportId' => $report->id,
+                    'status'   => $request->status,
+                ]);
+            }
         }
 
         return response()->json(['message' => 'Team status confirmed.']);
