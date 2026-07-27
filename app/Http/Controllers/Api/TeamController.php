@@ -130,6 +130,10 @@ class TeamController extends Controller
             'resolved_at' => $request->status === 'resolved' ? now() : null,
         ]);
 
+        // Update every assigned member's individual status to match the team status
+        ReportResponder::where('report_id', $report->id)
+            ->update(['status' => $request->status, 'updated_at' => now()]);
+
         ReportStatusUpdate::create([
             'report_id' => $report->id,
             'user_id'   => $user->id,
