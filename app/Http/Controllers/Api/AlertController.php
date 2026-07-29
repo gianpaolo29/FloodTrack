@@ -18,17 +18,9 @@ class AlertController extends Controller
 
         $alerts = Alert::where('created_at', '>=', $request->user()->created_at)
         ->where(function ($q) use ($userAddress) {
-            // Show alerts with no barangay filter (sent to all)
             $q->whereNull('target_barangays');
-            // Or alerts targeting a barangay found in the user's home address
             if ($userAddress) {
-                $q->orWhere(function ($sub) use ($userAddress) {
-                    $sub->whereNotNull('target_barangays')
-                        ->whereRaw("EXISTS (
-                            SELECT 1 FROM JSON_TABLE(target_barangays, '$[*]' COLUMNS(brgy VARCHAR(100) PATH '$')) AS jt
-                            WHERE ? LIKE CONCAT('%', jt.brgy, '%')
-                        )", [$userAddress]);
-                });
+                $q->orWhereJsonContains('target_barangays', $userAddress);
             }
         })
         ->orderByDesc('is_critical')

@@ -1,11 +1,16 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, Bell, ChevronDown, ChevronLeft, ChevronRight, FileText, MapPin, Megaphone, Pencil, Plus, Save, Send, Trash2, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import {
+    AlertTriangle, ArrowDownAZ, ArrowUpDown, Bell, Calendar, ChevronDown, ChevronLeft, ChevronRight,
+    FileText, Filter, Info, MapPin, Megaphone, Pencil, Plus, Save, Search, Send, Trash2, X,
+} from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 import type { Alert } from '@/types/admin';
+
+/* ─── Types ─── */
 
 interface Paginated<T> {
     data: T[];
@@ -18,8 +23,12 @@ interface Paginated<T> {
 
 interface Props {
     alerts: Paginated<Alert>;
+    filters: { search?: string; type?: string; sort?: string; dir?: string };
+    stats: { total: number; critical: number; advisory: number; update: number };
     barangays: string[];
 }
+
+/* ─── Constants ─── */
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Admin', href: '/admin' },
@@ -38,12 +47,24 @@ const TYPE_COLORS: Record<string, { active: string; dot: string }> = {
     critical: { active: 'border-red-400 bg-red-50 dark:border-red-500 dark:bg-red-950/30', dot: 'bg-red-500' },
 };
 
+const TYPE_FILTER_OPTIONS = [
+    { value: 'critical', label: 'Critical' },
+    { value: 'advisory', label: 'Advisory' },
+    { value: 'update',   label: 'Update'   },
+];
+
+const SORT_OPTIONS = [
+    { value: 'created_at', label: 'Date Published' },
+    { value: 'title',      label: 'Title'          },
+    { value: 'type',       label: 'Type'           },
+];
+
 const inputClass =
     'w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/10 dark:border-neutral-700 dark:bg-neutral-800/60 dark:placeholder:text-neutral-500 dark:focus:border-amber-500 dark:focus:ring-amber-500/15';
 
 const modalSpring = { type: 'spring' as const, stiffness: 400, damping: 28 };
 
-/* ─── Single Alert Template ─── */
+/* ─── Alert Template ─── */
 
 const ALERT_TEMPLATE = {
     title: '[Alert Type] — [Area/Subject]',
@@ -109,7 +130,6 @@ function BarangayMultiSelect({
                         transition={{ duration: 0.15 }}
                         className="absolute z-50 mt-1.5 max-h-56 w-full overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-800"
                     >
-                        {/* Select All / Clear */}
                         <button
                             type="button"
                             onClick={toggleAll}
@@ -135,7 +155,6 @@ function BarangayMultiSelect({
                 )}
             </AnimatePresence>
 
-            {/* Selected tags */}
             {selected.length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1.5">
                     {selected.map((b) => (
@@ -160,17 +179,50 @@ function BarangayMultiSelect({
     );
 }
 
-export default function AdminAlertsIndex({ alerts, barangays }: Props) {
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Main Page
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
+export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: Props) {
     const [selected, setSelected] = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
+    const [searchValue, setSearchValue] = useState(filters.search ?? '');
+    const searchRef = useRef<HTMLInputElement>(null);
+
     const form = useForm({
         title: '',
         body: '',
         type: 'advisory' as 'advisory' | 'update' | 'critical',
         target_barangays: [] as string[],
     });
+
+    /* ── Filter helpers ── */
+
+    const applyFilter = useCallback((key: string, value: string) => {
+        router.get('/admin/alerts', { ...filters, [key]: value || undefined, page: undefined }, {
+            preserveState: false,
+            replace: true,
+        });
+    }, [filters]);
+
+    const clearFilters = () => {
+        setSearchValue('');
+        router.get('/admin/alerts', {}, { preserveState: false, replace: true });
+    };
+
+    const toggleSort = (field: string) => {
+        const newDir = filters.sort === field && filters.dir === 'desc' ? 'asc' : 'desc';
+        router.get('/admin/alerts', { ...filters, sort: field, dir: newDir, page: undefined }, {
+            preserveState: false,
+            replace: true,
+        });
+    };
+
+    const hasActiveFilters = !!(filters.search || filters.type);
+
+    /* ── Form handlers ── */
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
@@ -191,6 +243,8 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
             target_barangays: form.data.target_barangays,
         });
     }
+
+    /* ── Selection ── */
 
     const allOnPageSelected = alerts.data.length > 0 && alerts.data.every((a) => selected.includes(a.id));
     const toggleAll = () => {
@@ -214,16 +268,18 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
             { ids: selected, action: 'delete' },
             {
                 preserveState: true,
-                onFinish: () => {
-                    setBulkProcessing(false);
-                    setSelected([]);
-                },
+                onFinish: () => { setBulkProcessing(false); setSelected([]); },
                 onSuccess: () => swalSuccess('Deleted', 'Selected alerts have been deleted.'),
             },
         );
     };
 
-    const criticalCount = alerts.data.filter((a) => a.type === 'critical').length;
+    /* ── Sort indicator ── */
+
+    const SortIcon = ({ field }: { field: string }) => {
+        if (filters.sort !== field) return <ArrowUpDown className="size-3 text-neutral-300 dark:text-neutral-600" />;
+        return <ArrowDownAZ className={`size-3 text-amber-500 ${filters.dir === 'asc' ? 'rotate-180' : ''}`} />;
+    };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -236,16 +292,18 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
                     <div className="flex items-center gap-4">
                         <div className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/25">
                             <Bell className="size-6 text-white" />
-                            <span className="absolute -right-1 -top-1 flex size-3.5 items-center justify-center rounded-full bg-red-500 ring-2 ring-white dark:ring-neutral-900">
-                                <span className="size-1.5 animate-pulse rounded-full bg-white" />
-                            </span>
+                            {stats.critical > 0 && (
+                                <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white ring-2 ring-white dark:ring-neutral-900">
+                                    {stats.critical > 9 ? '9+' : stats.critical}
+                                </span>
+                            )}
                         </div>
                         <div>
                             <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                                Alerts
+                                Alert Management
                             </h1>
                             <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
-                                Publish advisories and critical notifications to all users
+                                Publish advisories and critical notifications to residents
                             </p>
                         </div>
                     </div>
@@ -259,27 +317,156 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
                 </div>
 
                 {/* ── Stats Row ── */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Total</p>
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/30">
-                                <Bell className="size-4 text-amber-500" />
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+                    {[
+                        { label: 'Total Alerts', value: stats.total, icon: Bell, color: 'amber', gradient: false },
+                        { label: 'Critical',     value: stats.critical, icon: AlertTriangle, color: 'red', gradient: true },
+                        { label: 'Advisory',     value: stats.advisory, icon: Info, color: 'blue', gradient: false },
+                        { label: 'Updates',      value: stats.update, icon: Megaphone, color: 'emerald', gradient: false },
+                    ].map((s) => (
+                        <div
+                            key={s.label}
+                            className={`rounded-2xl border p-4 shadow-sm transition-all sm:p-5 ${
+                                s.gradient
+                                    ? 'border-red-200/60 bg-gradient-to-br from-red-50 to-orange-50/60 dark:border-red-800/40 dark:from-red-950/30 dark:to-orange-950/20'
+                                    : 'border-neutral-200/80 bg-white dark:border-neutral-700/60 dark:bg-neutral-900'
+                            }`}
+                        >
+                            <div className="flex items-center justify-between">
+                                <p className={`text-[10px] font-semibold uppercase tracking-wider ${
+                                    s.gradient ? 'text-red-600 dark:text-red-500' : 'text-neutral-400 dark:text-neutral-500'
+                                }`}>
+                                    {s.label}
+                                </p>
+                                <div className={`flex size-8 items-center justify-center rounded-lg ${
+                                    s.color === 'amber'   ? 'bg-amber-50 dark:bg-amber-950/30' :
+                                    s.color === 'red'     ? 'bg-red-100 dark:bg-red-900/40' :
+                                    s.color === 'blue'    ? 'bg-blue-50 dark:bg-blue-950/30' :
+                                                            'bg-emerald-50 dark:bg-emerald-950/30'
+                                }`}>
+                                    <s.icon className={`size-4 ${
+                                        s.color === 'amber'   ? 'text-amber-500' :
+                                        s.color === 'red'     ? 'text-red-500' :
+                                        s.color === 'blue'    ? 'text-blue-500' :
+                                                                'text-emerald-500'
+                                    }`} />
+                                </div>
                             </div>
+                            <p className={`mt-2 text-2xl font-bold tabular-nums sm:mt-3 sm:text-3xl ${
+                                s.gradient ? 'text-red-800 dark:text-red-300' : 'text-neutral-900 dark:text-neutral-100'
+                            }`}>
+                                {s.value}
+                            </p>
                         </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{alerts.total}</p>
-                        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">published alerts</p>
+                    ))}
+                </div>
+
+                {/* ── Search / Filter / Sort Bar ── */}
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+                    {/* Search */}
+                    <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                        <input
+                            ref={searchRef}
+                            type="text"
+                            value={searchValue}
+                            onChange={(e) => setSearchValue(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') applyFilter('search', searchValue); }}
+                            placeholder="Search alerts..."
+                            className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-3 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-amber-500 sm:w-56"
+                        />
                     </div>
-                    <div className="rounded-2xl border border-red-200/60 bg-gradient-to-br from-red-50 to-orange-50/60 p-5 shadow-sm dark:border-red-800/40 dark:from-red-950/30 dark:to-orange-950/20">
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-red-600 dark:text-red-500">Critical</p>
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/40">
-                                <AlertTriangle className="size-4 text-red-500" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-red-800 dark:text-red-300">{criticalCount}</p>
-                        <p className="mt-1 text-xs text-red-600/70 dark:text-red-500/70">critical alerts</p>
+
+                    {/* Type filter */}
+                    <div className="flex items-center gap-1 rounded-xl border border-neutral-200/80 bg-white px-2 py-1 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+                        <Filter className="size-3.5 shrink-0 text-neutral-400" />
+                        <span className="pr-1 text-xs text-neutral-400">Type</span>
+                        {TYPE_FILTER_OPTIONS.map((opt) => {
+                            const active = filters.type === opt.value;
+                            return (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => applyFilter('type', active ? '' : opt.value)}
+                                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                                        active
+                                            ? TYPE_STYLES[opt.value]
+                                            : 'text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            );
+                        })}
                     </div>
+
+                    {/* Sort */}
+                    <div className="flex items-center gap-1 rounded-xl border border-neutral-200/80 bg-white px-2 py-1 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+                        <ArrowUpDown className="size-3.5 shrink-0 text-neutral-400" />
+                        <span className="pr-1 text-xs text-neutral-400">Sort</span>
+                        {SORT_OPTIONS.map((opt) => {
+                            const active = (filters.sort ?? 'created_at') === opt.value;
+                            return (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => toggleSort(opt.value)}
+                                    className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                                        active
+                                            ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:ring-amber-500/20'
+                                            : 'text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
+                                    }`}
+                                >
+                                    {opt.label}
+                                    {active && <SortIcon field={opt.value} />}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Active filter chips */}
+                    <AnimatePresence>
+                        {filters.search && (
+                            <motion.span
+                                key="search-chip"
+                                initial={{ opacity: 0, scale: 0.88 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.88 }}
+                                transition={{ duration: 0.15 }}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-400"
+                            >
+                                <Search className="size-3" />
+                                &ldquo;{filters.search}&rdquo;
+                                <button onClick={() => { setSearchValue(''); applyFilter('search', ''); }} className="rounded-full p-0.5 hover:bg-amber-100 dark:hover:bg-amber-900/40">
+                                    <X className="size-3" />
+                                </button>
+                            </motion.span>
+                        )}
+                        {filters.type && (
+                            <motion.span
+                                key="type-chip"
+                                initial={{ opacity: 0, scale: 0.88 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.88 }}
+                                transition={{ duration: 0.15 }}
+                                className="inline-flex items-center gap-1.5 rounded-full border border-orange-200/80 bg-orange-50 px-2.5 py-1 text-xs font-medium capitalize text-orange-700 dark:border-orange-800/40 dark:bg-orange-950/30 dark:text-orange-400"
+                            >
+                                <Filter className="size-3" />
+                                {filters.type}
+                                <button onClick={() => applyFilter('type', '')} className="rounded-full p-0.5 hover:bg-orange-100 dark:hover:bg-orange-900/40">
+                                    <X className="size-3" />
+                                </button>
+                            </motion.span>
+                        )}
+                    </AnimatePresence>
+
+                    {hasActiveFilters && (
+                        <button
+                            onClick={clearFilters}
+                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-500 transition-all hover:bg-neutral-100 hover:text-neutral-700 active:scale-95 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                        >
+                            <X className="size-3.5" />
+                            Clear
+                        </button>
+                    )}
                 </div>
 
                 {/* ── Bulk action bar ── */}
@@ -319,7 +506,7 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Mobile card view */}
-                    <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
+                    <div className="block divide-y divide-neutral-100 sm:hidden dark:divide-neutral-800">
                         {alerts.data.map((alert) => {
                             const published = new Date(alert.created_at);
                             const publishedStr = published.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -327,7 +514,7 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
                             return (
                                 <div key={alert.id} className="flex flex-col gap-2 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
                                     <div className="flex items-start justify-between gap-2">
-                                        <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="flex min-w-0 items-center gap-2.5">
                                             <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${
                                                 alert.type === 'critical' ? 'bg-red-100 dark:bg-red-950/50' :
                                                 alert.type === 'advisory' ? 'bg-blue-100 dark:bg-blue-950/50' :
@@ -350,7 +537,7 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
                                             </button>
                                         </div>
                                     </div>
-                                    <p className="text-xs text-neutral-400 line-clamp-2 dark:text-neutral-500">{alert.body}</p>
+                                    <p className="line-clamp-2 text-xs text-neutral-400 dark:text-neutral-500">{alert.body}</p>
                                     <div className="flex items-center justify-between gap-2">
                                         <div className="flex items-center gap-1.5">
                                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold capitalize ${TYPE_STYLES[alert.type] ?? TYPE_STYLES.update}`}>{alert.type}</span>
@@ -361,7 +548,10 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
                                                 </span>
                                             )}
                                         </div>
-                                        <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{publishedStr}</span>
+                                        <div className="flex items-center gap-1 text-[10px] text-neutral-400 dark:text-neutral-500">
+                                            <Calendar className="size-2.5" />
+                                            {publishedStr}
+                                        </div>
                                     </div>
                                 </div>
                             );
@@ -369,7 +559,7 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
                     </div>
 
                     {/* Desktop table */}
-                    <div className="hidden sm:block overflow-x-auto">
+                    <div className="hidden overflow-x-auto sm:block">
                         <table className="w-full">
                             <thead>
                                 <tr className="border-b border-neutral-100 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-800/40">
@@ -381,9 +571,21 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
                                             className="size-3.5 rounded border-neutral-300 text-amber-500 focus:ring-amber-500/20 dark:border-neutral-600"
                                         />
                                     </th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Alert</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Type</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Published</th>
+                                    <th className="px-5 py-3 text-left">
+                                        <button onClick={() => toggleSort('title')} className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
+                                            Alert <SortIcon field="title" />
+                                        </button>
+                                    </th>
+                                    <th className="px-5 py-3 text-left">
+                                        <button onClick={() => toggleSort('type')} className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
+                                            Type <SortIcon field="type" />
+                                        </button>
+                                    </th>
+                                    <th className="px-5 py-3 text-left">
+                                        <button onClick={() => toggleSort('created_at')} className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
+                                            Published <SortIcon field="created_at" />
+                                        </button>
+                                    </th>
                                     <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
                                 </tr>
                             </thead>
@@ -408,53 +610,61 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
                                 <Bell className="size-8 text-amber-400 dark:text-amber-500" />
                             </div>
                             <div className="text-center">
-                                <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">No alerts published yet</p>
-                                <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">Publish your first alert to notify all users.</p>
+                                <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                                    {hasActiveFilters ? 'No alerts match your filters' : 'No alerts published yet'}
+                                </p>
+                                <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
+                                    {hasActiveFilters ? 'Try adjusting your search or filters.' : 'Publish your first alert to notify all users.'}
+                                </p>
                             </div>
+                            {hasActiveFilters && (
+                                <button
+                                    onClick={clearFilters}
+                                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-amber-600 transition-colors hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                                >
+                                    <X className="size-3.5" />
+                                    Clear filters
+                                </button>
+                            )}
                         </div>
                     )}
 
                     {/* Pagination */}
                     {alerts.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t border-neutral-100 px-5 py-4 dark:border-neutral-800">
-                            <span className="text-xs text-neutral-500 dark:text-neutral-400">
-                                Page{' '}
-                                <span className="font-semibold text-neutral-800 dark:text-neutral-200">{alerts.current_page}</span>
-                                {' '}of{' '}
-                                <span className="font-semibold text-neutral-800 dark:text-neutral-200">{alerts.last_page}</span>
-                                <span className="ml-2 text-neutral-300 dark:text-neutral-600">·</span>
-                                <span className="ml-2">{alerts.total} total</span>
-                            </span>
+                        <div className="flex items-center justify-between border-t border-neutral-100 bg-neutral-50/40 px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/20">
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                <span className="font-semibold text-neutral-900 dark:text-neutral-100">{alerts.total}</span> alert{alerts.total !== 1 ? 's' : ''}
+                                {' '}&middot; Page <span className="font-semibold text-neutral-900 dark:text-neutral-100">{alerts.current_page}</span> of {alerts.last_page}
+                            </p>
                             <div className="flex items-center gap-1">
-                                {alerts.links.map((link, i) => {
-                                    const isPrev = link.label.includes('Previous') || link.label.includes('&laquo;');
-                                    const isNext = link.label.includes('Next')     || link.label.includes('&raquo;');
-                                    if (isPrev || isNext) {
-                                        return link.url ? (
-                                            <button key={i} onClick={() => router.get(link.url!)}
-                                                className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-amber-700/40 dark:hover:bg-amber-950/20 dark:hover:text-amber-400">
-                                                {isPrev ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
-                                            </button>
-                                        ) : (
-                                            <span key={i} className="flex size-8 items-center justify-center rounded-lg opacity-30 text-neutral-400">
-                                                {isPrev ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
-                                            </span>
-                                        );
-                                    }
-                                    return link.url ? (
-                                        <button key={i} onClick={() => router.get(link.url!)}
-                                            className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                                <button
+                                    onClick={() => { const prev = alerts.links[0]; if (prev?.url) router.get(prev.url); }}
+                                    disabled={alerts.current_page === 1}
+                                    className="flex size-8 items-center justify-center rounded-lg border border-neutral-200/80 bg-white text-neutral-400 shadow-sm transition-all hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 disabled:pointer-events-none disabled:opacity-30 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                                >
+                                    <ChevronLeft className="size-3.5" />
+                                </button>
+                                {alerts.links.slice(1, -1).map((link, i) =>
+                                    link.url ? (
+                                        <button
+                                            key={i}
+                                            onClick={() => router.get(link.url!)}
+                                            className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-all ${
                                                 link.active
-                                                    ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-sm'
-                                                    : 'border border-neutral-200 text-neutral-500 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-amber-700/40 dark:hover:bg-amber-950/20'
+                                                    ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/25'
+                                                    : 'border border-neutral-200/80 bg-white text-neutral-500 shadow-sm hover:border-neutral-300 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
                                         />
-                                    ) : (
-                                        <span key={i} className="flex size-8 items-center justify-center rounded-lg text-xs opacity-30 text-neutral-400"
-                                            dangerouslySetInnerHTML={{ __html: link.label }} />
-                                    );
-                                })}
+                                    ) : null,
+                                )}
+                                <button
+                                    onClick={() => { const next = alerts.links[alerts.links.length - 1]; if (next?.url) router.get(next.url); }}
+                                    disabled={alerts.current_page === alerts.last_page}
+                                    className="flex size-8 items-center justify-center rounded-lg border border-neutral-200/80 bg-white text-neutral-400 shadow-sm transition-all hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 disabled:pointer-events-none disabled:opacity-30 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                                >
+                                    <ChevronRight className="size-3.5" />
+                                </button>
                             </div>
                         </div>
                     )}
@@ -514,7 +724,6 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
 
                                 {/* Two-column layout */}
                                 <div className="grid gap-5 sm:grid-cols-2">
-                                    {/* Left column — content */}
                                     <div className="flex flex-col gap-4">
                                         <FormField label="Title" error={form.errors.title}>
                                             <input
@@ -526,7 +735,6 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
                                                 required
                                             />
                                         </FormField>
-
                                         <FormField label="Message" error={form.errors.body}>
                                             <textarea
                                                 value={form.data.body}
@@ -538,8 +746,6 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
                                             />
                                         </FormField>
                                     </div>
-
-                                    {/* Right column — settings */}
                                     <div className="flex flex-col gap-4">
                                         <FormField label="Type">
                                             <div className="flex gap-2">
@@ -564,7 +770,6 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
                                                 })}
                                             </div>
                                         </FormField>
-
                                         <FormField label="Target Barangays (optional)">
                                             <BarangayMultiSelect
                                                 barangays={barangays}
@@ -616,7 +821,9 @@ export default function AdminAlertsIndex({ alerts, barangays }: Props) {
     );
 }
 
-/* ─── Edit Modal ─── */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Edit Modal
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
 function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: string[]; onClose: () => void }) {
     const deleteForm = useForm({});
@@ -673,9 +880,7 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
 
                 {/* Body */}
                 <form onSubmit={handleSave} className="flex flex-1 flex-col overflow-y-auto px-6 py-5">
-                    {/* Two-column layout */}
                     <div className="grid gap-5 sm:grid-cols-2">
-                        {/* Left column — content */}
                         <div className="flex flex-col gap-4">
                             <FormField label="Title" error={editForm.errors.title}>
                                 <input
@@ -686,7 +891,6 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
                                     required
                                 />
                             </FormField>
-
                             <FormField label="Message" error={editForm.errors.body}>
                                 <textarea
                                     value={editForm.data.body}
@@ -697,8 +901,6 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
                                 />
                             </FormField>
                         </div>
-
-                        {/* Right column — settings */}
                         <div className="flex flex-col gap-4">
                             <FormField label="Type">
                                 <div className="flex gap-2">
@@ -723,7 +925,6 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
                                     })}
                                 </div>
                             </FormField>
-
                             <FormField label="Target Barangays (optional)">
                                 <BarangayMultiSelect
                                     barangays={barangays}
@@ -775,7 +976,9 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
     );
 }
 
-/* ─── Alert Row ─── */
+/* ═══════════════════════════════════════════════════════════════════════════════
+   Alert Row
+   ═══════════════════════════════════════════════════════════════════════════════ */
 
 function AlertRow({
     alert,
@@ -810,7 +1013,7 @@ function AlertRow({
                 />
             </td>
 
-            {/* Alert title + body preview */}
+            {/* Alert */}
             <td className="px-5 py-4">
                 <div className="flex items-center gap-3">
                     <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
@@ -831,7 +1034,7 @@ function AlertRow({
                 </div>
             </td>
 
-            {/* Type badge + barangay indicator */}
+            {/* Type + barangay */}
             <td className="px-5 py-4">
                 <div className="flex flex-wrap items-center gap-1.5">
                     <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${TYPE_STYLES[alert.type] ?? TYPE_STYLES.update}`}>

@@ -95,11 +95,7 @@ class ExpoPushService
         }
 
         $query = DeviceToken::join('users', 'users.id', '=', 'device_tokens.user_id')
-            ->where(function ($q) use ($barangays) {
-                foreach ($barangays as $brgy) {
-                    $q->orWhere('users.home_address', 'LIKE', '%' . $brgy . '%');
-                }
-            });
+            ->whereIn('users.home_address', $barangays);
 
         if ($prefKey !== null) {
             $query->where(function ($q) use ($prefKey) {

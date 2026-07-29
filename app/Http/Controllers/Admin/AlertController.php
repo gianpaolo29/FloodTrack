@@ -16,37 +16,44 @@ use Inertia\Response;
 
 class AlertController extends Controller
 {
-    /** Get barangay names from shared config. */
-    private static function barangayNames(): array
+    /** Get distinct home_address values from users table. */
+    private static function distinctBarangays(): array
     {
-        return array_column(config('barangays'), 'name');
-    }
-
-    /**
-     * Get barangay names that actually appear in users' home_address.
-     * Only shows barangays with at least one matching user.
-     */
-    private static function barangaysWithUsers(): array
-    {
-        $allNames = self::barangayNames();
-        $addresses = User::whereNotNull('home_address')
+        return User::whereNotNull('home_address')
             ->where('home_address', '!=', '')
-            ->pluck('home_address');
-
-        return array_values(array_filter($allNames, function ($brgy) use ($addresses) {
-            return $addresses->contains(fn ($addr) => str_contains(strtolower($addr), strtolower($brgy)));
-        }));
+            ->distinct()
+            ->orderBy('home_address')
+            ->pluck('home_address')
+            ->toArray();
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $sortField = in_array($request->sort, ['title', 'type', 'created_at']) ? $request->sort : 'created_at';
+        $sortDir   = $request->dir === 'asc' ? 'asc' : 'desc';
+
         $alerts = Alert::with('creator:id,name')
-            ->latest()
-            ->paginate(20);
+            ->when($request->search, fn ($q) => $q->where(function ($q2) use ($request) {
+                $q2->where('title', 'like', "%{$request->search}%")
+                   ->orWhere('body', 'like', "%{$request->search}%");
+            }))
+            ->when($request->type, fn ($q) => $q->where('type', $request->type))
+            ->orderBy($sortField, $sortDir)
+            ->paginate(20)
+            ->withQueryString();
+
+        $stats = [
+            'total'    => Alert::count(),
+            'critical' => Alert::where('type', 'critical')->count(),
+            'advisory' => Alert::where('type', 'advisory')->count(),
+            'update'   => Alert::where('type', 'update')->count(),
+        ];
 
         return Inertia::render('admin/alerts/index', [
             'alerts'     => $alerts,
-            'barangays'  => self::barangaysWithUsers(),
+            'filters'    => $request->only(['search', 'type', 'sort', 'dir']),
+            'stats'      => $stats,
+            'barangays'  => self::distinctBarangays(),
         ]);
     }
 
@@ -57,7 +64,7 @@ class AlertController extends Controller
             'body'               => 'required|string',
             'type'               => 'required|in:advisory,update,critical',
             'target_barangays'   => 'nullable|array',
-            'target_barangays.*' => 'string|in:' . implode(',', self::barangayNames()),
+            'target_barangays.*' => 'string|in:' . implode(',', self::distinctBarangays()),
         ]);
 
         $targetBarangays = $request->target_barangays && count($request->target_barangays) > 0
@@ -103,7 +110,7 @@ class AlertController extends Controller
             'body'               => 'required|string',
             'type'               => 'required|in:advisory,update,critical',
             'target_barangays'   => 'nullable|array',
-            'target_barangays.*' => 'string|in:' . implode(',', self::barangayNames()),
+            'target_barangays.*' => 'string|in:' . implode(',', self::distinctBarangays()),
         ]);
 
         $targetBarangays = isset($validated['target_barangays']) && count($validated['target_barangays']) > 0
