@@ -174,6 +174,11 @@ class StatisticsController extends Controller
             'total_occupancy' => (int) EvacuationCenter::sum('current_occupancy'),
         ];
 
+        // Evacuation centers list
+        $evacuation_centers = EvacuationCenter::orderByDesc('is_active')
+            ->orderByDesc('current_occupancy')
+            ->get(['id', 'name', 'address', 'type', 'capacity', 'current_occupancy', 'is_active']);
+
         return Inertia::render('admin/statistics/index', [
             'daily_reports'      => $daily_reports,
             'avg_response_time'  => round((float) ($avg_response_time ?? 0), 1),
@@ -188,6 +193,7 @@ class StatisticsController extends Controller
             'resolution_rate'    => $resolution_rate,
             'critical_count'     => $critical_count,
             'evacuation_stats'   => $evacuation_stats,
+            'evacuation_centers' => $evacuation_centers,
             'team_performance'   => $team_performance,
             'period'             => $period,
         ]);
@@ -196,34 +202,101 @@ class StatisticsController extends Controller
     public function aiInsights(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
+            // Period filter — same logic as index()
+            $period = $request->get('period', 'all');
+            $from = match($period) {
+                'today' => today(),
+                'week'  => now()->startOfWeek(),
+                'month' => now()->startOfMonth(),
+                default => null,
+            };
+
+            $periodLabel = match($period) {
+                'today' => 'today (' . now()->format('M d, Y') . ')',
+                'week'  => 'this week (' . now()->startOfWeek()->format('M d') . ' – ' . now()->format('M d') . ')',
+                'month' => 'this month (' . now()->format('F Y') . ')',
+                default => 'all time',
+            };
+
+            $reportQuery = Report::query();
+            if ($from) $reportQuery->where('created_at', '>=', $from);
+
             $avgExpr = DB::getDriverName() === 'sqlite'
                 ? 'AVG((julianday(resolved_at) - julianday(created_at)) * 1440)'
                 : 'AVG(TIMESTAMPDIFF(MINUTE, created_at, resolved_at))';
 
-            $total_reports   = Report::count();
-            $pending         = Report::where('status', 'pending')->count();
-            $active          = Report::whereIn('status', ['verified', 'assigned'])->count();
-            $resolved        = Report::where('status', 'resolved')->count();
+            $total_reports = (clone $reportQuery)->count();
+            $pending       = (clone $reportQuery)->where('status', 'pending')->count();
+            $active        = (clone $reportQuery)->whereIn('status', ['verified', 'assigned'])->count();
+            $resolved      = (clone $reportQuery)->where('status', 'resolved')->count();
 
-            $severity_breakdown = Report::selectRaw('severity, count(*) as count')
+            $severity_breakdown = (clone $reportQuery)
+                ->selectRaw('severity, count(*) as count')
                 ->groupBy('severity')
                 ->pluck('count', 'severity');
 
-            $avg_response_time_raw = Report::where('status', 'resolved')
-                ->whereNotNull('resolved_at')
-                ->selectRaw("$avgExpr as avg_minutes")
-                ->value('avg_minutes');
+            $resolvedQuery = (clone $reportQuery)->where('status', 'resolved')->whereNotNull('resolved_at');
+            $avg_response_time_raw = $resolvedQuery->selectRaw("$avgExpr as avg_minutes")->value('avg_minutes');
 
             $top_responder = User::where('role', 'responder')
                 ->withCount(['assignedReports as resolved_count' => fn ($q) => $q->where('status', 'resolved')])
                 ->orderByDesc('resolved_count')
                 ->first(['id', 'name']);
 
-            $total_capacity  = (int) EvacuationCenter::sum('capacity');
-            $total_occupancy = (int) EvacuationCenter::sum('current_occupancy');
+            // Per-center evacuation details
+            $centers = EvacuationCenter::orderByDesc('current_occupancy')
+                ->get(['name', 'type', 'capacity', 'current_occupancy', 'is_active']);
+
+            $total_capacity  = $centers->sum('capacity');
+            $total_occupancy = $centers->sum('current_occupancy');
             $occupancy_pct   = $total_capacity > 0
                 ? round(($total_occupancy / $total_capacity) * 100, 1)
                 : 0;
+
+            $centerLines = $centers->map(function ($c) {
+                $pct    = $c->capacity > 0 ? round(($c->current_occupancy / $c->capacity) * 100) : 0;
+                $status = $c->is_active ? 'ACTIVE' : 'INACTIVE';
+                $flag   = '';
+                if ($pct >= 90 && $c->is_active) $flag = ' [NEAR CAPACITY]';
+                if (!$c->is_active && $c->current_occupancy > 0) $flag = ' [WARNING: INACTIVE WITH EVACUEES]';
+                return "  - {$c->name} ({$c->type}): {$c->current_occupancy}/{$c->capacity} ({$pct}%) — {$status}{$flag}";
+            })->implode("\n");
+
+            // Daily trend — last 7 days (new reports vs resolved per day)
+            $dailyTrend = Report::selectRaw("DATE(created_at) as date, count(*) as new_reports, SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved")
+                ->where('created_at', '>=', now()->subDays(7))
+                ->groupBy(DB::raw('DATE(created_at)'))
+                ->orderBy('date')
+                ->get();
+
+            $trendLines = $dailyTrend->map(function ($d) {
+                $date     = \Carbon\Carbon::parse($d->date)->format('M d (D)');
+                $newR     = (int) $d->new_reports;
+                $resR     = (int) $d->resolved;
+                $backlog  = $newR - $resR;
+                $indicator = $backlog > 0 ? " [+{$backlog} backlog]" : ($backlog < 0 ? " [{$backlog} backlog reduced]" : '');
+                return "  - {$date}: {$newR} new, {$resR} resolved{$indicator}";
+            })->implode("\n");
+
+            // Compute trend direction
+            $trendDays    = $dailyTrend->values();
+            $totalNew7d   = $trendDays->sum('new_reports');
+            $totalRes7d   = $trendDays->sum('resolved');
+            $backlog7d    = $totalNew7d - $totalRes7d;
+            $resRate7d    = $totalNew7d > 0 ? round(($totalRes7d / $totalNew7d) * 100, 1) : 0;
+
+            // Compare first half vs second half of the 7-day window for surge detection
+            $halfPoint    = (int) ceil($trendDays->count() / 2);
+            $firstHalf    = $trendDays->slice(0, $halfPoint);
+            $secondHalf   = $trendDays->slice($halfPoint);
+            $avgFirst     = $firstHalf->count() > 0 ? round($firstHalf->avg('new_reports'), 1) : 0;
+            $avgSecond    = $secondHalf->count() > 0 ? round($secondHalf->avg('new_reports'), 1) : 0;
+            $surgeNote    = '';
+            if ($avgFirst > 0 && $avgSecond > $avgFirst * 1.5) {
+                $surgeNote = '⚠ SURGE DETECTED: reports in recent days are significantly higher than earlier in the week.';
+            } elseif ($avgFirst > 0 && $avgSecond < $avgFirst * 0.5) {
+                $surgeNote = '✓ Reports are declining compared to earlier in the week.';
+            }
 
             $sev_critical = $severity_breakdown['critical'] ?? 0;
             $sev_high     = $severity_breakdown['high']     ?? 0;
@@ -232,9 +305,13 @@ class StatisticsController extends Controller
             $top_name     = $top_responder?->name ?? 'N/A';
             $top_count    = $top_responder?->resolved_count ?? 0;
             $avg_minutes  = round((float) ($avg_response_time_raw ?? 0), 1);
+            $centerCount  = $centers->count();
+            $activeCount  = $centers->where('is_active', true)->count();
 
             $prompt = <<<PROMPT
-Current flood situation data:
+Analysis period: {$periodLabel}
+
+Flood report data ({$periodLabel}):
 - Total reports: {$total_reports}
 - Pending reports: {$pending}
 - Active reports (verified/assigned): {$active}
@@ -245,17 +322,32 @@ Current flood situation data:
 - Low severity: {$sev_low}
 - Average response time: {$avg_minutes} minutes
 - Top responder: {$top_name} with {$top_count} resolved reports
-- Evacuation centers: {$total_occupancy} people sheltered out of {$total_capacity} capacity ({$occupancy_pct}% full)
+
+Daily trend (last 7 days):
+{$trendLines}
+  Summary: {$totalNew7d} new reports, {$totalRes7d} resolved, net backlog change: {$backlog7d}, resolution rate: {$resRate7d}%
+  {$surgeNote}
+
+Evacuation centers ({$activeCount} active out of {$centerCount} total, {$total_occupancy}/{$total_capacity} overall occupancy — {$occupancy_pct}%):
+{$centerLines}
 
 Please analyze this flood situation and respond ONLY with a JSON object in this exact format:
 {
   "risk_level": "critical" | "high" | "moderate" | "low",
   "summary": "A concise 2-3 sentence summary of the current flood situation.",
-  "key_findings": ["Finding 1", "Finding 2", "Finding 3"],
+  "key_findings": ["Finding 1", "Finding 2", "Finding 3", "Finding 4"],
   "recommendations": ["Recommendation 1", "Recommendation 2", "Recommendation 3"],
   "priority_action": "The single most important immediate action to take."
 }
 PROMPT;
+
+            // Adapt system prompt tone based on period
+            $systemPrompt = match($period) {
+                'today' => 'You are an AI assistant specializing in flood disaster management and emergency response. You are providing a real-time situational briefing for today. Focus on immediate threats, urgent actions needed right now, and any evacuation centers that need attention. Flag any centers near capacity or inactive centers that still have evacuees. Use the daily trend data to detect surges — if today\'s reports are significantly higher than prior days, call it out urgently. If backlog is growing (more new than resolved), flag it. Be direct and actionable. Return only valid JSON with no additional text or markdown.',
+                'week'  => 'You are an AI assistant specializing in flood disaster management and emergency response. You are analyzing this week\'s flood activity. Use the daily trend data to identify whether reports are surging, stable, or declining day-over-day. Compare the resolution rate against incoming reports — if backlog is growing, highlight the gap. Identify developing trends, areas of concern, and whether the situation is improving or worsening. Highlight evacuation center capacity issues and distribution imbalances. Return only valid JSON with no additional text or markdown.',
+                'month' => 'You are an AI assistant specializing in flood disaster management and emergency response. You are providing a monthly operational review. Use the daily trend data to identify patterns — peak days, recurring surges, and resolution bottlenecks. Assess whether the team is keeping up with incoming reports or falling behind. Evaluate evacuation center utilization efficiency and suggest resource planning improvements. Return only valid JSON with no additional text or markdown.',
+                default => 'You are an AI assistant specializing in flood disaster management and emergency response. You are providing a comprehensive all-time strategic overview. Use the daily trend data to assess current momentum — is the situation getting better or worse recently? Identify long-term patterns, systemic issues, whether resolution capacity matches report volume, evacuation center capacity planning needs, and strategic recommendations for improving flood response. Return only valid JSON with no additional text or markdown.',
+            };
 
             $client   = OpenAI::client(config('services.openai.key'));
             $response = $client->chat()->create([
@@ -264,7 +356,7 @@ PROMPT;
                 'messages'    => [
                     [
                         'role'    => 'system',
-                        'content' => 'You are an AI assistant specializing in flood disaster management and emergency response. Analyze the provided data and return only valid JSON with no additional text or markdown.',
+                        'content' => $systemPrompt,
                     ],
                     [
                         'role'    => 'user',

@@ -92,8 +92,11 @@ export interface Report {
     verifier?: { id: number; name: string } | null;
     media?: ReportMedia[];
     status_updates?: StatusUpdate[];
+    sla_status?: SlaStatus | null;
+    sla_tracking?: SlaTracking[];
     created_at: string;
     verified_at: string | null;
+    assigned_at?: string | null;
     resolved_at: string | null;
     ai_flagged: boolean;
     ai_flag_reason: string | null;
@@ -123,8 +126,7 @@ export interface Alert {
     title: string;
     body: string;
     type: AlertType;
-    is_critical: boolean;
-    expires_at: string | null;
+    target_barangays: string[] | null;
     creator?: { id: number; name: string };
     created_at: string;
 }
@@ -154,6 +156,53 @@ export const SEVERITY_COLORS: Record<Severity, string> = {
     critical: 'bg-red-50 text-red-700 ring-1 ring-red-600/10',
 };
 
+/* ─── SLA Types ─── */
+
+export type SlaStage  = 'pending_to_verified' | 'verified_to_assigned' | 'assigned_to_resolved';
+export type SlaStatus = 'on_track' | 'at_risk' | 'breached' | 'met';
+
+export interface SlaTracking {
+    id: number;
+    report_id: number;
+    stage: SlaStage;
+    started_at: string;
+    threshold_minutes: number;
+    completed_at: string | null;
+    elapsed_minutes: number | null;
+    sla_status: SlaStatus;
+    escalation_level: number;
+    escalated_at: string | null;
+}
+
+export interface SlaConfig {
+    id: number;
+    severity: Severity;
+    stage: SlaStage;
+    threshold_minutes: number;
+    warning_pct: number;
+    critical_pct: number;
+}
+
+export const SLA_STATUS_COLORS: Record<SlaStatus, string> = {
+    on_track: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/10',
+    at_risk:  'bg-amber-50 text-amber-700 ring-1 ring-amber-600/10',
+    breached: 'bg-red-50 text-red-700 ring-1 ring-red-600/10',
+    met:      'bg-blue-50 text-blue-700 ring-1 ring-blue-600/10',
+};
+
+export const SLA_STATUS_LABELS: Record<SlaStatus, string> = {
+    on_track: 'On Track',
+    at_risk:  'At Risk',
+    breached: 'Breached',
+    met:      'Met',
+};
+
+export const SLA_STAGE_LABELS: Record<SlaStage, string> = {
+    pending_to_verified:  'Time to Verify',
+    verified_to_assigned: 'Time to Assign',
+    assigned_to_resolved: 'Time to Resolve',
+};
+
 export const STATUS_COLORS: Record<ReportStatus, string> = {
     pending:  'bg-amber-50 text-amber-700 ring-1 ring-amber-600/10',
     verified: 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/10',
@@ -176,6 +225,7 @@ export interface EvacuationCenter {
     latitude: number;
     longitude: number;
     is_active: boolean;
+    occupancy_pct?: number;
     created_at: string;
     updated_at: string;
 }

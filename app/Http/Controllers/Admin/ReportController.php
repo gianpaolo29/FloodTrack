@@ -10,6 +10,7 @@ use App\Models\ReportStatusUpdate;
 use App\Models\Team;
 use App\Notifications\ReportStatusChanged;
 use App\Services\ExpoPushService;
+use App\Services\SlaService;
 use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -58,7 +59,7 @@ class ReportController extends Controller
 
     public function index(Request $request): Response
     {
-        $reports = Report::with(['user:id,name', 'assignedResponder:id,name', 'assignedTeam:id,name'])
+        $reports = Report::with(['user:id,name', 'assignedResponder:id,name', 'assignedTeam:id,name', 'slaTracking'])
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
             ->when($request->team_id, fn ($q) => $q->where('assigned_team_id', $request->team_id))
@@ -95,6 +96,7 @@ class ReportController extends Controller
             'assignedTeam:id,name,leader_id',
             'verifier:id,name',
             'responderUsers',
+            'slaTracking',
         ]);
 
         // Build member_statuses from the pivot rows
@@ -194,6 +196,8 @@ class ReportController extends Controller
             'notes'     => 'Report reopened by admin.',
         ]);
 
+        app(SlaService::class)->initializeTracking($report);
+
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Report reopened.']);
 
         return back();
@@ -227,6 +231,7 @@ class ReportController extends Controller
                             'status'    => 'verified',
                             'notes'     => 'Bulk verified by admin.',
                         ]);
+                        app(SlaService::class)->advanceStage($report, 'verified');
                         $count++;
                     }
                     break;
@@ -240,6 +245,7 @@ class ReportController extends Controller
                             'status'    => 'rejected',
                             'notes'     => $request->notes ?? 'Bulk rejected by admin.',
                         ]);
+                        app(SlaService::class)->advanceStage($report, 'rejected');
                         $count++;
                     }
                     break;
@@ -260,6 +266,7 @@ class ReportController extends Controller
                             'status'    => 'pending',
                             'notes'     => 'Bulk reopened by admin.',
                         ]);
+                        app(SlaService::class)->initializeTracking($report);
                         $count++;
                     }
                     break;
@@ -295,6 +302,8 @@ class ReportController extends Controller
             'notes'     => 'Report verified by admin.',
         ]);
 
+        app(SlaService::class)->advanceStage($report, 'verified');
+
         $this->notifyStatusChange($report, $oldStatus, 'verified', $request->user()->name);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Report verified.']);
@@ -315,6 +324,7 @@ class ReportController extends Controller
             'assigned_team_id' => $team->id,
             'assigned_to'      => $team->leader_id,
             'status'           => 'assigned',
+            'assigned_at'      => now(),
         ]);
 
         // Upsert each team member into report_responders
@@ -334,6 +344,8 @@ class ReportController extends Controller
             'status'    => 'assigned',
             'notes'     => "Assigned to team \"{$team->name}\".",
         ]);
+
+        app(SlaService::class)->advanceStage($report, 'assigned');
 
         foreach ($team->members as $member) {
             $member->notify(new ReportStatusChanged($report, $oldStatus, 'assigned', $request->user()->name));
@@ -380,6 +392,8 @@ class ReportController extends Controller
             'status'    => 'rejected',
             'notes'     => $request->notes ?? 'Report rejected by admin.',
         ]);
+
+        app(SlaService::class)->advanceStage($report, 'rejected');
 
         $this->notifyStatusChange($report, $oldStatus, 'rejected', $request->user()->name);
 

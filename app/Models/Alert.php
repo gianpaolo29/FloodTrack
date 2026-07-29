@@ -6,13 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class Alert extends Model
 {
-    protected $fillable = ['created_by', 'title', 'body', 'type', 'is_critical', 'expires_at'];
+    protected $fillable = ['created_by', 'title', 'body', 'type', 'target_barangays'];
 
     protected function casts(): array
     {
         return [
-            'is_critical' => 'boolean',
-            'expires_at'  => 'datetime',
+            'target_barangays' => 'array',
         ];
     }
 

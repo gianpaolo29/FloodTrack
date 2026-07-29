@@ -4,8 +4,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\EvacuationCenter;
+use App\Models\OccupancyLog;
+use App\Models\User;
+use App\Notifications\OccupancyThresholdAlert;
+use App\Services\ExpoPushService;
+use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -49,12 +55,13 @@ class EvacuationCenterController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name'      => 'required|string|max:255',
-            'address'   => 'required|string|max:500',
-            'type'      => 'required|in:gymnasium,school,barangay_hall,church,community_center',
-            'capacity'  => 'required|integer|min:1',
-            'latitude'  => 'required|numeric|between:-90,90',
-            'longitude' => 'required|numeric|between:-180,180',
+            'name'              => 'required|string|max:255',
+            'address'           => 'required|string|max:500',
+            'type'              => 'required|in:gymnasium,school,barangay_hall,church,community_center',
+            'capacity'          => 'required|integer|min:1',
+            'current_occupancy' => 'sometimes|integer|min:0',
+            'latitude'          => 'required|numeric|between:-90,90',
+            'longitude'         => 'required|numeric|between:-180,180',
         ]);
 
         EvacuationCenter::create($validated);
@@ -99,6 +106,66 @@ class EvacuationCenterController extends Controller
 
         $status = $evacuationCenter->is_active ? 'activated' : 'deactivated';
         Inertia::flash('toast', ['type' => 'success', 'message' => "Evacuation center {$status}."]);
+
+        return back();
+    }
+
+    public function updateOccupancy(EvacuationCenter $evacuationCenter, Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'current_occupancy' => 'required|integer|min:0',
+            'notes'             => 'nullable|string|max:500',
+        ]);
+
+        if ($validated['current_occupancy'] > $evacuationCenter->capacity) {
+            throw ValidationException::withMessages([
+                'current_occupancy' => "Occupancy cannot exceed capacity ({$evacuationCenter->capacity}).",
+            ]);
+        }
+
+        $previousOccupancy = $evacuationCenter->current_occupancy;
+
+        OccupancyLog::create([
+            'evacuation_center_id' => $evacuationCenter->id,
+            'previous_occupancy'   => $previousOccupancy,
+            'new_occupancy'        => $validated['current_occupancy'],
+            'changed_by'           => $request->user()->id,
+            'change_type'          => 'manual_update',
+            'notes'                => $validated['notes'] ?? null,
+        ]);
+
+        $evacuationCenter->update(['current_occupancy' => $validated['current_occupancy']]);
+
+        // Check if occupancy >= 90% of capacity
+        $occupancyPct = $evacuationCenter->capacity > 0
+            ? (int) round($evacuationCenter->current_occupancy / $evacuationCenter->capacity * 100)
+            : 0;
+
+        if ($occupancyPct >= 90) {
+            $adminIds = User::where('role', 'admin')->pluck('id')->toArray();
+
+            ExpoPushService::sendToUsers(
+                $adminIds,
+                'High Occupancy Alert',
+                "{$evacuationCenter->name} is at {$occupancyPct}% capacity ({$evacuationCenter->current_occupancy}/{$evacuationCenter->capacity}).",
+                ['type' => 'occupancy_alert', 'center_id' => $evacuationCenter->id],
+            );
+
+            $admins = User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                $admin->notify(new OccupancyThresholdAlert($evacuationCenter, $occupancyPct));
+            }
+        }
+
+        SocketService::toAll('evacuation-updated', [
+            'id'                => $evacuationCenter->id,
+            'name'              => $evacuationCenter->name,
+            'current_occupancy' => $evacuationCenter->current_occupancy,
+            'capacity'          => $evacuationCenter->capacity,
+            'occupancy_pct'     => $occupancyPct,
+        ]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Occupancy updated.']);
 
         return back();
     }

@@ -92,8 +92,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/user/notifications/read-all',    [UserNotificationController::class, 'markAllRead']);
     Route::post('/user/notifications/{id}/read',   [UserNotificationController::class, 'markRead']);
 
-    // Evacuation centers and protocols (read-only for all users)
+    // Evacuation centers and protocols
     Route::get('/evacuation-centers', [EvacuationCenterController::class, 'index']);
+    Route::patch('/evacuation-centers/{evacuationCenter}/occupancy', [EvacuationCenterController::class, 'updateOccupancy']);
     Route::get('/protocols',          [ProtocolController::class, 'index']);
 
     // Active hazards (read-only for all users — shown on map)
@@ -130,6 +131,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/reports/{report}/verify',           [ReportController::class, 'verify']);
         Route::patch('/reports/{report}/reject',           [ReportController::class, 'reject']);
         Route::get('/admin/stats',                         [AdminStatsController::class, 'index']);
+
+        // Hazard sync from weather alerts
+        Route::post('/admin/hazards/sync-weather', function () {
+            \Illuminate\Support\Facades\Artisan::call('hazards:sync-weather');
+            return response()->json(['message' => trim(\Illuminate\Support\Facades\Artisan::output()) ?: 'Sync complete.']);
+        });
 
         // Hazard management (admin API for mobile app)
         Route::get('/admin/hazards',              function () {

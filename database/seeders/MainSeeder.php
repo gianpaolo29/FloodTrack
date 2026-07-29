@@ -619,7 +619,6 @@ class MainSeeder extends Seeder
                 'body'        => 'PAGASA has issued a Flash Flood Warning for coastal barangays of Nasugbu, Batangas. Residents of Brgy. Pantalan, Bucana, and Wawa are advised to EVACUATE IMMEDIATELY to designated evacuation centers. Bring essential documents, medicines, and 3-day food supply. Do not attempt to cross flooded roads.',
                 'type'        => 'critical',
                 'is_critical' => true,
-                'expires_at'  => now()->addHours(12),
                 'hours_ago'   => 1,
             ],
             [
@@ -627,7 +626,6 @@ class MainSeeder extends Seeder
                 'body'        => 'Pantalan River has exceeded critical water level threshold. All residents within 500 meters of the riverbank must evacuate immediately. NDRRMC rescue teams are on standby. Call the MDRRMO hotline for assistance: 0917-XXX-XXXX.',
                 'type'        => 'critical',
                 'is_critical' => true,
-                'expires_at'  => now()->addHours(8),
                 'hours_ago'   => 2,
             ],
 
@@ -637,7 +635,6 @@ class MainSeeder extends Seeder
                 'body'        => 'Rescue teams Alpha and Bravo are currently conducting rescue operations in Brgy. Pantalan. 47 families have been successfully evacuated to the Nasugbu Municipal Gymnasium. Operations are still ongoing. Expect road closures around Pantalan Bridge until further notice.',
                 'type'        => 'update',
                 'is_critical' => false,
-                'expires_at'  => now()->addHours(6),
                 'hours_ago'   => 3,
             ],
             [
@@ -645,7 +642,6 @@ class MainSeeder extends Seeder
                 'body'        => 'The following evacuation centers are now open and accepting evacuees: Nasugbu Municipal Gymnasium (capacity: 1,200), Nasugbu National High School (capacity: 1,500), and Nasugbu West Central School (capacity: 2,000). Transportation assistance is available at Brgy. Hall. Bring valid ID.',
                 'type'        => 'update',
                 'is_critical' => false,
-                'expires_at'  => now()->addHours(24),
                 'hours_ago'   => 4,
             ],
             [
@@ -653,7 +649,6 @@ class MainSeeder extends Seeder
                 'body'        => 'Pantalan Bridge is officially closed to all motorists effective immediately due to flood damage. DPWH engineers are assessing structural integrity. Alternate route: use the bypass road via Brgy. Bilaran. Expected duration of closure: 48–72 hours.',
                 'type'        => 'update',
                 'is_critical' => false,
-                'expires_at'  => now()->addHours(48),
                 'hours_ago'   => 5,
             ],
             [
@@ -661,7 +656,6 @@ class MainSeeder extends Seeder
                 'body'        => 'Water levels in Poblacion area have started receding. Residents may return to inspect their homes but should exercise caution. Do not consume tap water without boiling. Leptospirosis risk is high — wear rubber boots and avoid wading in floodwater.',
                 'type'        => 'update',
                 'is_critical' => false,
-                'expires_at'  => now()->addHours(12),
                 'hours_ago'   => 20,
             ],
 
@@ -671,7 +665,6 @@ class MainSeeder extends Seeder
                 'body'        => 'PAGASA forecasts continuous moderate to heavy rainfall over Nasugbu and neighboring municipalities for the next 24 hours due to LPA (Low Pressure Area) southeast of Batangas. Residents in flood-prone barangays are advised to prepare go-bags, monitor water levels, and stay updated via FloodTrack.',
                 'type'        => 'advisory',
                 'is_critical' => false,
-                'expires_at'  => now()->addHours(24),
                 'hours_ago'   => 6,
             ],
             [
@@ -679,7 +672,6 @@ class MainSeeder extends Seeder
                 'body'        => 'The Municipal Health Office warns residents of elevated leptospirosis risk following the flooding. Symptoms include fever, headache, muscle pain, and red eyes. Avoid contact with floodwater or mud. If symptoms appear, seek medical attention immediately at the Lian-Nasugbu District Hospital.',
                 'type'        => 'advisory',
                 'is_critical' => false,
-                'expires_at'  => now()->addDays(7),
                 'hours_ago'   => 24,
             ],
             [
@@ -687,7 +679,6 @@ class MainSeeder extends Seeder
                 'body'        => 'The MDRRMO will distribute relief goods at the following locations starting tomorrow at 8:00 AM: (1) Nasugbu Municipal Gymnasium — Pantalan and Bucana evacuees, (2) Nasugbu National High School — Wawa and Bilaran evacuees. Bring your barangay certificate. One pack per household.',
                 'type'        => 'advisory',
                 'is_critical' => false,
-                'expires_at'  => now()->addDays(2),
                 'hours_ago'   => 30,
             ],
             [
@@ -695,7 +686,6 @@ class MainSeeder extends Seeder
                 'body'        => 'As typhoon season approaches, Nasugbu MDRRMO reminds all residents to: (1) Identify your nearest evacuation center, (2) Prepare a 3-day emergency kit including food, water, medicines, and documents, (3) Know your family emergency plan, (4) Report flooding incidents through the FloodTrack app. Stay safe.',
                 'type'        => 'advisory',
                 'is_critical' => false,
-                'expires_at'  => now()->addDays(30),
                 'hours_ago'   => 72,
             ],
         ];
@@ -709,7 +699,6 @@ class MainSeeder extends Seeder
                     'body'        => $a['body'],
                     'type'        => $a['type'],
                     'is_critical' => $a['is_critical'],
-                    'expires_at'  => $a['expires_at'],
                     'created_at'  => now()->subHours($a['hours_ago']),
                     'updated_at'  => now()->subHours($a['hours_ago']),
                 ]

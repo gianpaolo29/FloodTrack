@@ -3,12 +3,14 @@ import {
     AlertTriangle,
     BarChart3,
     Building2,
+    Clock,
     CloudSun,
     Download,
     FileText,
     Globe,
     History,
     LayoutDashboard,
+    Settings,
     LayoutGrid,
     ShieldAlert,
     ShieldCheck,
@@ -111,6 +113,11 @@ const analyticsItems: NavItem[] = [
         icon: BarChart3,
     },
     {
+        title: 'SLA Rules',
+        href: '/admin/sla',
+        icon: Clock,
+    },
+    {
         title: 'Export',
         href: '/admin/export',
         icon: Download,
@@ -122,6 +129,11 @@ const systemItems: NavItem[] = [
         title: 'Activity Log',
         href: '/admin/activity',
         icon: History,
+    },
+    {
+        title: 'Settings',
+        href: '/admin/settings',
+        icon: Settings,
     },
 ];
 

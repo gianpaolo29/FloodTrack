@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ResponderController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\SlaController;
 use App\Http\Controllers\Admin\StatisticsController;
 use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\UserController;
@@ -39,6 +40,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::prefix('hazards')->name('hazards.')->group(function () {
         Route::get('/',                      [HazardController::class, 'index'])->name('index');
         Route::post('/',                     [HazardController::class, 'store'])->name('store');
+        Route::post('/sync-weather',         [HazardController::class, 'syncWeather'])->name('sync-weather');
         Route::post('/bulk',                 [HazardController::class, 'bulkAction'])->name('bulk');
         Route::put('/{hazard}',              [HazardController::class, 'update'])->name('update');
         Route::post('/{hazard}/toggle',      [HazardController::class, 'toggleActive'])->name('toggle');
@@ -51,6 +53,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         Route::post('/',                             [EvacuationCenterController::class, 'store'])->name('store');
         Route::post('/bulk',                         [EvacuationCenterController::class, 'bulkAction'])->name('bulk');
         Route::put('/{evacuationCenter}',            [EvacuationCenterController::class, 'update'])->name('update');
+        Route::patch('/{evacuationCenter}/occupancy',  [EvacuationCenterController::class, 'updateOccupancy'])->name('occupancy');
         Route::post('/{evacuationCenter}/toggle',    [EvacuationCenterController::class, 'toggleActive'])->name('toggle');
         Route::delete('/{evacuationCenter}',         [EvacuationCenterController::class, 'destroy'])->name('destroy');
     });
@@ -93,6 +96,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     // Weather
     Route::get('/weather', [WeatherController::class, 'index'])->name('weather.index');
+    Route::get('/weather/ai-insights', [WeatherController::class, 'aiInsights'])->name('weather.ai-insights');
 
     // Statistics
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');
@@ -102,6 +106,13 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::get('/export',          [ExportController::class, 'index'])->name('export.index');
     Route::get('/export/download', [ExportController::class, 'download'])->name('export.download');
     Route::get('/export/pdf',      [ExportController::class, 'pdf'])->name('export.pdf');
+
+    // SLA Management
+    Route::prefix('sla')->name('sla.')->group(function () {
+        Route::get('/',        [SlaController::class, 'index'])->name('index');
+        Route::put('/configs', [SlaController::class, 'updateConfigs'])->name('configs.update');
+        Route::post('/toggle', [SlaController::class, 'toggleEnabled'])->name('toggle');
+    });
 
     // Activity Log
     Route::get('/activity', [ActivityController::class, 'index'])->name('activity.index');

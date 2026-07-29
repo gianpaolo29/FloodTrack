@@ -14,6 +14,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('settings/appearance', [AppearanceController::class, 'edit'])->name('appearance.edit');
 
+    Route::get('settings/notifications', fn () => \Inertia\Inertia::render('settings/notifications'))->name('notifications.edit');
+
     Route::get('settings/security', [SecurityController::class, 'edit'])->name('security.edit');
     Route::put('settings/password', [SecurityController::class, 'update'])
         ->middleware('throttle:6,1')

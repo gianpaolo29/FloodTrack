@@ -16,6 +16,7 @@ import {
     Save,
     Search,
     ShieldAlert,
+    CloudRain,
     Trash2,
     X,
     Zap,
@@ -131,6 +132,7 @@ function detectHazardFromGeocode(
 export default function AdminHazardsIndex({ hazards }: Props) {
     const [selected,        setSelected]        = useState<number[]>([]);
     const [bulkProcessing,  setBulkProcessing]  = useState(false);
+    const [syncing,         setSyncing]         = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingHazard,   setEditingHazard]   = useState<Hazard | null>(null);
     const [search,          setSearch]          = useState('');
@@ -202,13 +204,29 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-red-500/20 transition-all hover:shadow-lg hover:shadow-red-500/30 hover:brightness-110 active:scale-[0.97]"
-                    >
-                        <Plus className="size-4" />
-                        Add Hazard
-                    </button>
+                    <div className="flex shrink-0 items-center gap-2">
+                        <button
+                            onClick={() => {
+                                setSyncing(true);
+                                router.post('/admin/hazards/sync-weather', {}, {
+                                    preserveState: true,
+                                    onFinish: () => setSyncing(false),
+                                });
+                            }}
+                            disabled={syncing}
+                            className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 shadow-sm transition-all hover:bg-sky-100 hover:shadow-md active:scale-[0.97] disabled:opacity-60 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300 dark:hover:bg-sky-900/50"
+                        >
+                            <CloudRain className={`size-4 ${syncing ? 'animate-pulse' : ''}`} />
+                            {syncing ? 'Syncing…' : 'Sync Weather Alerts'}
+                        </button>
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-red-500/20 transition-all hover:shadow-lg hover:shadow-red-500/30 hover:brightness-110 active:scale-[0.97]"
+                        >
+                            <Plus className="size-4" />
+                            Add Hazard
+                        </button>
+                    </div>
                 </div>
 
                 {/* ── Stats Row ── */}

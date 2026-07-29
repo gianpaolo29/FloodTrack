@@ -25,8 +25,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
-import type { Report, ReportStatus, Severity } from '@/types/admin';
-import { SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
+import type { Report, ReportStatus, Severity, SlaStatus } from '@/types/admin';
+import { SEVERITY_COLORS, SLA_STATUS_COLORS, SLA_STATUS_LABELS, STATUS_COLORS } from '@/types/admin';
 
 interface Paginated<T> {
     data: T[];
@@ -404,6 +404,11 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
                                         <div className="flex items-center gap-1.5">
                                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize ${SEVERITY_COLORS[report.severity as Severity]}`}>{report.severity}</span>
                                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize ${STATUS_COLORS[report.status as ReportStatus]}`}>{STATUS_LABEL[report.status] ?? report.status}</span>
+                                            {report.sla_status && (
+                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold ${SLA_STATUS_COLORS[report.sla_status as SlaStatus]}`}>
+                                                    {SLA_STATUS_LABELS[report.sla_status as SlaStatus]}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                     {report.address && (
@@ -433,7 +438,7 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
                                                 className="size-3.5 rounded border-neutral-300 text-teal-600 focus:ring-teal-500/20 dark:border-neutral-600"
                                             />
                                         </th>
-                                        {['Report', 'Location', 'Severity', 'Status', 'Team', 'Reporter', 'Date', ''].map((h) => (
+                                        {['Report', 'Location', 'Severity', 'Status', 'SLA', 'Team', 'Reporter', 'Date', ''].map((h) => (
                                             <th key={h} className="px-4 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 dark:text-neutral-500">
                                                 {h}
                                             </th>
@@ -585,6 +590,24 @@ function ReportRow({ report, isSelected, onToggle }: {
                     <span className="size-1.5 rounded-full bg-current opacity-60" />
                     {STATUS_LABEL[report.status] ?? report.status}
                 </span>
+            </td>
+
+            {/* SLA */}
+            <td className="px-4 py-4">
+                {report.sla_status ? (
+                    <span className={`relative inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${SLA_STATUS_COLORS[report.sla_status as SlaStatus]}`}>
+                        {report.sla_status === 'breached' && (
+                            <span className="absolute -right-0.5 -top-0.5 flex size-2">
+                                <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-60" />
+                                <span className="relative inline-flex size-2 rounded-full bg-red-500" />
+                            </span>
+                        )}
+                        <span className="size-1.5 rounded-full bg-current opacity-60" />
+                        {SLA_STATUS_LABELS[report.sla_status as SlaStatus]}
+                    </span>
+                ) : (
+                    <span className="text-[11px] text-neutral-300 dark:text-neutral-600">—</span>
+                )}
             </td>
 
             {/* Team */}

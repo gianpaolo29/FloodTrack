@@ -7,6 +7,7 @@ use App\Models\Hazard;
 use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -90,6 +91,16 @@ class HazardController extends Controller
 
         $status = $hazard->active ? 'activated' : 'deactivated';
         Inertia::flash('toast', ['type' => 'success', 'message' => "Hazard {$status}."]);
+
+        return back();
+    }
+
+    public function syncWeather(): RedirectResponse
+    {
+        Artisan::call('hazards:sync-weather');
+        $output = trim(Artisan::output());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => $output ?: 'Weather hazard sync complete.']);
 
         return back();
     }

@@ -315,26 +315,6 @@ export default function AdminDashboard({
             <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
             <div className="flex flex-col gap-5 p-4 sm:p-6 lg:gap-6 lg:p-8">
 
-                {/* Critical Alerts */}
-                {critical_alerts.length > 0 && (
-                    <div className="flex flex-col gap-2">
-                        {critical_alerts.map((alert) => (
-                            <div key={alert.id} className="flex items-center gap-3 rounded-2xl border border-red-200/60 bg-gradient-to-r from-red-50 via-rose-50 to-red-50/30 px-4 py-3 shadow-sm shadow-red-500/5 dark:border-red-900/40 dark:from-red-950/40 dark:to-rose-950/20">
-                                <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-rose-600 shadow-lg shadow-red-500/30">
-                                    <AlertTriangle className="size-4 text-white" />
-                                </div>
-                                <div className="min-w-0 flex-1">
-                                    <p className="text-sm font-semibold text-red-800 dark:text-red-300">{alert.title}</p>
-                                    <p className="text-xs text-red-600/70 line-clamp-1 dark:text-red-400/60">{alert.body}</p>
-                                </div>
-                                <span className="shrink-0 rounded-lg bg-red-100 px-2 py-1 text-[10px] font-semibold text-red-600 dark:bg-red-900/40 dark:text-red-400">
-                                    {new Date(alert.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-
                 {/* Header */}
                 <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
                     <div className="flex items-center gap-4">

@@ -35,8 +35,8 @@ import { useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
-import type { FieldReport, MemberStatus, Report, ReportStatus, ResponderStatus, Severity, Team } from '@/types/admin';
-import { RESPONDER_STATUS_COLORS, RESPONDER_STATUS_LABELS, SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
+import type { FieldReport, MemberStatus, Report, ReportStatus, ResponderStatus, Severity, SlaStage, SlaStatus, SlaTracking, Team } from '@/types/admin';
+import { RESPONDER_STATUS_COLORS, RESPONDER_STATUS_LABELS, SEVERITY_COLORS, SLA_STAGE_LABELS, SLA_STATUS_COLORS, SLA_STATUS_LABELS, STATUS_COLORS } from '@/types/admin';
 
 interface Props {
     report: Report;
@@ -197,6 +197,9 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
                         </div>
                     </div>
                 )}
+
+                {/* SLA Compliance */}
+                {(report.sla_tracking?.length ?? 0) > 0 && <SlaComplianceCard tracking={report.sla_tracking!} />}
 
                 {/* Rejected banner */}
                 {report.status === 'rejected' && (
@@ -942,6 +945,75 @@ function FormField({ label, error, children }: { label: string; error?: string; 
             <label className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{label}</label>
             {children}
             {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+        </div>
+    );
+}
+
+/* ─── SLA Compliance Card ─── */
+
+const SLA_BAR_COLORS: Record<SlaStatus, string> = {
+    on_track: 'bg-emerald-500',
+    at_risk:  'bg-amber-500',
+    breached: 'bg-red-500',
+    met:      'bg-blue-500',
+};
+
+function SlaComplianceCard({ tracking }: { tracking: SlaTracking[] }) {
+    const stages: SlaStage[] = ['pending_to_verified', 'verified_to_assigned', 'assigned_to_resolved'];
+
+    return (
+        <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+            <div className="mb-4 flex items-center gap-2.5">
+                <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-cyan-600 shadow-sm">
+                    <Clock className="size-3.5 text-white" />
+                </div>
+                <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">SLA Compliance</h3>
+            </div>
+
+            <div className="flex flex-col gap-4">
+                {stages.map((stage) => {
+                    const t = tracking.find((tr) => tr.stage === stage);
+                    if (!t) return null;
+
+                    const elapsed = t.completed_at
+                        ? (t.elapsed_minutes ?? 0)
+                        : Math.round((Date.now() - new Date(t.started_at).getTime()) / 60000 * 10) / 10;
+                    const pct = t.threshold_minutes > 0 ? Math.min((elapsed / t.threshold_minutes) * 100, 100) : 0;
+                    const remaining = t.threshold_minutes - elapsed;
+                    const status = t.sla_status as SlaStatus;
+
+                    return (
+                        <div key={stage} className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">
+                                    {SLA_STAGE_LABELS[stage]}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">
+                                        {Math.round(elapsed)} min / {t.threshold_minutes} min
+                                    </span>
+                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${SLA_STATUS_COLORS[status]}`}>
+                                        {SLA_STATUS_LABELS[status]}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="h-2 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
+                                <div
+                                    className={`h-full rounded-full transition-all duration-500 ${SLA_BAR_COLORS[status]}`}
+                                    style={{ width: `${Math.min(pct, 100)}%` }}
+                                />
+                            </div>
+                            {!t.completed_at && (
+                                <p className={`text-[10px] font-medium ${remaining > 0 ? 'text-neutral-400' : 'text-red-500'}`}>
+                                    {remaining > 0
+                                        ? `${Math.round(remaining)} min remaining`
+                                        : `${Math.round(Math.abs(remaining))} min overdue`}
+                                </p>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 }

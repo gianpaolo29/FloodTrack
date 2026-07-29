@@ -14,7 +14,6 @@ return new class extends Migration
             $table->string('title');
             $table->text('body');
             $table->enum('type', ['advisory', 'update', 'critical'])->default('advisory');
-            $table->boolean('is_critical')->default(false);
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
         });

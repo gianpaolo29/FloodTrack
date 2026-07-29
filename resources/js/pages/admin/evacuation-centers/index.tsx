@@ -11,6 +11,7 @@ import {
     GraduationCap,
     Landmark,
     MapPin,
+    Minus,
     Pencil,
     Plus,
     Power,
@@ -614,7 +615,7 @@ function CenterRow({
 
             {/* Occupancy */}
             <td className="px-5 py-4">
-                <OccupancyCell current={center.current_occupancy ?? 0} capacity={center.capacity ?? 0} />
+                <OccupancyCell centerId={center.id} current={center.current_occupancy ?? 0} capacity={center.capacity ?? 0} />
             </td>
 
             {/* Status */}
@@ -690,13 +691,44 @@ function CenterRow({
 
 /* ─── Occupancy Cell ─── */
 
-function OccupancyCell({ current, capacity }: { current: number; capacity: number }) {
+function OccupancyCell({ centerId, current, capacity }: { centerId: number; current: number; capacity: number }) {
     const pct = capacity > 0 ? Math.round((current / capacity) * 100) : 0;
     const barColor = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-emerald-500';
     const textColor = pct >= 90 ? 'text-red-600 dark:text-red-400' : pct >= 70 ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400';
 
+    const [inputValue, setInputValue] = useState(String(current));
+    const [updating, setUpdating] = useState(false);
+
+    useEffect(() => {
+        setInputValue(String(current));
+    }, [current]);
+
+    const patchOccupancy = (newValue: number) => {
+        if (newValue < 0 || newValue > capacity || updating) return;
+        setUpdating(true);
+        router.patch(
+            `/admin/evacuation-centers/${centerId}/occupancy`,
+            { current_occupancy: newValue },
+            {
+                preserveState: true,
+                onFinish: () => setUpdating(false),
+            },
+        );
+    };
+
+    const handleInputSubmit = () => {
+        const parsed = parseInt(inputValue, 10);
+        if (isNaN(parsed) || parsed < 0 || parsed > capacity) {
+            setInputValue(String(current));
+            return;
+        }
+        if (parsed !== current) {
+            patchOccupancy(parsed);
+        }
+    };
+
     return (
-        <div className="flex flex-col gap-1 min-w-[120px]">
+        <div className="flex flex-col gap-1 min-w-[140px]">
             <div className="flex items-center gap-1">
                 <Users className="size-3.5 text-neutral-400 shrink-0" />
                 <span className="text-sm font-bold tabular-nums text-neutral-800 dark:text-neutral-200">{current.toLocaleString()}</span>
@@ -705,6 +737,37 @@ function OccupancyCell({ current, capacity }: { current: number; capacity: numbe
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
                 <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+            </div>
+            <div className="flex items-center gap-1 mt-0.5">
+                <button
+                    type="button"
+                    disabled={current <= 0 || updating}
+                    onClick={() => patchOccupancy(current - 1)}
+                    className="flex size-6 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600 disabled:cursor-not-allowed disabled:opacity-30 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-sky-700/40 dark:hover:bg-sky-950/20 dark:hover:text-sky-400"
+                    title="Decrease occupancy"
+                >
+                    <Minus className="size-3" />
+                </button>
+                <input
+                    type="number"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onBlur={handleInputSubmit}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleInputSubmit(); }}
+                    min={0}
+                    max={capacity}
+                    disabled={updating}
+                    className="h-6 w-14 rounded-lg border border-neutral-200 bg-white px-1.5 text-center text-xs tabular-nums text-neutral-800 outline-none transition-all focus:border-sky-400 focus:ring-1 focus:ring-sky-500/15 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:focus:border-sky-500"
+                />
+                <button
+                    type="button"
+                    disabled={current >= capacity || updating}
+                    onClick={() => patchOccupancy(current + 1)}
+                    className="flex size-6 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-600 disabled:cursor-not-allowed disabled:opacity-30 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-teal-700/40 dark:hover:bg-teal-950/20 dark:hover:text-teal-400"
+                    title="Increase occupancy"
+                >
+                    <Plus className="size-3" />
+                </button>
             </div>
         </div>
     );

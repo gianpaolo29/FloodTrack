@@ -117,15 +117,10 @@ class DashboardController extends Controller
             ->get(['id', 'reference_number', 'severity', 'status', 'address', 'latitude', 'longitude', 'user_id', 'created_at']);
 
         // Active alerts
-        $active_alerts = Alert::where(function ($q) {
-            $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
-        })->count();
+        $active_alerts = Alert::count();
 
         // Critical alerts list (for banner)
         $critical_alerts = Alert::where('type', 'critical')
-            ->where(function ($q) {
-                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
-            })
             ->latest()
             ->limit(3)
             ->get(['id', 'title', 'body', 'type', 'created_at']);

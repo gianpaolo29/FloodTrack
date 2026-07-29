@@ -16,6 +16,28 @@ use Inertia\Response;
 
 class AlertController extends Controller
 {
+    /** Get barangay names from shared config. */
+    private static function barangayNames(): array
+    {
+        return array_column(config('barangays'), 'name');
+    }
+
+    /**
+     * Get barangay names that actually appear in users' home_address.
+     * Only shows barangays with at least one matching user.
+     */
+    private static function barangaysWithUsers(): array
+    {
+        $allNames = self::barangayNames();
+        $addresses = User::whereNotNull('home_address')
+            ->where('home_address', '!=', '')
+            ->pluck('home_address');
+
+        return array_values(array_filter($allNames, function ($brgy) use ($addresses) {
+            return $addresses->contains(fn ($addr) => str_contains(strtolower($addr), strtolower($brgy)));
+        }));
+    }
+
     public function index(): Response
     {
         $alerts = Alert::with('creator:id,name')
@@ -23,43 +45,45 @@ class AlertController extends Controller
             ->paginate(20);
 
         return Inertia::render('admin/alerts/index', [
-            'alerts' => $alerts,
+            'alerts'     => $alerts,
+            'barangays'  => self::barangaysWithUsers(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'title'       => 'required|string|max:255',
-            'body'        => 'required|string',
-            'type'        => 'required|in:advisory,update,critical',
-            'is_critical' => 'boolean',
-            'expires_at'  => 'nullable|date|after:now',
+            'title'              => 'required|string|max:255',
+            'body'               => 'required|string',
+            'type'               => 'required|in:advisory,update,critical',
+            'target_barangays'   => 'nullable|array',
+            'target_barangays.*' => 'string|in:' . implode(',', self::barangayNames()),
         ]);
 
+        $targetBarangays = $request->target_barangays && count($request->target_barangays) > 0
+            ? $request->target_barangays
+            : null;
+
         $alert = Alert::create([
-            'created_by'  => $request->user()->id,
-            'title'       => $request->title,
-            'body'        => $request->body,
-            'type'        => $request->type,
-            'is_critical' => $request->boolean('is_critical'),
-            'expires_at'  => $request->expires_at,
+            'created_by'        => $request->user()->id,
+            'title'             => $request->title,
+            'body'              => $request->body,
+            'type'              => $request->type,
+            'target_barangays'  => $targetBarangays,
         ]);
 
         // Real-time alert to all connected users (residents, responders)
         SocketService::toAll('new-alert', $alert->toArray());
 
-        // Push notification to all users (respecting notification preferences)
-        $prefKey = ($alert->type === 'critical' || $request->boolean('is_critical')) ? 'critical' : 'advisory';
-        ExpoPushService::sendToAll(
-            $alert->title,
-            $alert->body,
-            [
-                'type'    => 'alert',
-                'alertId' => $alert->id,
-            ],
-            $prefKey
-        );
+        // Push notification (filtered by barangay if targeted)
+        $prefKey = $alert->type === 'critical' ? 'critical' : 'advisory';
+        $pushData = ['type' => 'alert', 'alertId' => $alert->id];
+
+        if ($targetBarangays) {
+            ExpoPushService::sendToBarangays($targetBarangays, $alert->title, $alert->body, $pushData, $prefKey);
+        } else {
+            ExpoPushService::sendToAll($alert->title, $alert->body, $pushData, $prefKey);
+        }
 
         // Notify all admins about the new alert
         $admins = User::where('role', 'admin')
@@ -75,35 +99,36 @@ class AlertController extends Controller
     public function update(Alert $alert, Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'title'       => 'required|string|max:255',
-            'body'        => 'required|string',
-            'type'        => 'required|in:advisory,update,critical',
-            'is_critical' => 'boolean',
-            'expires_at'  => 'nullable|date',
+            'title'              => 'required|string|max:255',
+            'body'               => 'required|string',
+            'type'               => 'required|in:advisory,update,critical',
+            'target_barangays'   => 'nullable|array',
+            'target_barangays.*' => 'string|in:' . implode(',', self::barangayNames()),
         ]);
 
+        $targetBarangays = isset($validated['target_barangays']) && count($validated['target_barangays']) > 0
+            ? $validated['target_barangays']
+            : null;
+
         $alert->update([
-            'title'       => $validated['title'],
-            'body'        => $validated['body'],
-            'type'        => $validated['type'],
-            'is_critical' => $request->boolean('is_critical'),
-            'expires_at'  => $validated['expires_at'],
+            'title'             => $validated['title'],
+            'body'              => $validated['body'],
+            'type'              => $validated['type'],
+            'target_barangays'  => $targetBarangays,
         ]);
 
         // Real-time alert update to all connected users
         SocketService::toAll('alert-updated', $alert->fresh()->toArray());
 
-        // Push notification for updated alert (respecting notification preferences)
-        $updatedPrefKey = ($alert->type === 'critical' || $request->boolean('is_critical')) ? 'critical' : 'advisory';
-        ExpoPushService::sendToAll(
-            $alert->title,
-            $alert->body,
-            [
-                'type'    => 'alert',
-                'alertId' => $alert->id,
-            ],
-            $updatedPrefKey
-        );
+        // Push notification for updated alert (filtered by barangay if targeted)
+        $updatedPrefKey = $alert->type === 'critical' ? 'critical' : 'advisory';
+        $pushData = ['type' => 'alert', 'alertId' => $alert->id];
+
+        if ($targetBarangays) {
+            ExpoPushService::sendToBarangays($targetBarangays, $alert->title, $alert->body, $pushData, $updatedPrefKey);
+        } else {
+            ExpoPushService::sendToAll($alert->title, $alert->body, $pushData, $updatedPrefKey);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Alert updated.']);
 

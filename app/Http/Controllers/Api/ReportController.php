@@ -12,6 +12,7 @@ use App\Notifications\NewReportSubmitted;
 use App\Notifications\ReportStatusChanged;
 use App\Services\ExpoPushService;
 use App\Services\ReportAnalysisService;
+use App\Services\SlaService;
 use App\Services\SocketService;
 use App\Services\WeatherService;
 use Illuminate\Http\Request;
@@ -99,6 +100,9 @@ class ReportController extends Controller
         $autoRejected = $aiFlags['ai_image_verified'] === false
             || $exifFailed;
 
+        // Initialize SLA tracking for the new report
+        app(SlaService::class)->initializeTracking($report);
+
         if ($autoVerified) {
             $report->update([
                 'status'      => 'verified',
@@ -128,6 +132,8 @@ class ReportController extends Controller
 
             SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'verified']);
             SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'verified']);
+
+            app(SlaService::class)->advanceStage($report, 'verified');
 
         } elseif ($autoRejected) {
             $rejectReason = $exifFailed
@@ -163,6 +169,8 @@ class ReportController extends Controller
 
             SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'rejected']);
             SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'rejected']);
+
+            app(SlaService::class)->advanceStage($report, 'rejected');
 
         } else {
             // Needs manual admin review — notify admins
@@ -213,6 +221,7 @@ class ReportController extends Controller
 
         if ($data['status'] === 'resolved') {
             $report->update(['status' => 'resolved', 'resolved_at' => now()]);
+            app(SlaService::class)->advanceStage($report, 'resolved');
         }
 
         ReportStatusUpdate::create([

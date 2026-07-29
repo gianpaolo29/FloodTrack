@@ -21,9 +21,7 @@ class AdminStatsController extends Controller
                                         ->count(),
             'total_users'      => User::where('role', '!=', 'admin')->count(),
             'total_responders' => User::where('role', 'responder')->count(),
-            'active_alerts'    => Alert::where(function ($q) {
-                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
-            })->count(),
+            'active_alerts'    => Alert::count(),
         ];
 
         $thisWeekReports = Report::where('created_at', '>=', now()->startOfWeek())->count();

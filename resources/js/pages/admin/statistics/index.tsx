@@ -7,10 +7,14 @@ import {
     Building2,
     CheckCircle2,
     ChevronRight,
+    Church,
     Clock,
     FileText,
+    GraduationCap,
+    Landmark,
     RefreshCw,
     Shield,
+    ShieldCheck,
     Sparkles,
     TrendingUp,
     Trophy,
@@ -21,6 +25,8 @@ import { useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
+import type { EvacuationCenter, EvacuationCenterType } from '@/types/admin';
+import { EVACUATION_CENTER_TYPE_LABELS } from '@/types/admin';
 
 /* ─── Types ─── */
 interface AiInsight {
@@ -51,6 +57,7 @@ interface Props {
     resolution_rate: number;
     critical_count: number;
     evacuation_stats: { total_centers: number; total_capacity: number; total_occupancy: number };
+    evacuation_centers: Pick<EvacuationCenter, 'id' | 'name' | 'address' | 'type' | 'capacity' | 'current_occupancy' | 'is_active'>[];
     period: string;
 }
 
@@ -140,6 +147,22 @@ const RISK_TEXT_STYLES: Record<string, string> = {
     low:      'text-green-800 dark:text-green-300',
 };
 
+const EVAC_TYPE_ICONS: Record<EvacuationCenterType, React.ElementType> = {
+    gymnasium:        Building2,
+    school:           GraduationCap,
+    barangay_hall:    Landmark,
+    church:           Church,
+    community_center: Users,
+};
+
+const EVAC_TYPE_COLORS: Record<EvacuationCenterType, string> = {
+    gymnasium:        'bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-700/40',
+    school:           'bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-700/40',
+    barangay_hall:    'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-700/40',
+    church:           'bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-700/40',
+    community_center: 'bg-teal-50 text-teal-700 ring-1 ring-teal-200 dark:bg-teal-950/50 dark:text-teal-300 dark:ring-teal-700/40',
+};
+
 function EmptyState({ text }: { text: string }) {
     return (
         <div className="flex flex-col items-center justify-center gap-2 py-6 text-neutral-300">
@@ -164,17 +187,22 @@ export default function StatisticsPage({
     resolution_rate,
     critical_count,
     evacuation_stats,
+    evacuation_centers,
     period,
 }: Props) {
     const [aiState, setAiState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
     const [aiData, setAiData] = useState<AiInsight | null>(null);
 
-    const setPeriod = (p: string) => router.get('/admin/statistics', { period: p }, { preserveState: true, preserveScroll: true });
+    const setPeriod = (p: string) => {
+        setAiState('idle');
+        setAiData(null);
+        router.get('/admin/statistics', { period: p }, { preserveState: true, preserveScroll: true });
+    };
 
     async function generateInsights() {
         setAiState('loading');
         try {
-            const res = await fetch('/admin/statistics/ai-insights');
+            const res = await fetch(`/admin/statistics/ai-insights?period=${encodeURIComponent(period)}`);
             const data = await res.json();
             if (data.error) throw new Error(data.error);
             setAiData(data);
@@ -759,7 +787,7 @@ export default function StatisticsPage({
 
                     {/* AI Insights */}
                     <Card>
-                        <CardHeader icon={Sparkles} gradient="from-violet-500 to-fuchsia-600" title="AI Situation Analysis" subtitle="Powered by GPT-4o mini" />
+                        <CardHeader icon={Sparkles} gradient="from-violet-500 to-fuchsia-600" title="AI Situation Analysis" subtitle={`Analyzing: ${PERIODS.find(p => p.key === period)?.label ?? 'All'} · GPT-4o mini`} />
                         <div className="p-5">
                             {aiState === 'idle' && (
                                 <div className="flex flex-col items-center gap-4 py-6 text-center">
@@ -882,6 +910,105 @@ export default function StatisticsPage({
                         </div>
                     </Card>
                 </div>
+
+                {/* Evacuation Centers List */}
+                <Card>
+                    <CardHeader icon={ShieldCheck} gradient="from-sky-500 to-blue-600" title="Evacuation Centers" subtitle="All centers with status &amp; occupancy" />
+                    {evacuation_centers.length === 0 ? (
+                        <div className="px-5 py-10"><EmptyState text="No evacuation centers registered" /></div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full min-w-[700px] border-collapse text-sm">
+                                <thead>
+                                    <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                        {['Center', 'Type', 'Status', 'Occupancy', 'Capacity', ''].map((h) => (
+                                            <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/60">
+                                    {evacuation_centers.map((ec) => {
+                                        const occ = ec.current_occupancy ?? 0;
+                                        const cap = ec.capacity ?? 0;
+                                        const pct = cap > 0 ? Math.round((occ / cap) * 100) : 0;
+                                        const TypeIcon = EVAC_TYPE_ICONS[ec.type];
+                                        return (
+                                            <tr key={ec.id} className="transition-colors hover:bg-neutral-50/70 dark:hover:bg-neutral-800/25">
+                                                <td className="px-5 py-3.5">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{ec.name}</span>
+                                                        {ec.address && (
+                                                            <span className="truncate text-[11px] text-neutral-400 dark:text-neutral-500 max-w-[220px]">{ec.address}</span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="px-5 py-3.5">
+                                                    <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-semibold ${EVAC_TYPE_COLORS[ec.type]}`}>
+                                                        <TypeIcon className="size-3" />
+                                                        {EVACUATION_CENTER_TYPE_LABELS[ec.type]}
+                                                    </span>
+                                                </td>
+                                                <td className="px-5 py-3.5">
+                                                    {ec.is_active ? (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-800/40">
+                                                            <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
+                                                            Active
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-semibold text-neutral-500 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700">
+                                                            <span className="size-1.5 rounded-full bg-neutral-400 dark:bg-neutral-500" />
+                                                            Inactive
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="px-5 py-3.5">
+                                                    <div className="flex flex-col gap-1 min-w-[110px]">
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="text-xs font-bold tabular-nums text-neutral-800 dark:text-neutral-200">{occ.toLocaleString()}</span>
+                                                            <span className="text-[10px] text-neutral-400">/ {cap.toLocaleString()}</span>
+                                                            <span className={`ml-auto text-[10px] font-semibold ${
+                                                                pct >= 90 ? 'text-red-600 dark:text-red-400'
+                                                                : pct >= 70 ? 'text-amber-600 dark:text-amber-400'
+                                                                : 'text-emerald-600 dark:text-emerald-400'
+                                                            }`}>{pct}%</span>
+                                                        </div>
+                                                        <div className="h-1.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
+                                                            <div
+                                                                className={`h-full rounded-full transition-all ${
+                                                                    pct >= 90 ? 'bg-red-500'
+                                                                    : pct >= 70 ? 'bg-amber-500'
+                                                                    : 'bg-emerald-500'
+                                                                }`}
+                                                                style={{ width: `${Math.min(pct, 100)}%` }}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="px-5 py-3.5 text-xs font-medium tabular-nums text-neutral-600 dark:text-neutral-300">
+                                                    {cap.toLocaleString()}
+                                                </td>
+                                                <td className="px-5 py-3.5">
+                                                    {!ec.is_active && occ > 0 && (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-800/40">
+                                                            <AlertTriangle className="size-3" />
+                                                            Inactive with evacuees
+                                                        </span>
+                                                    )}
+                                                    {pct >= 90 && ec.is_active && (
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700 ring-1 ring-red-200 dark:bg-red-950/30 dark:text-red-400 dark:ring-red-800/40">
+                                                            <AlertCircle className="size-3" />
+                                                            Near capacity
+                                                        </span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </Card>
 
                 {/* Team Performance */}
                 <Card>

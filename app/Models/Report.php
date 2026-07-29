@@ -23,6 +23,7 @@ class Report extends Model
         'assigned_team_id',
         'verified_by',
         'verified_at',
+        'assigned_at',
         'resolved_at',
         'ai_flagged',
         'ai_flag_reason',
@@ -33,7 +34,7 @@ class Report extends Model
         'potential_duplicate_of',
     ];
 
-    protected $appends = ['hazard_type'];
+    protected $appends = ['hazard_type', 'sla_status'];
 
     public function getHazardTypeAttribute(): string
     {
@@ -46,6 +47,7 @@ class Report extends Model
             'latitude'          => 'float',
             'longitude'         => 'float',
             'verified_at'       => 'datetime',
+            'assigned_at'       => 'datetime',
             'resolved_at'       => 'datetime',
             'ai_flagged'        => 'boolean',
             'ai_image_verified' => 'boolean',
@@ -99,5 +101,39 @@ class Report extends Model
         return $this->belongsToMany(User::class, 'report_responders')
             ->withPivot('role', 'status')
             ->withTimestamps();
+    }
+
+    public function slaTracking()
+    {
+        return $this->hasMany(ReportSlaTracking::class);
+    }
+
+    public function getSlaStatusAttribute(): ?string
+    {
+        if (! Setting::getValue('sla_enabled')) {
+            return null;
+        }
+
+        if (in_array($this->status, ['resolved', 'rejected'])) {
+            $tracking = $this->relationLoaded('slaTracking')
+                ? $this->slaTracking
+                : $this->slaTracking()->get();
+
+            if ($tracking->isEmpty()) {
+                return null;
+            }
+
+            return $tracking->contains('sla_status', 'breached') ? 'breached' : 'met';
+        }
+
+        $active = $this->relationLoaded('slaTracking')
+            ? $this->slaTracking->whereNull('completed_at')->first()
+            : $this->slaTracking()->whereNull('completed_at')->first();
+
+        if (! $active) {
+            return null;
+        }
+
+        return $active->computeCurrentStatus();
     }
 }

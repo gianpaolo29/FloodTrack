@@ -232,6 +232,31 @@ class WeatherService
         return $alerts;
     }
 
+    /**
+     * Fetch weather alerts from OpenWeatherMap One Call API 3.0.
+     */
+    public function fetchWeatherAlerts(float $lat, float $lon): array
+    {
+        return Cache::remember("weather:alerts:{$lat}:{$lon}", 900, function () use ($lat, $lon) {
+            try {
+                $response = Http::withoutVerifying()->timeout(10)->get("{$this->geoUrl}/onecall", [
+                    'lat'     => $lat,
+                    'lon'     => $lon,
+                    'appid'   => $this->apiKey,
+                    'exclude' => 'minutely,hourly,daily,current',
+                ]);
+            } catch (\Exception $e) {
+                return [];
+            }
+
+            if ($response->failed()) {
+                return [];
+            }
+
+            return $response->json('alerts', []);
+        });
+    }
+
     private function fallbackCurrent(): array
     {
         return [

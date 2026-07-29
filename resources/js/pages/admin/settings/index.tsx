@@ -1,7 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import {
     Bell,
-    Database,
     Globe,
     Info,
     Save,
@@ -121,7 +120,7 @@ export default function AdminSettings({ settings }: Props) {
                             icon={Bell}
                             grad="from-amber-500 to-orange-600"
                             title="Notifications"
-                            sub="Alert and dispatch behaviour"
+                            sub="Alert behaviour and push notification settings"
                         >
                             <SettingToggle
                                 title="Email Notifications"
@@ -130,49 +129,28 @@ export default function AdminSettings({ settings }: Props) {
                                 onToggle={() => toggleBool('email_notifications')}
                             />
                             <SettingToggle
-                                title="Auto-assign Responders"
-                                description="Automatically assign nearest responder"
-                                enabled={getBool('auto_assign')}
-                                onToggle={() => toggleBool('auto_assign')}
-                            />
-                            <SettingToggle
                                 title="Notify on Critical"
                                 description="Push notification for critical reports"
                                 enabled={getBool('notify_on_critical')}
                                 onToggle={() => toggleBool('notify_on_critical')}
                             />
-                        </SettingsCard>
-
-                        {/* Data & Storage */}
-                        <SettingsCard
-                            icon={Database}
-                            grad="from-violet-500 to-indigo-600"
-                            title="Data & Storage"
-                            sub="Retention policies and file storage"
-                        >
-                            <SettingInput
-                                title="Report Retention (days)"
-                                description="0 = keep forever"
-                                value={get('report_retention_days')}
-                                onChange={(v) => set('report_retention_days', v)}
-                                type="number"
+                            <SettingToggle
+                                title="SLA Breach Notifications"
+                                description="Push alerts when reports breach SLA thresholds"
+                                enabled={getBool('sla_notifications_enabled')}
+                                onToggle={() => toggleBool('sla_notifications_enabled')}
                             />
-                            <SettingSelect
-                                title="Media Storage"
-                                description="Where uploaded evidence is stored"
-                                value={get('media_storage')}
-                                onChange={(v) => set('media_storage', v)}
-                                options={[
-                                    { value: 'local', label: 'Local Disk' },
-                                    { value: 's3',    label: 'Amazon S3' },
-                                    { value: 'gcs',   label: 'Google Cloud Storage' },
-                                ]}
+                            <SettingToggle
+                                title="Occupancy Alerts"
+                                description="Alert when evacuation centers approach capacity"
+                                enabled={getBool('occupancy_notifications_enabled')}
+                                onToggle={() => toggleBool('occupancy_notifications_enabled')}
                             />
                             <SettingInput
-                                title="Max Upload Size (MB)"
-                                description="Maximum file size for evidence"
-                                value={get('max_upload_size_mb')}
-                                onChange={(v) => set('max_upload_size_mb', v)}
+                                title="Occupancy Alert Threshold"
+                                description="Percentage at which to trigger occupancy alerts"
+                                value={get('occupancy_alert_threshold')}
+                                onChange={(v) => set('occupancy_alert_threshold', v)}
                                 type="number"
                             />
                         </SettingsCard>
@@ -273,34 +251,6 @@ function SettingInput({
                 onChange={(e) => onChange(e.target.value)}
                 className={inputCls}
             />
-        </div>
-    );
-}
-
-function SettingSelect({
-    title, description, value, onChange, options,
-}: {
-    title: string;
-    description: string;
-    value: string;
-    onChange: (v: string) => void;
-    options: { value: string; label: string }[];
-}) {
-    return (
-        <div className="flex items-center justify-between gap-4 px-6 py-4">
-            <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">{title}</p>
-                <p className="text-xs text-neutral-400">{description}</p>
-            </div>
-            <select
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                className={inputCls}
-            >
-                {options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-            </select>
         </div>
     );
 }

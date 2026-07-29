@@ -79,6 +79,45 @@ class ExpoPushService
     }
 
     /**
+     * Send a push notification to users in specific barangays.
+     *
+     * @param  array       $barangays  List of barangay names to target
+     * @param  string      $title      Notification title
+     * @param  string      $body       Notification body
+     * @param  array       $data       Extra data payload
+     * @param  string|null $prefKey    If set, skip users who disabled this pref
+     */
+    public static function sendToBarangays(array $barangays, string $title, string $body, array $data = [], ?string $prefKey = null): void
+    {
+        if (empty($barangays)) {
+            static::sendToAll($title, $body, $data, $prefKey);
+            return;
+        }
+
+        $query = DeviceToken::join('users', 'users.id', '=', 'device_tokens.user_id')
+            ->where(function ($q) use ($barangays) {
+                foreach ($barangays as $brgy) {
+                    $q->orWhere('users.home_address', 'LIKE', '%' . $brgy . '%');
+                }
+            });
+
+        if ($prefKey !== null) {
+            $query->where(function ($q) use ($prefKey) {
+                $q->whereNull('users.notification_prefs')
+                  ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(users.notification_prefs, '$.{$prefKey}')) != 'false'");
+            });
+        }
+
+        $tokens = $query->pluck('device_tokens.token')->toArray();
+
+        if (empty($tokens)) {
+            return;
+        }
+
+        static::sendToTokens($tokens, $title, $body, $data);
+    }
+
+    /**
      * Send push notifications to a list of Expo push tokens.
      * Batches in chunks of 100 as per Expo's recommendation.
      */
