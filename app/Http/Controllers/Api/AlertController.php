@@ -18,12 +18,18 @@ class AlertController extends Controller
 
         $alerts = Alert::where('created_at', '>=', $request->user()->created_at)
         ->where(function ($q) use ($userAddress) {
+            // Show alerts with no target (broadcast to all) or targeting user's barangay
             $q->whereNull('target_barangays');
             if ($userAddress) {
-                $q->orWhereJsonContains('target_barangays', $userAddress);
+                $q->orWhere(function ($q2) use ($userAddress) {
+                    // Match if any target barangay appears in the user's home address
+                    $q2->whereNotNull('target_barangays')
+                       ->where(function ($q3) use ($userAddress) {
+                           $q3->whereJsonContains('target_barangays', $userAddress);
+                       });
+                });
             }
         })
-        ->orderByDesc('is_critical')
         ->latest()
         ->get();
 
@@ -42,10 +48,9 @@ class AlertController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'title'      => 'required|string|max:255',
-            'body'       => 'required|string',
-            'type'       => 'required|in:advisory,update,critical',
-            'is_critical' => 'boolean',
+            'title' => 'required|string|max:255',
+            'body'  => 'required|string',
+            'type'  => 'required|in:advisory,update,critical',
         ]);
 
         $alert = Alert::create([
@@ -56,7 +61,7 @@ class AlertController extends Controller
         SocketService::toAll('new-alert', $alert->toArray());
 
         // Push notification to all users (respecting notification preferences)
-        $prefKey = ($alert->type === 'critical' || $alert->is_critical) ? 'critical' : 'advisory';
+        $prefKey = $alert->type === 'critical' ? 'critical' : 'advisory';
         ExpoPushService::sendToAll(
             $alert->title,
             $alert->body,
