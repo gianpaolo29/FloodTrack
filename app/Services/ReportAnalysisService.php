@@ -157,8 +157,20 @@ For each image check:
 1. Does it show visible flooding, water damage, flood-related hazard, or people needing help due to flooding?
 2. Does the severity match what is visible?
 3. Does it appear to be a real photo (not AI-generated, stock photo, or unrelated image)?
+4. Is it a photo of a screen? Even zoomed-in screen photos have telltale signs:
+   - Visible pixel grid, RGB subpixel pattern, or dot matrix
+   - Moiré patterns (wavy interference lines)
+   - Unnatural uniform backlighting with no natural shadows
+   - Screen glare, light bleed, or color banding
+   - Flat/unnatural color reproduction lacking depth and natural lighting variation
+   - Unnaturally sharp or overly smooth areas (no lens blur, bokeh, or depth of field)
+   - Watermarks, UI elements, browser chrome, or social media overlays
+   Photos of screens are NOT valid evidence, even if no device edges are visible.
 
-If the photo does NOT show any visible flood, water damage, or flood-related need for help, mark it as NOT verified — regardless of what the description says.
+Mark as NOT verified if:
+- The photo does NOT show any visible flood, water damage, or flood-related need for help
+- The image appears to be AI-generated, a stock photo, or downloaded from the internet
+- The image shows signs of being a photo of a screen (even without visible device edges)
 
 Respond ONLY with valid JSON:
 {
@@ -177,7 +189,7 @@ PROMPT,
                 'type'      => 'image_url',
                 'image_url' => [
                     'url'    => "data:{$mimeType};base64,{$base64}",
-                    'detail' => 'low',
+                    'detail' => 'high',
                 ],
             ];
         }
