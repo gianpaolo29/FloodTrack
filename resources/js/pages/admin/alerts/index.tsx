@@ -115,8 +115,8 @@ function BarangayMultiSelect({
             >
                 <span className={selected.length === 0 ? 'text-neutral-400 dark:text-neutral-500' : ''}>
                     {selected.length === 0
-                        ? 'All barangays (no filter)'
-                        : `${selected.length} barangay${selected.length > 1 ? 's' : ''} selected`}
+                        ? 'All users (no filter)'
+                        : `${selected.length} address${selected.length > 1 ? 'es' : ''} selected`}
                 </span>
                 <ChevronDown className={`size-4 shrink-0 text-neutral-400 transition-transform ${open ? 'rotate-180' : ''}`} />
             </button>
@@ -770,14 +770,14 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
                                                 })}
                                             </div>
                                         </FormField>
-                                        <FormField label="Target Barangays (optional)">
+                                        <FormField label="Target Home Address (optional)">
                                             <BarangayMultiSelect
                                                 barangays={barangays}
                                                 selected={form.data.target_barangays}
                                                 onChange={(val) => form.setData('target_barangays', val)}
                                             />
                                             <p className="text-[10px] text-neutral-400 dark:text-neutral-500">
-                                                Leave empty to send to all users. Select specific barangays to restrict notifications.
+                                                Leave empty to send to all users. Select specific addresses to target notifications.
                                             </p>
                                         </FormField>
                                     </div>
@@ -925,14 +925,14 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
                                     })}
                                 </div>
                             </FormField>
-                            <FormField label="Target Barangays (optional)">
+                            <FormField label="Target Home Address (optional)">
                                 <BarangayMultiSelect
                                     barangays={barangays}
                                     selected={editForm.data.target_barangays}
                                     onChange={(val) => editForm.setData('target_barangays', val)}
                                 />
                                 <p className="text-[10px] text-neutral-400 dark:text-neutral-500">
-                                    Leave empty to send to all users. Select specific barangays to restrict notifications.
+                                    Leave empty to send to all users. Select specific addresses to target notifications.
                                 </p>
                             </FormField>
                         </div>

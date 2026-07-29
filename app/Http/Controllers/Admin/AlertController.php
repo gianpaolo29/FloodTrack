@@ -11,6 +11,7 @@ use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -64,7 +65,7 @@ class AlertController extends Controller
             'body'               => 'required|string',
             'type'               => 'required|in:advisory,update,critical',
             'target_barangays'   => 'nullable|array',
-            'target_barangays.*' => 'string|in:' . implode(',', self::distinctBarangays()),
+            'target_barangays.*' => ['string', Rule::in(self::distinctBarangays())],
         ]);
 
         $targetBarangays = $request->target_barangays && count($request->target_barangays) > 0
@@ -110,7 +111,7 @@ class AlertController extends Controller
             'body'               => 'required|string',
             'type'               => 'required|in:advisory,update,critical',
             'target_barangays'   => 'nullable|array',
-            'target_barangays.*' => 'string|in:' . implode(',', self::distinctBarangays()),
+            'target_barangays.*' => ['string', Rule::in(self::distinctBarangays())],
         ]);
 
         $targetBarangays = isset($validated['target_barangays']) && count($validated['target_barangays']) > 0
