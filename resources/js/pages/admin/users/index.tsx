@@ -60,22 +60,22 @@ export default function AdminUsersIndex({ users, filters }: Props) {
     const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
     const [selected, setSelected] = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
+    const [searchValue, setSearchValue] = useState('');
 
-    const filter = useCallback((key: string, value: string) => {
-        router.get('/admin/users', { ...filters, [key]: value || undefined }, {
-            preserveState: true,
-            replace: true,
-        });
-    }, [filters]);
+    const filtered = users.data.filter((u) => {
+        if (!searchValue) return true;
+        const q = searchValue.toLowerCase();
+        return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.contact_number ?? '').toLowerCase().includes(q) || (u.home_address ?? '').toLowerCase().includes(q);
+    });
 
-    const hasFilters = !!filters.search;
+    const hasFilters = !!searchValue;
 
-    const allOnPageSelected = users.data.length > 0 && users.data.every((u) => selected.includes(u.id));
+    const allOnPageSelected = filtered.length > 0 && filtered.every((u) => selected.includes(u.id));
     const toggleAll = () => {
         if (allOnPageSelected) {
-            setSelected(selected.filter((id) => !users.data.some((u) => u.id === id)));
+            setSelected(selected.filter((id) => !filtered.some((u) => u.id === id)));
         } else {
-            setSelected([...new Set([...selected, ...users.data.map((u) => u.id)])]);
+            setSelected([...new Set([...selected, ...filtered.map((u) => u.id)])]);
         }
     };
     const toggleOne = (id: number) => {
@@ -105,8 +105,8 @@ export default function AdminUsersIndex({ users, filters }: Props) {
         });
     };
 
-    const withAddressCount  = users.data.filter((u) => !!u.home_address).length;
-    const verifiedCount = users.data.filter((u) => !!u.email_verified_at).length;
+    const withAddressCount  = filtered.filter((u) => !!u.home_address).length;
+    const verifiedCount = filtered.filter((u) => !!u.email_verified_at).length;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -222,16 +222,14 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                 <input
                                     type="text"
                                     placeholder="Search residents..."
-                                    defaultValue={filters.search ?? ''}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') filter('search', (e.target as HTMLInputElement).value);
-                                    }}
+                                    value={searchValue}
+                                    onChange={(e) => setSearchValue(e.target.value)}
                                     className="h-9 w-52 rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-3 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
                                 />
                             </div>
                             {hasFilters && (
                                 <button
-                                    onClick={() => router.get('/admin/users')}
+                                    onClick={() => setSearchValue('')}
                                     className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-neutral-700 dark:hover:border-red-800/60 dark:hover:bg-red-950/30 dark:hover:text-red-400"
                                     title="Clear search"
                                 >
@@ -243,7 +241,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
 
                     {/* Mobile card view */}
                     <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
-                        {users.data.map((user) => (
+                        {filtered.map((user) => (
                             <div key={user.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
                                 {user.avatar_url ? (
                                     <img src={user.avatar_url} alt={user.name} className="size-9 shrink-0 rounded-full object-cover shadow-sm" />
@@ -317,7 +315,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/80">
-                                {users.data.map((user) => (
+                                {filtered.map((user) => (
                                     <tr
                                         key={user.id}
                                         className={`group transition-colors ${
@@ -416,7 +414,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                     </div>
 
                     {/* Empty state */}
-                    {users.data.length === 0 && (
+                    {filtered.length === 0 && (
                         <div className="flex flex-col items-center gap-4 py-20">
                             <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/20">
                                 <Users2 className="size-8 text-violet-400 dark:text-violet-500" />

@@ -188,7 +188,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
-    const [searchValue, setSearchValue] = useState(filters.search ?? '');
+    const [searchValue, setSearchValue] = useState('');
     const searchRef = useRef<HTMLInputElement>(null);
 
     const form = useForm({
@@ -220,7 +220,17 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
         });
     };
 
-    const hasActiveFilters = !!(filters.search || filters.type);
+    const filtered = alerts.data.filter((a) => {
+        if (!searchValue) return true;
+        const q = searchValue.toLowerCase();
+        return (
+            a.title.toLowerCase().includes(q) ||
+            a.body.toLowerCase().includes(q) ||
+            a.type.toLowerCase().includes(q)
+        );
+    });
+
+    const hasActiveFilters = !!(searchValue || filters.type);
 
     /* ── Form handlers ── */
 
@@ -246,12 +256,12 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
 
     /* ── Selection ── */
 
-    const allOnPageSelected = alerts.data.length > 0 && alerts.data.every((a) => selected.includes(a.id));
+    const allOnPageSelected = filtered.length > 0 && filtered.every((a) => selected.includes(a.id));
     const toggleAll = () => {
         if (allOnPageSelected) {
-            setSelected(selected.filter((id) => !alerts.data.some((a) => a.id === id)));
+            setSelected(selected.filter((id) => !filtered.some((a) => a.id === id)));
         } else {
-            setSelected([...new Set([...selected, ...alerts.data.map((a) => a.id)])]);
+            setSelected([...new Set([...selected, ...filtered.map((a) => a.id)])]);
         }
     };
     const toggleOne = (id: number) => {
@@ -371,7 +381,6 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
                             type="text"
                             value={searchValue}
                             onChange={(e) => setSearchValue(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') applyFilter('search', searchValue); }}
                             placeholder="Search alerts..."
                             className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-3 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-amber-500 sm:w-56"
                         />
@@ -424,7 +433,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
 
                     {/* Active filter chips */}
                     <AnimatePresence>
-                        {filters.search && (
+                        {searchValue && (
                             <motion.span
                                 key="search-chip"
                                 initial={{ opacity: 0, scale: 0.88 }}
@@ -434,8 +443,8 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
                                 className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-400"
                             >
                                 <Search className="size-3" />
-                                &ldquo;{filters.search}&rdquo;
-                                <button onClick={() => { setSearchValue(''); applyFilter('search', ''); }} className="rounded-full p-0.5 hover:bg-amber-100 dark:hover:bg-amber-900/40">
+                                &ldquo;{searchValue}&rdquo;
+                                <button onClick={() => setSearchValue('')} className="rounded-full p-0.5 hover:bg-amber-100 dark:hover:bg-amber-900/40">
                                     <X className="size-3" />
                                 </button>
                             </motion.span>
@@ -507,7 +516,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
 
                     {/* Mobile card view */}
                     <div className="block divide-y divide-neutral-100 sm:hidden dark:divide-neutral-800">
-                        {alerts.data.map((alert) => {
+                        {filtered.map((alert) => {
                             const published = new Date(alert.created_at);
                             const publishedStr = published.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
@@ -590,7 +599,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/80">
-                                {alerts.data.map((alert) => (
+                                {filtered.map((alert) => (
                                     <AlertRow
                                         key={alert.id}
                                         alert={alert}
@@ -604,7 +613,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
                     </div>
 
                     {/* Empty state */}
-                    {alerts.data.length === 0 && (
+                    {filtered.length === 0 && (
                         <div className="flex flex-col items-center gap-4 py-20">
                             <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20">
                                 <Bell className="size-8 text-amber-400 dark:text-amber-500" />

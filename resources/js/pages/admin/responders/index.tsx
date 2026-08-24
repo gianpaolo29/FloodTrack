@@ -56,6 +56,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function AdminRespondersIndex({ responders, filters, teams_count }: Props) {
     const [showCreate, setShowCreate] = useState(false);
     const [editingResponder, setEditingResponder] = useState<Responder | null>(null);
+    const [searchValue, setSearchValue] = useState('');
 
     const handleDelete = async (r: Responder) => {
         const confirmed = await swalDelete(r.name);
@@ -63,16 +64,15 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
         router.delete(`/admin/responders/${r.id}`, { preserveScroll: true });
     };
 
-    const search = useCallback((value: string) => {
-        router.get('/admin/responders', { search: value || undefined }, {
-            preserveState: true,
-            replace: true,
-        });
-    }, []);
+    const filtered = responders.data.filter((r) => {
+        if (!searchValue) return true;
+        const q = searchValue.toLowerCase();
+        return r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q) || (r.contact_number ?? '').toLowerCase().includes(q) || (r.home_address ?? '').toLowerCase().includes(q) || (r.team_name ?? '').toLowerCase().includes(q);
+    });
 
-    const totalActive = responders.data.reduce((sum, r) => sum + r.active_assignments, 0);
-    const totalResolved = responders.data.reduce((sum, r) => sum + r.resolved_count, 0);
-    const hasFilters = !!filters.search;
+    const totalActive = filtered.reduce((sum, r) => sum + r.active_assignments, 0);
+    const totalResolved = filtered.reduce((sum, r) => sum + r.resolved_count, 0);
+    const hasFilters = !!searchValue;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -176,16 +176,14 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
                                 <input
                                     type="text"
                                     placeholder="Search responders..."
-                                    defaultValue={filters.search ?? ''}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') search((e.target as HTMLInputElement).value);
-                                    }}
+                                    value={searchValue}
+                                    onChange={(e) => setSearchValue(e.target.value)}
                                     className="h-9 w-52 rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-3 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-indigo-500 dark:focus:bg-neutral-900"
                                 />
                             </div>
-                            {filters.search && (
+                            {searchValue && (
                                 <button
-                                    onClick={() => router.get('/admin/responders')}
+                                    onClick={() => setSearchValue('')}
                                     className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 text-neutral-400 transition-colors hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
                                     title="Clear search"
                                 >
@@ -197,7 +195,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
 
                     {/* Mobile card view */}
                     <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
-                        {responders.data.map((r) => (
+                        {filtered.map((r) => (
                             <div key={r.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
                                 {r.avatar_url ? (
                                     <img src={r.avatar_url} alt={r.name} className="size-9 shrink-0 rounded-xl object-cover shadow-sm shadow-indigo-500/20" />
@@ -256,7 +254,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
-                                {responders.data.map((r) => (
+                                {filtered.map((r) => (
                                     <tr key={r.id} className="group transition-colors hover:bg-neutral-50/60 dark:hover:bg-neutral-800/20">
                                         <td className="px-5 py-4">
                                             <div className="flex items-center gap-3">
@@ -361,7 +359,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
                     </div>
 
                     {/* Empty state */}
-                    {responders.data.length === 0 && (
+                    {filtered.length === 0 && (
                         <div className="flex flex-col items-center gap-3 py-20">
                             <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/25">
                                 <ShieldCheck className="size-7 text-white" />

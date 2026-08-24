@@ -21,7 +21,7 @@ import {
     X,
     XCircle,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
@@ -150,14 +150,20 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
         router.get('/admin/reports', { status: filters.status }, { preserveState: false, replace: true });
     };
 
-    const hasExtraFilters = !!(filters.severity || filters.search || filters.team_id);
-    const allOnPageSelected = reports.data.length > 0 && reports.data.every((r) => selected.includes(r.id));
+    const filtered = reports.data.filter((r) => {
+        if (!searchValue) return true;
+        const q = searchValue.toLowerCase();
+        return r.reference_number.toLowerCase().includes(q) || (r.address ?? '').toLowerCase().includes(q) || (r.user?.name ?? '').toLowerCase().includes(q);
+    });
+
+    const hasExtraFilters = !!(filters.severity || searchValue || filters.team_id);
+    const allOnPageSelected = filtered.length > 0 && filtered.every((r) => selected.includes(r.id));
 
     const toggleAll = () => {
         if (allOnPageSelected) {
-            setSelected(selected.filter((id) => !reports.data.some((r) => r.id === id)));
+            setSelected(selected.filter((id) => !filtered.some((r) => r.id === id)));
         } else {
-            setSelected([...new Set([...selected, ...reports.data.map((r) => r.id)])]);
+            setSelected([...new Set([...selected, ...filtered.map((r) => r.id)])]);
         }
     };
 
@@ -284,7 +290,6 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
                                     type="text"
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
-                                    onKeyDown={(e) => { if (e.key === 'Enter') filter('search', searchValue); }}
                                     placeholder="Search reference or address…"
                                     className="h-9 w-56 rounded-xl border border-neutral-200/80 bg-white pl-9 pr-3 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-teal-500"
                                 />
@@ -346,7 +351,7 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
                                 )}
                             </AnimatePresence>
                             <AnimatePresence>
-                                {filters.search && (
+                                {searchValue && (
                                     <motion.span
                                         key="search-chip"
                                         initial={{ opacity: 0, scale: 0.88 }}
@@ -356,8 +361,8 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
                                         className="inline-flex items-center gap-1.5 rounded-full border border-teal-200/80 bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/30 dark:text-teal-400"
                                     >
                                         <Search className="size-3" />
-                                        "{filters.search}"
-                                        <button onClick={() => { setSearchValue(''); filter('search', ''); }} className="rounded-full hover:bg-teal-100 dark:hover:bg-teal-900/40">
+                                        &ldquo;{searchValue}&rdquo;
+                                        <button onClick={() => setSearchValue('')} className="rounded-full hover:bg-teal-100 dark:hover:bg-teal-900/40">
                                             <X className="size-3" />
                                         </button>
                                     </motion.span>
@@ -377,7 +382,7 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
                     </div>
 
                     {/* ── Content ── */}
-                    {reports.data.length === 0 ? (
+                    {filtered.length === 0 ? (
                         <div className="flex flex-col items-center gap-4 py-28">
                             <div className="relative flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-xl shadow-teal-500/25">
                                 <FileText className="size-7 text-white" />
@@ -394,7 +399,7 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
                         <>
                         {/* Mobile card view */}
                         <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
-                            {reports.data.map((report) => (
+                            {filtered.map((report) => (
                                 <Link key={report.id} href={`/admin/reports/${report.id}`}
                                     className="flex flex-col gap-2.5 px-4 py-4 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
                                     <div className="flex items-center justify-between gap-2">
@@ -446,7 +451,7 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/60">
-                                    {reports.data.map((report) => (
+                                    {filtered.map((report) => (
                                         <ReportRow
                                             key={report.id}
                                             report={report}

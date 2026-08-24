@@ -17,7 +17,7 @@ import {
     Users,
     X,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 
@@ -79,10 +79,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function AdminTeamsIndex({ teams, responders, filters }: Props) {
     const [showCreate, setShowCreate] = useState(false);
     const [editTarget, setEditTarget] = useState<Team | null>(null);
-
-    const search = useCallback((value: string) => {
-        router.get('/admin/teams', { search: value || undefined }, { preserveState: true, replace: true });
-    }, []);
+    const [searchValue, setSearchValue] = useState('');
 
     const handleDelete = useCallback(async (team: Team) => {
         const confirmed = await swalDelete(`team "${team.name}"`);
@@ -98,8 +95,14 @@ export default function AdminTeamsIndex({ teams, responders, filters }: Props) {
         });
     }, []);
 
-    const totalMembers   = teams.data.reduce((s, t) => s + t.members.length, 0);
-    const totalActive    = teams.data.reduce((s, t) => s + t.active_assignments, 0);
+    const filtered = teams.data.filter((t) => {
+        if (!searchValue) return true;
+        const q = searchValue.toLowerCase();
+        return t.name.toLowerCase().includes(q) || t.members.some((m) => m.name.toLowerCase().includes(q));
+    });
+
+    const totalMembers   = filtered.reduce((s, t) => s + t.members.length, 0);
+    const totalActive    = filtered.reduce((s, t) => s + t.active_assignments, 0);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -174,16 +177,14 @@ export default function AdminTeamsIndex({ teams, responders, filters }: Props) {
                                 <input
                                     type="text"
                                     placeholder="Search teams..."
-                                    defaultValue={filters.search ?? ''}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') search((e.target as HTMLInputElement).value);
-                                    }}
+                                    value={searchValue}
+                                    onChange={(e) => setSearchValue(e.target.value)}
                                     className="h-9 w-52 rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-3 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500"
                                 />
                             </div>
-                            {filters.search && (
+                            {searchValue && (
                                 <button
-                                    onClick={() => router.get('/admin/teams')}
+                                    onClick={() => setSearchValue('')}
                                     className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 text-neutral-400 transition-colors hover:border-neutral-300 hover:text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800"
                                     title="Clear search"
                                 >
@@ -194,7 +195,7 @@ export default function AdminTeamsIndex({ teams, responders, filters }: Props) {
                     </div>
 
                     {/* Team cards grid */}
-                    {teams.data.length === 0 ? (
+                    {filtered.length === 0 ? (
                         <div className="flex flex-col items-center gap-3 py-20">
                             <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25">
                                 <Users className="size-7 text-white" />
@@ -202,13 +203,13 @@ export default function AdminTeamsIndex({ teams, responders, filters }: Props) {
                             <div className="text-center">
                                 <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">No teams found</p>
                                 <p className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">
-                                    {filters.search ? 'Try adjusting your search.' : 'Create a team to get started.'}
+                                    {searchValue ? 'Try adjusting your search.' : 'Create a team to get started.'}
                                 </p>
                             </div>
                         </div>
                     ) : (
                         <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3">
-                            {teams.data.map((team) => (
+                            {filtered.map((team) => (
                                 <TeamCard
                                     key={team.id}
                                     team={team}

@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, History, Search, Sparkles, X } from 'lucide-react';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import type { ReportStatus, Severity } from '@/types/admin';
@@ -58,6 +58,8 @@ const ROLE_AVATAR: Record<string, string> = {
 };
 
 export default function AdminActivityLog({ activities, filters, stats, teams }: Props) {
+    const [searchValue, setSearchValue] = useState('');
+
     const filter = useCallback((key: string, value: string) => {
         router.get('/admin/activity', { ...filters, [key]: value || undefined }, {
             preserveState: true,
@@ -65,7 +67,18 @@ export default function AdminActivityLog({ activities, filters, stats, teams }: 
         });
     }, [filters]);
 
-    const hasFilters = !!(filters.status || filters.search || filters.team_id);
+    const filtered = activities.data.filter((a) => {
+        if (!searchValue) return true;
+        const q = searchValue.toLowerCase();
+        return (
+            (a.report?.reference_number ?? '').toLowerCase().includes(q) ||
+            (a.user?.name ?? '').toLowerCase().includes(q) ||
+            a.status.toLowerCase().includes(q) ||
+            (a.notes ?? '').toLowerCase().includes(q)
+        );
+    });
+
+    const hasFilters = !!(filters.status || searchValue || filters.team_id);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -143,10 +156,8 @@ export default function AdminActivityLog({ activities, filters, stats, teams }: 
                                 <input
                                     type="text"
                                     placeholder="Search reference…"
-                                    defaultValue={filters.search ?? ''}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') filter('search', (e.target as HTMLInputElement).value);
-                                    }}
+                                    value={searchValue}
+                                    onChange={(e) => setSearchValue(e.target.value)}
                                     className="h-9 w-48 rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-3 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-blue-500 dark:focus:bg-neutral-900"
                                 />
                             </div>
@@ -184,7 +195,7 @@ export default function AdminActivityLog({ activities, filters, stats, teams }: 
 
                             {hasFilters && (
                                 <button
-                                    onClick={() => router.get('/admin/activity')}
+                                    onClick={() => { setSearchValue(''); router.get('/admin/activity'); }}
                                     className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 text-neutral-400 transition-colors hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
                                     title="Clear filters"
                                 >
@@ -195,7 +206,7 @@ export default function AdminActivityLog({ activities, filters, stats, teams }: 
                     </div>
 
                     {/* Activity list */}
-                    {activities.data.length === 0 ? (
+                    {filtered.length === 0 ? (
                         <div className="flex flex-col items-center gap-4 py-20">
                             <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25">
                                 <History className="size-7 text-white" />
@@ -211,7 +222,7 @@ export default function AdminActivityLog({ activities, filters, stats, teams }: 
                         <>
                         {/* Mobile card view */}
                         <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
-                            {activities.data.map((a) => {
+                            {filtered.map((a) => {
                                 const userName = a.user?.name ?? 'Deleted User';
                                 const userRole = a.user?.role ?? 'resident';
                                 const reportId = a.report?.id;
@@ -263,7 +274,7 @@ export default function AdminActivityLog({ activities, filters, stats, teams }: 
 
                         {/* Desktop list view */}
                         <div className="hidden sm:block divide-y divide-neutral-100 dark:divide-neutral-800">
-                            {activities.data.map((a) => {
+                            {filtered.map((a) => {
                                 const userName = a.user?.name ?? 'Deleted User';
                                 const userRole = a.user?.role ?? 'resident';
                                 const reportId = a.report?.id;

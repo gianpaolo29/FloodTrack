@@ -102,18 +102,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats }:
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingCenter, setEditingCenter] = useState<EvacuationCenter | null>(null);
-
-    const allOnPageSelected = centers.data.length > 0 && centers.data.every((c) => selected.includes(c.id));
-    const toggleAll = () => {
-        if (allOnPageSelected) {
-            setSelected(selected.filter((id) => !centers.data.some((c) => c.id === id)));
-        } else {
-            setSelected([...new Set([...selected, ...centers.data.map((c) => c.id)])]);
-        }
-    };
-    const toggleOne = (id: number) => {
-        setSelected((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
-    };
+    const [searchValue, setSearchValue] = useState('');
 
     const filter = useCallback(
         (key: string, value: string) => {
@@ -125,7 +114,29 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats }:
         [filters],
     );
 
-    const hasFilters = !!(filters.search || filters.type || filters.active);
+    const filtered = centers.data.filter((c) => {
+        if (!searchValue) return true;
+        const q = searchValue.toLowerCase();
+        return (
+            c.name.toLowerCase().includes(q) ||
+            (c.address ?? '').toLowerCase().includes(q) ||
+            c.type.toLowerCase().includes(q)
+        );
+    });
+
+    const allOnPageSelected = filtered.length > 0 && filtered.every((c) => selected.includes(c.id));
+    const toggleAll = () => {
+        if (allOnPageSelected) {
+            setSelected(selected.filter((id) => !filtered.some((c) => c.id === id)));
+        } else {
+            setSelected([...new Set([...selected, ...filtered.map((c) => c.id)])]);
+        }
+    };
+    const toggleOne = (id: number) => {
+        setSelected((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
+    };
+
+    const hasFilters = !!(searchValue || filters.type || filters.active);
 
     const runBulkAction = async (action: 'delete' | 'activate' | 'deactivate') => {
         if (selected.length === 0) return;
@@ -352,18 +363,14 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats }:
                                 <input
                                     type="text"
                                     placeholder="Search centers..."
-                                    defaultValue={filters.search ?? ''}
+                                    value={searchValue}
+                                    onChange={(e) => setSearchValue(e.target.value)}
                                     className="h-9 w-52 rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-3 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter') {
-                                            filter('search', (e.target as HTMLInputElement).value);
-                                        }
-                                    }}
                                 />
                             </div>
                             {hasFilters && (
                                 <button
-                                    onClick={() => router.get('/admin/evacuation-centers')}
+                                    onClick={() => { setSearchValue(''); router.get('/admin/evacuation-centers'); }}
                                     className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-neutral-700 dark:hover:border-red-800/60 dark:hover:bg-red-950/30 dark:hover:text-red-400"
                                     title="Clear filters"
                                 >
@@ -375,7 +382,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats }:
 
                     {/* Mobile card view */}
                     <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
-                        {centers.data.map((center) => {
+                        {filtered.map((center) => {
                             const TypeIcon = TYPE_ICON[center.type];
                             const current = center.current_occupancy ?? 0;
                             const capacity = center.capacity ?? 0;
@@ -451,7 +458,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats }:
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/80">
-                                {centers.data.map((center) => (
+                                {filtered.map((center) => (
                                     <CenterRow
                                         key={center.id}
                                         center={center}
@@ -465,7 +472,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats }:
                     </div>
 
                     {/* Empty state */}
-                    {centers.data.length === 0 && (
+                    {filtered.length === 0 && (
                         <div className="flex flex-col items-center gap-4 py-20">
                             <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950/30 dark:to-blue-950/20">
                                 <Building2 className="size-8 text-sky-400 dark:text-sky-500" />
