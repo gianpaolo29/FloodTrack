@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\FacebookWebhookController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AlertController;
@@ -23,6 +24,10 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | All routes return JSON. Auth routes use Sanctum token (Bearer).
 */
+
+// ── Facebook Webhook (no auth required) ────────────────────────────────
+Route::get('/webhooks/facebook',  [FacebookWebhookController::class, 'verify']);
+Route::post('/webhooks/facebook', [FacebookWebhookController::class, 'handle']);
 
 // ── Public ──────────────────────────────────────────────────────────────
 Route::post('/register',       [AuthController::class, 'register']);
@@ -66,6 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/reports/{report}', [ReportController::class, 'update']);
     Route::delete('/reports/{report}', [ReportController::class, 'destroy']);
     Route::delete('/reports/{report}/media/{media}', [ReportController::class, 'destroyMedia']);
+    Route::post('/reports/{report}/mark-shared', [ReportController::class, 'markShared']);
 
     // ── Messages (auth handled by controller canAccess) ──────────────────
     Route::get('/reports/{report}/messages',  [IncidentMessageController::class, 'index']);

@@ -32,6 +32,8 @@ class Report extends Model
         'ai_exif_status',
         'ai_exif_notes',
         'potential_duplicate_of',
+        'source',
+        'facebook_post_id',
     ];
 
     protected $appends = ['hazard_type', 'sla_status'];

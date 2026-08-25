@@ -424,6 +424,23 @@ class ReportController extends Controller
         return response()->noContent();
     }
 
+    public function markShared(Request $request, Report $report)
+    {
+        if ((int) $request->user()->id !== (int) $report->user_id) {
+            return response()->json(['message' => 'You are not the owner of this report.'], 403);
+        }
+
+        $data = $request->validate([
+            'facebook_post_id' => 'nullable|string|max:255',
+        ]);
+
+        $report->update([
+            'facebook_post_id' => $data['facebook_post_id'] ?? 'shared',
+        ]);
+
+        return response()->json(['message' => 'Report marked as shared to Facebook.']);
+    }
+
     public function reject(Request $request, Report $report)
     {
         $request->validate(['notes' => 'nullable|string|max:500']);
