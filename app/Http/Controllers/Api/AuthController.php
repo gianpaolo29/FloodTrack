@@ -100,6 +100,7 @@ class AuthController extends Controller
         }
 
         // Find existing user by google_id or email
+        $isNewUser = false;
         $user = User::where('google_id', $googleId)->first()
              ?? User::where('email', $email)->first();
 
@@ -108,8 +109,13 @@ class AuthController extends Controller
             if (!$user->google_id) {
                 $user->update(['google_id' => $googleId]);
             }
+            // Auto-verify email if not yet verified
+            if (!$user->email_verified_at) {
+                $user->update(['email_verified_at' => now()]);
+            }
         } else {
             // Create new user
+            $isNewUser = true;
             $user = User::create([
                 'name'              => $name,
                 'email'             => $email,
@@ -130,6 +136,7 @@ class AuthController extends Controller
             'role'           => $user->role,
             'permissions'    => $user->permissions(),
             'needs_location' => is_null($user->home_latitude) || is_null($user->home_longitude),
+            'is_new_user'    => $isNewUser,
         ]);
     }
 
