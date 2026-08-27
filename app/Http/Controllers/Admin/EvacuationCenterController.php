@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\HasPeriodStats;
 use App\Models\EvacuationCenter;
 use App\Models\OccupancyLog;
 use App\Models\User;
@@ -17,6 +18,8 @@ use Inertia\Response;
 
 class EvacuationCenterController extends Controller
 {
+    use HasPeriodStats;
+
     public function index(Request $request): Response
     {
         $query = EvacuationCenter::query()->latest();
@@ -38,17 +41,37 @@ class EvacuationCenterController extends Controller
 
         $centers = $query->paginate(20)->withQueryString();
 
+        [$from, $to, $period] = $this->parsePeriod($request);
+        [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
+
+        $curTotal  = $this->scopeByPeriod(EvacuationCenter::query(), $from, $to)->count();
+        $curActive = $this->scopeByPeriod(EvacuationCenter::where('is_active', true), $from, $to)->count();
+
+        $prevTotal  = EvacuationCenter::whereBetween('created_at', [$prevFrom, $prevTo])->count();
+        $prevActive = EvacuationCenter::where('is_active', true)->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
         $stats = [
-            'total'           => EvacuationCenter::count(),
-            'active'          => EvacuationCenter::where('is_active', true)->count(),
+            'total'           => $curTotal,
+            'active'          => $curActive,
             'total_capacity'  => (int) EvacuationCenter::sum('capacity'),
             'total_occupancy' => (int) EvacuationCenter::sum('current_occupancy'),
         ];
 
+        $trends = [
+            'total'        => $this->calcTrend($curTotal, $prevTotal),
+            'active'       => $this->calcTrend($curActive, $prevActive),
+            'label'        => $trendLabel,
+            'period_label' => $periodLabel,
+        ];
+
         return Inertia::render('admin/evacuation-centers/index', [
-            'centers' => $centers,
-            'filters' => $request->only(['search', 'type', 'active']),
-            'stats'   => $stats,
+            'centers'     => $centers,
+            'filters'     => $request->only(['search', 'type', 'active']),
+            'stats'       => $stats,
+            'trends'      => $trends,
+            'period'      => $period,
+            'custom_from' => $request->get('from'),
+            'custom_to'   => $request->get('to'),
         ]);
     }
 

@@ -19,6 +19,10 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
+import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
+import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
+import type { InsightRow } from '@/lib/kpi-utils';
 import type { BreadcrumbItem } from '@/types';
 
 const modalSpring = { type: 'spring' as const, stiffness: 400, damping: 28 };
@@ -63,10 +67,28 @@ interface Paginated<T> {
     links: { url: string | null; label: string; active: boolean }[];
 }
 
+interface TeamStats {
+    total_teams: number;
+    total_responders: number;
+    in_teams: number;
+    unassigned: number;
+}
+
+interface Trends {
+    total_teams?: number;
+    label: string;
+    period_label: string;
+}
+
 interface Props {
     teams: Paginated<Team>;
     responders: Responder[];
     filters: { search?: string };
+    stats: TeamStats;
+    trends: Trends;
+    period: string;
+    custom_from?: string | null;
+    custom_to?: string | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -76,21 +98,26 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function AdminTeamsIndex({ teams, responders, filters }: Props) {
+export default function AdminTeamsIndex({ teams, responders, filters, stats, trends, period, custom_from, custom_to }: Props) {
     const [showCreate, setShowCreate] = useState(false);
     const [editTarget, setEditTarget] = useState<Team | null>(null);
     const [searchValue, setSearchValue] = useState('');
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
 
     const handleDelete = useCallback(async (team: Team) => {
         const confirmed = await swalDelete(`team "${team.name}"`);
         if (!confirmed) return;
         router.delete(`/admin/teams/${team.id}`, {
+            preserveState: false,
             onSuccess: () => swalSuccess('Deleted', 'Team has been deleted.'),
         });
     }, []);
 
     const handleToggle = useCallback((team: Team) => {
         router.post(`/admin/teams/${team.id}/toggle`, {}, {
+            preserveState: false,
             preserveScroll: true,
         });
     }, []);
@@ -101,8 +128,58 @@ export default function AdminTeamsIndex({ teams, responders, filters }: Props) {
         return t.name.toLowerCase().includes(q) || t.members.some((m) => m.name.toLowerCase().includes(q));
     });
 
-    const totalMembers   = filtered.reduce((s, t) => s + t.members.length, 0);
-    const totalActive    = filtered.reduce((s, t) => s + t.active_assignments, 0);
+    const tl = trends.label;
+    const assignedPct = stats.total_responders > 0 ? Math.round((stats.in_teams / stats.total_responders) * 100) : 0;
+    const avgPerTeam = stats.total_teams > 0 ? Math.round(stats.total_responders / stats.total_teams * 10) / 10 : 0;
+
+    function smartDesc(key: string): string {
+        switch (key) {
+            case 'total_teams': {
+                if (stats.total_teams === 0) return 'No teams created yet — organize responders into teams to improve coordination.';
+                const t = trends.total_teams;
+                const parts: string[] = [];
+                if (t > 0) parts.push(`Teams expanding (${Math.abs(t)}% ${tl}) — response capacity is growing.`);
+                else if (t === 0) parts.push(`Team count stable ${tl}.`);
+                if (avgPerTeam < 2) parts.push('Teams are understaffed — consider consolidating or recruiting more responders.');
+                else if (avgPerTeam > 6) parts.push('Large teams — consider splitting for better area coverage.');
+                else parts.push('Team sizes look balanced for effective coordination.');
+                if (stats.unassigned > 3) parts.push('Several responders still unassigned — form a new team or redistribute.');
+                return parts.join(' ');
+            }
+            case 'total_responders': {
+                if (stats.total_responders === 0) return 'No responders registered yet — add responders to start building teams.';
+                const parts: string[] = [];
+                if (assignedPct >= 90) parts.push('Nearly all responders are in teams — excellent organization.');
+                else if (assignedPct >= 60) parts.push('Most responders are assigned to teams — good coverage.');
+                else if (assignedPct > 0) parts.push('Less than half of responders are in teams — improve team assignments for better coordination.');
+                else parts.push('No responders assigned to teams yet — start organizing teams immediately.');
+                if (stats.unassigned > 5) parts.push('Enough unassigned responders to form new teams — consider expanding.');
+                else if (stats.unassigned > 0) parts.push('A few responders available for reassignment if needed.');
+                return parts.join(' ');
+            }
+            case 'in_teams': {
+                if (stats.in_teams === 0) return 'No responders assigned to teams yet — organize the workforce for coordinated response.';
+                const parts: string[] = [];
+                if (assignedPct >= 90) parts.push('Almost full team coverage — response coordination is strong.');
+                else if (assignedPct >= 60) parts.push('Good team coverage — continue assigning remaining responders for full coordination.');
+                else parts.push('Team coverage is low — many responders are operating without team coordination.');
+                if (avgPerTeam < 2) parts.push('Average team size is small — consolidate teams for better effectiveness.');
+                else parts.push('Team sizes are adequate for coordinated operations.');
+                return parts.join(' ');
+            }
+            case 'unassigned': {
+                if (stats.unassigned === 0) return 'All responders are assigned — full team coverage achieved. Great organization.';
+                const parts: string[] = [];
+                if (stats.unassigned >= 6) parts.push('Significant pool of unassigned responders — enough to form multiple new teams.');
+                else if (stats.unassigned >= 3) parts.push('Enough unassigned responders for a new team — consider organizing them.');
+                else parts.push('Small number of unassigned responders — assign them to existing teams for full coverage.');
+                if (assignedPct < 50) parts.push('Over half the workforce is unassigned — this limits coordinated response capability.');
+                else parts.push('Most responders are already organized — these are the remaining few.');
+                return parts.join(' ');
+            }
+            default: return '';
+        }
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -123,41 +200,78 @@ export default function AdminTeamsIndex({ teams, responders, filters }: Props) {
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => setShowCreate(true)}
-                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
-                    >
-                        <Plus className="size-4" />
-                        Create Team
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/teams" />
+                        <button
+                            onClick={() => setShowCreate(true)}
+                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
+                        >
+                            <Plus className="size-4" />
+                            Create Team
+                        </button>
+                    </div>
                 </div>
 
                 {/* Stat cards */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm shadow-violet-500/20">
-                            <Users className="size-4 text-white" />
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{teams.total}</p>
-                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Total Teams</p>
-                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">All registered teams</p>
-                    </div>
-                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 shadow-sm shadow-indigo-500/20">
-                            <ShieldCheck className="size-4 text-white" />
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{totalMembers}</p>
-                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Total Members</p>
-                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">Across all teams</p>
-                    </div>
-                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm shadow-emerald-500/20">
-                            <ClipboardList className="size-4 text-white" />
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{totalActive}</p>
-                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Active Assignments</p>
-                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">Currently deployed</p>
-                    </div>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                    <PrimaryStatCard
+                        label="Total Teams"
+                        value={stats.total_teams}
+                        trend={trends.total_teams}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('total_teams')}
+                        insights={[
+                            { label: 'In Teams', value: stats.in_teams, color: '#10b981' },
+                            { label: 'Unassigned', value: stats.unassigned, color: '#f59e0b' },
+                        ]}
+                        icon={Users}
+                        grad="from-indigo-500 via-violet-500 to-purple-500"
+                        shadow="shadow-indigo-500/40"
+                        alert={false}
+                        index={0}
+                        mounted={mounted}
+                    />
+                    <SecondaryStatCard
+                        icon={ShieldCheck}
+                        grad="from-blue-500 to-indigo-500"
+                        shadow="shadow-blue-500/25"
+                        value={stats.total_responders}
+                        label="Total Responders"
+                        desc={smartDesc('total_responders')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={300}
+                    />
+                    <SecondaryStatCard
+                        icon={Shield}
+                        grad="from-emerald-500 to-teal-500"
+                        shadow="shadow-emerald-500/25"
+                        value={stats.in_teams}
+                        label="In Teams"
+                        desc={smartDesc('in_teams')}
+                        insights={[
+                            { label: '% assigned', value: stats.total_responders > 0 ? `${Math.round((stats.in_teams / stats.total_responders) * 100)}%` : '0%', color: '#10b981' },
+                        ]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={400}
+                    />
+                    <SecondaryStatCard
+                        icon={Users}
+                        grad="from-amber-500 to-orange-500"
+                        shadow="shadow-amber-500/25"
+                        value={stats.unassigned}
+                        label="Unassigned"
+                        desc={smartDesc('unassigned')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={500}
+                    />
                 </div>
 
                 {/* Table card */}
@@ -172,25 +286,21 @@ export default function AdminTeamsIndex({ teams, responders, filters }: Props) {
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="relative">
+                            <div className="relative w-56">
                                 <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                                 <input
                                     type="text"
                                     placeholder="Search teams..."
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-52 rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-3 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500"
                                 />
+                                {searchValue && (
+                                    <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                        <X className="size-3.5" />
+                                    </button>
+                                )}
                             </div>
-                            {searchValue && (
-                                <button
-                                    onClick={() => setSearchValue('')}
-                                    className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 text-neutral-400 transition-colors hover:border-neutral-300 hover:text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800"
-                                    title="Clear search"
-                                >
-                                    <X className="size-4" />
-                                </button>
-                            )}
                         </div>
                     </div>
 
@@ -441,10 +551,12 @@ function TeamFormModal({
         e.preventDefault();
         if (isEdit) {
             form.put(`/admin/teams/${team!.id}`, {
+                preserveState: false,
                 onSuccess: () => { onClose(); swalSuccess('Updated', 'Team has been updated.'); },
             });
         } else {
             form.post('/admin/teams', {
+                preserveState: false,
                 onSuccess: () => { form.reset(); onClose(); swalSuccess('Created', 'Team has been created.'); },
             });
         }

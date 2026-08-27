@@ -1,14 +1,10 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useEffect, useRef, useState } from 'react';
-import ReactDOM from 'react-dom';
 import type { ApexOptions } from 'apexcharts';
 import {
     AlertTriangle,
     BarChart3,
-    Calendar,
     CheckCircle2,
-    ChevronLeft,
-    ChevronRight,
     Clock,
     CloudRain,
     Droplets,
@@ -22,7 +18,6 @@ import {
     TrendingUp,
     Trophy,
     Waves,
-    X,
     Zap,
 } from 'lucide-react';
 import ReactApexChart from 'react-apexcharts';
@@ -30,6 +25,13 @@ import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import type { Report, Alert as AlertType } from '@/types/admin';
 import { SEVERITY_COLORS as SEV, STATUS_COLORS as STA } from '@/types/admin';
+import { useCountUp } from '@/hooks/use-count-up';
+import { PERIODS, formatResponseTime } from '@/lib/kpi-utils';
+import type { InsightRow } from '@/lib/kpi-utils';
+import { KpiTooltip } from '@/components/admin/kpi/KpiTooltip';
+import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
+import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
+import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
 
 /* ─── Types ─── */
 interface Stats { total_reports: number; pending: number; active: number; resolved_today: number; total_users: number; total_responders: number }
@@ -66,14 +68,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/admin' },
 ];
 
-const PERIODS = [
-    { key: 'today', label: 'Today' },
-    { key: 'week',  label: 'This Week' },
-    { key: 'month', label: 'Monthly' },
-    { key: 'all',   label: 'All' },
-    { key: 'custom', label: 'Custom' },
-] as const;
-
 const DONUT_COLORS  = ['#ef4444', '#f97316', '#f59e0b', '#10b981'];
 const STATUS_COLORS = ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#94a3b8'];
 
@@ -91,333 +85,7 @@ function tooltipHtml(label: string, rows: { color: string; name: string; value: 
     </div>`;
 }
 
-/* ─── Count-up hook ─── */
-function useCountUp(target: number, active: boolean, delay = 0) {
-    const [value, setValue] = useState(0);
-    useEffect(() => {
-        if (!active || !target) return;
-        const timeout = setTimeout(() => {
-            const duration = 900;
-            let startTime: number | null = null;
-            const step = (ts: number) => {
-                if (!startTime) startTime = ts;
-                const progress = Math.min((ts - startTime) / duration, 1);
-                const eased = 1 - Math.pow(1 - progress, 3);
-                setValue(Math.round(eased * target));
-                if (progress < 1) requestAnimationFrame(step);
-            };
-            requestAnimationFrame(step);
-        }, delay);
-        return () => clearTimeout(timeout);
-    }, [active, target, delay]);
-    return value;
-}
-
-/* ─── Calendar Date Range Picker (portal) ─── */
-function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
-    fromDate: string | null; toDate: string | null;
-    onApply: (from: string, to: string) => void; onClose: () => void;
-    anchorRef: React.RefObject<HTMLDivElement | null>;
-}) {
-    const [viewDate, setViewDate] = useState(() => {
-        if (fromDate) return new Date(fromDate + 'T00:00:00');
-        return new Date();
-    });
-    const [rangeStart, setRangeStart] = useState<string | null>(fromDate ?? null);
-    const [rangeEnd, setRangeEnd] = useState<string | null>(toDate ?? null);
-    const [selecting, setSelecting] = useState<'start' | 'end'>('start');
-    const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-
-    const year = viewDate.getFullYear();
-    const month = viewDate.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-    useEffect(() => {
-        if (!anchorRef.current) return;
-        const rect = anchorRef.current.getBoundingClientRect();
-        const calW = 320;
-        let left = rect.right - calW;
-        if (left < 8) left = 8;
-        if (left + calW > window.innerWidth - 8) left = window.innerWidth - calW - 8;
-        setPos({ top: rect.bottom + 8, left });
-    }, [anchorRef]);
-
-    const days: (number | null)[] = [];
-    for (let i = 0; i < firstDay; i++) days.push(null);
-    for (let d = 1; d <= daysInMonth; d++) days.push(d);
-
-    const fmt = (d: number) => `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-
-    const isInRange = (dateStr: string) => {
-        if (!rangeStart || !rangeEnd) return false;
-        return dateStr >= rangeStart && dateStr <= rangeEnd;
-    };
-
-    const handleDayClick = (d: number) => {
-        const dateStr = fmt(d);
-        if (selecting === 'start') {
-            setRangeStart(dateStr);
-            setRangeEnd(null);
-            setSelecting('end');
-        } else {
-            if (rangeStart && dateStr < rangeStart) {
-                setRangeStart(dateStr);
-                setRangeEnd(rangeStart);
-            } else {
-                setRangeEnd(dateStr);
-            }
-            setSelecting('start');
-        }
-    };
-
-    const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
-    const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
-    const monthName = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-    const formatDisplay = (d: string | null) => {
-        if (!d) return '—';
-        const dt = new Date(d + 'T00:00:00');
-        return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    };
-
-    return ReactDOM.createPortal(
-        <div
-            className="calendar-portal fixed z-[9999] w-[320px] rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xl shadow-black/15 dark:border-neutral-700 dark:bg-neutral-900 animate-in fade-in slide-in-from-top-2 duration-200"
-            style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, opacity: pos ? 1 : 0 }}
-        >
-            <div className="mb-3 flex items-center justify-between">
-                <button onClick={prevMonth} className="flex size-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300">
-                    <ChevronLeft className="size-4" />
-                </button>
-                <span className="text-sm font-semibold text-neutral-800 dark:text-white">{monthName}</span>
-                <button onClick={nextMonth} className="flex size-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300">
-                    <ChevronRight className="size-4" />
-                </button>
-            </div>
-            <div className="mb-1 grid grid-cols-7 text-center">
-                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-                    <span key={d} className="py-1 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">{d}</span>
-                ))}
-            </div>
-            <div className="grid grid-cols-7 gap-y-0.5">
-                {days.map((d, i) => {
-                    if (d === null) return <span key={`e-${i}`} />;
-                    const dateStr = fmt(d);
-                    const isStart = dateStr === rangeStart;
-                    const isEnd = dateStr === rangeEnd;
-                    const inRange = isInRange(dateStr);
-                    const isToday = dateStr === todayStr;
-                    const isFuture = dateStr > todayStr;
-                    return (
-                        <button
-                            key={d}
-                            disabled={isFuture}
-                            onClick={() => handleDayClick(d)}
-                            className={`relative flex size-9 items-center justify-center text-xs font-medium transition-all mx-auto rounded-lg
-                                ${isFuture ? 'cursor-not-allowed text-neutral-200 dark:text-neutral-700' : 'cursor-pointer'}
-                                ${isStart || isEnd
-                                    ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/30'
-                                    : inRange
-                                        ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
-                                        : isToday
-                                            ? 'ring-1 ring-indigo-300 text-indigo-600 dark:ring-indigo-700 dark:text-indigo-400'
-                                            : !isFuture ? 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800' : ''
-                                }
-                            `}
-                        >
-                            {d}
-                        </button>
-                    );
-                })}
-            </div>
-            <div className="mt-3 flex items-center gap-2 rounded-xl bg-neutral-50 p-2.5 dark:bg-neutral-800/60">
-                <div className="flex-1 text-center">
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">From</p>
-                    <p className={`mt-0.5 text-xs font-bold ${rangeStart ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-300 dark:text-neutral-600'}`}>
-                        {formatDisplay(rangeStart)}
-                    </p>
-                </div>
-                <ChevronRight className="size-3 text-neutral-300 dark:text-neutral-600" />
-                <div className="flex-1 text-center">
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">To</p>
-                    <p className={`mt-0.5 text-xs font-bold ${rangeEnd ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-300 dark:text-neutral-600'}`}>
-                        {formatDisplay(rangeEnd)}
-                    </p>
-                </div>
-            </div>
-            <div className="mt-3 flex items-center gap-2">
-                <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2 text-[11px] font-semibold text-neutral-500 transition-all hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800">
-                    Cancel
-                </button>
-                <button
-                    onClick={() => { if (rangeStart && rangeEnd) onApply(rangeStart, rangeEnd); }}
-                    disabled={!rangeStart || !rangeEnd}
-                    className={`flex-1 rounded-xl py-2 text-[11px] font-semibold transition-all ${
-                        rangeStart && rangeEnd
-                            ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/30 hover:shadow-md hover:brightness-110'
-                            : 'bg-neutral-100 text-neutral-300 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-600'
-                    }`}
-                >
-                    Apply
-                </button>
-            </div>
-        </div>,
-        document.body
-    );
-}
-
-/* ─── KPI Tooltip ─── */
-interface InsightRow { label: string; value: string | number; color?: string }
-
-function KpiTooltip({ desc, insights, visible, parentRef }: {
-    desc: string; insights: InsightRow[];
-    visible: boolean; parentRef: React.RefObject<HTMLDivElement | null>;
-}) {
-    const tooltipRef = useRef<HTMLDivElement>(null);
-    const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-
-    useEffect(() => {
-        if (!visible || !parentRef.current) { setPos(null); return; }
-        const rect = parentRef.current.getBoundingClientRect();
-        const tooltipW = 260;
-
-        // Position below the card
-        const top = rect.bottom + 8;
-
-        // Center horizontally, clamp to screen edges
-        let left = rect.left + rect.width / 2;
-        left = Math.max(tooltipW / 2 + 8, Math.min(left, window.innerWidth - tooltipW / 2 - 8));
-
-        setPos({ top, left });
-    }, [visible, parentRef]);
-
-    if (!visible) return null;
-
-    return ReactDOM.createPortal(
-        <div
-            ref={tooltipRef}
-            className="fixed z-[9999] pointer-events-none"
-            style={{
-                top: pos?.top ?? -9999,
-                left: pos?.left ?? -9999,
-                transform: 'translate(-50%, 0)',
-                opacity: pos ? 1 : 0,
-            }}
-        >
-            {/* Arrow pointing up */}
-            <div className="flex justify-center mb-[-5px]">
-                <div className="size-2.5 rotate-45 bg-white/95 ring-1 ring-neutral-200/60 dark:bg-neutral-900/95 dark:ring-neutral-700/60" />
-            </div>
-            <div className="w-[260px] rounded-xl bg-white/95 backdrop-blur-xl px-4 py-3 shadow-2xl shadow-black/15 ring-1 ring-neutral-200/60 dark:bg-neutral-900/95 dark:ring-neutral-700/60 animate-in fade-in slide-in-from-top-2 duration-200">
-                {/* Insight rows */}
-                {insights.length > 0 && (
-                    <div className="flex flex-col gap-1.5 mb-2">
-                        {insights.map((row, i) => (
-                            <div key={i} className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: row.color ?? '#94a3b8' }} />
-                                    <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{row.label}</span>
-                                </div>
-                                <span className="text-[11px] font-bold tabular-nums text-neutral-800 dark:text-neutral-200">{row.value}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-                {/* Divider */}
-                {insights.length > 0 && (
-                    <div className="mb-2 h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-neutral-700" />
-                )}
-                {/* Description */}
-                <p className="text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">{desc}</p>
-            </div>
-        </div>,
-        document.body
-    );
-}
-
-/* ─── Primary Stat Card (count-up + stagger entrance) ─── */
-function PrimaryStatCard({ label, value, trend, trendLabel, desc, insights, icon: Icon, grad, shadow, alert, index, mounted }: {
-    label: string; value: number; trend?: number; trendLabel: string; desc: string; insights: InsightRow[]; icon: React.ElementType;
-    grad: string; shadow: string; alert: boolean; index: number; mounted: boolean;
-}) {
-    const count = useCountUp(value, mounted, index * 90);
-    const [showTooltip, setShowTooltip] = useState(false);
-    const cardRef = useRef<HTMLDivElement>(null);
-    return (
-        <div
-            ref={cardRef}
-            className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${grad} p-4 shadow-lg ${shadow} sm:p-5 transition-all duration-700 hover:scale-[1.02] hover:shadow-2xl cursor-pointer ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-            style={{ transitionDelay: `${index * 80}ms` }}
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-        >
-            <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} />
-            <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-xl transition-all duration-500 group-hover:size-32 group-hover:blur-2xl" />
-            <div className="pointer-events-none absolute -bottom-4 -left-4 size-16 rounded-full bg-black/10 blur-xl" />
-            {alert && (
-                <span className="absolute right-3 top-3 flex size-2.5">
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-white opacity-60" />
-                    <span className="relative inline-flex size-2.5 rounded-full bg-white shadow-sm" />
-                </span>
-            )}
-            <div className="relative flex items-start justify-between">
-                <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-semibold text-white/80 sm:text-xs">{label}</p>
-                    <p className="mt-2 text-2xl font-extrabold tabular-nums tracking-tight text-white sm:text-3xl">
-                        {count.toLocaleString()}
-                    </p>
-                    {trend !== undefined && (
-                        <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold text-white/90">
-                            <span className="inline-flex items-center gap-0.5 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px]">
-                                {trend >= 0 ? '▲' : '▼'} {Math.abs(trend)}%
-                            </span>
-                        </p>
-                    )}
-                    <p className="mt-0.5 text-[10px] text-white/55">{trendLabel}</p>
-                </div>
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm ring-1 ring-white/20 sm:size-11 transition-transform duration-300 group-hover:scale-110">
-                    <Icon className="size-5 text-white sm:size-[22px]" />
-                </div>
-            </div>
-        </div>
-    );
-}
-
-/* ─── Secondary Stat Card ─── */
-function SecondaryStatCard({ icon: Icon, grad, shadow, value, label, trend, desc, insights, trendLabel, periodLabel, mounted, delay }: {
-    icon: React.ElementType; grad: string; shadow: string; value: string | number; label: string;
-    trend?: number; desc: string; insights: InsightRow[]; trendLabel: string; periodLabel: string; mounted: boolean; delay: number;
-}) {
-    const [showTooltip, setShowTooltip] = useState(false);
-    const cardRef = useRef<HTMLDivElement>(null);
-    return (
-        <div
-            ref={cardRef}
-            className={`relative flex items-start justify-between gap-4 rounded-2xl border border-white/60 bg-white p-4 shadow-sm shadow-black/[0.04] transition-all duration-700 hover:shadow-md hover:scale-[1.01] cursor-pointer sm:p-5 dark:border-neutral-700/50 dark:bg-neutral-900 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
-            style={{ transitionDelay: `${delay}ms` }}
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-        >
-            <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} />
-            <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">{label}</p>
-                <p className="mt-1 text-xl font-extrabold tabular-nums tracking-tight text-neutral-900 sm:text-2xl dark:text-white">{typeof value === 'number' ? value.toLocaleString() : value}</p>
-                {trend !== undefined && (
-                    <span className={`mt-1 inline-flex items-center gap-1 text-[11px] font-semibold ${trend >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {trend >= 0 ? '▲' : '▼'} {Math.abs(trend)}%
-                    </span>
-                )}
-                <p className="text-[10px] text-neutral-400">{trendLabel}{periodLabel ? `, ${periodLabel}` : ''}</p>
-            </div>
-            <div className={`flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${grad} shadow-lg ${shadow}`}>
-                <Icon className="size-5 text-white" />
-            </div>
-        </div>
-    );
-}
+/* CalendarPicker, KpiTooltip, PrimaryStatCard, SecondaryStatCard, PeriodToggle — imported from shared kpi modules */
 
 /* ─── Card ─── */
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
@@ -454,24 +122,7 @@ export default function AdminDashboard({
     custom_from, custom_to,
 }: Props) {
     const [mounted, setMounted] = useState(false);
-    const [showCalendar, setShowCalendar] = useState(false);
-    const calendarRef = useRef<HTMLDivElement>(null);
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
-
-    // Close calendar on outside click
-    useEffect(() => {
-        if (!showCalendar) return;
-        const handler = (e: MouseEvent) => {
-            const target = e.target as Node;
-            if (calendarRef.current?.contains(target)) return;
-            // Check if click is inside the portal calendar
-            const portal = document.querySelector('.calendar-portal');
-            if (portal?.contains(target)) return;
-            setShowCalendar(false);
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [showCalendar]);
 
     const severityValues = [
         severity_breakdown['critical'] ?? 0,
@@ -504,24 +155,33 @@ export default function AdminDashboard({
         switch (key) {
             case 'total_reports': {
                 const t = trends.reports;
-                if (t === 0) return `Reports are steady ${tl} with no significant change. ${resolvedCount} have been resolved so far.`;
-                const dir = t > 0 ? 'increased' : 'decreased';
-                const parts = [`Reports ${dir} by ${Math.abs(t)}% ${tl}.`];
-                if (t > 20) parts.push('This is a significant spike — consider allocating more responders.');
-                else if (t < -20) parts.push('Activity is slowing down — a good time to clear the backlog.');
-                if (stats.pending > 0 && pendingPct > 30) parts.push(`${pendingPct}% of reports are still pending — review queue needs attention.`);
-                else if (resolvedCount > 0 && resolutionRate > 80) parts.push(`Strong resolution rate at ${resolutionRate}%.`);
+                const parts: string[] = [];
+                if (t === 0) parts.push(`Reports are steady ${tl} — no unusual activity.`);
+                else if (t > 20) parts.push(`Reports surged ${Math.abs(t)}% ${tl} — consider allocating more responders to handle the spike.`);
+                else if (t > 0) parts.push(`Reports are gradually rising (${Math.abs(t)}% ${tl}) — keep monitoring.`);
+                else if (t < -20) parts.push(`Reports dropped ${Math.abs(t)}% ${tl} — good time to clear the remaining backlog.`);
+                else parts.push(`Reports are easing slightly (${Math.abs(t)}% ${tl}) — situation is stabilizing.`);
+                if (resolutionRate >= 80) parts.push(`Strong performance with ${resolutionRate}% resolution rate.`);
+                else if (resolutionRate >= 50) parts.push(`Resolution rate at ${resolutionRate}% — push to close more open cases.`);
+                else if (stats.total_reports > 0) parts.push(`Only ${resolutionRate}% resolved — prioritize clearing the queue.`);
+                if (pendingPct > 30) parts.push('Pending queue is building up — speed up verification.');
+                if (reportsPerResponder > 8) parts.push('High workload per responder — consider adding more team members.');
                 return parts.join(' ');
             }
             case 'active_floods': {
                 const t = trends.active;
                 const parts: string[] = [];
-                if (stats.active === 0) return 'No active floods right now. All clear.';
-                if (criticalCount > 0) parts.push(`${criticalCount} critical flood${criticalCount > 1 ? 's' : ''} requiring immediate attention.`);
-                if (t > 0) parts.push(`Active floods up ${Math.abs(t)}% ${tl} — situation is escalating.`);
-                else if (t < 0) parts.push(`Active floods down ${Math.abs(t)}% ${tl} — situation is improving.`);
-                else parts.push(`Active floods unchanged ${tl}.`);
-                if (activePct > 50) parts.push(`${activePct}% of all reports are still active — resolution may be lagging.`);
+                if (stats.active === 0) return 'No active floods — all situations have been resolved. Great job by the response teams.';
+                if (t > 20) parts.push(`Active floods surging (${Math.abs(t)}% ${tl}) — escalate response and deploy additional teams.`);
+                else if (t > 0) parts.push(`Active floods rising (${Math.abs(t)}% ${tl}) — situation is getting worse, stay alert.`);
+                else if (t < -20) parts.push(`Active floods dropping fast (${Math.abs(t)}% ${tl}) — response effort is paying off.`);
+                else if (t < 0) parts.push(`Active floods declining (${Math.abs(t)}% ${tl}) — situation is gradually improving.`);
+                else parts.push(`Active floods holding steady ${tl} — no improvement yet.`);
+                if (activePct > 60) parts.push('Majority of reports remain unresolved — teams need to accelerate response.');
+                else if (activePct > 30) parts.push('Moderate activity level — maintain current pace.');
+                if (team_stats.deployed < Math.ceil(stats.active / 3) && stats.active > 0) parts.push('More teams should be deployed to cover the active areas.');
+                else if (team_stats.deployed > 0) parts.push('Team deployment looks adequate for current demand.');
+                if (stats.pending > 3) parts.push('Several reports still awaiting verification — speed up triage.');
                 return parts.join(' ');
             }
             case 'pending': {
@@ -614,24 +274,6 @@ export default function AdminDashboard({
             default: return '';
         }
     }
-
-    const setPeriod = (p: string) => {
-        if (p === 'custom') {
-            setShowCalendar(true);
-            return;
-        }
-        setShowCalendar(false);
-        router.get('/admin', { period: p }, { preserveState: true, preserveScroll: true });
-    };
-
-    const applyCustomRange = (from: string, to: string) => {
-        setShowCalendar(false);
-        router.get('/admin', { period: 'custom', from, to }, { preserveState: true, preserveScroll: true });
-    };
-
-    const customRangeLabel = custom_from && custom_to
-        ? `${new Date(custom_from + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(custom_to + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-        : null;
 
     /* ── Area Chart ── */
     const areaOptions: ApexOptions = {
@@ -774,44 +416,7 @@ export default function AdminDashboard({
                             <p className="mt-0.5 text-xs text-neutral-500 sm:text-sm dark:text-neutral-400">Overview of your flood tracking system</p>
                         </div>
                     </div>
-                    <div className="relative flex items-center rounded-xl border border-neutral-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/60" ref={calendarRef}>
-                        {PERIODS.map(({ key, label }) => (
-                            <button
-                                key={key}
-                                onClick={() => setPeriod(key)}
-                                className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                                    period === key || (key === 'custom' && showCalendar)
-                                        ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25'
-                                        : 'text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
-                                }`}
-                            >
-                                {key === 'custom' ? (
-                                    <span className="flex items-center gap-1">
-                                        <Calendar className="size-3" />
-                                        {period === 'custom' && customRangeLabel ? customRangeLabel : label}
-                                    </span>
-                                ) : label}
-                            </button>
-                        ))}
-                        {period === 'custom' && customRangeLabel && !showCalendar && (
-                            <button
-                                onClick={() => setPeriod('all')}
-                                className="ml-0.5 flex size-5 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
-                                title="Clear custom range"
-                            >
-                                <X className="size-3" />
-                            </button>
-                        )}
-                        {showCalendar && (
-                            <CalendarPicker
-                                fromDate={custom_from ?? null}
-                                toDate={custom_to ?? null}
-                                onApply={applyCustomRange}
-                                onClose={() => setShowCalendar(false)}
-                                anchorRef={calendarRef}
-                            />
-                        )}
-                    </div>
+                    <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin" />
                 </div>
 
                 {/* Primary Stats — full gradient cards */}
@@ -1134,17 +739,6 @@ export default function AdminDashboard({
             </div>
         </AppLayout>
     );
-}
-
-/* ─── Helpers ─── */
-
-function formatResponseTime(minutes: number): string {
-    if (minutes <= 0) return '—';
-    if (minutes < 1) return `${Math.round(minutes * 60)}s`;
-    if (minutes < 60) return `${Math.round(minutes)}m`;
-    const h = Math.floor(minutes / 60);
-    const m = Math.round(minutes % 60);
-    return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
 function Empty({ text }: { text: string }) {

@@ -4,8 +4,12 @@ import {
     AlertTriangle, ArrowDownAZ, ArrowUpDown, Bell, Calendar, ChevronDown, ChevronLeft, ChevronRight,
     FileText, Filter, Info, MapPin, Megaphone, Pencil, Plus, Save, Search, Send, Trash2, X,
 } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
+import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
+import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
+import type { InsightRow } from '@/lib/kpi-utils';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 import type { Alert } from '@/types/admin';
@@ -21,10 +25,23 @@ interface Paginated<T> {
     links: { url: string | null; label: string; active: boolean }[];
 }
 
+interface Trends {
+    total?: number;
+    critical?: number;
+    advisory?: number;
+    update?: number;
+    label: string;
+    period_label: string;
+}
+
 interface Props {
     alerts: Paginated<Alert>;
     filters: { search?: string; type?: string; sort?: string; dir?: string };
     stats: { total: number; critical: number; advisory: number; update: number };
+    trends: Trends;
+    period: string;
+    custom_from?: string | null;
+    custom_to?: string | null;
     barangays: string[];
 }
 
@@ -183,13 +200,16 @@ function BarangayMultiSelect({
    Main Page
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: Props) {
+export default function AdminAlertsIndex({ alerts, filters, stats, trends, period, custom_from, custom_to, barangays }: Props) {
     const [selected, setSelected] = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
     const [searchValue, setSearchValue] = useState('');
+    const [mounted, setMounted] = useState(false);
     const searchRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
 
     const form = useForm({
         title: '',
@@ -237,6 +257,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
     function submit(e: React.FormEvent) {
         e.preventDefault();
         form.post('/admin/alerts', {
+            preserveState: false,
             onSuccess: () => {
                 form.reset();
                 setShowCreateModal(false);
@@ -277,7 +298,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
             '/admin/alerts/bulk',
             { ids: selected, action: 'delete' },
             {
-                preserveState: true,
+                preserveState: false,
                 onFinish: () => { setBulkProcessing(false); setSelected([]); },
                 onSuccess: () => swalSuccess('Deleted', 'Selected alerts have been deleted.'),
             },
@@ -290,6 +311,67 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
         if (filters.sort !== field) return <ArrowUpDown className="size-3 text-neutral-300 dark:text-neutral-600" />;
         return <ArrowDownAZ className={`size-3 text-amber-500 ${filters.dir === 'asc' ? 'rotate-180' : ''}`} />;
     };
+
+    /* ── Smart KPI descriptions ── */
+
+    const tl = trends.label;
+    const criticalPct = stats.total > 0 ? Math.round((stats.critical / stats.total) * 100) : 0;
+    const advisoryPct = stats.total > 0 ? Math.round((stats.advisory / stats.total) * 100) : 0;
+
+    function smartDesc(key: string): string {
+        switch (key) {
+            case 'total': {
+                if (stats.total === 0) return 'No alerts published this period — conditions appear calm.';
+                const t = trends.total;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Alert volume surging (${Math.abs(t)}% ${tl}) — conditions are worsening, ensure all channels are active.`);
+                else if (t > 0) parts.push(`Alerts gradually increasing (${Math.abs(t)}% ${tl}) — stay vigilant for further escalation.`);
+                else if (t === 0) parts.push(`Alert volume is steady ${tl} — no significant change in conditions.`);
+                else if (t > -20) parts.push(`Alerts easing slightly (${Math.abs(t)}% ${tl}) — conditions may be improving.`);
+                else parts.push(`Alerts dropped sharply (${Math.abs(t)}% ${tl}) — situation is stabilizing.`);
+                if (criticalPct > 40) parts.push('Most alerts are critical — maintain heightened emergency posture.');
+                else if (criticalPct > 15) parts.push('Mix of critical and informational — prioritize critical alerts for immediate action.');
+                else if (stats.total > 0) parts.push('Mostly informational alerts — conditions are being monitored.');
+                return parts.join(' ');
+            }
+            case 'critical': {
+                if (stats.critical === 0) return 'No critical alerts — conditions are manageable. Continue monitoring for any changes.';
+                const t = trends.critical;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Critical alerts surging (${Math.abs(t)}% ${tl}) — activate emergency protocols and notify all teams.`);
+                else if (t > 0) parts.push(`Critical alerts rising (${Math.abs(t)}% ${tl}) — increase readiness and prepare for escalation.`);
+                else if (t < -20) parts.push(`Critical alerts dropping fast (${Math.abs(t)}% ${tl}) — emergency is receding, transition to recovery mode.`);
+                else if (t < 0) parts.push(`Critical alerts declining (${Math.abs(t)}% ${tl}) — situation is gradually improving.`);
+                else parts.push(`Critical alerts unchanged ${tl} — sustained emergency, maintain full response posture.`);
+                if (criticalPct > 50) parts.push('Majority of alerts are critical — all resources should be on high alert.');
+                else parts.push('Critical alerts are a portion of overall activity — balance response with monitoring.');
+                return parts.join(' ');
+            }
+            case 'advisory': {
+                if (stats.advisory === 0) return 'No advisories issued — either conditions are clear or focus is on critical alerts.';
+                const t = trends.advisory;
+                const parts: string[] = [];
+                if (t > 0) parts.push(`Advisories increasing (${Math.abs(t)}% ${tl}) — more areas being monitored.`);
+                else if (t < 0) parts.push(`Advisories decreasing (${Math.abs(t)}% ${tl}) — either conditions improved or situations escalated to critical.`);
+                else parts.push(`Advisory volume steady ${tl}.`);
+                if (stats.advisory > stats.critical) parts.push('More advisories than critical — situation is being watched but not yet severe.');
+                else parts.push('Fewer advisories than critical alerts — active emergency conditions dominate.');
+                return parts.join(' ');
+            }
+            case 'update': {
+                if (stats.update === 0) return 'No general updates this period — consider publishing status updates to keep residents informed.';
+                const t = trends.update;
+                const parts: string[] = [];
+                if (t > 0) parts.push(`Updates increasing (${Math.abs(t)}% ${tl}) — good communication cadence with residents.`);
+                else if (t < 0) parts.push(`Updates decreasing (${Math.abs(t)}% ${tl}) — consider keeping residents informed even as situations evolve.`);
+                else parts.push(`Update frequency steady ${tl}.`);
+                if (stats.critical > 0) parts.push('With active critical alerts, regular updates help reduce public anxiety.');
+                else parts.push('Routine updates keep the community prepared and informed.');
+                return parts.join(' ');
+            }
+            default: return '';
+        }
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -317,165 +399,81 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => { form.reset(); setShowCreateModal(true); }}
-                        className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-amber-500/20 transition-all hover:shadow-lg hover:shadow-amber-500/30 hover:brightness-110 active:scale-[0.97]"
-                    >
-                        <Plus className="size-4" />
-                        Publish Alert
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/alerts" />
+                        <button
+                            onClick={() => { form.reset(); setShowCreateModal(true); }}
+                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-amber-500/20 transition-all hover:shadow-lg hover:shadow-amber-500/30 hover:brightness-110 active:scale-[0.97]"
+                        >
+                            <Plus className="size-4" />
+                            Publish Alert
+                        </button>
+                    </div>
                 </div>
 
                 {/* ── Stats Row ── */}
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-                    {[
-                        { label: 'Total Alerts', value: stats.total, icon: Bell, color: 'amber', gradient: false },
-                        { label: 'Critical',     value: stats.critical, icon: AlertTriangle, color: 'red', gradient: true },
-                        { label: 'Advisory',     value: stats.advisory, icon: Info, color: 'blue', gradient: false },
-                        { label: 'Updates',      value: stats.update, icon: Megaphone, color: 'emerald', gradient: false },
-                    ].map((s) => (
-                        <div
-                            key={s.label}
-                            className={`rounded-2xl border p-4 shadow-sm transition-all sm:p-5 ${
-                                s.gradient
-                                    ? 'border-red-200/60 bg-gradient-to-br from-red-50 to-orange-50/60 dark:border-red-800/40 dark:from-red-950/30 dark:to-orange-950/20'
-                                    : 'border-neutral-200/80 bg-white dark:border-neutral-700/60 dark:bg-neutral-900'
-                            }`}
-                        >
-                            <div className="flex items-center justify-between">
-                                <p className={`text-[10px] font-semibold uppercase tracking-wider ${
-                                    s.gradient ? 'text-red-600 dark:text-red-500' : 'text-neutral-400 dark:text-neutral-500'
-                                }`}>
-                                    {s.label}
-                                </p>
-                                <div className={`flex size-8 items-center justify-center rounded-lg ${
-                                    s.color === 'amber'   ? 'bg-amber-50 dark:bg-amber-950/30' :
-                                    s.color === 'red'     ? 'bg-red-100 dark:bg-red-900/40' :
-                                    s.color === 'blue'    ? 'bg-blue-50 dark:bg-blue-950/30' :
-                                                            'bg-emerald-50 dark:bg-emerald-950/30'
-                                }`}>
-                                    <s.icon className={`size-4 ${
-                                        s.color === 'amber'   ? 'text-amber-500' :
-                                        s.color === 'red'     ? 'text-red-500' :
-                                        s.color === 'blue'    ? 'text-blue-500' :
-                                                                'text-emerald-500'
-                                    }`} />
-                                </div>
-                            </div>
-                            <p className={`mt-2 text-2xl font-bold tabular-nums sm:mt-3 sm:text-3xl ${
-                                s.gradient ? 'text-red-800 dark:text-red-300' : 'text-neutral-900 dark:text-neutral-100'
-                            }`}>
-                                {s.value}
-                            </p>
-                        </div>
-                    ))}
-                </div>
-
-                {/* ── Search / Filter / Sort Bar ── */}
-                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-                    {/* Search */}
-                    <div className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
-                        <input
-                            ref={searchRef}
-                            type="text"
-                            value={searchValue}
-                            onChange={(e) => setSearchValue(e.target.value)}
-                            placeholder="Search alerts..."
-                            className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-3 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-amber-500 sm:w-56"
-                        />
-                    </div>
-
-                    {/* Type filter */}
-                    <div className="flex items-center gap-1 rounded-xl border border-neutral-200/80 bg-white px-2 py-1 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-                        <Filter className="size-3.5 shrink-0 text-neutral-400" />
-                        <span className="pr-1 text-xs text-neutral-400">Type</span>
-                        {TYPE_FILTER_OPTIONS.map((opt) => {
-                            const active = filters.type === opt.value;
-                            return (
-                                <button
-                                    key={opt.value}
-                                    onClick={() => applyFilter('type', active ? '' : opt.value)}
-                                    className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
-                                        active
-                                            ? TYPE_STYLES[opt.value]
-                                            : 'text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
-                                    }`}
-                                >
-                                    {opt.label}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {/* Sort */}
-                    <div className="flex items-center gap-1 rounded-xl border border-neutral-200/80 bg-white px-2 py-1 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-                        <ArrowUpDown className="size-3.5 shrink-0 text-neutral-400" />
-                        <span className="pr-1 text-xs text-neutral-400">Sort</span>
-                        {SORT_OPTIONS.map((opt) => {
-                            const active = (filters.sort ?? 'created_at') === opt.value;
-                            return (
-                                <button
-                                    key={opt.value}
-                                    onClick={() => toggleSort(opt.value)}
-                                    className={`flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
-                                        active
-                                            ? 'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:ring-amber-500/20'
-                                            : 'text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
-                                    }`}
-                                >
-                                    {opt.label}
-                                    {active && <SortIcon field={opt.value} />}
-                                </button>
-                            );
-                        })}
-                    </div>
-
-                    {/* Active filter chips */}
-                    <AnimatePresence>
-                        {searchValue && (
-                            <motion.span
-                                key="search-chip"
-                                initial={{ opacity: 0, scale: 0.88 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.88 }}
-                                transition={{ duration: 0.15 }}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/80 bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-700 dark:border-amber-800/40 dark:bg-amber-950/30 dark:text-amber-400"
-                            >
-                                <Search className="size-3" />
-                                &ldquo;{searchValue}&rdquo;
-                                <button onClick={() => setSearchValue('')} className="rounded-full p-0.5 hover:bg-amber-100 dark:hover:bg-amber-900/40">
-                                    <X className="size-3" />
-                                </button>
-                            </motion.span>
-                        )}
-                        {filters.type && (
-                            <motion.span
-                                key="type-chip"
-                                initial={{ opacity: 0, scale: 0.88 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.88 }}
-                                transition={{ duration: 0.15 }}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-orange-200/80 bg-orange-50 px-2.5 py-1 text-xs font-medium capitalize text-orange-700 dark:border-orange-800/40 dark:bg-orange-950/30 dark:text-orange-400"
-                            >
-                                <Filter className="size-3" />
-                                {filters.type}
-                                <button onClick={() => applyFilter('type', '')} className="rounded-full p-0.5 hover:bg-orange-100 dark:hover:bg-orange-900/40">
-                                    <X className="size-3" />
-                                </button>
-                            </motion.span>
-                        )}
-                    </AnimatePresence>
-
-                    {hasActiveFilters && (
-                        <button
-                            onClick={clearFilters}
-                            className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-500 transition-all hover:bg-neutral-100 hover:text-neutral-700 active:scale-95 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                        >
-                            <X className="size-3.5" />
-                            Clear
-                        </button>
-                    )}
+                    <PrimaryStatCard
+                        label="Total Alerts"
+                        value={stats.total}
+                        trend={trends.total}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('total')}
+                        insights={[
+                            { label: 'Critical', value: stats.critical, color: '#ef4444' },
+                            { label: 'Advisory', value: stats.advisory, color: '#3b82f6' },
+                        ]}
+                        icon={Bell}
+                        grad="from-amber-500 via-orange-500 to-yellow-500"
+                        shadow="shadow-amber-500/40"
+                        alert={false}
+                        index={0}
+                        mounted={mounted}
+                    />
+                    <PrimaryStatCard
+                        label="Critical"
+                        value={stats.critical}
+                        trend={trends.critical}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('critical')}
+                        insights={[
+                            { label: '% of total', value: stats.total > 0 ? `${Math.round((stats.critical / stats.total) * 100)}%` : '0%', color: '#ef4444' },
+                        ]}
+                        icon={AlertTriangle}
+                        grad="from-red-500 via-rose-500 to-pink-500"
+                        shadow="shadow-red-500/40"
+                        alert={stats.critical > 0}
+                        index={1}
+                        mounted={mounted}
+                    />
+                    <SecondaryStatCard
+                        icon={Info}
+                        grad="from-amber-500 to-orange-500"
+                        shadow="shadow-amber-500/25"
+                        value={stats.advisory}
+                        label="Advisory"
+                        trend={trends.advisory}
+                        desc={smartDesc('advisory')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={400}
+                    />
+                    <SecondaryStatCard
+                        icon={Megaphone}
+                        grad="from-emerald-500 to-teal-500"
+                        shadow="shadow-emerald-500/25"
+                        value={stats.update}
+                        label="Updates"
+                        trend={trends.update}
+                        desc={smartDesc('update')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={500}
+                    />
                 </div>
 
                 {/* ── Bulk action bar ── */}
@@ -512,7 +510,92 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
                 </AnimatePresence>
 
                 {/* ── Table Card ── */}
-                <div className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+
+                    {/* Animated top border */}
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500/25 to-transparent" />
+
+                    {/* ── Toolbar ── */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 bg-neutral-50/50 px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/30">
+                        <div className="flex items-center gap-2.5">
+                            <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">All Alerts</span>
+                            <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-bold text-amber-600 dark:bg-amber-400/10 dark:text-amber-400">
+                                {alerts.total}
+                            </span>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2">
+                            {/* Search */}
+                            <div className="relative w-56">
+                                <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                                <input
+                                    ref={searchRef}
+                                    type="text"
+                                    value={searchValue}
+                                    onChange={(e) => setSearchValue(e.target.value)}
+                                    placeholder="Search alerts..."
+                                    className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-amber-500"
+                                />
+                                {searchValue && (
+                                    <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                        <X className="size-3.5" />
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Type filter */}
+                            <div className="flex items-center gap-1 rounded-xl border border-neutral-200/80 bg-white px-2 py-1 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
+                                <Filter className="size-3.5 shrink-0 text-neutral-400" />
+                                <span className="pr-1 text-xs text-neutral-400">Type</span>
+                                {TYPE_FILTER_OPTIONS.map((opt) => {
+                                    const active = filters.type === opt.value;
+                                    return (
+                                        <button
+                                            key={opt.value}
+                                            onClick={() => applyFilter('type', active ? '' : opt.value)}
+                                            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                                                active
+                                                    ? TYPE_STYLES[opt.value]
+                                                    : 'text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
+                                            }`}
+                                        >
+                                            {opt.label}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Active filter chips */}
+                            <AnimatePresence>
+                                {filters.type && (
+                                    <motion.span
+                                        key="type-chip"
+                                        initial={{ opacity: 0, scale: 0.88 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.88 }}
+                                        transition={{ duration: 0.15 }}
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-orange-200/80 bg-orange-50 px-2.5 py-1 text-xs font-medium capitalize text-orange-700 dark:border-orange-800/40 dark:bg-orange-950/30 dark:text-orange-400"
+                                    >
+                                        <Filter className="size-3" />
+                                        {filters.type}
+                                        <button onClick={() => applyFilter('type', '')} className="rounded-full p-0.5 hover:bg-orange-100 dark:hover:bg-orange-900/40">
+                                            <X className="size-3" />
+                                        </button>
+                                    </motion.span>
+                                )}
+                            </AnimatePresence>
+
+                            {hasActiveFilters && (
+                                <button
+                                    onClick={clearFilters}
+                                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-500 transition-all hover:bg-neutral-100 hover:text-neutral-700 active:scale-95 dark:text-neutral-400 dark:hover:bg-neutral-800"
+                                >
+                                    <X className="size-3.5" />
+                                    Clear
+                                </button>
+                            )}
+                        </div>
+                    </div>
 
                     {/* Mobile card view */}
                     <div className="block divide-y divide-neutral-100 sm:hidden dark:divide-neutral-800">
@@ -569,10 +652,10 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
 
                     {/* Desktop table */}
                     <div className="hidden overflow-x-auto sm:block">
-                        <table className="w-full">
+                        <table className="w-full min-w-[720px] border-collapse text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-100 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-800/40">
-                                    <th className="w-12 px-5 py-3 text-center">
+                                <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                    <th className="w-12 px-5 py-3.5 text-center">
                                         <input
                                             type="checkbox"
                                             checked={allOnPageSelected}
@@ -580,25 +663,30 @@ export default function AdminAlertsIndex({ alerts, filters, stats, barangays }: 
                                             className="size-3.5 rounded border-neutral-300 text-amber-500 focus:ring-amber-500/20 dark:border-neutral-600"
                                         />
                                     </th>
-                                    <th className="px-5 py-3 text-left">
-                                        <button onClick={() => toggleSort('title')} className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
+                                    <th className="px-4 py-3.5 text-left">
+                                        <button onClick={() => toggleSort('title')} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
                                             Alert <SortIcon field="title" />
                                         </button>
                                     </th>
-                                    <th className="px-5 py-3 text-left">
-                                        <button onClick={() => toggleSort('type')} className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
+                                    <th className="px-4 py-3.5 text-left">
+                                        <button onClick={() => toggleSort('type')} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
                                             Type <SortIcon field="type" />
                                         </button>
                                     </th>
-                                    <th className="px-5 py-3 text-left">
-                                        <button onClick={() => toggleSort('created_at')} className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
+                                    <th className="px-4 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 dark:text-neutral-500">
+                                        Target
+                                    </th>
+                                    <th className="px-4 py-3.5 text-left">
+                                        <button onClick={() => toggleSort('created_at')} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
                                             Published <SortIcon field="created_at" />
                                         </button>
                                     </th>
-                                    <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
+                                    <th className="px-4 py-3.5 text-right text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 dark:text-neutral-500">
+                                        Actions
+                                    </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/80">
+                            <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/60">
                                 {filtered.map((alert) => (
                                     <AlertRow
                                         key={alert.id}
@@ -846,6 +934,7 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
         editForm.put(`/admin/alerts/${alert.id}`, {
+            preserveState: false,
             onSuccess: () => {
                 onClose();
                 swalSuccess('Alert Updated', 'Changes have been saved.');
@@ -954,6 +1043,7 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
                             onClick={async () => {
                                 const confirmed = await swalDelete('this alert');
                                 if (confirmed) deleteForm.delete(`/admin/alerts/${alert.id}`, {
+                                    preserveState: false,
                                     onSuccess: () => swalSuccess('Deleted', 'Alert has been deleted.'),
                                 });
                             }}
@@ -1023,7 +1113,7 @@ function AlertRow({
             </td>
 
             {/* Alert */}
-            <td className="px-5 py-4">
+            <td className="px-4 py-4">
                 <div className="flex items-center gap-3">
                     <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
                         alert.type === 'critical' ? 'bg-red-100 dark:bg-red-950/50' :
@@ -1043,32 +1133,36 @@ function AlertRow({
                 </div>
             </td>
 
-            {/* Type + barangay */}
-            <td className="px-5 py-4">
-                <div className="flex flex-wrap items-center gap-1.5">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${TYPE_STYLES[alert.type] ?? TYPE_STYLES.update}`}>
-                        {alert.type}
+            {/* Type */}
+            <td className="px-4 py-4">
+                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${TYPE_STYLES[alert.type] ?? TYPE_STYLES.update}`}>
+                    {alert.type}
+                </span>
+            </td>
+
+            {/* Target */}
+            <td className="px-4 py-4">
+                {alert.target_barangays && alert.target_barangays.length > 0 ? (
+                    <span
+                        className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-600 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-700/40"
+                        title={alert.target_barangays.join(', ')}
+                    >
+                        <MapPin className="size-2.5" />
+                        {alert.target_barangays.length} brgy
                     </span>
-                    {alert.target_barangays && alert.target_barangays.length > 0 && (
-                        <span
-                            className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-600 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-700/40"
-                            title={alert.target_barangays.join(', ')}
-                        >
-                            <MapPin className="size-2.5" />
-                            {alert.target_barangays.length} brgy
-                        </span>
-                    )}
-                </div>
+                ) : (
+                    <span className="text-xs text-neutral-400 dark:text-neutral-500">All users</span>
+                )}
             </td>
 
             {/* Published */}
-            <td className="whitespace-nowrap px-5 py-4">
+            <td className="whitespace-nowrap px-4 py-4">
                 <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">{publishedDate}</p>
                 <p className="mt-0.5 text-[11px] text-neutral-400 dark:text-neutral-500">{publishedTime}</p>
             </td>
 
             {/* Actions */}
-            <td className="px-5 py-4">
+            <td className="px-4 py-4">
                 <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                         onClick={onEdit}

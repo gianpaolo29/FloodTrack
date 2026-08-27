@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\HasPeriodStats;
 use App\Models\Alert;
 use App\Models\User;
 use App\Notifications\NewAlertPublished;
@@ -17,6 +18,8 @@ use Inertia\Response;
 
 class AlertController extends Controller
 {
+    use HasPeriodStats;
+
     /** Get distinct home_address values from users table. */
     private static function distinctBarangays(): array
     {
@@ -43,18 +46,44 @@ class AlertController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        [$from, $to, $period] = $this->parsePeriod($request);
+        [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
+
+        $curTotal    = $this->scopeByPeriod(Alert::query(), $from, $to)->count();
+        $curCritical = $this->scopeByPeriod(Alert::where('type', 'critical'), $from, $to)->count();
+        $curAdvisory = $this->scopeByPeriod(Alert::where('type', 'advisory'), $from, $to)->count();
+        $curUpdate   = $this->scopeByPeriod(Alert::where('type', 'update'), $from, $to)->count();
+
+        $prevTotal    = Alert::whereBetween('created_at', [$prevFrom, $prevTo])->count();
+        $prevCritical = Alert::where('type', 'critical')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+        $prevAdvisory = Alert::where('type', 'advisory')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+        $prevUpdate   = Alert::where('type', 'update')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
         $stats = [
-            'total'    => Alert::count(),
-            'critical' => Alert::where('type', 'critical')->count(),
-            'advisory' => Alert::where('type', 'advisory')->count(),
-            'update'   => Alert::where('type', 'update')->count(),
+            'total'    => $curTotal,
+            'critical' => $curCritical,
+            'advisory' => $curAdvisory,
+            'update'   => $curUpdate,
+        ];
+
+        $trends = [
+            'total'        => $this->calcTrend($curTotal, $prevTotal),
+            'critical'     => $this->calcTrend($curCritical, $prevCritical),
+            'advisory'     => $this->calcTrend($curAdvisory, $prevAdvisory),
+            'update'       => $this->calcTrend($curUpdate, $prevUpdate),
+            'label'        => $trendLabel,
+            'period_label' => $periodLabel,
         ];
 
         return Inertia::render('admin/alerts/index', [
-            'alerts'     => $alerts,
-            'filters'    => $request->only(['search', 'type', 'sort', 'dir']),
-            'stats'      => $stats,
-            'barangays'  => self::distinctBarangays(),
+            'alerts'      => $alerts,
+            'filters'     => $request->only(['search', 'type', 'sort', 'dir']),
+            'stats'       => $stats,
+            'trends'      => $trends,
+            'period'      => $period,
+            'custom_from' => $request->get('from'),
+            'custom_to'   => $request->get('to'),
+            'barangays'   => self::distinctBarangays(),
         ]);
     }
 

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\ReportsExport;
 use App\Http\Controllers\Controller;
+use App\Http\Traits\HasPeriodStats;
 use App\Models\Report;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -14,19 +16,41 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ExportController extends Controller
 {
-    public function index(): Response
+    use HasPeriodStats;
+
+    public function index(Request $request): Response
     {
-        $counts = [
-            'total'    => Report::count(),
-            'pending'  => Report::where('status', 'pending')->count(),
-            'verified' => Report::where('status', 'verified')->count(),
-            'assigned' => Report::where('status', 'assigned')->count(),
-            'resolved' => Report::where('status', 'resolved')->count(),
-            'rejected' => Report::where('status', 'rejected')->count(),
+        [$from, $to, $period] = $this->parsePeriod($request);
+        [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
+
+        $curTotal = $this->scopeByPeriod(Report::query(), $from, $to)->count();
+        $prevTotal = Report::whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
+        $curResolved = $this->scopeByPeriod(Report::where('status', 'resolved'), $from, $to)->count();
+        $prevResolved = Report::where('status', 'resolved')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
+        $stats = [
+            'total'    => $curTotal,
+            'pending'  => $this->scopeByPeriod(Report::where('status', 'pending'), $from, $to)->count(),
+            'verified' => $this->scopeByPeriod(Report::where('status', 'verified'), $from, $to)->count(),
+            'assigned' => $this->scopeByPeriod(Report::where('status', 'assigned'), $from, $to)->count(),
+            'resolved' => $curResolved,
+            'rejected' => $this->scopeByPeriod(Report::where('status', 'rejected'), $from, $to)->count(),
+        ];
+
+        $trends = [
+            'total'        => $this->calcTrend($curTotal, $prevTotal),
+            'resolved'     => $this->calcTrend($curResolved, $prevResolved),
+            'label'        => $trendLabel,
+            'period_label' => $periodLabel,
         ];
 
         return Inertia::render('admin/export/index', [
-            'counts' => $counts,
+            'stats'       => $stats,
+            'trends'      => $trends,
+            'period'      => $period,
+            'custom_from' => $request->get('from'),
+            'custom_to'   => $request->get('to'),
         ]);
     }
 
@@ -110,51 +134,73 @@ class ExportController extends Controller
             'date_to'     => 'nullable|date|before_or_equal:today|after_or_equal:date_from',
         ]);
 
-        $reports = Report::with(['user:id,name', 'assignedResponder:id,name', 'assignedTeam:id,name'])
+        $reportQuery = Report::query()
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
             ->when($request->date_from, fn ($q) => $q->whereDate('created_at', '>=', $request->date_from))
-            ->when($request->date_to, fn ($q) => $q->whereDate('created_at', '<=', $request->date_to))
+            ->when($request->date_to, fn ($q) => $q->whereDate('created_at', '<=', $request->date_to));
+
+        $reports = (clone $reportQuery)
+            ->with(['user:id,name', 'assignedResponder:id,name', 'assignedTeam:id,name'])
             ->latest()
             ->limit(10000)
             ->get();
+
+        // Stats for the summary sheet
+        $stats = [
+            'total_reports' => (clone $reportQuery)->count(),
+            'pending'       => (clone $reportQuery)->where('status', 'pending')->count(),
+            'verified'      => (clone $reportQuery)->where('status', 'verified')->count(),
+            'assigned'      => (clone $reportQuery)->where('status', 'assigned')->count(),
+            'resolved'      => (clone $reportQuery)->where('status', 'resolved')->count(),
+            'rejected'      => (clone $reportQuery)->where('status', 'rejected')->count(),
+        ];
+
+        $severityBreakdown = (clone $reportQuery)
+            ->selectRaw('severity, count(*) as count')
+            ->groupBy('severity')
+            ->pluck('count', 'severity');
+
+        $statusBreakdown = (clone $reportQuery)
+            ->selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        $topResponders = User::where('role', 'responder')
+            ->withCount(['assignedReports as resolved_count' => fn ($q) => $q->where('status', 'resolved')])
+            ->withCount('assignedReports as total_assigned')
+            ->orderByDesc('resolved_count')
+            ->limit(5)
+            ->get(['id', 'name', 'email']);
+
+        $periodLabel = 'All Reports';
+        if ($request->date_from && $request->date_to) {
+            $periodLabel = "{$request->date_from} to {$request->date_to}";
+        } elseif ($request->date_from) {
+            $periodLabel = "From {$request->date_from}";
+        } elseif ($request->date_to) {
+            $periodLabel = "Up to {$request->date_to}";
+        }
 
         $parts = ['floodtrack-reports'];
         if ($request->status)   $parts[] = $request->status;
         if ($request->severity) $parts[] = $request->severity;
         $parts[] = now()->format('Y-m-d');
-        $filename = implode('-', $parts) . '.csv';
+        $filename = implode('-', $parts) . '.xlsx';
 
-        return response()->streamDownload(function () use ($reports) {
-            $handle = fopen('php://output', 'w');
+        $export = new ReportsExport(
+            $reports,
+            $stats,
+            $severityBreakdown,
+            $statusBreakdown,
+            $topResponders,
+            $periodLabel,
+        );
 
-            fputcsv($handle, [
-                'Reference', 'Severity', 'Status',
-                'Description', 'Address', 'Latitude', 'Longitude',
-                'Reporter', 'Assigned To', 'Team', 'Created At', 'Verified At', 'Resolved At',
-            ]);
-
-            foreach ($reports as $report) {
-                fputcsv($handle, [
-                    $report->reference_number,
-                    $report->severity,
-                    $report->status,
-                    $report->description,
-                    $report->address,
-                    $report->latitude,
-                    $report->longitude,
-                    $report->user?->name ?? '',
-                    $report->assignedResponder?->name ?? '',
-                    $report->assignedTeam?->name ?? '',
-                    $report->created_at,
-                    $report->verified_at,
-                    $report->resolved_at,
-                ]);
-            }
-
-            fclose($handle);
+        return response()->streamDownload(function () use ($export, $filename) {
+            $export->download($filename);
         }, $filename, [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
     }
 }

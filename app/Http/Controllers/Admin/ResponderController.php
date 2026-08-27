@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\HasPeriodStats;
 use App\Models\Report;
 use App\Models\Team;
 use App\Models\User;
@@ -18,8 +19,37 @@ use Inertia\Response;
 
 class ResponderController extends Controller
 {
+    use HasPeriodStats;
+
     public function index(Request $request): Response
     {
+        [$from, $to, $period] = $this->parsePeriod($request);
+        [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
+
+        $curTotal = $this->scopeByPeriod(User::where('role', 'responder'), $from, $to)->count();
+        $prevTotal = User::where('role', 'responder')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
+        $curActive = $this->scopeByPeriod(Report::where('status', 'assigned'), $from, $to)->count();
+        $prevActive = Report::where('status', 'assigned')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
+        $curResolved = $this->scopeByPeriod(Report::where('status', 'resolved'), $from, $to)->count();
+        $prevResolved = Report::where('status', 'resolved')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
+        $stats = [
+            'total'              => $curTotal,
+            'active_assignments' => $curActive,
+            'total_resolved'     => $curResolved,
+            'in_teams'           => User::where('role', 'responder')->whereNotNull('team_id')->count(),
+        ];
+
+        $trends = [
+            'total'              => $this->calcTrend($curTotal, $prevTotal),
+            'active_assignments' => $this->calcTrend($curActive, $prevActive),
+            'total_resolved'     => $this->calcTrend($curResolved, $prevResolved),
+            'label'              => $trendLabel,
+            'period_label'       => $periodLabel,
+        ];
+
         $responders = User::where('role', 'responder')
             ->with('team:id,name,leader_id,is_active')
             ->when($request->search, fn ($q) => $q->where(function ($q2) use ($request) {
@@ -50,6 +80,11 @@ class ResponderController extends Controller
             'responders'   => $responders,
             'filters'      => $request->only(['search']),
             'teams_count'  => Team::count(),
+            'stats'        => $stats,
+            'trends'       => $trends,
+            'period'       => $period,
+            'custom_from'  => $request->get('from'),
+            'custom_to'    => $request->get('to'),
         ]);
     }
 

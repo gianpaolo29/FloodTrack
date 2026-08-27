@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use App\Notifications\WelcomeNotification;
 use Illuminate\Validation\ValidationException;
 
@@ -71,6 +72,64 @@ class AuthController extends Controller
                 'responder' => '/responder/dashboard',
                 'resident'  => '/dashboard',
             },
+        ]);
+    }
+
+    public function google(Request $request)
+    {
+        $request->validate([
+            'id_token' => 'required|string',
+        ]);
+
+        // Verify the Google ID token
+        $response = Http::get('https://oauth2.googleapis.com/tokeninfo', [
+            'id_token' => $request->id_token,
+        ]);
+
+        if ($response->failed()) {
+            return response()->json(['message' => 'Invalid Google token.'], 401);
+        }
+
+        $payload = $response->json();
+        $googleId = $payload['sub'] ?? null;
+        $email    = $payload['email'] ?? null;
+        $name     = $payload['name'] ?? trim(($payload['given_name'] ?? '') . ' ' . ($payload['family_name'] ?? ''));
+
+        if (!$googleId || !$email) {
+            return response()->json(['message' => 'Could not retrieve Google account info.'], 401);
+        }
+
+        // Find existing user by google_id or email
+        $user = User::where('google_id', $googleId)->first()
+             ?? User::where('email', $email)->first();
+
+        if ($user) {
+            // Link google_id if not set yet
+            if (!$user->google_id) {
+                $user->update(['google_id' => $googleId]);
+            }
+        } else {
+            // Create new user
+            $user = User::create([
+                'name'              => $name,
+                'email'             => $email,
+                'google_id'         => $googleId,
+                'password'          => Hash::make(str()->random(32)),
+                'role'              => 'resident',
+                'email_verified_at' => now(),
+            ]);
+            $user->notify(new WelcomeNotification);
+        }
+
+        $user->tokens()->delete();
+        $token = $user->createToken('mobile')->plainTextToken;
+
+        return response()->json([
+            'user'           => $user,
+            'token'          => $token,
+            'role'           => $user->role,
+            'permissions'    => $user->permissions(),
+            'needs_location' => is_null($user->home_latitude) || is_null($user->home_longitude),
         ]);
     }
 

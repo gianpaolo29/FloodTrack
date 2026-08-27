@@ -13,36 +13,26 @@ import {
     X,
     XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
+import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
+import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
+import type { InsightRow } from '@/lib/kpi-utils';
 import type { BreadcrumbItem } from '@/types';
 
-interface ReportCounts {
-    total: number;
-    pending: number;
-    verified: number;
-    assigned: number;
-    resolved: number;
-    rejected: number;
-}
-
 interface Props {
-    counts: ReportCounts;
+    stats: { total: number; pending: number; verified: number; assigned: number; resolved: number; rejected: number };
+    trends: { total: number; resolved: number; label: string; period_label: string };
+    period: string;
+    custom_from: string | null;
+    custom_to: string | null;
 }
 
 interface ExportErrors {
     dateFrom?: string;
     dateTo?: string;
     general?: string;
-}
-
-interface SummaryCardProps {
-    icon: React.ComponentType<{ className?: string }>;
-    iconBg: string;
-    iconColor: string;
-    value: number;
-    label: string;
-    valueColor?: string;
 }
 
 interface FilterFieldProps {
@@ -60,7 +50,10 @@ const STATUS_OPTIONS   = ['', 'pending', 'verified', 'assigned', 'resolved', 're
 const SEVERITY_OPTIONS = ['', 'critical', 'high', 'moderate', 'low'];
 const EXPORT_LIMIT     = 10_000;
 
-export default function AdminExport({ counts }: Props) {
+export default function AdminExport({ stats, trends, period, custom_from, custom_to }: Props) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+
     const [status,   setStatus]   = useState('');
     const [severity, setSeverity] = useState('');
     const [dateFrom, setDateFrom] = useState('');
@@ -112,6 +105,75 @@ export default function AdminExport({ counts }: Props) {
         setErrors({});
     }
 
+    const tl = trends.label;
+    const resolutionRate = stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0;
+    const pendingPct = stats.total > 0 ? Math.round((stats.pending / stats.total) * 100) : 0;
+    const rejectedPct = stats.total > 0 ? Math.round((stats.rejected / stats.total) * 100) : 0;
+
+    function smartDesc(key: string): string {
+        switch (key) {
+            case 'total': {
+                if (stats.total === 0) return 'No reports in the export pool this period.';
+                const t = trends.total;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Report volume surging (${Math.abs(t)}% ${tl}) — larger exports expected.`);
+                else if (t > 0) parts.push(`Report volume increasing (${Math.abs(t)}% ${tl}).`);
+                else if (t === 0) parts.push(`Volume is steady ${tl}.`);
+                else parts.push(`Report volume decreasing (${Math.abs(t)}% ${tl}) — fewer records to export.`);
+                if (resolutionRate >= 70) parts.push(`Strong resolution rate at ${resolutionRate}% — export will show mostly completed cases.`);
+                else if (resolutionRate >= 40) parts.push(`${resolutionRate}% resolved — export will include a mix of open and closed cases.`);
+                else if (stats.total > 0) parts.push('Most reports are still open — export reflects ongoing operations.');
+                return parts.join(' ');
+            }
+            case 'pending': {
+                if (stats.pending === 0) return 'No pending reports — all have been processed through the pipeline.';
+                const parts: string[] = [];
+                if (pendingPct > 40) parts.push('High pending ratio — verification is falling behind. Exported data will show many unprocessed cases.');
+                else if (pendingPct > 20) parts.push('Moderate pending volume — verification is keeping up but could be faster.');
+                else parts.push('Low pending ratio — verification pipeline is working efficiently.');
+                return parts.join(' ');
+            }
+            case 'verified': {
+                if (stats.verified === 0) return 'No reports in verified status — they\'ve either moved to assignment or are still pending.';
+                const parts: string[] = [];
+                if (stats.verified > stats.assigned) parts.push('More verified than assigned — reports are waiting for responder assignment. Speed up the handoff.');
+                else parts.push('Verified reports are moving to assignment quickly — good pipeline flow.');
+                if (stats.pending > stats.verified) parts.push('Pending backlog is larger — verification needs to catch up.');
+                return parts.join(' ');
+            }
+            case 'assigned': {
+                if (stats.assigned === 0) return 'No reports currently assigned — either resolved quickly or awaiting assignment.';
+                const parts: string[] = [];
+                if (stats.assigned > stats.resolved) parts.push('More cases in progress than resolved — responders are actively working through the queue.');
+                else parts.push('Fewer active than resolved — teams are clearing cases faster than new ones come in.');
+                if (stats.pending > 0) parts.push('Some reports still pending — ensure the pipeline keeps moving from verification to assignment.');
+                return parts.join(' ');
+            }
+            case 'resolved': {
+                if (stats.resolved === 0) return 'No reports resolved yet — focus on moving cases through the pipeline to completion.';
+                const t = trends.resolved;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Resolutions surging (${Math.abs(t)}% ${tl}) — strong completion momentum.`);
+                else if (t > 0) parts.push(`Resolutions improving (${Math.abs(t)}% ${tl}) — teams are making progress.`);
+                else if (t < 0) parts.push(`Resolutions slowing (${Math.abs(t)}% ${tl}) — investigate potential blockers.`);
+                else parts.push(`Resolution pace steady ${tl}.`);
+                if (resolutionRate >= 70) parts.push('Export will primarily contain completed cases — good data for analysis.');
+                else parts.push('Export includes significant open cases — useful for tracking ongoing operations.');
+                return parts.join(' ');
+            }
+            case 'rejected': {
+                if (stats.rejected === 0) return 'No rejections — all submissions passed validation. Good data quality.';
+                const parts: string[] = [];
+                if (rejectedPct > 20) parts.push('High rejection rate — review submission criteria or provide better guidance to reporters.');
+                else if (rejectedPct > 10) parts.push('Moderate rejection rate — some submissions don\'t meet standards, consider clearer guidelines.');
+                else parts.push('Low rejection rate — submissions are generally valid and well-formed.');
+                if (stats.pending > stats.rejected) parts.push('Pending queue is larger than rejections — verification quality looks balanced.');
+                return parts.join(' ');
+            }
+            default: return '';
+        }
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Export" />
@@ -119,63 +181,106 @@ export default function AdminExport({ counts }: Props) {
             <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* ─── Header ─── */}
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                        Export Reports
-                    </h1>
-                    <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                        Download report data as CSV with optional filters. Export is capped at {EXPORT_LIMIT.toLocaleString()} records.
-                    </p>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                            Export Reports
+                        </h1>
+                        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                            Download report data as Excel with optional filters. Export is capped at {EXPORT_LIMIT.toLocaleString()} records.
+                        </p>
+                    </div>
+                    <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/export" />
                 </div>
 
-                {/* ─── Summary cards ─── */}
-                <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-                    <SummaryCard
+                {/* ─── KPI Stats ─── */}
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                    <PrimaryStatCard
+                        label="Total Reports"
+                        value={stats.total}
+                        trend={trends.total}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('total')}
+                        insights={[
+                            { label: 'Pending', value: stats.pending, color: '#f59e0b' },
+                            { label: 'Resolved', value: stats.resolved, color: '#10b981' },
+                        ]}
                         icon={FileText}
-                        iconBg="bg-blue-50 dark:bg-blue-900/30"
-                        iconColor="text-blue-500"
-                        value={counts.total}
-                        label="Total"
+                        grad="from-blue-500 via-indigo-500 to-violet-500"
+                        shadow="shadow-blue-500/40"
+                        alert={false}
+                        index={0}
+                        mounted={mounted}
                     />
-                    <SummaryCard
+                    <SecondaryStatCard
                         icon={Clock}
-                        iconBg="bg-amber-50 dark:bg-amber-900/30"
-                        iconColor="text-amber-500"
-                        value={counts.pending}
+                        grad="from-amber-500 to-orange-500"
+                        shadow="shadow-amber-500/25"
+                        value={stats.pending}
                         label="Pending"
-                        valueColor="text-amber-600 dark:text-amber-400"
+                        trend={undefined}
+                        desc={smartDesc('pending')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={300}
                     />
-                    <SummaryCard
+                    <SecondaryStatCard
                         icon={ShieldCheck}
-                        iconBg="bg-sky-50 dark:bg-sky-900/30"
-                        iconColor="text-sky-500"
-                        value={counts.verified}
+                        grad="from-blue-500 to-sky-500"
+                        shadow="shadow-blue-500/25"
+                        value={stats.verified}
                         label="Verified"
-                        valueColor="text-sky-600 dark:text-sky-400"
+                        trend={undefined}
+                        desc={smartDesc('verified')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={400}
                     />
-                    <SummaryCard
+                    <SecondaryStatCard
                         icon={Users}
-                        iconBg="bg-violet-50 dark:bg-violet-900/30"
-                        iconColor="text-violet-500"
-                        value={counts.assigned}
+                        grad="from-purple-500 to-violet-500"
+                        shadow="shadow-purple-500/25"
+                        value={stats.assigned}
                         label="Assigned"
-                        valueColor="text-violet-600 dark:text-violet-400"
+                        trend={undefined}
+                        desc={smartDesc('assigned')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={500}
                     />
-                    <SummaryCard
+                    <SecondaryStatCard
                         icon={CheckCircle2}
-                        iconBg="bg-emerald-50 dark:bg-emerald-900/30"
-                        iconColor="text-emerald-500"
-                        value={counts.resolved}
+                        grad="from-emerald-500 to-teal-500"
+                        shadow="shadow-emerald-500/25"
+                        value={stats.resolved}
                         label="Resolved"
-                        valueColor="text-emerald-600 dark:text-emerald-400"
+                        trend={trends.resolved}
+                        desc={smartDesc('resolved')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={600}
                     />
-                    <SummaryCard
+                    <SecondaryStatCard
                         icon={XCircle}
-                        iconBg="bg-red-50 dark:bg-red-900/30"
-                        iconColor="text-red-400"
-                        value={counts.rejected}
+                        grad="from-neutral-400 to-neutral-500"
+                        shadow="shadow-neutral-400/25"
+                        value={stats.rejected}
                         label="Rejected"
-                        valueColor="text-red-500 dark:text-red-400"
+                        trend={undefined}
+                        desc={smartDesc('rejected')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={700}
                     />
                 </div>
 
@@ -219,7 +324,7 @@ export default function AdminExport({ counts }: Props) {
                         </div>
                         <div>
                             <h2 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                                CSV Export
+                                Excel Export
                             </h2>
                             <p className="text-[11px] text-neutral-400">Filter by status, severity, or date range · All filters optional</p>
                         </div>
@@ -308,7 +413,7 @@ export default function AdminExport({ counts }: Props) {
                                 className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
                             >
                                 <FileDown className="size-4" />
-                                Download CSV
+                                Download Excel
                             </a>
 
                             {hasFilters && (
@@ -348,18 +453,3 @@ function FilterField({ label, error, children }: FilterFieldProps) {
     );
 }
 
-function SummaryCard({ icon: Icon, iconBg, iconColor, value, label, valueColor }: SummaryCardProps) {
-    return (
-        <div className="group relative rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900">
-            <div className="flex items-center justify-between">
-                <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">{label}</p>
-                <div className={`flex size-9 items-center justify-center rounded-xl ${iconBg} transition-transform group-hover:scale-110`}>
-                    <Icon className={`size-[18px] ${iconColor}`} />
-                </div>
-            </div>
-            <p className={`mt-2 text-3xl font-bold tabular-nums tracking-tight ${valueColor ?? 'text-neutral-900 dark:text-white'}`}>
-                {value.toLocaleString()}
-            </p>
-        </div>
-    );
-}

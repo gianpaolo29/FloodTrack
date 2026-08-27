@@ -12,6 +12,7 @@ import {
     Pencil,
     Plus,
     Search,
+    Sparkles,
     Trash2,
     Users2,
     X,
@@ -19,6 +20,10 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
+import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
+import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
+import type { InsightRow } from '@/lib/kpi-utils';
 import type { BreadcrumbItem } from '@/types';
 import type { AdminUser } from '@/types/admin';
 
@@ -38,6 +43,11 @@ interface Filters {
 interface Props {
     users: Paginated<AdminUser>;
     filters: Filters;
+    stats: { total: number; new: number; with_address: number; verified: number };
+    trends: { total: number; new: number; label: string; period_label: string };
+    period: string;
+    custom_from: string | null;
+    custom_to: string | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -55,7 +65,10 @@ function cleanAddress(raw: string): string {
 
 const PLUS_CODE_RE = /^[0-9A-Z]{4,8}\+[0-9A-Z]{2,3}$/i;
 
-export default function AdminUsersIndex({ users, filters }: Props) {
+export default function AdminUsersIndex({ users, filters, stats, trends, period, custom_from, custom_to }: Props) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+
     const [showCreate, setShowCreate] = useState(false);
     const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
     const [selected, setSelected] = useState<number[]>([]);
@@ -90,7 +103,7 @@ export default function AdminUsersIndex({ users, filters }: Props) {
         }
         setBulkProcessing(true);
         router.post('/admin/users/bulk', { ids: selected, action }, {
-            preserveState: true,
+            preserveState: false,
             onFinish: () => { setBulkProcessing(false); setSelected([]); },
             onSuccess: () => swalSuccess('Done', `Bulk ${action} completed successfully.`),
         });
@@ -100,13 +113,68 @@ export default function AdminUsersIndex({ users, filters }: Props) {
         const confirmed = await swalDelete('this resident');
         if (!confirmed) return;
         router.delete(`/admin/users/${id}`, {
-            preserveState: true,
+            preserveState: false,
             onSuccess: () => swalSuccess('Deleted', 'Resident has been deleted.'),
         });
     };
 
-    const withAddressCount  = filtered.filter((u) => !!u.home_address).length;
-    const verifiedCount = filtered.filter((u) => !!u.email_verified_at).length;
+    const tl = trends.label;
+    const addressPct = stats.total > 0 ? Math.round((stats.with_address / stats.total) * 100) : 0;
+    const verifiedPct = stats.total > 0 ? Math.round((stats.verified / stats.total) * 100) : 0;
+    const newPct = stats.total > 0 ? Math.round((stats.new / stats.total) * 100) : 0;
+
+    function smartDesc(key: string): string {
+        switch (key) {
+            case 'total': {
+                if (stats.total === 0) return 'No residents registered yet — promote the platform to increase adoption.';
+                const t = trends.total;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`User base growing rapidly (${Math.abs(t)}% ${tl}) — great adoption momentum.`);
+                else if (t > 0) parts.push(`User base growing steadily (${Math.abs(t)}% ${tl}) — adoption is healthy.`);
+                else if (t === 0) parts.push(`User count stable ${tl} — consider outreach to drive more signups.`);
+                if (verifiedPct >= 80) parts.push('High email verification rate — communications are reliable.');
+                else if (verifiedPct >= 50) parts.push('Moderate verification — encourage unverified users to confirm their emails.');
+                else parts.push('Low verification rate — many residents may miss critical flood alerts.');
+                if (addressPct < 50) parts.push('Most residents lack home addresses — location-based alerts won\'t reach them.');
+                return parts.join(' ');
+            }
+            case 'new': {
+                if (stats.new === 0) return 'No new registrations this period — consider running awareness campaigns to attract more residents.';
+                const t = trends.new;
+                const parts: string[] = [];
+                if (t > 30) parts.push(`Registration surge (${Math.abs(t)}% ${tl}) — possibly driven by recent flood events. Ensure onboarding is smooth.`);
+                else if (t > 0) parts.push(`Registrations increasing (${Math.abs(t)}% ${tl}) — platform awareness is growing.`);
+                else if (t < -20) parts.push(`Registrations dropping (${Math.abs(t)}% ${tl}) — interest may be fading, consider outreach campaigns.`);
+                else if (t < 0) parts.push(`Registrations slowing slightly (${Math.abs(t)}% ${tl}) — normal fluctuation.`);
+                else parts.push(`Registration pace steady ${tl}.`);
+                if (verifiedPct < 60) parts.push('Encourage new users to verify emails for reliable alert delivery.');
+                if (addressPct < 50) parts.push('Prompt new users to add home addresses for location-based notifications.');
+                return parts.join(' ');
+            }
+            case 'with_address': {
+                if (stats.with_address === 0) return 'No residents have home addresses set — location-based flood alerts cannot be delivered. Run a campaign to collect addresses.';
+                const parts: string[] = [];
+                if (addressPct >= 80) parts.push('Excellent address coverage — most residents can receive location-based flood alerts.');
+                else if (addressPct >= 50) parts.push('Moderate address coverage — push notifications can reach most residents but gaps remain.');
+                else parts.push('Low address coverage — many residents won\'t receive location-specific flood warnings.');
+                if (addressPct < verifiedPct) parts.push('More users verified email than added addresses — address collection needs focus.');
+                else if (addressPct > verifiedPct) parts.push('Address coverage exceeds email verification — prioritize email verification next.');
+                return parts.join(' ');
+            }
+            case 'verified': {
+                if (stats.verified === 0) return 'No verified emails — residents won\'t receive email alerts. Send verification reminders urgently.';
+                const parts: string[] = [];
+                if (verifiedPct >= 90) parts.push('Outstanding verification rate — email communication is highly reliable.');
+                else if (verifiedPct >= 70) parts.push('Good verification rate — most residents are reachable via email.');
+                else if (verifiedPct >= 50) parts.push('Moderate verification — a significant portion may miss email-based alerts.');
+                else parts.push('Low verification rate — critical alerts via email won\'t reach most residents. Send reminders.');
+                if (verifiedPct > addressPct) parts.push('Email verification leads address coverage — focus on collecting home addresses next.');
+                else if (addressPct > verifiedPct) parts.push('Address coverage is higher — push email verification to match.');
+                return parts.join(' ');
+            }
+            default: return '';
+        }
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -129,47 +197,76 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => setShowCreate(true)}
-                        className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-500/20 transition-all hover:shadow-lg hover:shadow-violet-500/30 hover:brightness-110 active:scale-[0.97]"
-                    >
-                        <Plus className="size-4" />
-                        Add Resident
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/users" />
+                        <button
+                            onClick={() => setShowCreate(true)}
+                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-500/20 transition-all hover:shadow-lg hover:shadow-violet-500/30 hover:brightness-110 active:scale-[0.97]"
+                        >
+                            <Plus className="size-4" />
+                            Add Resident
+                        </button>
+                    </div>
                 </div>
 
-                {/* ── Stats Row ── */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Total</p>
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-violet-50 dark:bg-violet-950/30">
-                                <Users2 className="size-4 text-violet-500" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{users.total}</p>
-                        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">registered residents</p>
-                    </div>
-                    <div className="rounded-2xl border border-violet-200/60 bg-gradient-to-br from-violet-50 to-purple-50/60 p-5 shadow-sm dark:border-violet-800/40 dark:from-violet-950/30 dark:to-purple-950/20">
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-500">With Address</p>
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/40">
-                                <MapPin className="size-4 text-violet-500" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-violet-800 dark:text-violet-300">{withAddressCount}</p>
-                        <p className="mt-1 text-xs text-violet-600/70 dark:text-violet-500/70">on this page</p>
-                    </div>
-                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Verified</p>
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/30">
-                                <CheckCircle2 className="size-4 text-emerald-500" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-emerald-700 dark:text-emerald-300">{verifiedCount}</p>
-                        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">verified emails on this page</p>
-                    </div>
+                {/* ── KPI Stats ── */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <PrimaryStatCard
+                        label="Total Residents"
+                        value={stats.total}
+                        trend={trends.total}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('total')}
+                        insights={[{ label: 'With Address', value: stats.with_address }, { label: 'Verified', value: stats.verified }]}
+                        icon={Users2}
+                        grad="from-blue-500 via-indigo-500 to-violet-500"
+                        shadow="shadow-blue-500/40"
+                        alert={false}
+                        index={0}
+                        mounted={mounted}
+                    />
+                    <PrimaryStatCard
+                        label="New This Period"
+                        value={stats.new}
+                        trend={trends.new}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('new')}
+                        insights={[]}
+                        icon={Sparkles}
+                        grad="from-cyan-500 via-sky-500 to-blue-500"
+                        shadow="shadow-cyan-500/40"
+                        alert={false}
+                        index={1}
+                        mounted={mounted}
+                    />
+                    <SecondaryStatCard
+                        icon={MapPin}
+                        grad="from-violet-500 to-purple-500"
+                        shadow="shadow-violet-500/25"
+                        value={stats.with_address}
+                        label="With Address"
+                        trend={undefined}
+                        desc={smartDesc('with_address')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={400}
+                    />
+                    <SecondaryStatCard
+                        icon={CheckCircle2}
+                        grad="from-emerald-500 to-teal-500"
+                        shadow="shadow-emerald-500/25"
+                        value={stats.verified}
+                        label="Verified Email"
+                        trend={undefined}
+                        desc={smartDesc('verified')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={500}
+                    />
                 </div>
 
                 {/* ── Bulk action bar ── */}
@@ -217,25 +314,21 @@ export default function AdminUsersIndex({ users, filters }: Props) {
                             </span>
                         </p>
                         <div className="flex items-center gap-2">
-                            <div className="relative">
+                            <div className="relative w-56">
                                 <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                                 <input
                                     type="text"
                                     placeholder="Search residents..."
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-52 rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-3 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
                                 />
+                                {searchValue && (
+                                    <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                        <X className="size-3.5" />
+                                    </button>
+                                )}
                             </div>
-                            {hasFilters && (
-                                <button
-                                    onClick={() => setSearchValue('')}
-                                    className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-neutral-700 dark:hover:border-red-800/60 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-                                    title="Clear search"
-                                >
-                                    <X className="size-3.5" />
-                                </button>
-                            )}
                         </div>
                     </div>
 
@@ -540,9 +633,9 @@ function UserFormModal({
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (isEdit) {
-            form.put(`/admin/users/${user!.id}`, { onSuccess: () => { onClose(); swalSuccess('Success', 'Resident updated successfully.'); } });
+            form.put(`/admin/users/${user!.id}`, { preserveState: false, onSuccess: () => { onClose(); swalSuccess('Success', 'Resident updated successfully.'); } });
         } else {
-            form.post('/admin/users', { onSuccess: () => { form.reset(); onClose(); swalSuccess('Success', 'Resident added successfully.'); } });
+            form.post('/admin/users', { preserveState: false, onSuccess: () => { form.reset(); onClose(); swalSuccess('Success', 'Resident added successfully.'); } });
         }
     };
 

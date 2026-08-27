@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\HasPeriodStats;
 use App\Models\ReportStatusUpdate;
 use App\Models\Team;
 use Illuminate\Http\Request;
@@ -11,6 +12,8 @@ use Inertia\Response;
 
 class ActivityController extends Controller
 {
+    use HasPeriodStats;
+
     public function index(Request $request): Response
     {
         $activities = ReportStatusUpdate::with([
@@ -28,18 +31,41 @@ class ActivityController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        [$from, $to, $period] = $this->parsePeriod($request);
+        [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
+
+        $curTotal    = $this->scopeByPeriod(ReportStatusUpdate::query(), $from, $to)->count();
+        $curResolved = $this->scopeByPeriod(ReportStatusUpdate::where('status', 'resolved'), $from, $to)->count();
+        $curPending  = $this->scopeByPeriod(ReportStatusUpdate::where('status', 'pending'), $from, $to)->count();
+
+        $prevTotal    = ReportStatusUpdate::whereBetween('created_at', [$prevFrom, $prevTo])->count();
+        $prevResolved = ReportStatusUpdate::where('status', 'resolved')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+        $prevPending  = ReportStatusUpdate::where('status', 'pending')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
         $stats = [
-            'total'    => ReportStatusUpdate::count(),
+            'total'    => $curTotal,
             'today'    => ReportStatusUpdate::whereDate('created_at', today())->count(),
-            'resolved' => ReportStatusUpdate::where('status', 'resolved')->count(),
-            'pending'  => ReportStatusUpdate::where('status', 'pending')->count(),
+            'resolved' => $curResolved,
+            'pending'  => $curPending,
+        ];
+
+        $trends = [
+            'total'        => $this->calcTrend($curTotal, $prevTotal),
+            'resolved'     => $this->calcTrend($curResolved, $prevResolved),
+            'pending'      => $this->calcTrend($curPending, $prevPending),
+            'label'        => $trendLabel,
+            'period_label' => $periodLabel,
         ];
 
         return Inertia::render('admin/activity/index', [
-            'activities' => $activities,
-            'filters'    => $request->only(['status', 'search', 'team_id']),
-            'stats'      => $stats,
-            'teams'      => Team::orderBy('name')->get(['id', 'name']),
+            'activities'  => $activities,
+            'filters'     => $request->only(['status', 'search', 'team_id']),
+            'stats'       => $stats,
+            'trends'      => $trends,
+            'period'      => $period,
+            'custom_from' => $request->get('from'),
+            'custom_to'   => $request->get('to'),
+            'teams'       => Team::orderBy('name')->get(['id', 'name']),
         ]);
     }
 }

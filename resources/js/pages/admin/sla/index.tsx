@@ -13,6 +13,10 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
 import AppLayout from '@/layouts/app-layout';
+import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
+import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
+import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
+import type { InsightRow } from '@/lib/kpi-utils';
 import type { BreadcrumbItem } from '@/types';
 import type { Severity, SlaConfig, SlaStage } from '@/types/admin';
 import { SLA_STAGE_LABELS } from '@/types/admin';
@@ -46,8 +50,11 @@ interface Stats {
 interface Props {
     configs: Record<Severity, Record<SlaStage, SlaConfig>>;
     stats: Stats;
+    trends?: { compliance_rate?: number; active_breaches?: number; label?: string; period_label?: string };
     sla_enabled: boolean;
     period: string;
+    custom_from?: string | null;
+    custom_to?: string | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -88,34 +95,8 @@ function formatTime(minutes: number): string {
     return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
 
-/* ─── Stat Card ─── */
-function StatCard({ icon: Icon, grad, shadow, value, label, sub, alert = false }: {
-    icon: React.ElementType; grad: string; shadow: string;
-    value: string | number; label: string; sub: string; alert?: boolean;
-}) {
-    return (
-        <div className="group relative overflow-hidden rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/[0.06] dark:border-neutral-700/60 dark:bg-neutral-900">
-            <div className={`absolute inset-x-0 top-0 h-[2px] rounded-t-2xl bg-gradient-to-r ${grad} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
-            {alert && (
-                <span className="absolute right-4 top-4 flex size-2">
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-60" />
-                    <span className="relative inline-flex size-2 rounded-full bg-red-500" />
-                </span>
-            )}
-            <div className={`flex size-9 items-center justify-center rounded-xl bg-gradient-to-br ${grad} ${shadow} shadow-sm transition-transform duration-300 group-hover:scale-110`}>
-                <Icon className="size-4 text-white" />
-            </div>
-            <p className="mt-3 text-3xl font-extrabold tabular-nums tracking-tight text-neutral-900 dark:text-neutral-100">
-                {value}
-            </p>
-            <p className="mt-0.5 text-xs font-semibold text-neutral-600 dark:text-neutral-400">{label}</p>
-            <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">{sub}</p>
-        </div>
-    );
-}
-
 /* ─── Main page ─── */
-export default function SlaIndex({ configs, stats, sla_enabled, period }: Props) {
+export default function SlaIndex({ configs, stats, trends, sla_enabled, period, custom_from, custom_to }: Props) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
 
@@ -158,7 +139,7 @@ export default function SlaIndex({ configs, stats, sla_enabled, period }: Props)
 
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
-        form.put('/admin/sla/configs');
+        form.put('/admin/sla/configs', { preserveState: false });
     };
 
     const handleToggle = () => {
@@ -168,6 +149,80 @@ export default function SlaIndex({ configs, stats, sla_enabled, period }: Props)
     const changePeriod = (key: string) => {
         router.get('/admin/sla', { period: key }, { preserveState: false, replace: true });
     };
+
+    // Smart descriptions
+    const tl = trends?.label ?? '';
+    const breachRate = stats.total_completed > 0 ? Math.round((stats.breached_count / stats.total_completed) * 100) : 0;
+    const verifyAvg = stats.stage_stats.pending_to_verified.avg_minutes;
+    const assignAvg = stats.stage_stats.verified_to_assigned.avg_minutes;
+    const resolveAvg = stats.stage_stats.assigned_to_resolved.avg_minutes;
+
+    const totalTime = verifyAvg + assignAvg + resolveAvg;
+    const slowestStage = verifyAvg >= assignAvg && verifyAvg >= resolveAvg ? 'verification'
+        : assignAvg >= resolveAvg ? 'assignment' : 'resolution';
+
+    function smartDesc(key: string): string {
+        switch (key) {
+            case 'compliance': {
+                if (stats.total_completed === 0) return 'No completed SLA cycles yet — start tracking once reports move through the pipeline.';
+                const parts: string[] = [];
+                if (stats.compliance_rate >= 95) parts.push(`Outstanding — ${stats.compliance_rate}% SLA compliance. Teams are consistently meeting targets.`);
+                else if (stats.compliance_rate >= 80) parts.push(`Good — ${stats.compliance_rate}% compliance. Minor improvements in ${slowestStage} could push this higher.`);
+                else if (stats.compliance_rate >= 60) parts.push(`${stats.compliance_rate}% compliance — focus on the ${slowestStage} stage to reduce breaches.`);
+                else parts.push(`Only ${stats.compliance_rate}% compliance — urgent process improvement needed, especially in ${slowestStage}.`);
+                if (stats.active_breaches > 0) parts.push('Active breaches need immediate attention to prevent further SLA violations.');
+                if (breachRate > 20) parts.push('High breach rate suggests a systemic bottleneck — review staffing and processes.');
+                return parts.join(' ');
+            }
+            case 'breaches': {
+                if (stats.active_breaches === 0) return 'No active breaches — all cases are within SLA thresholds. Maintain current response pace.';
+                const t = trends?.active_breaches;
+                const parts: string[] = [];
+                if (t !== undefined && t > 20) parts.push(`Breaches surging (${Math.abs(t)}% ${tl}) — escalate response and review the ${slowestStage} stage for delays.`);
+                else if (t !== undefined && t > 0) parts.push(`Breaches increasing (${Math.abs(t)}% ${tl}) — tighten response times before more cases go overdue.`);
+                else if (t !== undefined && t < -20) parts.push(`Breaches dropping fast (${Math.abs(t)}% ${tl}) — process improvements are working, keep it up.`);
+                else if (t !== undefined && t < 0) parts.push(`Breaches declining (${Math.abs(t)}% ${tl}) — trending in the right direction.`);
+                else parts.push(`Breach count unchanged ${tl} — sustained issue that needs attention.`);
+                if (breachRate > 20) parts.push(`The ${slowestStage} stage is the primary bottleneck — streamline this to reduce breaches.`);
+                else parts.push('Focus on resolving overdue cases to bring breach count down.');
+                return parts.join(' ');
+            }
+            case 'verify': {
+                if (verifyAvg <= 0) return 'No verification timing data yet — metrics will appear as reports are verified.';
+                const parts: string[] = [];
+                if (verifyAvg < 30) parts.push('Verification is fast — reports are being reviewed promptly.');
+                else if (verifyAvg < 60) parts.push('Verification pace is acceptable — within a reasonable timeframe.');
+                else if (verifyAvg < 180) parts.push('Verification is slow — consider adding more reviewers to speed up the pipeline.');
+                else parts.push('Verification is critically slow — this is likely causing SLA breaches. Add reviewers urgently.');
+                if (slowestStage === 'verification') parts.push('This is the slowest stage — improving verification will have the biggest impact on overall SLA compliance.');
+                else parts.push(`Verification is faster than ${slowestStage} — focus improvement efforts there instead.`);
+                return parts.join(' ');
+            }
+            case 'assign': {
+                if (assignAvg <= 0) return 'No assignment timing data yet — metrics will appear as reports are assigned.';
+                const parts: string[] = [];
+                if (assignAvg < 30) parts.push('Assignment is quick — reports move to responders efficiently.');
+                else if (assignAvg < 60) parts.push('Assignment pace is reasonable — handoff to responders is working.');
+                else if (assignAvg < 180) parts.push('Assignment is slow — streamline the handoff process from verification to responders.');
+                else parts.push('Assignment is critically slow — major delays between verification and response. Review the dispatch process.');
+                if (slowestStage === 'assignment') parts.push('This is the bottleneck stage — speeding up assignment will most improve compliance.');
+                else parts.push(`Assignment is performing better than ${slowestStage} — focus optimization efforts there.`);
+                return parts.join(' ');
+            }
+            case 'resolve': {
+                if (resolveAvg <= 0) return 'No resolution timing data yet — metrics will appear as cases are resolved.';
+                const parts: string[] = [];
+                if (resolveAvg < 60) parts.push('Resolution is fast — responders are closing cases efficiently.');
+                else if (resolveAvg < 180) parts.push('Resolution pace is moderate — could be improved with better resource allocation.');
+                else if (resolveAvg < 480) parts.push('Resolution is slow — responders may need additional support or the workload is too heavy.');
+                else parts.push('Resolution is critically slow — investigate if responders are blocked, understaffed, or overloaded.');
+                if (slowestStage === 'resolution') parts.push('This is the bottleneck — focus on empowering responders to close cases faster.');
+                else parts.push(`Resolution is faster than ${slowestStage} — direct improvement efforts to that stage.`);
+                return parts.join(' ');
+            }
+            default: return '';
+        }
+    }
 
     // Charts
     const trendDates = Object.keys(stats.breach_trend).sort();
@@ -236,26 +291,94 @@ export default function SlaIndex({ configs, stats, sla_enabled, period }: Props)
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={handleToggle}
-                        className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.97] ${
-                            sla_enabled
-                                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/25 hover:shadow-emerald-500/40'
-                                : 'bg-gradient-to-r from-neutral-400 to-neutral-500 text-white shadow-neutral-500/25'
-                        }`}
-                    >
-                        {sla_enabled ? <CheckCircle2 className="size-4" /> : <Clock className="size-4" />}
-                        {sla_enabled ? 'SLA Enabled' : 'SLA Disabled'}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <PeriodToggle period={period} customFrom={custom_from ?? null} customTo={custom_to ?? null} baseUrl="/admin/sla" />
+                        <button
+                            onClick={handleToggle}
+                            className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.97] ${
+                                sla_enabled
+                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/25 hover:shadow-emerald-500/40'
+                                    : 'bg-gradient-to-r from-neutral-400 to-neutral-500 text-white shadow-neutral-500/25'
+                            }`}
+                        >
+                            {sla_enabled ? <CheckCircle2 className="size-4" /> : <Clock className="size-4" />}
+                            {sla_enabled ? 'SLA Enabled' : 'SLA Disabled'}
+                        </button>
+                    </div>
                 </div>
 
                 {/* Stats cards */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
-                    <StatCard icon={ShieldCheck}   grad="from-emerald-500 to-teal-600"    shadow="shadow-emerald-500/20"  value={`${stats.compliance_rate}%`} label="Compliance Rate"   sub="Overall SLA met"  />
-                    <StatCard icon={AlertTriangle}  grad="from-red-500 to-rose-600"        shadow="shadow-red-500/20"      value={stats.active_breaches}       label="Active Breaches"   sub="Currently overdue" alert={stats.active_breaches > 0} />
-                    <StatCard icon={Clock}          grad="from-blue-500 to-indigo-600"     shadow="shadow-blue-500/20"     value={formatTime(stats.stage_stats.pending_to_verified.avg_minutes)} label="Avg. Verify Time" sub="Pending to verified" />
-                    <StatCard icon={Zap}            grad="from-violet-500 to-purple-600"   shadow="shadow-violet-500/20"   value={formatTime(stats.stage_stats.verified_to_assigned.avg_minutes)} label="Avg. Assign Time" sub="Verified to assigned" />
-                    <StatCard icon={TrendingUp}     grad="from-amber-500 to-orange-600"    shadow="shadow-amber-500/20"    value={formatTime(stats.stage_stats.assigned_to_resolved.avg_minutes)} label="Avg. Resolve Time" sub="Assigned to resolved" />
+                    <PrimaryStatCard
+                        label="Compliance Rate"
+                        value={stats.compliance_rate}
+                        trend={trends?.compliance_rate}
+                        trendLabel={`${trends?.label ?? ''}, ${trends?.period_label ?? ''}`}
+                        desc={smartDesc('compliance')}
+                        insights={[{ label: 'Met', value: stats.met_count, color: '#10b981' }, { label: 'Breached', value: stats.breached_count, color: '#ef4444' }]}
+                        icon={ShieldCheck}
+                        grad="from-emerald-500 to-teal-600"
+                        shadow="shadow-emerald-500/40"
+                        alert={false}
+                        index={0}
+                        mounted={mounted}
+                    />
+                    <PrimaryStatCard
+                        label="Active Breaches"
+                        value={stats.active_breaches}
+                        trend={trends?.active_breaches}
+                        trendLabel={`${trends?.label ?? ''}, ${trends?.period_label ?? ''}`}
+                        desc={smartDesc('breaches')}
+                        insights={[]}
+                        icon={AlertTriangle}
+                        grad="from-red-500 to-rose-600"
+                        shadow="shadow-red-500/40"
+                        alert={stats.active_breaches > 0}
+                        index={1}
+                        mounted={mounted}
+                    />
+                    <SecondaryStatCard
+                        icon={Clock}
+                        grad="from-blue-500 to-indigo-600"
+                        shadow="shadow-blue-500/25"
+                        value={formatTime(stats.stage_stats.pending_to_verified.avg_minutes)}
+                        label="Avg. Verify Time"
+                        trend={undefined}
+                        desc={smartDesc('verify')}
+                        insights={[]}
+                        trendLabel={trends?.label ?? ''}
+                        periodLabel={trends?.period_label ?? ''}
+                        mounted={mounted}
+                        delay={400}
+                    />
+                    <SecondaryStatCard
+                        icon={Zap}
+                        grad="from-violet-500 to-purple-600"
+                        shadow="shadow-violet-500/25"
+                        value={formatTime(stats.stage_stats.verified_to_assigned.avg_minutes)}
+                        label="Avg. Assign Time"
+                        trend={undefined}
+                        desc={smartDesc('assign')}
+                        insights={[]}
+                        trendLabel={trends?.label ?? ''}
+                        periodLabel={trends?.period_label ?? ''}
+                        mounted={mounted}
+                        delay={500}
+                    />
+                    <SecondaryStatCard
+                        icon={TrendingUp}
+                        grad="from-amber-500 to-orange-600"
+                        shadow="shadow-amber-500/25"
+                        value={formatTime(stats.stage_stats.assigned_to_resolved.avg_minutes)}
+                        label="Avg. Resolve Time"
+                        trend={undefined}
+                        desc={smartDesc('resolve')}
+                        insights={[]}
+                        trendLabel={trends?.label ?? ''}
+                        periodLabel={trends?.period_label ?? ''}
+                        mounted={mounted}
+                        delay={600}
+                    />
                 </div>
 
                 {/* Period filter + Charts */}

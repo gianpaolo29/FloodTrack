@@ -41,6 +41,7 @@ export default function AdminSettings({ settings }: Props) {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         form.put('/admin/settings', {
+            preserveState: false,
             onSuccess: () => swalSuccess('Settings saved'),
         });
     };

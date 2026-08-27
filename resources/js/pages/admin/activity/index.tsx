@@ -1,7 +1,11 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, History, Search, Sparkles, X } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
+import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
+import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
+import type { InsightRow } from '@/lib/kpi-utils';
 import type { BreadcrumbItem } from '@/types';
 import type { ReportStatus, Severity } from '@/types/admin';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
@@ -31,10 +35,22 @@ interface Stats {
     pending: number;
 }
 
+interface Trends {
+    total?: number;
+    resolved?: number;
+    pending?: number;
+    label: string;
+    period_label: string;
+}
+
 interface Props {
     activities: Paginated<Activity>;
     filters: { status?: string; search?: string; team_id?: string };
     stats: Stats;
+    trends: Trends;
+    period: string;
+    custom_from?: string | null;
+    custom_to?: string | null;
     teams: { id: number; name: string }[];
 }
 
@@ -57,8 +73,11 @@ const ROLE_AVATAR: Record<string, string> = {
     resident:  'from-slate-400 to-slate-500',
 };
 
-export default function AdminActivityLog({ activities, filters, stats, teams }: Props) {
+export default function AdminActivityLog({ activities, filters, stats, trends, period, custom_from, custom_to, teams }: Props) {
     const [searchValue, setSearchValue] = useState('');
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
 
     const filter = useCallback((key: string, value: string) => {
         router.get('/admin/activity', { ...filters, [key]: value || undefined }, {
@@ -80,6 +99,66 @@ export default function AdminActivityLog({ activities, filters, stats, teams }: 
 
     const hasFilters = !!(filters.status || searchValue || filters.team_id);
 
+    const tl = trends.label;
+    const resolvedPct = stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0;
+    const pendingPct = stats.total > 0 ? Math.round((stats.pending / stats.total) * 100) : 0;
+
+    function smartDesc(key: string): string {
+        switch (key) {
+            case 'total': {
+                if (stats.total === 0) return 'No activity recorded this period — system is quiet.';
+                const t = trends.total;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Activity surging (${Math.abs(t)}% ${tl}) — high volume of status changes, ensure teams are keeping up.`);
+                else if (t > 0) parts.push(`Activity picking up (${Math.abs(t)}% ${tl}) — teams are engaged and processing reports.`);
+                else if (t === 0) parts.push(`Activity level unchanged ${tl} — consistent workflow pace.`);
+                else if (t > -20) parts.push(`Activity slowing slightly (${Math.abs(t)}% ${tl}) — could indicate fewer incoming issues.`);
+                else parts.push(`Activity dropped significantly (${Math.abs(t)}% ${tl}) — either workload is lighter or teams may need a nudge.`);
+                if (resolvedPct >= 60) parts.push('Most activity is leading to resolutions — productive workflow.');
+                else if (stats.pending > stats.resolved) parts.push('More events are pending than resolved — follow up on stalled items.');
+                return parts.join(' ');
+            }
+            case 'today': {
+                if (stats.today === 0) return 'No activity today yet — check if teams are active and reports are being processed.';
+                const todayPct = stats.total > 0 ? Math.round((stats.today / stats.total) * 100) : 0;
+                const parts: string[] = [];
+                if (todayPct > 40) parts.push('Unusually high activity today — teams are very active, monitor for bottlenecks.');
+                else if (todayPct > 20) parts.push('Good activity pace today — teams are steadily processing reports.');
+                else parts.push('Light activity today so far — expect more later or check if workflows are stalled.');
+                if (stats.pending > stats.resolved) parts.push('Pending items outnumber resolutions — prioritize clearing the queue.');
+                else if (stats.resolved > 0) parts.push('Resolutions outpacing pending — strong throughput today.');
+                return parts.join(' ');
+            }
+            case 'resolved': {
+                if (stats.resolved === 0) return 'No resolutions recorded yet — encourage teams to close out verified cases.';
+                const t = trends.resolved;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Resolutions surging (${Math.abs(t)}% ${tl}) — excellent team productivity, keep it up.`);
+                else if (t > 0) parts.push(`Resolutions improving (${Math.abs(t)}% ${tl}) — response teams are gaining momentum.`);
+                else if (t < -20) parts.push(`Resolutions dropping sharply (${Math.abs(t)}% ${tl}) — investigate if teams are blocked or reassigned.`);
+                else if (t < 0) parts.push(`Resolutions declining (${Math.abs(t)}% ${tl}) — teams may need support or resources.`);
+                else parts.push(`Resolution pace is steady ${tl} — consistent output.`);
+                if (resolvedPct >= 70) parts.push('High resolution ratio — workflow is efficient and effective.');
+                else if (stats.pending > 0) parts.push('Pending events still need attention — keep pushing for closures.');
+                return parts.join(' ');
+            }
+            case 'pending': {
+                if (stats.pending === 0) return 'All caught up — no pending events. Great job keeping the workflow clear.';
+                const t = trends.pending;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Pending events surging (${Math.abs(t)}% ${tl}) — backlog is growing, allocate more resources.`);
+                else if (t > 0) parts.push(`Pending events increasing (${Math.abs(t)}% ${tl}) — stay ahead by processing faster.`);
+                else if (t < -20) parts.push(`Pending events clearing fast (${Math.abs(t)}% ${tl}) — backlog is being eliminated.`);
+                else if (t < 0) parts.push(`Pending events shrinking (${Math.abs(t)}% ${tl}) — making progress on the backlog.`);
+                else parts.push(`Pending count unchanged ${tl} — consider prioritizing these to prevent buildup.`);
+                if (pendingPct > 40) parts.push('High pending ratio — this is the main bottleneck in the workflow.');
+                else parts.push('Pending load is manageable — maintain current processing pace.');
+                return parts.join(' ');
+            }
+            default: return '';
+        }
+    }
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Activity Log" />
@@ -99,42 +178,71 @@ export default function AdminActivityLog({ activities, filters, stats, teams }: 
                             </p>
                         </div>
                     </div>
+                    <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/activity" />
                 </div>
 
                 {/* Stats cards */}
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 shadow-sm shadow-blue-500/20">
-                            <History className="size-4 text-white" />
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{stats.total.toLocaleString()}</p>
-                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Total Events</p>
-                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">All recorded activity</p>
-                    </div>
-                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-sky-500 to-blue-500 shadow-sm shadow-sky-500/20">
-                            <Sparkles className="size-4 text-white" />
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{stats.today.toLocaleString()}</p>
-                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Today's Events</p>
-                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">Since midnight</p>
-                    </div>
-                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 shadow-sm shadow-amber-500/20">
-                            <Clock className="size-4 text-white" />
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{stats.pending.toLocaleString()}</p>
-                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Pending Actions</p>
-                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">Awaiting response</p>
-                    </div>
-                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm shadow-emerald-500/20">
-                            <CheckCircle2 className="size-4 text-white" />
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{stats.resolved.toLocaleString()}</p>
-                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Resolved Events</p>
-                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">Successfully closed</p>
-                    </div>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                    <PrimaryStatCard
+                        label="Total Updates"
+                        value={stats.total}
+                        trend={trends.total}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('total')}
+                        insights={[
+                            { label: 'Resolved', value: stats.resolved, color: '#10b981' },
+                            { label: 'Pending', value: stats.pending, color: '#f59e0b' },
+                        ]}
+                        icon={History}
+                        grad="from-indigo-500 via-blue-500 to-cyan-500"
+                        shadow="shadow-indigo-500/40"
+                        alert={false}
+                        index={0}
+                        mounted={mounted}
+                    />
+                    <PrimaryStatCard
+                        label="Today's Activity"
+                        value={stats.today}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('today')}
+                        insights={[]}
+                        icon={Sparkles}
+                        grad="from-cyan-500 via-sky-500 to-blue-500"
+                        shadow="shadow-cyan-500/40"
+                        alert={false}
+                        index={1}
+                        mounted={mounted}
+                    />
+                    <SecondaryStatCard
+                        icon={CheckCircle2}
+                        grad="from-emerald-500 to-teal-500"
+                        shadow="shadow-emerald-500/25"
+                        value={stats.resolved}
+                        label="Resolved Actions"
+                        trend={trends.resolved}
+                        desc={smartDesc('resolved')}
+                        insights={[
+                            { label: 'Resolution rate', value: stats.total > 0 ? `${Math.round((stats.resolved / stats.total) * 100)}%` : '0%', color: '#10b981' },
+                        ]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={400}
+                    />
+                    <SecondaryStatCard
+                        icon={Clock}
+                        grad="from-amber-500 to-orange-500"
+                        shadow="shadow-amber-500/25"
+                        value={stats.pending}
+                        label="Pending Actions"
+                        trend={trends.pending}
+                        desc={smartDesc('pending')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={500}
+                    />
                 </div>
 
                 {/* Timeline card */}
@@ -151,15 +259,20 @@ export default function AdminActivityLog({ activities, filters, stats, teams }: 
 
                         <div className="flex items-center gap-2">
                             {/* Search */}
-                            <div className="relative">
+                            <div className="relative w-56">
                                 <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                                 <input
                                     type="text"
                                     placeholder="Search reference…"
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-48 rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-3 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-blue-500 dark:focus:bg-neutral-900"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-blue-500 dark:focus:bg-neutral-900"
                                 />
+                                {searchValue && (
+                                    <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                        <X className="size-3.5" />
+                                    </button>
+                                )}
                             </div>
 
                             {/* Status filter */}

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\HasPeriodStats;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,8 +15,33 @@ use Inertia\Response;
 
 class UserController extends Controller
 {
+    use HasPeriodStats;
+
     public function index(Request $request): Response
     {
+        [$from, $to, $period] = $this->parsePeriod($request);
+        [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
+
+        $curTotal = $this->scopeByPeriod(User::where('role', 'resident'), $from, $to)->count();
+        $prevTotal = User::where('role', 'resident')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
+        $curNew = $this->scopeByPeriod(User::where('role', 'resident'), $from, $to)->count();
+        $prevNew = User::where('role', 'resident')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
+        $stats = [
+            'total'        => $curTotal,
+            'new'          => $curNew,
+            'with_address' => User::where('role', 'resident')->whereNotNull('home_address')->count(),
+            'verified'     => User::where('role', 'resident')->whereNotNull('email_verified_at')->count(),
+        ];
+
+        $trends = [
+            'total'        => $this->calcTrend($curTotal, $prevTotal),
+            'new'          => $this->calcTrend($curNew, $prevNew),
+            'label'        => $trendLabel,
+            'period_label' => $periodLabel,
+        ];
+
         $users = User::where('role', 'resident')
             ->when($request->search, fn ($q) => $q->where(function ($q2) use ($request) {
                 $q2->where('name', 'like', "%{$request->search}%")
@@ -30,8 +56,13 @@ class UserController extends Controller
             ->withQueryString();
 
         return Inertia::render('admin/users/index', [
-            'users'   => $users,
-            'filters' => $request->only(['search']),
+            'users'       => $users,
+            'filters'     => $request->only(['search']),
+            'stats'       => $stats,
+            'trends'      => $trends,
+            'period'      => $period,
+            'custom_from' => $request->get('from'),
+            'custom_to'   => $request->get('to'),
         ]);
     }
 

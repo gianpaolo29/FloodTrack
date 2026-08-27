@@ -23,6 +23,10 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
+import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
+import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
+import type { InsightRow } from '@/lib/kpi-utils';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 import type { Hazard, HazardCategory, Severity } from '@/types/admin';
@@ -39,6 +43,11 @@ interface Paginated<T> {
 
 interface Props {
     hazards: Paginated<Hazard>;
+    stats: { total: number; active: number; inactive: number; flood: number; road: number };
+    trends: { total: number; flood: number; road: number; label: string; period_label: string };
+    period: string;
+    custom_from: string | null;
+    custom_to: string | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -129,7 +138,10 @@ function detectHazardFromGeocode(
 
 /* ─── Main ─── */
 
-export default function AdminHazardsIndex({ hazards }: Props) {
+export default function AdminHazardsIndex({ hazards, stats, trends, period, custom_from, custom_to }: Props) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+
     const [selected,        setSelected]        = useState<number[]>([]);
     const [bulkProcessing,  setBulkProcessing]  = useState(false);
     const [syncing,         setSyncing]         = useState(false);
@@ -158,14 +170,12 @@ export default function AdminHazardsIndex({ hazards }: Props) {
         }
         setBulkProcessing(true);
         router.post('/admin/hazards/bulk', { ids: selected, action }, {
-            preserveState: true,
+            preserveState: false,
             onFinish:  () => { setBulkProcessing(false); setSelected([]); },
             onSuccess: () => swalSuccess('Done', `${selected.length} hazard(s) ${action}d.`),
         });
     };
 
-    const activeCount   = hazards.data.filter((h) =>  h.active).length;
-    const inactiveCount = hazards.data.filter((h) => !h.active).length;
     const hasFilters    = !!(search || categoryFilter || statusFilter);
     const clearFilters  = () => { setSearch(''); setCategoryFilter(''); setStatusFilter(''); };
 
@@ -179,6 +189,77 @@ export default function AdminHazardsIndex({ hazards }: Props) {
         }
         return true;
     });
+
+    const tl = trends.label;
+    const activePct = stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0;
+    const floodPct = stats.total > 0 ? Math.round((stats.flood / stats.total) * 100) : 0;
+    const roadPct = stats.total > 0 ? Math.round((stats.road / stats.total) * 100) : 0;
+
+    function smartDesc(key: string): string {
+        switch (key) {
+            case 'total': {
+                if (stats.total === 0) return 'No hazards registered this period — survey areas and report any emerging risks.';
+                const t = trends.total;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Hazards surging (${Math.abs(t)}% ${tl}) — conditions are worsening, increase field monitoring.`);
+                else if (t > 0) parts.push(`Hazards increasing (${Math.abs(t)}% ${tl}) — stay alert for new risk areas.`);
+                else if (t === 0) parts.push(`Hazard count stable ${tl} — conditions are consistent.`);
+                else if (t > -20) parts.push(`Hazards easing (${Math.abs(t)}% ${tl}) — conditions are gradually improving.`);
+                else parts.push(`Hazards dropping significantly (${Math.abs(t)}% ${tl}) — situation is clearing up.`);
+                if (activePct < 50 && stats.inactive > 0) parts.push('Many hazards are hidden from map — review inactive ones and reactivate if still relevant.');
+                else if (activePct >= 80) parts.push('Most hazards are visible on map — good situational awareness.');
+                if (stats.flood > stats.road) parts.push('Flood hazards are the dominant risk — prioritize waterway monitoring.');
+                else if (stats.road > stats.flood) parts.push('Road hazards lead — focus on road closures and detour planning.');
+                return parts.join(' ');
+            }
+            case 'active': {
+                if (stats.active === 0) return 'No hazards currently visible on map — activate relevant ones to warn residents of danger areas.';
+                const parts: string[] = [];
+                if (activePct >= 80) parts.push('Strong map coverage — residents can see most reported hazards.');
+                else if (activePct >= 50) parts.push('Moderate map coverage — consider activating more hazards for better public awareness.');
+                else parts.push('Low map visibility — many hazards are hidden. Activate critical ones to keep residents informed.');
+                if (stats.inactive > stats.active) parts.push('More hazards are hidden than visible — review and activate outdated entries.');
+                else parts.push('Most reported hazards are being shown — good transparency.');
+                return parts.join(' ');
+            }
+            case 'inactive': {
+                if (stats.inactive === 0) return 'All hazards are active and visible — full transparency for residents. Great.';
+                const parts: string[] = [];
+                if (stats.inactive > stats.active) parts.push('More hazards are hidden than shown — review these and reactivate any that are still dangerous.');
+                else parts.push('A portion of hazards are hidden — periodic review ensures nothing critical stays invisible.');
+                if (activePct < 50) parts.push('With most hazards inactive, residents may not be aware of ongoing risks — prioritize reactivation.');
+                else parts.push('Active hazards cover the main risks — inactive ones may be resolved or low-priority.');
+                return parts.join(' ');
+            }
+            case 'flood': {
+                if (stats.flood === 0) return 'No flood hazards reported — conditions appear dry. Continue monitoring waterways and drainage.';
+                const t = trends.flood;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Flood hazards surging (${Math.abs(t)}% ${tl}) — water levels may be rising, deploy monitoring teams.`);
+                else if (t > 0) parts.push(`Flood hazards increasing (${Math.abs(t)}% ${tl}) — monitor drainage systems and low-lying areas.`);
+                else if (t < -20) parts.push(`Flood hazards dropping (${Math.abs(t)}% ${tl}) — waters may be receding, verify before clearing.`);
+                else if (t < 0) parts.push(`Flood hazards declining (${Math.abs(t)}% ${tl}) — situation is easing.`);
+                else parts.push(`Flood hazard count steady ${tl} — sustained risk, maintain vigilance.`);
+                if (floodPct > 60) parts.push('Flooding is the primary hazard — focus resources on flood response and prevention.');
+                else parts.push('Flood hazards are part of a mixed risk profile — balance response across hazard types.');
+                return parts.join(' ');
+            }
+            case 'road': {
+                if (stats.road === 0) return 'No road hazards reported — routes appear clear. Continue monitoring key corridors.';
+                const t = trends.road;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Road hazards surging (${Math.abs(t)}% ${tl}) — check for new closures and coordinate detours.`);
+                else if (t > 0) parts.push(`Road hazards increasing (${Math.abs(t)}% ${tl}) — transportation routes may be compromised.`);
+                else if (t < -20) parts.push(`Road hazards dropping (${Math.abs(t)}% ${tl}) — routes are being cleared, verify before reopening.`);
+                else if (t < 0) parts.push(`Road hazards declining (${Math.abs(t)}% ${tl}) — conditions improving.`);
+                else parts.push(`Road hazard count steady ${tl} — ongoing disruptions, maintain detour plans.`);
+                if (roadPct > 60) parts.push('Road closures are the primary concern — prioritize route clearing and public advisories.');
+                else parts.push('Road hazards are part of a broader risk picture — coordinate with flood response efforts.');
+                return parts.join(' ');
+            }
+            default: return '';
+        }
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -205,11 +286,12 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                         </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
+                        <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/hazards" />
                         <button
                             onClick={() => {
                                 setSyncing(true);
                                 router.post('/admin/hazards/sync-weather', {}, {
-                                    preserveState: true,
+                                    preserveState: false,
                                     onFinish: () => setSyncing(false),
                                 });
                             }}
@@ -229,38 +311,78 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                     </div>
                 </div>
 
-                {/* ── Stats Row ── */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Total</p>
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-orange-50 dark:bg-orange-950/30">
-                                <ShieldAlert className="size-4 text-orange-500" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{hazards.total}</p>
-                        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">registered hazards</p>
-                    </div>
-                    <div className="rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-teal-50/60 p-5 shadow-sm dark:border-emerald-800/40 dark:from-emerald-950/30 dark:to-teal-950/20">
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-500">Active</p>
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
-                                <span className="size-2.5 animate-pulse rounded-full bg-emerald-500" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-emerald-800 dark:text-emerald-300">{activeCount}</p>
-                        <p className="mt-1 text-xs text-emerald-600/70 dark:text-emerald-500/70">visible on map</p>
-                    </div>
-                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Inactive</p>
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-neutral-100 dark:bg-neutral-800">
-                                <Power className="size-4 text-neutral-400" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-700 dark:text-neutral-300">{inactiveCount}</p>
-                        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">hidden from map</p>
-                    </div>
+                {/* ── KPI Stats ── */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+                    <PrimaryStatCard
+                        label="Total Hazards"
+                        value={stats.total}
+                        trend={trends.total}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('total')}
+                        insights={[{ label: 'Active', value: stats.active, color: '#10b981' }, { label: 'Inactive', value: stats.inactive }]}
+                        icon={ShieldAlert}
+                        grad="from-indigo-500 via-blue-500 to-cyan-500"
+                        shadow="shadow-indigo-500/40"
+                        alert={false}
+                        index={0}
+                        mounted={mounted}
+                    />
+                    <PrimaryStatCard
+                        label="Active Hazards"
+                        value={stats.active}
+                        trend={undefined}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('active')}
+                        insights={[]}
+                        icon={AlertTriangle}
+                        grad="from-red-500 via-rose-500 to-pink-500"
+                        shadow="shadow-red-500/40"
+                        alert={stats.active > 0}
+                        index={1}
+                        mounted={mounted}
+                    />
+                    <SecondaryStatCard
+                        icon={Power}
+                        grad="from-neutral-400 to-neutral-500"
+                        shadow="shadow-neutral-400/25"
+                        value={stats.inactive}
+                        label="Inactive"
+                        trend={undefined}
+                        desc={smartDesc('inactive')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={400}
+                    />
+                    <SecondaryStatCard
+                        icon={Droplets}
+                        grad="from-blue-500 to-cyan-500"
+                        shadow="shadow-blue-500/25"
+                        value={stats.flood}
+                        label="Flood Type"
+                        trend={trends.flood}
+                        desc={smartDesc('flood')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={500}
+                    />
+                    <SecondaryStatCard
+                        icon={Car}
+                        grad="from-amber-500 to-orange-500"
+                        shadow="shadow-amber-500/25"
+                        value={stats.road}
+                        label="Road Type"
+                        trend={trends.road}
+                        desc={smartDesc('road')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={600}
+                    />
                 </div>
 
                 {/* ── Bulk action bar ── */}
@@ -325,15 +447,20 @@ export default function AdminHazardsIndex({ hazards }: Props) {
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
-                            <div className="relative">
+                            <div className="relative w-56">
                                 <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                                 <input
                                     type="text"
                                     placeholder="Search hazards..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="h-9 w-52 rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-3 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
                                 />
+                                {search && (
+                                    <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                        <X className="size-3.5" />
+                                    </button>
+                                )}
                             </div>
                             {hasFilters && (
                                 <button onClick={clearFilters}
@@ -575,7 +702,7 @@ function HazardRow({ hazard, isSelected, onToggle, onEdit }: {
             <td className="px-5 py-4">
                 <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
-                        onClick={() => router.post(`/admin/hazards/${hazard.id}/toggle`, {}, { preserveState: true })}
+                        onClick={() => router.post(`/admin/hazards/${hazard.id}/toggle`, {}, { preserveState: false })}
                         className={`rounded-lg p-1.5 transition-colors ${
                             hazard.active
                                 ? 'text-neutral-400 hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/30 dark:hover:text-amber-400'
@@ -593,6 +720,7 @@ function HazardRow({ hazard, isSelected, onToggle, onEdit }: {
                         onClick={async () => {
                             const confirmed = await swalDelete('this hazard');
                             if (confirmed) deleteForm.delete(`/admin/hazards/${hazard.id}`, {
+                                preserveState: false,
                                 onSuccess: () => swalSuccess('Deleted', 'Hazard has been removed.'),
                             });
                         }}
@@ -656,10 +784,12 @@ function HazardFormModal({ hazard, onClose }: { hazard?: Hazard; onClose: () => 
         e.preventDefault();
         if (isEditing) {
             form.put(`/admin/hazards/${hazard!.id}`, {
+                preserveState: false,
                 onSuccess: () => { onClose(); swalSuccess('Updated', 'Hazard has been updated.'); },
             });
         } else {
             form.post('/admin/hazards', {
+                preserveState: false,
                 onSuccess: () => { form.reset(); onClose(); swalSuccess('Created', 'Hazard is now visible on the map.'); },
             });
         }
@@ -804,6 +934,7 @@ function HazardFormModal({ hazard, onClose }: { hazard?: Hazard; onClose: () => 
                                     onClick={async () => {
                                         const confirmed = await swalDelete('this hazard');
                                         if (confirmed) router.delete(`/admin/hazards/${hazard!.id}`, {
+                                            preserveState: false,
                                             onSuccess: () => { onClose(); swalSuccess('Deleted', 'Hazard has been removed.'); },
                                         });
                                     }}

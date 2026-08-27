@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\HasPeriodStats;
 use App\Models\Hazard;
 use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
@@ -13,14 +14,49 @@ use Inertia\Response;
 
 class HazardController extends Controller
 {
-    public function index(): Response
+    use HasPeriodStats;
+
+    public function index(Request $request): Response
     {
+        [$from, $to, $period] = $this->parsePeriod($request);
+        [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
+
+        $curTotal = $this->scopeByPeriod(Hazard::query(), $from, $to)->count();
+        $prevTotal = Hazard::whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
+        $curFlood = $this->scopeByPeriod(Hazard::where('category', 'flood'), $from, $to)->count();
+        $prevFlood = Hazard::where('category', 'flood')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
+        $curRoad = $this->scopeByPeriod(Hazard::where('category', 'road'), $from, $to)->count();
+        $prevRoad = Hazard::where('category', 'road')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
+        $stats = [
+            'total'    => $curTotal,
+            'active'   => Hazard::where('active', true)->count(),
+            'inactive' => Hazard::where('active', false)->count(),
+            'flood'    => $curFlood,
+            'road'     => $curRoad,
+        ];
+
+        $trends = [
+            'total'        => $this->calcTrend($curTotal, $prevTotal),
+            'flood'        => $this->calcTrend($curFlood, $prevFlood),
+            'road'         => $this->calcTrend($curRoad, $prevRoad),
+            'label'        => $trendLabel,
+            'period_label' => $periodLabel,
+        ];
+
         $hazards = Hazard::with('creator:id,name')
             ->latest()
             ->paginate(20);
 
         return Inertia::render('admin/hazards/index', [
-            'hazards' => $hazards,
+            'hazards'     => $hazards,
+            'stats'       => $stats,
+            'trends'      => $trends,
+            'period'      => $period,
+            'custom_from' => $request->get('from'),
+            'custom_to'   => $request->get('to'),
         ]);
     }
 

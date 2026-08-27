@@ -86,6 +86,7 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
         if (!confirmed) return;
         setDeleting(true);
         router.delete(`/admin/reports/${report.id}`, {
+            preserveState: false,
             onFinish: () => setDeleting(false),
             onSuccess: () => swalSuccess('Deleted', 'Report has been deleted.'),
         });
@@ -94,6 +95,7 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
     const handleEditSave = (e: React.FormEvent) => {
         e.preventDefault();
         editForm.put(`/admin/reports/${report.id}`, {
+            preserveState: false,
             onSuccess: () => {
                 setEditing(false);
                 swalSuccess('Updated', 'Report has been updated.');
@@ -649,7 +651,7 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
                             <div className="flex flex-col gap-4 p-5">
 
                                 {canVerify && (
-                                    <form onSubmit={(e) => { e.preventDefault(); verifyForm.post(`/admin/reports/${report.id}/verify`, { onSuccess: () => swalSuccess('Verified', 'Report has been verified.') }); }}>
+                                    <form onSubmit={(e) => { e.preventDefault(); verifyForm.post(`/admin/reports/${report.id}/verify`, { preserveState: false, onSuccess: () => swalSuccess('Verified', 'Report has been verified.') }); }}>
                                         <button
                                             type="submit"
                                             disabled={verifyForm.processing}
@@ -666,6 +668,7 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
                                         onSubmit={(e) => {
                                             e.preventDefault();
                                             assignForm.post(`/admin/reports/${report.id}/assign`, {
+                                                preserveState: false,
                                                 onSuccess: () => swalSuccess('Assigned', 'Team has been assigned.'),
                                             });
                                         }}
@@ -709,7 +712,7 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
 
                                 {canReject && (
                                     <form
-                                        onSubmit={(e) => { e.preventDefault(); rejectForm.post(`/admin/reports/${report.id}/reject`, { onSuccess: () => swalSuccess('Rejected', 'Report has been rejected.') }); }}
+                                        onSubmit={(e) => { e.preventDefault(); rejectForm.post(`/admin/reports/${report.id}/reject`, { preserveState: false, onSuccess: () => swalSuccess('Rejected', 'Report has been rejected.') }); }}
                                         className="flex flex-col gap-3"
                                     >
                                         <textarea
@@ -731,7 +734,7 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
                                 )}
 
                                 {canReopen && (
-                                    <form onSubmit={(e) => { e.preventDefault(); reopenForm.post(`/admin/reports/${report.id}/reopen`, { onSuccess: () => swalSuccess('Reopened', 'Report has been reopened.') }); }}>
+                                    <form onSubmit={(e) => { e.preventDefault(); reopenForm.post(`/admin/reports/${report.id}/reopen`, { preserveState: false, onSuccess: () => swalSuccess('Reopened', 'Report has been reopened.') }); }}>
                                         <button
                                             type="submit"
                                             disabled={reopenForm.processing}

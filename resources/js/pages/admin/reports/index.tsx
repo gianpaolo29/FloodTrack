@@ -23,6 +23,10 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
+import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
+import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
+import type { InsightRow } from '@/lib/kpi-utils';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 import type { Report, ReportStatus, Severity, SlaStatus } from '@/types/admin';
@@ -51,10 +55,23 @@ interface Stats {
     resolved: number;
 }
 
+interface Trends {
+    total?: number;
+    pending?: number;
+    critical?: number;
+    resolved?: number;
+    label: string;
+    period_label: string;
+}
+
 interface Props {
     reports: Paginated<Report>;
     filters: Filters;
     stats: Stats;
+    trends: Trends;
+    period: string;
+    custom_from?: string | null;
+    custom_to?: string | null;
     teams: { id: number; name: string }[];
 }
 
@@ -78,58 +95,8 @@ const STATUS_LABEL: Record<string, string> = {
     rejected: 'Rejected',
 };
 
-/* ─── Count-up stat card ─── */
-function StatCard({ icon: Icon, grad, shadow, value, label, sub, index, mounted, alert = false }: {
-    icon: React.ElementType; grad: string; shadow: string;
-    value: number; label: string; sub: string;
-    index: number; mounted: boolean; alert?: boolean;
-}) {
-    const [count, setCount] = useState(0);
-    useEffect(() => {
-        if (!mounted || !value) return;
-        const delay = setTimeout(() => {
-            const duration = 900;
-            let startTime: number | null = null;
-            const step = (ts: number) => {
-                if (!startTime) startTime = ts;
-                const p = Math.min((ts - startTime) / duration, 1);
-                setCount(Math.round((1 - Math.pow(1 - p, 3)) * value));
-                if (p < 1) requestAnimationFrame(step);
-            };
-            requestAnimationFrame(step);
-        }, index * 90);
-        return () => clearTimeout(delay);
-    }, [mounted, value, index]);
-
-    return (
-        <div
-            className={`group relative overflow-hidden rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm transition-all duration-700 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/[0.06] dark:border-neutral-700/60 dark:bg-neutral-900 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
-            style={{ transitionDelay: `${index * 80}ms` }}
-        >
-            {/* Top accent line on hover */}
-            <div className={`absolute inset-x-0 top-0 h-[2px] rounded-t-2xl bg-gradient-to-r ${grad} opacity-0 transition-opacity duration-300 group-hover:opacity-100`} />
-
-            {alert && value > 0 && (
-                <span className="absolute right-4 top-4 flex size-2">
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber-400 opacity-60" />
-                    <span className="relative inline-flex size-2 rounded-full bg-amber-400" />
-                </span>
-            )}
-
-            <div className={`flex size-9 items-center justify-center rounded-xl bg-gradient-to-br ${grad} ${shadow} shadow-sm transition-transform duration-300 group-hover:scale-110`}>
-                <Icon className="size-4 text-white" />
-            </div>
-            <p className="mt-3 text-3xl font-extrabold tabular-nums tracking-tight text-neutral-900 dark:text-neutral-100">
-                {count.toLocaleString()}
-            </p>
-            <p className="mt-0.5 text-xs font-semibold text-neutral-600 dark:text-neutral-400">{label}</p>
-            <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">{sub}</p>
-        </div>
-    );
-}
-
 /* ─── Main page ─── */
-export default function AdminReportsIndex({ reports, filters, stats, teams }: Props) {
+export default function AdminReportsIndex({ reports, filters, stats, trends, period, custom_from, custom_to, teams }: Props) {
     const [selected, setSelected]             = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [searchValue, setSearchValue]       = useState(filters.search ?? '');
@@ -137,6 +104,76 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
     const searchRef                            = useRef<HTMLInputElement>(null);
 
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+
+    const tl = trends.label;
+    const pendingPct = stats.total > 0 ? Math.round((stats.pending / stats.total) * 100) : 0;
+    const criticalPct = stats.total > 0 ? Math.round((stats.critical / stats.total) * 100) : 0;
+    const resolutionRate = stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0;
+    const activeCases = stats.total - stats.resolved - stats.pending;
+
+    function smartDesc(key: string): string {
+        switch (key) {
+            case 'total': {
+                if (stats.total === 0) return 'No reports submitted yet for this period.';
+                const t = trends.total;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Reports surged ${Math.abs(t)}% ${tl} — consider deploying additional responders to handle the volume.`);
+                else if (t > 0) parts.push(`Reports are gradually increasing (${Math.abs(t)}% ${tl}) — monitor for further escalation.`);
+                else if (t === 0) parts.push(`Report volume is stable ${tl} — no unusual activity detected.`);
+                else if (t > -20) parts.push(`Reports are easing slightly (${Math.abs(t)}% ${tl}) — situation is stabilizing.`);
+                else parts.push(`Reports dropped significantly (${Math.abs(t)}% ${tl}) — good time to focus on clearing the backlog.`);
+                if (resolutionRate >= 80) parts.push(`Strong resolution performance at ${resolutionRate}% — maintain this pace.`);
+                else if (resolutionRate >= 50) parts.push(`Resolution rate at ${resolutionRate}% — push to close more cases before the queue grows.`);
+                else if (resolutionRate > 0) parts.push(`Only ${resolutionRate}% resolved — prioritize closing open reports.`);
+                if (pendingPct > 40) parts.push('Verification is a bottleneck — consider assigning more reviewers.');
+                else if (criticalPct > 25) parts.push('High critical ratio — triage and escalate urgent cases first.');
+                return parts.join(' ');
+            }
+            case 'pending': {
+                if (stats.pending === 0) return 'All caught up — no reports pending. Verification pipeline is clear, focus on resolving active cases.';
+                const t = trends.pending;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Pending queue surging (${Math.abs(t)}% ${tl}) — verification is falling behind, allocate more reviewers.`);
+                else if (t > 0) parts.push(`Pending queue growing (${Math.abs(t)}% ${tl}) — try to verify reports faster.`);
+                else if (t < -20) parts.push(`Pending queue clearing fast (${Math.abs(t)}% ${tl}) — excellent verification pace.`);
+                else if (t < 0) parts.push(`Pending queue shrinking (${Math.abs(t)}% ${tl}) — good progress on reviews.`);
+                else parts.push(`Pending queue unchanged ${tl}.`);
+                if (pendingPct > 40) parts.push('Over 40% of reports are stuck in review — this is the primary bottleneck.');
+                else if (pendingPct > 20) parts.push('Moderate pending load — stay on top of incoming reports.');
+                else parts.push('Pending volume is manageable — keep the momentum going.');
+                if (stats.critical > 0 && stats.pending > 0) parts.push('Check for critical reports in the pending queue — those need immediate attention.');
+                return parts.join(' ');
+            }
+            case 'critical': {
+                if (stats.critical === 0) return 'No critical reports this period — severity levels are stable. Focus on maintaining response readiness.';
+                const t = trends.critical;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Critical reports surging (${Math.abs(t)}% ${tl}) — escalate response and brief all teams immediately.`);
+                else if (t > 0) parts.push(`Critical reports rising (${Math.abs(t)}% ${tl}) — increase monitoring and prepare for escalation.`);
+                else if (t < -20) parts.push(`Critical reports dropping fast (${Math.abs(t)}% ${tl}) — emergency is subsiding, shift focus to recovery.`);
+                else if (t < 0) parts.push(`Critical reports declining (${Math.abs(t)}% ${tl}) — situation is improving, maintain vigilance.`);
+                else parts.push(`Critical count unchanged ${tl} — sustained pressure, don't reduce response efforts.`);
+                if (criticalPct > 30) parts.push('Majority of reports are high severity — prioritize these over lower-severity cases.');
+                else parts.push('Critical cases are a smaller share — balance response across all severities.');
+                return parts.join(' ');
+            }
+            case 'resolved': {
+                if (stats.resolved === 0) return stats.total > 0 ? 'No reports resolved yet — focus on verifying pending cases and assigning to responders.' : 'No reports to resolve this period.';
+                const t = trends.resolved;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Resolutions surging (${Math.abs(t)}% ${tl}) — excellent team performance, keep this momentum.`);
+                else if (t > 0) parts.push(`Resolutions improving (${Math.abs(t)}% ${tl}) — response teams are making progress.`);
+                else if (t < -20) parts.push(`Resolutions slowing sharply (${Math.abs(t)}% ${tl}) — investigate what's blocking closures.`);
+                else if (t < 0) parts.push(`Resolutions declining (${Math.abs(t)}% ${tl}) — check if teams need support or redistribution.`);
+                else parts.push(`Resolution pace is steady ${tl}.`);
+                if (resolutionRate >= 80) parts.push(`${resolutionRate}% resolution rate — outstanding clearance, nearly done.`);
+                else if (resolutionRate >= 50) parts.push(`${resolutionRate}% resolved — good progress but more cases need attention.`);
+                else parts.push(`Only ${resolutionRate}% resolved — significant backlog remains, prioritize closures.`);
+                return parts.join(' ');
+            }
+            default: return '';
+        }
+    }
 
     const filter = useCallback((key: string, value: string) => {
         router.get('/admin/reports', { ...filters, [key]: value || undefined, page: undefined }, {
@@ -178,7 +215,7 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
         }
         setBulkProcessing(true);
         router.post('/admin/reports/bulk', { ids: selected, action }, {
-            preserveState: true,
+            preserveState: false,
             onFinish: () => { setBulkProcessing(false); setSelected([]); },
             onSuccess: () => swalSuccess('Done', `Bulk ${action} completed.`),
         });
@@ -209,21 +246,85 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
                             </p>
                         </div>
                     </div>
-                    <Link
-                        href="/admin/reports/map"
-                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-teal-500/25 transition-all hover:scale-[1.02] hover:shadow-teal-500/40 active:scale-[0.97]"
-                    >
-                        <Globe className="size-4" />
-                        Map View
-                    </Link>
+                    <div className="flex items-center gap-3">
+                        <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/reports" />
+                        <Link
+                            href="/admin/reports/map"
+                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-teal-500/25 transition-all hover:scale-[1.02] hover:shadow-teal-500/40 active:scale-[0.97]"
+                        >
+                            <Globe className="size-4" />
+                            Map View
+                        </Link>
+                    </div>
                 </div>
 
                 {/* ── Stats cards ── */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                    <StatCard icon={FileText}      grad="from-teal-500 to-cyan-600"      shadow="shadow-teal-500/20"    value={stats.total}    label="Total Reports"     sub="All time submissions"  index={0} mounted={mounted} />
-                    <StatCard icon={Clock}          grad="from-amber-500 to-orange-600"   shadow="shadow-amber-500/20"   value={stats.pending}  label="Pending Review"    sub="Awaiting verification" index={1} mounted={mounted} alert />
-                    <StatCard icon={AlertTriangle}  grad="from-red-500 to-rose-600"       shadow="shadow-red-500/20"     value={stats.critical} label="Critical Severity"  sub="Needs urgent action"   index={2} mounted={mounted} alert />
-                    <StatCard icon={CheckCircle2}   grad="from-emerald-500 to-teal-600"   shadow="shadow-emerald-500/20" value={stats.resolved}  label="Resolved"          sub="Successfully closed"   index={3} mounted={mounted} />
+                    <PrimaryStatCard
+                        label="Total Reports"
+                        value={stats.total}
+                        trend={trends.total}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('total')}
+                        insights={[
+                            { label: 'Critical', value: stats.critical, color: '#ef4444' },
+                            { label: 'Pending', value: stats.pending, color: '#f59e0b' },
+                        ]}
+                        icon={FileText}
+                        grad="from-teal-500 via-cyan-500 to-blue-500"
+                        shadow="shadow-teal-500/40"
+                        alert={false}
+                        index={0}
+                        mounted={mounted}
+                    />
+                    <PrimaryStatCard
+                        label="Pending Review"
+                        value={stats.pending}
+                        trend={trends.pending}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('pending')}
+                        insights={[
+                            { label: '% of total', value: stats.total > 0 ? `${Math.round((stats.pending / stats.total) * 100)}%` : '0%' },
+                        ]}
+                        icon={Clock}
+                        grad="from-amber-500 via-orange-500 to-yellow-500"
+                        shadow="shadow-amber-500/40"
+                        alert={stats.pending > 0}
+                        index={1}
+                        mounted={mounted}
+                    />
+                    <SecondaryStatCard
+                        icon={AlertTriangle}
+                        grad="from-red-500 to-rose-500"
+                        shadow="shadow-red-500/25"
+                        value={stats.critical}
+                        label="Critical Severity"
+                        trend={trends.critical}
+                        desc={smartDesc('critical')}
+                        insights={[
+                            { label: '% critical', value: stats.total > 0 ? `${Math.round((stats.critical / stats.total) * 100)}%` : '0%', color: '#ef4444' },
+                        ]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={400}
+                    />
+                    <SecondaryStatCard
+                        icon={CheckCircle2}
+                        grad="from-emerald-500 to-teal-500"
+                        shadow="shadow-emerald-500/25"
+                        value={stats.resolved}
+                        label="Resolved"
+                        trend={trends.resolved}
+                        desc={smartDesc('resolved')}
+                        insights={[
+                            { label: 'Resolution rate', value: stats.total > 0 ? `${Math.round((stats.resolved / stats.total) * 100)}%` : '0%', color: '#10b981' },
+                        ]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={500}
+                    />
                 </div>
 
                 {/* ── Bulk action bar ── */}
@@ -283,7 +384,7 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
 
                         <div className="flex flex-wrap items-center gap-2">
                             {/* Search */}
-                            <div className="relative">
+                            <div className="relative w-56">
                                 <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                                 <input
                                     ref={searchRef}
@@ -291,8 +392,13 @@ export default function AdminReportsIndex({ reports, filters, stats, teams }: Pr
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
                                     placeholder="Search reference or address…"
-                                    className="h-9 w-56 rounded-xl border border-neutral-200/80 bg-white pl-9 pr-3 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-teal-500"
+                                    className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-teal-500"
                                 />
+                                {searchValue && (
+                                    <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                        <X className="size-3.5" />
+                                    </button>
+                                )}
                             </div>
 
                             {/* Severity filter */}

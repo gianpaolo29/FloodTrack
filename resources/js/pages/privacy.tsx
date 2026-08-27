@@ -39,10 +39,7 @@ export default function Privacy() {
                 }`}>
                     <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4 lg:px-10">
                         <Link href="/" className="group flex items-center gap-3">
-                            <div className="relative flex size-10 items-center justify-center rounded-[14px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-xl shadow-blue-500/20 transition-all duration-300 group-hover:shadow-blue-500/40 group-hover:scale-110">
-                                <AppLogoIcon className="size-5 fill-current text-white drop-shadow-sm" />
-                                <div className="absolute inset-[1px] rounded-[13px] bg-gradient-to-b from-white/25 to-transparent" />
-                            </div>
+                            <AppLogoIcon className="size-10 rounded-[14px] shadow-xl shadow-blue-500/20 transition-all duration-300 group-hover:shadow-blue-500/40 group-hover:scale-110" />
                             <span className="text-[1.15rem] font-bold tracking-tight">
                                 <span className={isDark ? 'text-white' : 'text-slate-900'}>Flood</span>
                                 <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-cyan-300 to-blue-400' : 'bg-gradient-to-r from-cyan-500 to-blue-600'}`}>Track</span>
@@ -181,9 +178,7 @@ export default function Privacy() {
                     <div className="mx-auto max-w-7xl">
                         <div className={`flex flex-col items-center justify-between gap-3 sm:flex-row`}>
                             <div className="flex items-center gap-3">
-                                <div className="flex size-9 items-center justify-center rounded-[12px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-lg shadow-blue-500/15">
-                                    <AppLogoIcon className="size-[18px] fill-current text-white" />
-                                </div>
+                                <AppLogoIcon className="size-9 rounded-[12px] shadow-lg shadow-blue-500/15" />
                                 <span className={`text-sm font-bold ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>FloodTrack</span>
                             </div>
                             <p className={`text-[12px] ${isDark ? 'text-white/15' : 'text-neutral-400'}`}>&copy; {new Date().getFullYear()} FloodTrack. All rights reserved.</p>

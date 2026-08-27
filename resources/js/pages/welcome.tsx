@@ -442,9 +442,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                 }`}>
                     <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4 lg:px-10">
                         <Link href="/" className="group flex items-center gap-3">
-                            <div className="logo-float relative flex size-10 items-center justify-center rounded-[14px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-xl shadow-blue-500/20 transition-all duration-300 group-hover:shadow-blue-500/40 group-hover:scale-110">
-                                <AppLogoIcon className="size-5 fill-current text-white drop-shadow-sm" />
-                                <div className="absolute inset-[1px] rounded-[13px] bg-gradient-to-b from-white/25 to-transparent" />
+                            <div className="logo-float relative transition-all duration-300 group-hover:scale-110">
+                                <AppLogoIcon className="size-10 rounded-[14px] shadow-xl shadow-blue-900/20 transition-shadow group-hover:shadow-blue-900/40" />
                             </div>
                             <span className="text-[1.15rem] font-bold tracking-tight">
                                 <span className={isDark ? 'text-white' : 'text-slate-900'}>Flood</span><span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-cyan-300 to-blue-400' : 'bg-gradient-to-r from-cyan-500 to-blue-600'}`}>Track</span>
@@ -973,9 +972,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             </div>
 
                             <div className={`relative mx-auto max-w-3xl text-center transition-all duration-[800ms] ${ctaIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                                <div className="water-ripple logo-float glow-pulse mb-8 inline-flex items-center justify-center size-24 rounded-[28px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-2xl shadow-blue-500/20">
-                                    <AppLogoIcon className="size-12 fill-current text-white drop-shadow-lg" />
-                                    <div className="absolute inset-[1px] rounded-[27px] bg-gradient-to-b from-white/20 to-transparent" />
+                                <div className="water-ripple logo-float glow-pulse mb-8 inline-flex">
+                                    <AppLogoIcon className="size-24 rounded-[28px] shadow-2xl shadow-blue-900/20" />
                                 </div>
                                 <h2 className="mb-5 text-4xl font-bold tracking-tight sm:text-5xl">
                                     <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white to-white/70' : 'bg-gradient-to-b from-slate-900 to-slate-500'}`}>Ready to help keep </span>
@@ -1008,9 +1006,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             {/* Brand */}
                             <div>
                                 <div className="flex items-center gap-3 mb-4">
-                                    <div className="flex size-9 items-center justify-center rounded-[12px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-lg shadow-blue-500/15">
-                                        <AppLogoIcon className="size-[18px] fill-current text-white" />
-                                    </div>
+                                    <AppLogoIcon className="size-9 rounded-[12px] shadow-lg shadow-blue-900/15" />
                                     <span className={`text-sm font-bold ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>FloodTrack</span>
                                 </div>
                                 <p className={`text-[13px] leading-relaxed max-w-[260px] ${isDark ? 'text-white/20' : 'text-neutral-400'}`}>
@@ -1438,9 +1434,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
 
                                 {/* App chrome */}
                                 <div className="relative z-20 mx-3 mb-2 mt-1 flex items-center gap-2.5 rounded-2xl bg-white/[0.03] px-3 py-2.5 border border-white/[0.04]">
-                                    <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 shadow-md">
-                                        <AppLogoIcon className="size-4 fill-current text-white" />
-                                    </div>
+                                    <AppLogoIcon className="size-8 rounded-xl shadow-md" />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-[12px] font-bold text-white/80 transition-all duration-300">{DEMO_STEPS[active].title}</p>
                                         <p className="text-[9px] text-white/25 font-medium">Step {active + 1} of 4</p>

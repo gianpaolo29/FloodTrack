@@ -71,8 +71,8 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
                         {/* Logo */}
                         <div>
                             <Link href={home()} className="group inline-flex items-center gap-3">
-                                <div className="flex size-10 items-center justify-center rounded-[14px] bg-white/10 shadow-xl shadow-black/10 backdrop-blur-md transition-all duration-300 group-hover:scale-110 group-hover:bg-white/15">
-                                    <AppLogoIcon className="size-5 fill-current text-white" />
+                                <div className="flex size-10 items-center justify-center transition-all duration-300 group-hover:scale-110">
+                                    <AppLogoIcon className="size-10 rounded-[14px] shadow-xl shadow-black/10" />
                                 </div>
                                 <span className="text-lg font-bold tracking-tight text-white drop-shadow-sm">
                                     Flood<span className="bg-gradient-to-r from-cyan-300 to-blue-400 bg-clip-text text-transparent">Track</span>
@@ -149,9 +149,7 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
                         {/* Mobile header */}
                         <div className="mb-6 flex items-center justify-center lg:hidden">
                             <Link href={home()} className="inline-flex items-center gap-2.5">
-                                <div className="flex size-9 items-center justify-center rounded-[12px] bg-gradient-to-br from-cyan-400 via-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20">
-                                    <AppLogoIcon className="size-[18px] fill-current text-white" />
-                                </div>
+                                <AppLogoIcon className="size-9 rounded-[12px] shadow-lg shadow-blue-500/20" />
                                 <span className="text-base font-bold text-neutral-900 dark:text-white">Flood<span className="text-blue-600 dark:text-cyan-400">Track</span></span>
                             </Link>
                         </div>

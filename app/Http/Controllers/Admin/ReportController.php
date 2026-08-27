@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\HasPeriodStats;
 use App\Models\FieldReport;
 use App\Models\Report;
 use App\Models\ReportResponder;
@@ -19,6 +20,8 @@ use Inertia\Response;
 
 class ReportController extends Controller
 {
+    use HasPeriodStats;
+
     public function map(Request $request): Response
     {
         $request->validate([
@@ -71,18 +74,44 @@ class ReportController extends Controller
             ->paginate(20)
             ->withQueryString();
 
+        [$from, $to, $period] = $this->parsePeriod($request);
+        [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
+
+        $curTotal    = $this->scopeByPeriod(Report::query(), $from, $to)->count();
+        $curPending  = $this->scopeByPeriod(Report::where('status', 'pending'), $from, $to)->count();
+        $curCritical = $this->scopeByPeriod(Report::where('severity', 'critical'), $from, $to)->count();
+        $curResolved = $this->scopeByPeriod(Report::where('status', 'resolved'), $from, $to)->count();
+
+        $prevTotal    = Report::whereBetween('created_at', [$prevFrom, $prevTo])->count();
+        $prevPending  = Report::where('status', 'pending')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+        $prevCritical = Report::where('severity', 'critical')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+        $prevResolved = Report::where('status', 'resolved')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
         $stats = [
-            'total'    => Report::count(),
-            'pending'  => Report::where('status', 'pending')->count(),
-            'critical' => Report::where('severity', 'critical')->count(),
-            'resolved' => Report::where('status', 'resolved')->count(),
+            'total'    => $curTotal,
+            'pending'  => $curPending,
+            'critical' => $curCritical,
+            'resolved' => $curResolved,
+        ];
+
+        $trends = [
+            'total'        => $this->calcTrend($curTotal, $prevTotal),
+            'pending'      => $this->calcTrend($curPending, $prevPending),
+            'critical'     => $this->calcTrend($curCritical, $prevCritical),
+            'resolved'     => $this->calcTrend($curResolved, $prevResolved),
+            'label'        => $trendLabel,
+            'period_label' => $periodLabel,
         ];
 
         return Inertia::render('admin/reports/index', [
-            'reports' => $reports,
-            'filters' => $request->only(['status', 'severity', 'search', 'team_id']),
-            'stats'   => $stats,
-            'teams'   => Team::orderBy('name')->get(['id', 'name']),
+            'reports'     => $reports,
+            'filters'     => $request->only(['status', 'severity', 'search', 'team_id']),
+            'stats'       => $stats,
+            'trends'      => $trends,
+            'period'      => $period,
+            'custom_from' => $request->get('from'),
+            'custom_to'   => $request->get('to'),
+            'teams'       => Team::orderBy('name')->get(['id', 'name']),
         ]);
     }
 

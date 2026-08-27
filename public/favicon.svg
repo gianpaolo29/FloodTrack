@@ -1,15 +1,17 @@
 <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="32" height="32" rx="8" fill="url(#bg)"/>
   <!-- Shield outline -->
-  <path d="M16 4.5L7 8.5V15C7 20.5 10.8 25.4 16 27C21.2 25.4 25 20.5 25 15V8.5L16 4.5Z" fill="white" fill-opacity="0.15" stroke="white" stroke-width="1" stroke-opacity="0.3"/>
-  <!-- Water drop inside shield -->
-  <path d="M16 10C16 10 12 15 12 17.5C12 19.7 13.8 21.5 16 21.5C18.2 21.5 20 19.7 20 17.5C20 15 16 10 16 10Z" fill="white" opacity="0.95"/>
-  <!-- Wave -->
-  <path d="M13.5 18C14 17.4 14.5 17.2 15.2 17.2C15.9 17.2 16.1 17.7 16.8 17.7C17.5 17.7 17.7 17.2 18.4 17.2" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M16 4L7.5 8V15.5C7.5 21.5 11.2 26 16 27.5C20.8 26 24.5 21.5 24.5 15.5V8L16 4Z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+  <!-- Shield left half darker -->
+  <path d="M16 4L7.5 8V15.5C7.5 21.5 11.2 26 16 27.5V4Z" fill="white" fill-opacity="0.08"/>
+  <!-- Wave curl -->
+  <path d="M18.5 10C18.5 10 22 13.5 22 16.5C22 19.8 19.3 22.5 16 22.5C12.7 22.5 10 19.8 10 16.5C10 15 10.8 13.5 12 12" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M12 12C13.5 10.5 15.5 10 17 11C18.5 12 18 14 16.5 15C15 16 13.5 15.5 13 14.5C12.5 13.5 13 12.5 14 12" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="32" y2="32">
-      <stop stop-color="#2563eb"/>
-      <stop offset="1" stop-color="#4338ca"/>
+      <stop stop-color="#1e3a5f"/>
+      <stop offset="0.5" stop-color="#1a4a7a"/>
+      <stop offset="1" stop-color="#1565a0"/>
     </linearGradient>
   </defs>
 </svg>

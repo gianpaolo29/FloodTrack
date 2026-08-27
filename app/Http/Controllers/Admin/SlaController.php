@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\HasPeriodStats;
 use App\Models\ReportSlaConfig;
 use App\Models\Setting;
 use App\Services\SlaService;
@@ -13,13 +14,24 @@ use Inertia\Response;
 
 class SlaController extends Controller
 {
+    use HasPeriodStats;
+
     public function index(Request $request, SlaService $sla): Response
     {
+        [$from, $to, $period] = $this->parsePeriod($request);
+        [, , $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
+
         return Inertia::render('admin/sla/index', [
             'configs'     => ReportSlaConfig::allGroupedBySeverity(),
-            'stats'       => $sla->getComplianceStats($request->get('period', 'all')),
+            'stats'       => $sla->getComplianceStats($period),
             'sla_enabled' => (bool) Setting::getValue('sla_enabled'),
-            'period'      => $request->get('period', 'all'),
+            'period'      => $period,
+            'custom_from' => $request->get('from'),
+            'custom_to'   => $request->get('to'),
+            'trends'      => [
+                'label'        => $trendLabel,
+                'period_label' => $periodLabel,
+            ],
         ]);
     }
 

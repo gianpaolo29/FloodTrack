@@ -5,6 +5,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Activity, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Eye, EyeOff, MapPin, Pencil, Phone, Plus, Search, ShieldCheck, Star, Trash2, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
+import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
+import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
+import type { InsightRow } from '@/lib/kpi-utils';
 import type { BreadcrumbItem } from '@/types';
 
 const modalSpring = { type: 'spring' as const, stiffness: 400, damping: 28 };
@@ -46,6 +50,11 @@ interface Props {
     responders: Paginated<Responder>;
     filters: { search?: string };
     teams_count: number;
+    stats: { total: number; active_assignments: number; total_resolved: number; in_teams: number };
+    trends: { total: number; active_assignments: number; total_resolved: number; label: string; period_label: string };
+    period: string;
+    custom_from: string | null;
+    custom_to: string | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -53,7 +62,10 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Responders', href: '/admin/responders' },
 ];
 
-export default function AdminRespondersIndex({ responders, filters, teams_count }: Props) {
+export default function AdminRespondersIndex({ responders, filters, teams_count, stats, trends, period, custom_from, custom_to }: Props) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+
     const [showCreate, setShowCreate] = useState(false);
     const [editingResponder, setEditingResponder] = useState<Responder | null>(null);
     const [searchValue, setSearchValue] = useState('');
@@ -61,7 +73,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
     const handleDelete = async (r: Responder) => {
         const confirmed = await swalDelete(r.name);
         if (!confirmed) return;
-        router.delete(`/admin/responders/${r.id}`, { preserveScroll: true });
+        router.delete(`/admin/responders/${r.id}`, { preserveState: false, preserveScroll: true });
     };
 
     const filtered = responders.data.filter((r) => {
@@ -70,9 +82,66 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
         return r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q) || (r.contact_number ?? '').toLowerCase().includes(q) || (r.home_address ?? '').toLowerCase().includes(q) || (r.team_name ?? '').toLowerCase().includes(q);
     });
 
-    const totalActive = filtered.reduce((sum, r) => sum + r.active_assignments, 0);
-    const totalResolved = filtered.reduce((sum, r) => sum + r.resolved_count, 0);
     const hasFilters = !!searchValue;
+
+    const tl = trends.label;
+    const inTeamsPct = stats.total > 0 ? Math.round((stats.in_teams / stats.total) * 100) : 0;
+    const loadPerResponder = stats.total > 0 ? Math.round(stats.active_assignments / stats.total * 10) / 10 : 0;
+
+    function smartDesc(key: string): string {
+        switch (key) {
+            case 'total': {
+                if (stats.total === 0) return 'No responders registered — recruit responders to build emergency response capability.';
+                const t = trends.total;
+                const parts: string[] = [];
+                if (t > 0) parts.push(`Responder capacity growing (${Math.abs(t)}% ${tl}) — building a stronger response force.`);
+                else if (t === 0) parts.push(`Responder count stable ${tl}.`);
+                if (inTeamsPct >= 80) parts.push('Most responders are organized in teams — strong coordination structure.');
+                else if (inTeamsPct >= 50) parts.push('Moderate team organization — assign more responders to teams for better coordination.');
+                else parts.push('Most responders are unassigned — organize them into teams for effective response.');
+                if (loadPerResponder > 5) parts.push('Workload per responder is heavy — consider recruiting additional members.');
+                return parts.join(' ');
+            }
+            case 'active': {
+                if (stats.active_assignments === 0) return 'No active assignments — responders are available and on standby for incoming reports.';
+                const t = trends.active_assignments;
+                const parts: string[] = [];
+                if (t > 30) parts.push(`Assignments surging (${Math.abs(t)}% ${tl}) — workload is intensifying, monitor for burnout.`);
+                else if (t > 0) parts.push(`Assignments increasing (${Math.abs(t)}% ${tl}) — teams are being engaged with more reports.`);
+                else if (t < -20) parts.push(`Assignments dropping (${Math.abs(t)}% ${tl}) — demand is easing, teams can focus on quality.`);
+                else if (t < 0) parts.push(`Assignments easing (${Math.abs(t)}% ${tl}) — slightly lighter workload.`);
+                else parts.push(`Assignment volume steady ${tl}.`);
+                if (loadPerResponder > 5) parts.push('High load per responder — redistribute or add team members.');
+                else if (loadPerResponder > 2) parts.push('Moderate workload — sustainable if teams are well-organized.');
+                else parts.push('Light workload — capacity available for additional assignments.');
+                return parts.join(' ');
+            }
+            case 'resolved': {
+                if (stats.total_resolved === 0) return 'No assignments completed yet — encourage teams to close out cases and report progress.';
+                const t = trends.total_resolved;
+                const parts: string[] = [];
+                if (t > 20) parts.push(`Resolutions surging (${Math.abs(t)}% ${tl}) — outstanding team productivity.`);
+                else if (t > 0) parts.push(`Resolutions improving (${Math.abs(t)}% ${tl}) — teams are making steady progress.`);
+                else if (t < -20) parts.push(`Resolutions dropping (${Math.abs(t)}% ${tl}) — check if teams are blocked or need support.`);
+                else if (t < 0) parts.push(`Resolutions slowing (${Math.abs(t)}% ${tl}) — investigate potential blockers.`);
+                else parts.push(`Resolution pace steady ${tl}.`);
+                if (stats.total_resolved > stats.active_assignments) parts.push('Clearing faster than incoming — excellent throughput.');
+                else if (stats.active_assignments > 0) parts.push('Active cases still outnumber completed — keep pushing for closures.');
+                return parts.join(' ');
+            }
+            case 'in_teams': {
+                if (stats.in_teams === 0) return 'No responders in teams — organize the workforce for coordinated emergency response.';
+                const parts: string[] = [];
+                if (inTeamsPct >= 90) parts.push('Almost all responders are in teams — excellent organizational coverage.');
+                else if (inTeamsPct >= 60) parts.push('Good team coverage — assign remaining responders for full coordination.');
+                else parts.push('Less than half of responders are in teams — this limits coordinated response capability.');
+                if (stats.active_assignments > 0 && inTeamsPct < 50) parts.push('With active assignments ongoing, better team organization would improve response efficiency.');
+                else if (inTeamsPct >= 90) parts.push('Team structure supports efficient deployment and communication.');
+                return parts.join(' ');
+            }
+            default: return '';
+        }
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -94,6 +163,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/responders" />
                         <Link
                             href="/admin/teams"
                             className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition-all hover:bg-neutral-50 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
@@ -111,51 +181,64 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
                     </div>
                 </div>
 
-                {/* Stat cards */}
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex items-start justify-between">
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-blue-600 shadow-sm shadow-indigo-500/20">
-                                <ShieldCheck className="size-4 text-white" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{responders.total}</p>
-                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Total Responders</p>
-                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">All registered responders</p>
-                    </div>
-                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex items-start justify-between">
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm shadow-emerald-500/20">
-                                <Activity className="size-4 text-white" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{totalActive}</p>
-                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Active Assignments</p>
-                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">Currently on duty</p>
-                    </div>
-                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex items-start justify-between">
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-orange-600 shadow-sm shadow-amber-500/20">
-                                <CheckCircle2 className="size-4 text-white" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{totalResolved}</p>
-                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Total Resolved</p>
-                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">Completed assignments</p>
-                    </div>
-                    <Link
-                        href="/admin/teams"
-                        className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm transition-all hover:shadow-md dark:border-neutral-700/60 dark:bg-neutral-900"
-                    >
-                        <div className="flex items-start justify-between">
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm shadow-violet-500/20">
-                                <Users className="size-4 text-white" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{teams_count}</p>
-                        <p className="mt-0.5 text-xs font-medium text-neutral-500 dark:text-neutral-400">Teams</p>
-                        <p className="mt-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">Manage teams →</p>
-                    </Link>
+                {/* KPI Stat cards */}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <PrimaryStatCard
+                        label="Total Responders"
+                        value={stats.total}
+                        trend={trends.total}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('total')}
+                        insights={[{ label: 'In Teams', value: stats.in_teams }]}
+                        icon={ShieldCheck}
+                        grad="from-violet-500 via-indigo-500 to-blue-500"
+                        shadow="shadow-violet-500/40"
+                        alert={false}
+                        index={0}
+                        mounted={mounted}
+                    />
+                    <PrimaryStatCard
+                        label="Active Assignments"
+                        value={stats.active_assignments}
+                        trend={trends.active_assignments}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('active')}
+                        insights={[]}
+                        icon={Activity}
+                        grad="from-amber-500 via-orange-500 to-red-500"
+                        shadow="shadow-amber-500/40"
+                        alert={stats.active_assignments > 0}
+                        index={1}
+                        mounted={mounted}
+                    />
+                    <SecondaryStatCard
+                        icon={CheckCircle2}
+                        grad="from-emerald-500 to-teal-500"
+                        shadow="shadow-emerald-500/25"
+                        value={stats.total_resolved}
+                        label="Total Resolved"
+                        trend={trends.total_resolved}
+                        desc={smartDesc('resolved')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={400}
+                    />
+                    <SecondaryStatCard
+                        icon={Users}
+                        grad="from-blue-500 to-indigo-500"
+                        shadow="shadow-blue-500/25"
+                        value={stats.in_teams}
+                        label="In Teams"
+                        trend={undefined}
+                        desc={smartDesc('in_teams')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={500}
+                    />
                 </div>
 
                 {/* Table card */}
@@ -171,25 +254,21 @@ export default function AdminRespondersIndex({ responders, filters, teams_count 
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <div className="relative">
+                            <div className="relative w-56">
                                 <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                                 <input
                                     type="text"
                                     placeholder="Search responders..."
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-52 rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-3 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-indigo-500 dark:focus:bg-neutral-900"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-indigo-500 dark:focus:bg-neutral-900"
                                 />
+                                {searchValue && (
+                                    <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                        <X className="size-3.5" />
+                                    </button>
+                                )}
                             </div>
-                            {searchValue && (
-                                <button
-                                    onClick={() => setSearchValue('')}
-                                    className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 text-neutral-400 transition-colors hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
-                                    title="Clear search"
-                                >
-                                    <X className="size-4" />
-                                </button>
-                            )}
                         </div>
                     </div>
 
@@ -480,11 +559,13 @@ function ResponderFormModal({
         e.preventDefault();
         if (isEdit) {
             form.put(`/admin/responders/${responder!.id}`, {
+                preserveState: false,
                 preserveScroll: true,
                 onSuccess: () => { onClose(); swalSuccess('Success', 'Responder updated successfully.'); },
             });
         } else {
             form.post('/admin/responders', {
+                preserveState: false,
                 onSuccess: () => { form.reset(); onClose(); swalSuccess('Success', 'Responder created successfully.'); },
             });
         }

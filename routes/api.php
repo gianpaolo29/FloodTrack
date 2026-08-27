@@ -34,6 +34,7 @@ Route::post('/register',       [AuthController::class, 'register']);
 Route::post('/login',          [AuthController::class, 'login']);
 Route::post('/check-email',    [AuthController::class, 'checkEmail']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/auth/google',   [AuthController::class, 'google']);
 
 // ── Authenticated (all roles) ───────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {

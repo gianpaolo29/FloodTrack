@@ -24,6 +24,10 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
+import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
+import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
+import type { InsightRow } from '@/lib/kpi-utils';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 import type { EvacuationCenter, EvacuationCenterType } from '@/types/admin';
@@ -53,10 +57,21 @@ interface CenterStats {
     total_occupancy: number;
 }
 
+interface Trends {
+    total?: number;
+    active?: number;
+    label: string;
+    period_label: string;
+}
+
 interface Props {
     centers: Paginated<EvacuationCenter>;
     filters: Filters;
     stats: CenterStats;
+    trends: Trends;
+    period: string;
+    custom_from?: string | null;
+    custom_to?: string | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -97,12 +112,15 @@ const TYPE_ICON: Record<EvacuationCenterType, React.ElementType> = {
 
 /* ─── Main Component ─── */
 
-export default function AdminEvacuationCentersIndex({ centers, filters, stats }: Props) {
+export default function AdminEvacuationCentersIndex({ centers, filters, stats, trends, period, custom_from, custom_to }: Props) {
     const [selected, setSelected] = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingCenter, setEditingCenter] = useState<EvacuationCenter | null>(null);
     const [searchValue, setSearchValue] = useState('');
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
 
     const filter = useCallback(
         (key: string, value: string) => {
@@ -149,7 +167,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats }:
             '/admin/evacuation-centers/bulk',
             { ids: selected, action },
             {
-                preserveState: true,
+                preserveState: false,
                 onFinish: () => {
                     setBulkProcessing(false);
                     setSelected([]);
@@ -162,6 +180,63 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats }:
     const occupancyPct = stats.total_capacity > 0
         ? Math.round((stats.total_occupancy / stats.total_capacity) * 100)
         : 0;
+
+    const tl = trends.label;
+    const activePct = stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0;
+    const occupancyRate = stats.total_capacity > 0 ? Math.round((stats.total_occupancy / stats.total_capacity) * 100) : 0;
+
+    function smartDesc(key: string): string {
+        switch (key) {
+            case 'total': {
+                if (stats.total === 0) return 'No evacuation centers registered — set up centers before emergency events.';
+                const t = trends.total;
+                const parts: string[] = [];
+                if (t !== undefined && t > 0) parts.push(`New centers added (${Math.abs(t)}% ${tl}) — expanding evacuation capacity.`);
+                else if (t !== undefined && t === 0) parts.push(`Center count stable ${tl}.`);
+                if (activePct >= 80) parts.push('Most centers are operational — strong readiness posture.');
+                else if (activePct >= 50) parts.push('Moderate activation level — consider activating more centers if demand increases.');
+                else if (activePct > 0) parts.push('Few centers active — activate more during emergencies to handle demand.');
+                else parts.push('No centers currently active — activate immediately if evacuations are needed.');
+                if (occupancyRate > 70) parts.push('Occupancy is getting high — prepare overflow plans.');
+                return parts.join(' ');
+            }
+            case 'active': {
+                if (stats.active === 0) return stats.total > 0 ? 'No centers are active — activate centers immediately if evacuations are underway.' : 'No centers available to activate.';
+                const t = trends.active;
+                const parts: string[] = [];
+                if (t !== undefined && t > 0) parts.push(`More centers coming online (${Math.abs(t)}% ${tl}) — scaling up response capacity.`);
+                else if (t !== undefined && t < 0) parts.push(`Active centers decreasing (${Math.abs(t)}% ${tl}) — ensure deactivation is intentional and demand is met.`);
+                else parts.push(`Active center count stable ${tl}.`);
+                if (occupancyRate > 85) parts.push('Approaching maximum capacity — urgently activate additional centers or arrange overflow.');
+                else if (occupancyRate > 60) parts.push('Moderate occupancy — monitor intake rates and prepare contingencies.');
+                else if (stats.total_occupancy > 0) parts.push('Capacity is sufficient — room available for more evacuees if needed.');
+                else parts.push('Centers are active but empty — ready to receive evacuees.');
+                return parts.join(' ');
+            }
+            case 'capacity': {
+                if (stats.total_capacity === 0) return 'No capacity configured — set up center capacities to enable proper evacuee management.';
+                const parts: string[] = [];
+                if (occupancyRate > 85) parts.push('Capacity is critically low — activate additional centers or expand existing ones immediately.');
+                else if (occupancyRate > 60) parts.push('Capacity is being consumed — plan ahead for potential overflow situations.');
+                else if (occupancyRate > 30) parts.push('Good capacity buffer available — current demand is well within limits.');
+                else if (stats.total_occupancy > 0) parts.push('Plenty of capacity remaining — well prepared for increased demand.');
+                else parts.push('Full capacity available — no evacuees currently sheltered.');
+                if (stats.active < stats.total) parts.push('Inactive centers could provide additional capacity if activated.');
+                return parts.join(' ');
+            }
+            case 'occupancy': {
+                if (stats.total_occupancy === 0) return 'No evacuees currently sheltered — centers are on standby and ready.';
+                const parts: string[] = [];
+                if (occupancyRate >= 90) parts.push('Near full capacity — critical situation. Activate overflow plans and additional centers immediately.');
+                else if (occupancyRate >= 70) parts.push('High occupancy — situation requires close monitoring. Prepare backup capacity.');
+                else if (occupancyRate >= 40) parts.push('Moderate occupancy — capacity is holding well. Continue monitoring intake.');
+                else parts.push('Low occupancy — plenty of room for additional evacuees if conditions worsen.');
+                if (stats.active < stats.total) parts.push('Additional centers can be activated if occupancy continues to rise.');
+                return parts.join(' ');
+            }
+            default: return '';
+        }
+    }
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -187,94 +262,82 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats }:
                             </p>
                         </div>
                     </div>
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:shadow-lg hover:shadow-blue-500/30 hover:brightness-110 active:scale-[0.97]"
-                    >
-                        <Plus className="size-4" />
-                        Add Center
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/evacuation-centers" />
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:shadow-lg hover:shadow-blue-500/30 hover:brightness-110 active:scale-[0.97]"
+                        >
+                            <Plus className="size-4" />
+                            Add Center
+                        </button>
+                    </div>
                 </div>
 
                 {/* ── Stats Row ── */}
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-                    {/* Total Centers */}
-                    <div className="rounded-2xl border border-neutral-200/80 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Total</p>
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-sky-50 dark:bg-sky-950/30">
-                                <Building2 className="size-4 text-sky-500" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-neutral-900 dark:text-neutral-100">{stats.total}</p>
-                        <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">registered centers</p>
-                    </div>
-
-                    {/* Active Centers */}
-                    <div className="rounded-2xl border border-emerald-200/60 bg-gradient-to-br from-emerald-50 to-teal-50/60 p-5 shadow-sm dark:border-emerald-800/40 dark:from-emerald-950/30 dark:to-teal-950/20">
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-500">Active</p>
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
-                                <span className="size-2.5 animate-pulse rounded-full bg-emerald-500" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-emerald-800 dark:text-emerald-300">{stats.active}</p>
-                        <p className="mt-1 text-xs text-emerald-600/70 dark:text-emerald-500/70">operational</p>
-                    </div>
-
-                    {/* Total Capacity */}
-                    <div className="rounded-2xl border border-blue-200/60 bg-gradient-to-br from-blue-50 to-sky-50/60 p-5 shadow-sm dark:border-blue-800/40 dark:from-blue-950/30 dark:to-sky-950/20">
-                        <div className="flex items-center justify-between">
-                            <p className="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-500">Capacity</p>
-                            <div className="flex size-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
-                                <Users className="size-4 text-blue-500" />
-                            </div>
-                        </div>
-                        <p className="mt-3 text-3xl font-bold tabular-nums text-blue-800 dark:text-blue-300">{stats.total_capacity.toLocaleString()}</p>
-                        <p className="mt-1 text-xs text-blue-600/70 dark:text-blue-500/70">total persons</p>
-                    </div>
-
-                    {/* Current Evacuees */}
-                    <div className={`rounded-2xl border p-5 shadow-sm ${
-                        occupancyPct >= 90
-                            ? 'border-red-200/60 bg-gradient-to-br from-red-50 to-rose-50/60 dark:border-red-800/40 dark:from-red-950/30 dark:to-rose-950/20'
-                            : occupancyPct >= 70
-                            ? 'border-amber-200/60 bg-gradient-to-br from-amber-50 to-orange-50/60 dark:border-amber-800/40 dark:from-amber-950/30 dark:to-orange-950/20'
-                            : 'border-violet-200/60 bg-gradient-to-br from-violet-50 to-purple-50/60 dark:border-violet-800/40 dark:from-violet-950/30 dark:to-purple-950/20'
-                    }`}>
-                        <div className="flex items-center justify-between">
-                            <p className={`text-xs font-semibold uppercase tracking-wider ${
-                                occupancyPct >= 90 ? 'text-red-600 dark:text-red-500'
-                                : occupancyPct >= 70 ? 'text-amber-600 dark:text-amber-500'
-                                : 'text-violet-600 dark:text-violet-500'
-                            }`}>Evacuees</p>
-                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                occupancyPct >= 90 ? 'bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-400'
-                                : occupancyPct >= 70 ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-400'
-                                : 'bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400'
-                            }`}>{occupancyPct}%</span>
-                        </div>
-                        <p className={`mt-3 text-3xl font-bold tabular-nums ${
-                            occupancyPct >= 90 ? 'text-red-800 dark:text-red-300'
-                            : occupancyPct >= 70 ? 'text-amber-800 dark:text-amber-300'
-                            : 'text-violet-800 dark:text-violet-300'
-                        }`}>{stats.total_occupancy.toLocaleString()}</p>
-                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/60 dark:bg-black/20">
-                            <div
-                                className={`h-full rounded-full transition-all ${
-                                    occupancyPct >= 90 ? 'bg-red-500'
-                                    : occupancyPct >= 70 ? 'bg-amber-500'
-                                    : 'bg-violet-500'
-                                }`}
-                                style={{ width: `${Math.min(occupancyPct, 100)}%` }}
-                            />
-                        </div>
-                        <p className={`mt-1 text-xs ${
-                            occupancyPct >= 90 ? 'text-red-600/70 dark:text-red-500/70'
-                            : occupancyPct >= 70 ? 'text-amber-600/70 dark:text-amber-500/70'
-                            : 'text-violet-600/70 dark:text-violet-500/70'
-                        }`}>of {stats.total_capacity.toLocaleString()} capacity</p>
-                    </div>
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                    <PrimaryStatCard
+                        label="Total Centers"
+                        value={stats.total}
+                        trend={trends.total}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('total')}
+                        insights={[
+                            { label: 'Active', value: stats.active, color: '#10b981' },
+                            { label: 'Inactive', value: stats.total - stats.active, color: '#6b7280' },
+                        ]}
+                        icon={Building2}
+                        grad="from-sky-500 via-blue-500 to-indigo-500"
+                        shadow="shadow-sky-500/40"
+                        alert={false}
+                        index={0}
+                        mounted={mounted}
+                    />
+                    <PrimaryStatCard
+                        label="Active Centers"
+                        value={stats.active}
+                        trend={trends.active}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={smartDesc('active')}
+                        insights={[
+                            { label: '% active', value: stats.total > 0 ? `${Math.round((stats.active / stats.total) * 100)}%` : '0%', color: '#10b981' },
+                        ]}
+                        icon={ShieldCheck}
+                        grad="from-emerald-500 via-teal-500 to-cyan-500"
+                        shadow="shadow-emerald-500/40"
+                        alert={false}
+                        index={1}
+                        mounted={mounted}
+                    />
+                    <SecondaryStatCard
+                        icon={Users}
+                        grad="from-violet-500 to-purple-500"
+                        shadow="shadow-violet-500/25"
+                        value={stats.total_capacity.toLocaleString()}
+                        label="Total Capacity"
+                        desc={smartDesc('capacity')}
+                        insights={[]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={400}
+                    />
+                    <SecondaryStatCard
+                        icon={Users}
+                        grad="from-amber-500 to-orange-500"
+                        shadow="shadow-amber-500/25"
+                        value={stats.total_occupancy.toLocaleString()}
+                        label="Evacuees"
+                        desc={smartDesc('occupancy')}
+                        insights={[
+                            { label: 'Occupancy', value: `${occupancyPct}%`, color: occupancyPct >= 90 ? '#ef4444' : occupancyPct >= 70 ? '#f59e0b' : '#8b5cf6' },
+                            { label: 'Capacity', value: stats.total_capacity.toLocaleString() },
+                        ]}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        mounted={mounted}
+                        delay={500}
+                    />
                 </div>
 
                 {/* ── Bulk Action Bar ── */}
@@ -358,15 +421,20 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats }:
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <div className="relative">
+                            <div className="relative w-56">
                                 <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                                 <input
                                     type="text"
                                     placeholder="Search centers..."
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-52 rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-3 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
                                 />
+                                {searchValue && (
+                                    <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                        <X className="size-3.5" />
+                                    </button>
+                                )}
                             </div>
                             {hasFilters && (
                                 <button
@@ -659,7 +727,7 @@ function CenterRow({
                 <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                         onClick={() =>
-                            router.post(`/admin/evacuation-centers/${center.id}/toggle`, {}, { preserveState: true })
+                            router.post(`/admin/evacuation-centers/${center.id}/toggle`, {}, { preserveState: false })
                         }
                         className={`rounded-lg p-1.5 transition-colors ${
                             center.is_active
@@ -682,6 +750,7 @@ function CenterRow({
                             const confirmed = await swalDelete('this evacuation center');
                             if (confirmed)
                                 deleteForm.delete(`/admin/evacuation-centers/${center.id}`, {
+                                    preserveState: false,
                                     onSuccess: () => swalSuccess('Deleted', 'Evacuation center has been removed.'),
                                 });
                         }}
@@ -717,7 +786,7 @@ function OccupancyCell({ centerId, current, capacity }: { centerId: number; curr
             `/admin/evacuation-centers/${centerId}/occupancy`,
             { current_occupancy: newValue },
             {
-                preserveState: true,
+                preserveState: false,
                 onFinish: () => setUpdating(false),
             },
         );
@@ -904,6 +973,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
         e.preventDefault();
         if (isEditing) {
             form.put(`/admin/evacuation-centers/${center!.id}`, {
+                preserveState: false,
                 onSuccess: () => {
                     onClose();
                     swalSuccess('Updated', 'Evacuation center has been updated.');
@@ -911,6 +981,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
             });
         } else {
             form.post('/admin/evacuation-centers', {
+                preserveState: false,
                 onSuccess: () => {
                     form.reset();
                     onClose();
@@ -1131,6 +1202,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                         const confirmed = await swalDelete('this evacuation center');
                                         if (confirmed)
                                             router.delete(`/admin/evacuation-centers/${center!.id}`, {
+                                                preserveState: false,
                                                 onSuccess: () => {
                                                     onClose();
                                                     swalSuccess('Deleted', 'Evacuation center has been removed.');

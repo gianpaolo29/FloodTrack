@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\HasPeriodStats;
 use App\Models\Report;
 use App\Models\Team;
 use App\Models\User;
@@ -14,6 +15,8 @@ use Inertia\Response;
 
 class TeamController extends Controller
 {
+    use HasPeriodStats;
+
     public function index(Request $request): Response
     {
         $avgExpr = DB::getDriverName() === 'sqlite'
@@ -51,18 +54,38 @@ class TeamController extends Controller
             ->get(['id', 'name', 'email', 'avatar', 'team_id'])
             ->each(fn ($r) => $r->append('avatar_url'));
 
+        [$from, $to, $period] = $this->parsePeriod($request);
+        [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
+
+        $curTotalTeams  = $this->scopeByPeriod(Team::query(), $from, $to)->count();
+        $prevTotalTeams = Team::whereBetween('created_at', [$prevFrom, $prevTo])->count();
+
+        $curResponders  = User::where('role', 'responder')->count();
+        $curInTeams     = User::where('role', 'responder')->whereNotNull('team_id')->count();
+        $curUnassigned  = User::where('role', 'responder')->whereNull('team_id')->count();
+
         $stats = [
-            'total_teams'      => Team::count(),
-            'total_responders' => User::where('role', 'responder')->count(),
-            'in_teams'         => User::where('role', 'responder')->whereNotNull('team_id')->count(),
-            'unassigned'       => User::where('role', 'responder')->whereNull('team_id')->count(),
+            'total_teams'      => $curTotalTeams,
+            'total_responders' => $curResponders,
+            'in_teams'         => $curInTeams,
+            'unassigned'       => $curUnassigned,
+        ];
+
+        $trends = [
+            'total_teams'  => $this->calcTrend($curTotalTeams, $prevTotalTeams),
+            'label'        => $trendLabel,
+            'period_label' => $periodLabel,
         ];
 
         return Inertia::render('admin/teams/index', [
-            'teams'      => $teams,
-            'responders' => $responders,
-            'filters'    => $request->only(['search']),
-            'stats'      => $stats,
+            'teams'       => $teams,
+            'responders'  => $responders,
+            'filters'     => $request->only(['search']),
+            'stats'       => $stats,
+            'trends'      => $trends,
+            'period'      => $period,
+            'custom_from' => $request->get('from'),
+            'custom_to'   => $request->get('to'),
         ]);
     }
 
