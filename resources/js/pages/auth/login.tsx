@@ -10,15 +10,13 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 
 import { store } from '@/routes/login';
-import { request } from '@/routes/password';
 
 type Props = {
     status?: string;
-    canResetPassword: boolean;
     canRegister: boolean;
 };
 
-export default function Login({ status, canResetPassword, canRegister }: Props) {
+export default function Login({ status, canRegister }: Props) {
     return (
         <>
             <Head title="Log in" />
@@ -26,7 +24,8 @@ export default function Login({ status, canResetPassword, canRegister }: Props) 
             {/* Header */}
             <div className="mb-8">
                 <h1 className="text-[1.75rem] font-bold tracking-tight text-neutral-900 dark:text-white">
-                    Log in to your account
+                    Log in to{' '}
+                    <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent dark:from-cyan-400 dark:to-blue-400">your account</span>
                 </h1>
                 <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">
                     Enter your credentials to continue
@@ -70,20 +69,9 @@ export default function Login({ status, canResetPassword, canRegister }: Props) 
 
                         {/* Password */}
                         <div className="flex flex-col gap-1.5">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="password" className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                                    Password
-                                </Label>
-                                {canResetPassword && (
-                                    <TextLink
-                                        href={request()}
-                                        tabIndex={5}
-                                        className="text-xs font-medium text-blue-600 hover:text-blue-700 dark:text-cyan-400 dark:hover:text-cyan-300"
-                                    >
-                                        Forgot password?
-                                    </TextLink>
-                                )}
-                            </div>
+                            <Label htmlFor="password" className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                                Password
+                            </Label>
                             <div className="relative">
                                 <Lock className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-neutral-400 dark:text-neutral-500 z-10" />
                                 <PasswordInput
@@ -113,7 +101,7 @@ export default function Login({ status, canResetPassword, canRegister }: Props) 
                             tabIndex={4}
                             disabled={processing}
                             data-test="login-button"
-                            className="mt-1 h-12 w-full rounded-xl bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:shadow-blue-500/30 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+                            className="auth-cta mt-1 h-12 w-full rounded-xl text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:shadow-blue-500/30 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
                         >
                             {processing ? (
                                 <Spinner />
@@ -130,7 +118,7 @@ export default function Login({ status, canResetPassword, canRegister }: Props) 
                             <>
                                 <div className="relative my-1">
                                     <div className="absolute inset-0 flex items-center">
-                                        <div className="w-full border-t border-neutral-200 dark:border-neutral-700" />
+                                        <div className="h-px w-full bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-neutral-700" />
                                     </div>
                                     <div className="relative flex justify-center text-xs">
                                         <span className="bg-white px-3 text-neutral-400 dark:bg-neutral-900 dark:text-neutral-500">

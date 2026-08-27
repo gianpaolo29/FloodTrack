@@ -7,6 +7,7 @@ import {
     Camera,
     CheckCircle2,
     ChevronDown,
+    Download,
     Droplets,
     Map,
     MapPin,
@@ -33,6 +34,19 @@ import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'rea
 import AppLogoIcon from '@/components/app-logo-icon';
 import { dashboard, login } from '@/routes';
 import { useAppearance } from '@/hooks/use-appearance';
+
+/* ─── React Bits Components ─────────────────────────────────────────────── */
+import BlurText from '@/components/reactbits/BlurText';
+import ShinyText from '@/components/reactbits/ShinyText';
+import CountUpRB from '@/components/reactbits/CountUp';
+import GradientTextRB from '@/components/reactbits/GradientText';
+import DecryptedText from '@/components/reactbits/DecryptedText';
+import { ScrollVelocity } from '@/components/reactbits/ScrollVelocity';
+import StarBorder from '@/components/reactbits/StarBorder';
+import Magnet from '@/components/reactbits/Magnet';
+import ClickSpark from '@/components/reactbits/ClickSpark';
+import SpotlightCard from '@/components/reactbits/SpotlightCard';
+import Aurora from '@/components/reactbits/Aurora';
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 
@@ -425,6 +439,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
             <ScrollProgressBar />
             <CursorSpotlight isDark={isDark} />
 
+            <ClickSpark sparkColor={isDark ? '#38bdf8' : '#6366f1'} sparkSize={8} sparkRadius={20} sparkCount={6} duration={500} extraScale={1.5}>
             <div className={`min-h-screen overflow-x-hidden antialiased selection:bg-cyan-500/30 ${isDark ? 'bg-[#06090f] text-white' : 'bg-[#fafbfc] text-neutral-900'}`}>
 
                 {/* Noise texture overlay */}
@@ -436,31 +451,70 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                 <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
                     scrolled
                         ? isDark
-                            ? 'bg-[#06090f]/70 border-b border-white/[0.04] shadow-2xl shadow-black/40 backdrop-blur-2xl backdrop-saturate-150'
-                            : 'bg-white/80 border-b border-neutral-200/50 shadow-lg shadow-neutral-200/40 backdrop-blur-2xl backdrop-saturate-150'
+                            ? 'bg-[#06090f]/80 shadow-2xl shadow-black/40 backdrop-blur-2xl backdrop-saturate-150'
+                            : 'bg-white/85 shadow-lg shadow-neutral-200/40 backdrop-blur-2xl backdrop-saturate-150'
                         : 'bg-transparent'
                 }`}>
+                    {/* Animated gradient border bottom — visible when scrolled */}
+                    <div className={`absolute inset-x-0 bottom-0 h-px transition-opacity duration-500 ${scrolled ? 'opacity-100' : 'opacity-0'}`}>
+                        <div className="h-full w-full animated-border" />
+                    </div>
+
                     <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4 lg:px-10">
-                        <Link href="/" className="group flex items-center gap-3">
-                            <div className="logo-float relative transition-all duration-300 group-hover:scale-110">
-                                <AppLogoIcon className="size-10 rounded-[14px] shadow-xl shadow-blue-900/20 transition-shadow group-hover:shadow-blue-900/40" />
+                        <Link href="/" className="group flex items-center gap-2.5 sm:gap-3">
+                            <div className="relative transition-all duration-300 group-hover:scale-110">
+                                <AppLogoIcon className={`size-9 sm:size-10 rounded-[13px] sm:rounded-[14px] shadow-xl transition-all duration-300 ${scrolled ? 'shadow-blue-900/30' : 'shadow-blue-900/20'} group-hover:shadow-blue-900/40`} />
                             </div>
-                            <span className="text-[1.15rem] font-bold tracking-tight">
-                                <span className={isDark ? 'text-white' : 'text-slate-900'}>Flood</span><span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-cyan-300 to-blue-400' : 'bg-gradient-to-r from-cyan-500 to-blue-600'}`}>Track</span>
+                            <span className="text-[1.05rem] sm:text-[1.15rem] font-bold tracking-tight">
+                                <span className={isDark ? 'text-white' : 'text-slate-900'}>Flood</span>
+                                <GradientTextRB
+                                    colors={isDark ? ['#67e8f9', '#60a5fa', '#67e8f9'] : ['#0891b2', '#2563eb', '#0891b2']}
+                                    animationSpeed={4}
+                                    className="text-[1.05rem] sm:text-[1.15rem] font-bold tracking-tight"
+                                >
+                                    Track
+                                </GradientTextRB>
                             </span>
                         </Link>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 sm:gap-2">
+                            {/* Theme toggle */}
+                            <button
+                                ref={themeBtnRef}
+                                onClick={handleThemeToggle}
+                                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                                className={`flex size-9 items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${isDark ? 'text-amber-400 hover:bg-white/[0.06]' : 'text-indigo-500 hover:bg-neutral-100'}`}
+                            >
+                                {isDark ? <Sun className="size-[18px] sm:size-4" /> : <Moon className="size-[18px] sm:size-4" />}
+                            </button>
+
+                            <a
+                                href="https://expo.dev/artifacts/eas/CXShv1immhlJjsIDnWgdDQPOhWq3VZ3cWyKWzxDZDk4.apk"
+                                className={`group flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all duration-300 hover:scale-105 active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm ${isDark ? 'bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-400 hover:from-cyan-500/20 hover:to-blue-500/20' : 'bg-gradient-to-r from-cyan-50 to-blue-50 text-blue-600 hover:from-cyan-100 hover:to-blue-100'}`}
+                            >
+                                <Download className="size-4 transition-transform duration-300 group-hover:translate-y-0.5" />
+                                <span className="hidden sm:inline">Download App</span>
+                                <span className="sm:hidden">App</span>
+                            </a>
+
+                            <div className={`hidden sm:block h-5 w-px mx-1 ${isDark ? 'bg-white/[0.06]' : 'bg-neutral-200'}`} />
+
                             {auth.user ? (
-                                <PremiumButton href={auth.user.role === 'admin' ? '/admin' : dashboard.url()}>
-                                    Dashboard
-                                </PremiumButton>
+                                <Magnet padding={40} magnetStrength={4}>
+                                    <PremiumButton href={auth.user.role === 'admin' ? '/admin' : dashboard.url()}>
+                                        Dashboard
+                                    </PremiumButton>
+                                </Magnet>
                             ) : (
                                 <>
-                                    <Link href={login()} className={`px-5 py-2.5 text-sm font-medium transition-colors duration-200 rounded-xl ${isDark ? 'text-white/50 hover:text-white hover:bg-white/[0.04]' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'}`}>
+                                    <Link href={login()} className={`hidden sm:inline-flex px-5 py-2.5 text-sm font-medium transition-colors duration-200 rounded-xl ${isDark ? 'text-white/50 hover:text-white hover:bg-white/[0.04]' : 'text-neutral-500 hover:text-neutral-900 hover:bg-neutral-100'}`}>
                                         Sign in
                                     </Link>
-                                    {canRegister && <PremiumButton href="/register">Get started</PremiumButton>}
+                                    {canRegister && (
+                                        <Magnet padding={40} magnetStrength={4}>
+                                            <PremiumButton href="/register">Get started</PremiumButton>
+                                        </Magnet>
+                                    )}
                                 </>
                             )}
                         </div>
@@ -481,21 +535,25 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             </div>
                         )}
 
-                        {/* Canvas particles */}
-                        <div className={`pointer-events-none absolute inset-0 ${isDark ? 'opacity-60' : 'opacity-20'}`}>
+                        {/* Aurora background — primary hero visual */}
+                        <div className={`pointer-events-none absolute inset-0 ${isDark ? 'opacity-50' : 'opacity-25'}`}>
+                            <Aurora
+                                colorStops={isDark ? ['#06b6d4', '#3b82f6', '#8b5cf6'] : ['#0891b2', '#2563eb', '#7c3aed']}
+                                amplitude={1.4}
+                                blend={0.5}
+                                speed={0.4}
+                            />
+                        </div>
+
+                        {/* Canvas particles — subtle depth layer */}
+                        <div className={`pointer-events-none absolute inset-0 ${isDark ? 'opacity-40' : 'opacity-15'}`}>
                             <ParticleField />
                         </div>
 
-                        {/* Gradient orbs — parallax */}
+                        {/* Gradient orb — parallax accent */}
                         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                            <div className={`absolute -left-40 -top-40 size-[700px] rounded-full blur-[140px] ${isDark ? 'opacity-[0.12]' : 'opacity-[0.10]'}`}
-                                style={{ background: 'conic-gradient(from 200deg, #06b6d4, #3b82f6, #8b5cf6, #06b6d4)', transform: `translate(${mouse.x * 4}px, ${mouse.y * 4}px)`, transition: 'transform 0.6s cubic-bezier(.22,1,.36,1)' }}
-                            />
-                            <div className={`absolute -right-40 top-20 size-[600px] rounded-full blur-[120px] ${isDark ? 'opacity-[0.08]' : 'opacity-[0.07]'}`}
-                                style={{ background: 'conic-gradient(from 40deg, #22d3ee, #3b82f6, #22d3ee)', transform: `translate(${-mouse.x * 3}px, ${-mouse.y * 3}px)`, transition: 'transform 0.8s cubic-bezier(.22,1,.36,1)' }}
-                            />
-                            <div className={`absolute left-1/3 bottom-0 size-[500px] rounded-full blur-[100px] ${isDark ? 'opacity-[0.06]' : 'opacity-[0.06]'}`}
-                                style={{ background: 'radial-gradient(circle, #a78bfa, transparent 70%)' }}
+                            <div className={`absolute -left-40 -top-40 size-[800px] rounded-full blur-[160px] ${isDark ? 'opacity-[0.07]' : 'opacity-[0.05]'}`}
+                                style={{ background: 'conic-gradient(from 200deg, #06b6d4, #3b82f6, #8b5cf6, #06b6d4)', transform: `translate(${mouse.x * 3}px, ${mouse.y * 3}px)`, transition: 'transform 0.8s cubic-bezier(.22,1,.36,1)' }}
                             />
                         </div>
 
@@ -504,60 +562,99 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             style={{ backgroundImage: isDark ? 'linear-gradient(rgba(255,255,255,.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.15) 1px, transparent 1px)' : 'linear-gradient(rgba(99,102,241,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,.07) 1px, transparent 1px)', backgroundSize: '72px 72px', transform: `translate(${mouse.x * 0.5}px, ${mouse.y * 0.5}px)`, transition: 'transform 1s ease-out' }}
                         />
 
-                        {/* Radial vignette */}
-                        <div className="pointer-events-none absolute inset-0" style={{ background: isDark ? 'radial-gradient(ellipse 70% 60% at 50% 40%, transparent 0%, #06090f 100%)' : 'radial-gradient(ellipse 80% 70% at 50% 40%, transparent 0%, rgba(250,251,252,0.95) 100%)' }} />
+                        {/* Radial vignette — less aggressive to let Aurora shine */}
+                        <div className="pointer-events-none absolute inset-0" style={{ background: isDark ? 'radial-gradient(ellipse 85% 75% at 50% 40%, transparent 0%, #06090f 100%)' : 'radial-gradient(ellipse 90% 80% at 50% 40%, transparent 0%, rgba(250,251,252,0.88) 100%)' }} />
 
                         {/* Content */}
                         <div className="relative z-10 mx-auto max-w-5xl text-center">
 
                             {/* Badge */}
-                            <div className={`mb-10 inline-flex items-center gap-3 rounded-full border px-5 py-2 backdrop-blur-md transition-all duration-1000 ${isDark ? 'border-white/[0.06] bg-white/[0.03]' : 'border-blue-100/80 bg-white/70 shadow-lg shadow-blue-500/[0.04]'} ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+                            <div className={`mb-6 sm:mb-10 inline-flex items-center gap-2 sm:gap-3 rounded-full border px-3.5 sm:px-5 py-1.5 sm:py-2 backdrop-blur-md transition-all duration-1000 ${isDark ? 'border-white/[0.06] bg-white/[0.03]' : 'border-blue-100/80 bg-white/70 shadow-lg shadow-blue-500/[0.04]'} ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
                                 <span className="relative flex size-[6px]">
                                     <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
                                     <span className="relative inline-flex size-[6px] rounded-full bg-emerald-400 shadow-lg shadow-emerald-400/50" />
                                 </span>
-                                <span className={`text-[13px] font-medium ${isDark ? 'text-white/40' : 'text-neutral-500'}`}>Live hazard reporting</span>
-                                <span className={`h-3 w-px ${isDark ? 'bg-white/[0.08]' : 'bg-neutral-300'}`} />
-                                <span className={`text-[13px] font-semibold bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-cyan-300 to-blue-300' : 'bg-gradient-to-r from-cyan-600 to-blue-600'}`}>Nasugbu, Batangas</span>
+                                <ShinyText
+                                    text="Live hazard reporting"
+                                    speed={3}
+                                    className={`text-[11px] sm:text-[13px] font-medium ${isDark ? 'text-white/40' : 'text-neutral-500'}`}
+                                    color={isDark ? 'rgba(255,255,255,0.25)' : 'rgba(100,116,139,0.6)'}
+                                    shineColor={isDark ? 'rgba(255,255,255,0.7)' : 'rgba(6,182,212,0.9)'}
+                                />
+                                <span className={`hidden sm:block h-3 w-px ${isDark ? 'bg-white/[0.08]' : 'bg-neutral-300'}`} />
+                                <span className="hidden sm:inline-flex">
+                                    <GradientTextRB
+                                        colors={isDark ? ['#67e8f9', '#60a5fa', '#67e8f9'] : ['#0891b2', '#2563eb', '#0891b2']}
+                                        animationSpeed={4}
+                                        className="text-[13px] font-semibold"
+                                    >
+                                        Nasugbu, Batangas
+                                    </GradientTextRB>
+                                </span>
                             </div>
 
                             {/* Heading */}
-                            <h1 className={`mb-8 text-[clamp(2.6rem,6vw,5rem)] font-extrabold leading-[1.08] tracking-[-0.035em] transition-all duration-1000 delay-150 ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
+                            <h1 className={`mb-5 sm:mb-8 text-[clamp(1.85rem,5.5vw,5rem)] font-extrabold leading-[1.1] tracking-[-0.035em] transition-all duration-1000 delay-150 ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
                                 <span className={`block bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white via-white to-white/60' : 'bg-gradient-to-b from-slate-900 via-slate-800 to-slate-500'}`}>
                                     Report floods & hazards
                                 </span>
                                 <span className="relative mt-1 inline-block">
-                                    <span className={`hero-gradient-text bg-clip-text text-transparent bg-[length:200%_auto] ${isDark ? 'bg-gradient-to-r from-cyan-300 via-blue-400 to-violet-400' : 'bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600'}`}>
+                                    <GradientTextRB
+                                        colors={isDark ? ['#67e8f9', '#60a5fa', '#a78bfa', '#67e8f9'] : ['#06b6d4', '#3b82f6', '#6366f1', '#06b6d4']}
+                                        animationSpeed={5}
+                                        className="text-[clamp(1.85rem,5.5vw,5rem)] font-extrabold leading-[1.1] tracking-[-0.035em]"
+                                    >
                                         in real time
-                                    </span>
-                                    <span className="absolute -bottom-2 left-0 right-0 h-[3px] rounded-full bg-gradient-to-r from-cyan-500/60 via-blue-500/60 to-violet-500/60 blur-sm" />
+                                    </GradientTextRB>
+                                    <span className="absolute -bottom-1 sm:-bottom-2 left-0 right-0 h-[2px] sm:h-[3px] rounded-full bg-gradient-to-r from-cyan-500/60 via-blue-500/60 to-violet-500/60 blur-sm" />
                                 </span>
                             </h1>
 
                             {/* Sub */}
-                            <p className={`mx-auto mb-14 max-w-[38rem] text-[1.1rem] leading-relaxed font-[350] transition-all duration-1000 delay-300 ${isDark ? 'text-white/35' : 'text-slate-500'} ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
-                                Connect directly with MDRRMO. Submit a hazard report from your phone in seconds — with GPS location, photo evidence, and severity level. Responders are dispatched faster.
-                            </p>
+                            <div className={`mx-auto mb-8 sm:mb-14 max-w-[38rem] transition-all duration-1000 delay-300 ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
+                                {heroVis && (
+                                    <BlurText
+                                        text="Connect directly with MDRRMO. Submit a hazard report from your phone in seconds — with GPS location, photo evidence, and severity level. Responders are dispatched faster."
+                                        delay={30}
+                                        animateBy="words"
+                                        direction="bottom"
+                                        className={`text-[0.95rem] sm:text-[1.1rem] leading-relaxed font-[350] justify-center ${isDark ? 'text-white/35' : 'text-slate-500'}`}
+                                    />
+                                )}
+                            </div>
 
                             {/* CTA */}
-                            <div className={`flex flex-wrap items-center justify-center gap-4 transition-all duration-1000 delay-500 ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
+                            <div className={`flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto transition-all duration-1000 delay-500 ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
                                 {canRegister && !auth.user && (
-                                    <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-7 py-3.5 text-sm font-bold text-white shadow-2xl transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:scale-[1.04] hover:shadow-cyan-500/25 active:scale-[0.97]">
-                                        <span className="relative z-10 flex items-center gap-2.5">
-                                            Create free account
-                                            <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                                        </span>
-                                    </Link>
+                                    <div className="w-full sm:w-auto">
+                                        <Magnet padding={60} magnetStrength={3}>
+                                            <StarBorder color={isDark ? 'rgba(56,189,248,0.6)' : 'rgba(59,130,246,0.5)'} speed="5s" thickness={1} className="rounded-2xl">
+                                                <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-7 py-3.5 text-sm font-bold text-white shadow-2xl text-center transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:shadow-cyan-500/25 active:scale-[0.97]">
+                                                    <span className="relative z-10 flex items-center justify-center gap-2.5">
+                                                        Create free account
+                                                        <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                                                    </span>
+                                                </Link>
+                                            </StarBorder>
+                                        </Magnet>
+                                    </div>
                                 )}
-                                <Link
-                                    href={auth.user ? (auth.user.role === 'admin' ? '/admin' : dashboard()) : login()}
-                                    className={`group flex items-center gap-2 rounded-2xl border px-7 py-3.5 text-sm font-semibold backdrop-blur-md transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white/90 hover:border-white/[0.12]' : 'border-neutral-200/80 bg-white/70 text-slate-600 hover:bg-white hover:text-slate-900 hover:border-blue-200/60 shadow-lg shadow-blue-500/[0.04] ring-1 ring-neutral-100 hover:ring-blue-100/50'}`}
-                                >
-                                    {auth.user ? 'Go to dashboard' : 'Sign in'}
-                                    <ArrowUpRight className="size-4 opacity-40 transition-all duration-300 group-hover:opacity-80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                                </Link>
+                                <div className="w-full sm:w-auto">
+                                    <Magnet padding={50} magnetStrength={4}>
+                                        <Link
+                                            href={auth.user ? (auth.user.role === 'admin' ? '/admin' : dashboard()) : login()}
+                                            className={`group flex items-center justify-center gap-2 rounded-2xl border px-7 py-3.5 text-sm font-semibold backdrop-blur-md transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white/90 hover:border-white/[0.12]' : 'border-neutral-200/80 bg-white/70 text-slate-600 hover:bg-white hover:text-slate-900 hover:border-blue-200/60 shadow-lg shadow-blue-500/[0.04] ring-1 ring-neutral-100 hover:ring-blue-100/50'}`}
+                                        >
+                                            {auth.user ? 'Go to dashboard' : 'Sign in'}
+                                            <ArrowUpRight className="size-4 opacity-40 transition-all duration-300 group-hover:opacity-80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                                        </Link>
+                                    </Magnet>
+                                </div>
                             </div>
                         </div>
+
+                        {/* Floating accent cards — xl only */}
+                        <FloatingHeroCards isDark={isDark} heroVis={heroVis} />
 
                         {/* Scroll cue */}
                         <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2.5 transition-all duration-1000 delay-[900ms] ${heroVis ? 'opacity-30' : 'opacity-0'}`}>
@@ -566,14 +663,24 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                         </div>
                     </section>
 
-                    {/* ── MARQUEE TICKER ──────────────────────────────────── */}
-                    <MarqueeTicker isDark={isDark} />
+                    {/* ── SCROLL VELOCITY TICKER ──────────────────────────── */}
+                    <div className={`relative overflow-hidden border-y py-3 ${isDark ? 'border-white/[0.04] bg-white/[0.01]' : 'border-neutral-100/80 bg-neutral-50/60'}`}>
+                        {/* Fade edges */}
+                        <div className={`pointer-events-none absolute inset-y-0 left-0 z-10 w-32 ${isDark ? 'bg-gradient-to-r from-[#06090f]' : 'bg-gradient-to-r from-[#fafbfc]'} to-transparent`} />
+                        <div className={`pointer-events-none absolute inset-y-0 right-0 z-10 w-32 ${isDark ? 'bg-gradient-to-l from-[#06090f]' : 'bg-gradient-to-l from-[#fafbfc]'} to-transparent`} />
+                        <ScrollVelocity
+                            texts={['LIVE REPORTING  ·  REAL-TIME ALERTS  ·  GPS TRACKING  ·  PHOTO EVIDENCE  ·  MDRRMO NASUGBU  ·  AI VERIFIED  ·  INSTANT DISPATCH  ·  24/7 MONITORING  ·  COMMUNITY DRIVEN  ·  FLOOD TRACKING  ·  ']}
+                            velocity={30}
+                            className={`text-[10px] font-bold tracking-[0.25em] ${isDark ? 'text-white/[0.10]' : 'text-neutral-300'}`}
+                            numCopies={4}
+                        />
+                    </div>
 
                     {/* ── LIVE STATS ──────────────────────────────────────── */}
-                    <section className="relative px-4 py-12 sm:px-6 sm:py-16" ref={bentoRef}>
+                    <section className="relative px-3 py-10 sm:px-6 sm:py-16" ref={bentoRef}>
                         <div className="mx-auto max-w-6xl">
                             {/* Glass container */}
-                            <div className={`relative overflow-hidden rounded-[28px] border p-1 backdrop-blur-xl transition-all duration-[1000ms] ${isDark ? 'border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-white/[0.01]' : 'border-neutral-200/80 bg-white/80 shadow-2xl shadow-blue-500/[0.04] ring-1 ring-neutral-100'} ${bentoIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                            <div className={`relative overflow-hidden rounded-2xl sm:rounded-[28px] border p-1 backdrop-blur-xl transition-all duration-[1000ms] ${isDark ? 'border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-white/[0.01]' : 'border-neutral-200/80 bg-white/80 shadow-2xl shadow-blue-500/[0.04] ring-1 ring-neutral-100'} ${bentoIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                                 {/* Animated top border glow */}
                                 <div className="absolute inset-x-0 top-0 h-px animated-border" />
 
@@ -585,7 +692,6 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                         { value: stats?.evacuation_centers ?? 0, label: 'Evacuation Centers', sub: 'Ready & active', icon: Building2, accentColor: '#a78bfa', gradient: 'from-violet-400 to-purple-500' },
                                     ] as const).map((s, i) => {
                                         const Icon = s.icon;
-                                        const count = useCountUp(s.value, bentoIn);
                                         return (
                                             <div
                                                 key={s.label}
@@ -601,7 +707,14 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                     <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/25 to-transparent" />
                                                 </div>
                                                 <div className="relative flex items-center gap-1.5">
-                                                    <p className={`text-3xl font-extrabold tracking-tight sm:text-4xl ${isDark ? 'text-white' : 'text-neutral-900'}`}>{count.toLocaleString()}</p>
+                                                    <CountUpRB
+                                                        to={s.value}
+                                                        from={0}
+                                                        separator=","
+                                                        duration={2.5}
+                                                        className={`text-3xl font-extrabold tracking-tight sm:text-4xl ${isDark ? 'text-white' : 'text-neutral-900'}`}
+                                                        startWhen={bentoIn}
+                                                    />
                                                     {'pulse' in s && s.pulse && s.value > 0 && (
                                                         <span className="relative flex size-2">
                                                             <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber-400 opacity-50" />
@@ -609,7 +722,18 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className={`mt-1.5 text-[13px] font-semibold ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>{s.label}</p>
+                                                <p className={`mt-1.5 text-[13px] font-semibold ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>
+                                                    <DecryptedText
+                                                        text={s.label}
+                                                        speed={40}
+                                                        maxIterations={15}
+                                                        sequential={true}
+                                                        revealDirection="center"
+                                                        animateOn="view"
+                                                        className={isDark ? 'text-white/50' : 'text-neutral-500'}
+                                                        encryptedClassName={isDark ? 'text-white/20' : 'text-neutral-300'}
+                                                    />
+                                                </p>
                                                 <p className={`mt-0.5 text-[11px] ${isDark ? 'text-white/20' : 'text-neutral-400'}`}>{s.sub}</p>
                                             </div>
                                         );
@@ -620,7 +744,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     </section>
 
                     {/* ── FEATURES ───────────────────────────────────────── */}
-                    <section className={`relative px-4 py-16 sm:px-6 sm:py-32 ${!isDark ? 'bg-gradient-to-b from-white via-slate-50/50 to-white' : ''}`} ref={featRef}>
+                    <section className={`relative px-4 py-10 sm:px-6 sm:py-32 ${!isDark ? 'bg-gradient-to-b from-white via-slate-50/50 to-white' : ''}`} ref={featRef}>
                         <GlowDivider />
 
                         <div className="mx-auto max-w-7xl">
@@ -644,31 +768,32 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 ] as const).map((f, i) => {
                                     const Icon = f.icon;
                                     return (
-                                        <div
+                                        <SpotlightCard
                                             key={f.title}
-                                            className={`feat-card group relative overflow-hidden rounded-[20px] border p-5 transition-all duration-500 sm:p-8 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'} ${featIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-                                            style={{ transitionDelay: `${i * 70}ms` }}
+                                            className={`feat-card group rounded-2xl sm:rounded-[20px] border p-5 transition-all duration-500 sm:p-8 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'} ${featIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                                            spotlightColor={isDark ? 'rgba(56, 189, 248, 0.08)' : 'rgba(59, 130, 246, 0.06)'}
                                         >
-                                            {/* Mouse-follow glow */}
-                                            <div className="feat-glow pointer-events-none absolute -inset-px rounded-[20px] opacity-0 transition-opacity duration-500 group-hover:opacity-100"
-                                                style={{ background: 'radial-gradient(600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(56,189,248,0.06), transparent 40%)' }}
-                                            />
-
                                             {/* Shimmer sweep on hover */}
                                             <div className={`pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent to-transparent skew-x-[-20deg] ${isDark ? 'via-white/[0.03]' : 'via-blue-500/[0.03]'}`} />
-
-                                            {/* Animated border glow */}
-                                            <div className="pointer-events-none absolute inset-0 rounded-[20px] opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-                                                style={{ boxShadow: isDark ? 'inset 0 0 0 1px rgba(56,189,248,0.08)' : 'inset 0 0 0 1px rgba(59,130,246,0.08)' }}
-                                            />
 
                                             <div className={`relative mb-6 inline-flex rounded-2xl bg-gradient-to-br ${f.grad} p-3.5 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-2xl`}>
                                                 <Icon className="size-[22px] text-white transition-transform duration-500 group-hover:scale-110" />
                                                 <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
                                             </div>
-                                            <h3 className={`relative mb-2 text-[17px] font-semibold transition-colors duration-300 ${isDark ? 'text-white/90 group-hover:text-white' : 'text-neutral-800 group-hover:text-neutral-900'}`}>{f.title}</h3>
+                                            <h3 className={`relative mb-2 text-[17px] font-semibold transition-colors duration-300 ${isDark ? 'text-white/90 group-hover:text-white' : 'text-neutral-800 group-hover:text-neutral-900'}`}>
+                                                <DecryptedText
+                                                    text={f.title}
+                                                    animateOn="hover"
+                                                    speed={30}
+                                                    maxIterations={8}
+                                                    sequential={true}
+                                                    revealDirection="start"
+                                                    className={isDark ? 'text-white/90' : 'text-neutral-800'}
+                                                    encryptedClassName={isDark ? 'text-cyan-400/40' : 'text-blue-400/50'}
+                                                />
+                                            </h3>
                                             <p className={`relative text-[14px] leading-relaxed font-[350] transition-colors duration-300 ${isDark ? 'text-white/35 group-hover:text-white/50' : 'text-neutral-500 group-hover:text-neutral-600'}`}>{f.body}</p>
-                                        </div>
+                                        </SpotlightCard>
                                     );
                                 })}
                             </div>
@@ -676,7 +801,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     </section>
 
                     {/* ── HOW IT WORKS ───────────────────────────────────── */}
-                    <section className="relative px-4 py-16 sm:px-6 sm:py-32" ref={stepsRef}>
+                    <section className="relative px-4 py-10 sm:px-6 sm:py-32" ref={stepsRef}>
                         <GlowDivider />
 
                         <div className="mx-auto max-w-5xl">
@@ -689,7 +814,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 sub="From hazard spotted to responder on scene — under a minute."
                             />
 
-                            <div className="relative grid gap-6 sm:grid-cols-3">
+                            <div className="relative grid grid-cols-1 gap-6 sm:grid-cols-3">
                                 {/* Connector */}
                                 <div className="absolute left-[16.6%] right-[16.6%] top-[72px] hidden h-px sm:block">
                                     <div className={`h-full bg-gradient-to-r ${isDark ? 'from-white/[0.03] via-white/[0.06] to-white/[0.03]' : 'from-neutral-200/30 via-neutral-200/60 to-neutral-200/30'}`} />
@@ -708,19 +833,19 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                         <div key={s.n} className={`relative flex flex-col items-center text-center transition-all duration-[800ms] ease-out ${stepsIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
                                             style={{ transitionDelay: `${i * 200 + 200}ms` }}
                                         >
-                                            <div className={`group/step relative z-10 mb-8 flex size-28 flex-col items-center justify-center rounded-[28px] border shadow-2xl sm:size-36 ${s.ring} transition-all duration-500 hover:scale-110 cursor-pointer ${isDark ? 'border-white/[0.05] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-3xl' : 'border-neutral-200/70 bg-white hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'}`}>
+                                            <div className={`group/step relative z-10 mb-6 sm:mb-8 flex size-24 sm:size-36 flex-col items-center justify-center rounded-[22px] sm:rounded-[28px] border shadow-2xl ${s.ring} transition-all duration-500 hover:scale-110 cursor-pointer ${isDark ? 'border-white/[0.05] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-3xl' : 'border-neutral-200/70 bg-white hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'}`}>
                                                 {/* Pulse ring on hover */}
                                                 <div className="absolute inset-0 rounded-[28px] opacity-0 group-hover/step:opacity-100 transition-opacity duration-500 group-hover/step:animate-[ringPulse_1.5s_ease-out_infinite]"
                                                     style={{ boxShadow: `0 0 0 0 ${s.grad.includes('sky') ? 'rgba(56,189,248,0.3)' : s.grad.includes('cyan') ? 'rgba(6,182,212,0.3)' : 'rgba(52,211,153,0.3)'}` }}
                                                 />
-                                                <div className={`rounded-2xl bg-gradient-to-br ${s.grad} p-4 shadow-xl transition-all duration-500 group-hover/step:-translate-y-1 group-hover/step:shadow-2xl`}>
-                                                    <Icon className="size-7 text-white transition-transform duration-500 group-hover/step:scale-125 group-hover/step:rotate-6" />
+                                                <div className={`rounded-xl sm:rounded-2xl bg-gradient-to-br ${s.grad} p-3 sm:p-4 shadow-xl transition-all duration-500 group-hover/step:-translate-y-1 group-hover/step:shadow-2xl`}>
+                                                    <Icon className="size-6 sm:size-7 text-white transition-transform duration-500 group-hover/step:scale-125 group-hover/step:rotate-6" />
                                                     <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
                                                 </div>
                                                 <span className={`mt-3 text-[11px] font-bold tracking-[0.15em] uppercase transition-colors duration-300 ${isDark ? 'text-white/15 group-hover/step:text-white/30' : 'text-neutral-400 group-hover/step:text-neutral-500'}`}>{s.n}</span>
                                             </div>
-                                            <h3 className={`mb-2 text-[1.15rem] font-bold ${isDark ? 'text-white/90' : 'text-neutral-800'}`}>{s.title}</h3>
-                                            <p className={`max-w-[260px] text-[14px] leading-relaxed font-[350] ${isDark ? 'text-white/35' : 'text-neutral-500'}`}>{s.body}</p>
+                                            <h3 className={`mb-2 text-base sm:text-[1.15rem] font-bold ${isDark ? 'text-white/90' : 'text-neutral-800'}`}>{s.title}</h3>
+                                            <p className={`max-w-[260px] text-[13px] sm:text-[14px] leading-relaxed font-[350] ${isDark ? 'text-white/35' : 'text-neutral-500'}`}>{s.body}</p>
                                         </div>
                                     );
                                 })}
@@ -729,7 +854,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     </section>
 
                     {/* ── PHONE DEMO ────────────────────────────────────── */}
-                    <section className="relative px-4 py-16 sm:px-6 sm:py-32 overflow-hidden" ref={demoRef}>
+                    <section className="relative px-4 py-10 sm:px-6 sm:py-32 overflow-hidden" ref={demoRef}>
                         <GlowDivider />
 
                         {/* Background orbs */}
@@ -757,7 +882,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     </section>
 
                     {/* ── SEVERITY ───────────────────────────────────────── */}
-                    <section className={`relative px-4 py-16 sm:px-6 sm:py-32 ${!isDark ? 'bg-gradient-to-b from-white via-slate-50/50 to-white' : ''}`} ref={sevRef}>
+                    <section className={`relative px-4 py-10 sm:px-6 sm:py-32 ${!isDark ? 'bg-gradient-to-b from-white via-slate-50/50 to-white' : ''}`} ref={sevRef}>
                         <GlowDivider />
 
                         {/* Background warmth */}
@@ -777,7 +902,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 sub="Every report is tagged with color + icon + label. Never color alone."
                             />
 
-                            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                                 {([
                                     { level: 'Low', color: '#22c55e', icon: CheckCircle2, meaning: 'Passable. Monitor only.', detail: 'Accessible area. Continuous monitoring recommended. No immediate action.' },
                                     { level: 'Moderate', color: '#eab308', icon: AlertTriangle, meaning: 'Caution — may worsen.', detail: 'Exercise caution. May deteriorate. Prepare for possible response.' },
@@ -787,24 +912,21 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     const Icon = s.icon;
                                     const open = activeSev === i;
                                     return (
-                                        <div
+                                        <SpotlightCard
                                             key={s.level}
-                                            onClick={() => setActiveSev(open ? null : i)}
-                                            className={`group cursor-pointer relative overflow-hidden rounded-[20px] border p-5 transition-all duration-500 sm:p-7 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'} ${sevIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} ${open ? isDark ? 'scale-[1.03] border-white/[0.12] shadow-2xl' : 'scale-[1.03] border-blue-200/80 shadow-2xl shadow-blue-500/[0.06] ring-1 ring-blue-100/50' : ''}`}
-                                            style={{ transitionDelay: `${i * 100}ms` }}
+                                            className={`group cursor-pointer rounded-2xl sm:rounded-[20px] border p-4 transition-all duration-500 sm:p-7 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'} ${sevIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} ${open ? isDark ? 'scale-[1.03] border-white/[0.12] shadow-2xl' : 'scale-[1.03] border-blue-200/80 shadow-2xl shadow-blue-500/[0.06] ring-1 ring-blue-100/50' : ''}`}
+                                            spotlightColor={`${s.color}15`}
                                         >
-                                            {/* Colored top glow on hover */}
-                                            <div className="pointer-events-none absolute -top-20 left-1/2 -translate-x-1/2 w-40 h-40 rounded-full blur-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-                                                style={{ backgroundColor: s.color + '10' }}
-                                            />
+                                            <div onClick={() => setActiveSev(open ? null : i)} className="relative"
+                                            >
 
                                             {/* Shimmer sweep */}
                                             <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1200ms] ease-in-out bg-gradient-to-r from-transparent via-white/[0.02] to-transparent skew-x-[-20deg]" />
 
-                                            <div className="relative mb-5 inline-flex items-center gap-2.5 rounded-[14px] px-3.5 py-2 text-sm font-bold transition-all duration-500 group-hover:scale-105"
+                                            <div className="relative mb-3 sm:mb-5 inline-flex items-center gap-2 sm:gap-2.5 rounded-xl sm:rounded-[14px] px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold transition-all duration-500 group-hover:scale-105"
                                                 style={{ backgroundColor: s.color + '12', color: s.color, boxShadow: open ? `0 0 24px ${s.color}20` : `0 0 0 ${s.color}00` }}
                                             >
-                                                <Icon className="size-[18px] transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" />
+                                                <Icon className="size-4 sm:size-[18px] transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" />
                                                 {s.level}
                                             </div>
                                             <p className={`relative text-[14px] font-medium transition-colors duration-300 ${isDark ? 'text-white/70 group-hover:text-white/85' : 'text-neutral-600 group-hover:text-neutral-800'}`}>{s.meaning}</p>
@@ -820,7 +942,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                     style={{ backgroundColor: s.color + '50', width: open ? '100%' : '0%' }}
                                                 />
                                             </div>
-                                        </div>
+                                            </div>
+                                        </SpotlightCard>
                                     );
                                 })}
                             </div>
@@ -828,7 +951,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     </section>
 
                     {/* ── ROLES ──────────────────────────────────────────── */}
-                    <section className="relative px-4 py-16 sm:px-6 sm:py-32" ref={rolesRef}>
+                    <section className="relative px-4 py-10 sm:px-6 sm:py-32" ref={rolesRef}>
                         <GlowDivider />
 
                         <div className="mx-auto max-w-6xl">
@@ -841,7 +964,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 sub="Every stakeholder has a purpose-built experience."
                             />
 
-                            <div className="grid gap-4 sm:grid-cols-3">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                                 {([
                                     { role: 'Residents',     icon: Home, grad: 'from-sky-500 to-blue-600', accent: 'bg-sky-500', accentColor: '#38bdf8', points: ['Report hazards with GPS + photos', 'Track your report status live', 'Receive official MDRRMO alerts', 'View all hazards on the map'] },
                                     { role: 'Responders',    icon: Truck, grad: 'from-cyan-500 to-teal-600', accent: 'bg-cyan-500', accentColor: '#06b6d4', points: ['Receive assigned incident queue', 'Navigate directly to hazard', 'Update status en route / on scene', 'Upload field evidence'] },
@@ -849,22 +972,17 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 ] as const).map((r, i) => {
                                     const Icon = r.icon;
                                     return (
-                                    <div
+                                    <SpotlightCard
                                         key={r.role}
-                                        className={`group relative overflow-hidden rounded-[20px] border p-6 transition-all duration-500 sm:p-9 hover:-translate-y-3 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'} ${rolesIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-                                        style={{ transitionDelay: `${i * 120}ms` }}
+                                        className={`group rounded-2xl sm:rounded-[20px] border p-5 transition-all duration-500 sm:p-9 hover:-translate-y-3 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'} ${rolesIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+                                        spotlightColor={isDark ? `rgba(${r.role === 'Residents' ? '56,189,248' : r.role === 'Responders' ? '6,182,212' : '167,139,250'}, 0.1)` : `rgba(${r.role === 'Residents' ? '56,189,248' : r.role === 'Responders' ? '6,182,212' : '167,139,250'}, 0.08)`}
                                     >
                                         {/* Shimmer sweep */}
                                         <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1200ms] ease-in-out bg-gradient-to-r from-transparent via-white/[0.03] to-transparent skew-x-[-20deg]" />
 
-                                        {/* Top hover glow */}
-                                        <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-48 h-48 rounded-full blur-[80px] opacity-0 group-hover:opacity-100 transition-opacity duration-700"
-                                            style={{ backgroundColor: r.accentColor + '10' }}
-                                        />
-
-                                        <div className={`relative mb-6 inline-flex rounded-[22px] bg-gradient-to-br ${r.grad} p-4 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-2xl`}>
-                                            <Icon className="size-7 text-white transition-transform duration-500 group-hover:scale-110" />
-                                            <div className="absolute inset-[1px] rounded-[21px] bg-gradient-to-b from-white/20 to-transparent" />
+                                        <div className={`relative mb-4 sm:mb-6 inline-flex rounded-[18px] sm:rounded-[22px] bg-gradient-to-br ${r.grad} p-3 sm:p-4 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-2xl`}>
+                                            <Icon className="size-6 sm:size-7 text-white transition-transform duration-500 group-hover:scale-110" />
+                                            <div className="absolute inset-[1px] rounded-[17px] sm:rounded-[21px] bg-gradient-to-b from-white/20 to-transparent" />
                                         </div>
                                         <h3 className={`mb-1.5 text-xl font-bold transition-colors duration-300 ${isDark ? 'text-white/90 group-hover:text-white' : 'text-neutral-800 group-hover:text-neutral-900'}`}>{r.role}</h3>
                                         <div className={`mb-6 h-[3px] w-10 rounded-full ${r.accent} opacity-50 transition-all duration-700 group-hover:w-24 group-hover:opacity-100`} />
@@ -879,7 +997,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                             ))}
                                         </ul>
 
-                                    </div>
+                                    </SpotlightCard>
                                     );
                                 })}
                             </div>
@@ -888,7 +1006,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                     {/* ── EVACUATION CENTERS MAP ─────────────────────────── */}
                     {evacuationCenters.length > 0 && (
-                        <section className={`relative px-4 py-16 sm:px-6 sm:py-32 ${!isDark ? 'bg-gradient-to-b from-white via-slate-50/50 to-white' : ''}`} ref={evacRef}>
+                        <section className={`relative px-4 py-10 sm:px-6 sm:py-32 ${!isDark ? 'bg-gradient-to-b from-white via-slate-50/50 to-white' : ''}`} ref={evacRef}>
                             <GlowDivider />
 
                             <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -910,8 +1028,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 <div className={`transition-all duration-[800ms] ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                                     {/* Map — glass frame */}
                                     <div className="relative group/map">
-                                        <div className={`absolute -inset-px rounded-[24px] bg-gradient-to-b to-transparent opacity-0 transition-opacity duration-700 group-hover/map:opacity-100 ${isDark ? 'from-white/[0.08] via-white/[0.02]' : 'from-neutral-200/40 via-neutral-100/20'}`} />
-                                        <div className={`relative overflow-hidden rounded-[24px] border shadow-2xl ${isDark ? 'border-white/[0.06] bg-[#080c14] shadow-black/40' : 'border-neutral-200/70 bg-white ring-1 ring-neutral-100 shadow-blue-500/[0.04]'}`}>
+                                        <div className={`absolute -inset-px rounded-2xl sm:rounded-[24px] bg-gradient-to-b to-transparent opacity-0 transition-opacity duration-700 group-hover/map:opacity-100 ${isDark ? 'from-white/[0.08] via-white/[0.02]' : 'from-neutral-200/40 via-neutral-100/20'}`} />
+                                        <div className={`relative overflow-hidden rounded-2xl sm:rounded-[24px] border shadow-2xl ${isDark ? 'border-white/[0.06] bg-[#080c14] shadow-black/40' : 'border-neutral-200/70 bg-white ring-1 ring-neutral-100 shadow-blue-500/[0.04]'}`}>
                                             {/* Map header bar */}
                                             <div className={`flex items-center gap-3 border-b px-5 py-3 ${isDark ? 'border-white/[0.04] bg-white/[0.02]' : 'border-neutral-100 bg-neutral-50'}`}>
                                                 <div className="flex gap-1.5">
@@ -933,7 +1051,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 {/* Emergency contact strip — glass */}
                                 <div className={`mt-10 relative overflow-hidden rounded-2xl border backdrop-blur-md transition-all duration-[800ms] delay-300 ${isDark ? 'border-white/[0.05] bg-white/[0.02]' : 'border-neutral-200/70 bg-white/60 ring-1 ring-neutral-100'} ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
-                                    <div className="flex flex-wrap items-center justify-center gap-8 px-6 py-5">
+                                    <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 px-4 sm:px-6 py-4 sm:py-5">
                                         {([
                                             { icon: PhoneCall, color: 'text-red-400', label: 'Emergency', value: '911', bg: 'bg-red-500/[0.06]' },
                                             { icon: Shield, color: 'text-cyan-400', label: 'MDRRMO Nasugbu', value: '', bg: 'bg-cyan-500/[0.06]' },
@@ -961,7 +1079,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                     {/* ── CTA ────────────────────────────────────────────── */}
                     {!auth.user && canRegister && (
-                        <section className="relative overflow-hidden px-4 py-20 sm:px-6 sm:py-40" ref={ctaRef}>
+                        <section className="relative overflow-hidden px-4 py-12 sm:px-6 sm:py-40" ref={ctaRef}>
                             <GlowDivider />
 
                             {/* CTA glow */}
@@ -972,58 +1090,87 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             </div>
 
                             <div className={`relative mx-auto max-w-3xl text-center transition-all duration-[800ms] ${ctaIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                                <div className="water-ripple logo-float glow-pulse mb-8 inline-flex">
-                                    <AppLogoIcon className="size-24 rounded-[28px] shadow-2xl shadow-blue-900/20" />
+                                <div className="water-ripple logo-float glow-pulse mb-6 sm:mb-8 inline-flex">
+                                    <AppLogoIcon className="size-16 sm:size-24 rounded-[20px] sm:rounded-[28px] shadow-2xl shadow-blue-900/20" />
                                 </div>
-                                <h2 className="mb-5 text-4xl font-bold tracking-tight sm:text-5xl">
+                                <h2 className="mb-4 sm:mb-5 text-3xl font-bold tracking-tight sm:text-5xl">
                                     <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white to-white/70' : 'bg-gradient-to-b from-slate-900 to-slate-500'}`}>Ready to help keep </span>
                                     <Gradient>Nasugbu safe?</Gradient>
                                 </h2>
-                                <p className={`mx-auto mb-14 max-w-md text-lg font-[350] ${isDark ? 'text-white/35' : 'text-neutral-500'}`}>
+                                <p className={`mx-auto mb-8 sm:mb-14 max-w-md text-base sm:text-lg font-[350] ${isDark ? 'text-white/35' : 'text-neutral-500'}`}>
                                     Join residents and responders already using FloodTrack. Free to use, forever.
                                 </p>
-                                <div className="flex flex-wrap justify-center gap-4">
-                                    <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-2xl transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:scale-[1.04] hover:shadow-cyan-500/25 active:scale-[0.97]">
-                                        <span className="relative z-10 flex items-center gap-2.5">
-                                            Create free account
-                                            <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
-                                        </span>
-                                    </Link>
-                                    <Link href={login()} className={`group flex items-center gap-2 rounded-2xl border px-8 py-3.5 text-sm font-bold backdrop-blur-md transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/80' : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 shadow-sm'}`}>
-                                        Sign in
-                                    </Link>
-                                </div>
+                                <ClickSpark sparkColor={isDark ? '#38bdf8' : '#3b82f6'} sparkSize={12} sparkRadius={25} sparkCount={10} duration={500}>
+                                    <div className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
+                                        <div className="w-full sm:w-auto"><Magnet padding={60} magnetStrength={3}>
+                                            <StarBorder color={isDark ? 'rgba(56,189,248,0.6)' : 'rgba(59,130,246,0.5)'} speed="5s" thickness={1} className="rounded-2xl">
+                                                <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-2xl transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:shadow-cyan-500/25 active:scale-[0.97]">
+                                                    <span className="relative z-10 flex items-center gap-2.5">
+                                                        Create free account
+                                                        <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
+                                                    </span>
+                                                </Link>
+                                            </StarBorder>
+                                        </Magnet></div>
+                                        <div className="w-full sm:w-auto"><Magnet padding={50} magnetStrength={4}>
+                                            <Link href={login()} className={`group flex items-center justify-center gap-2 rounded-2xl border px-8 py-3.5 text-sm font-bold backdrop-blur-md transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/80' : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 shadow-sm'}`}>
+                                                Sign in
+                                            </Link>
+                                        </Magnet></div>
+                                    </div>
+                                </ClickSpark>
                             </div>
                         </section>
                     )}
                 </main>
 
                 {/* ── Footer ─────────────────────────────────────────── */}
-                <footer className={`relative border-t px-4 py-12 sm:px-6 sm:py-16 ${isDark ? 'border-white/[0.03]' : 'border-neutral-100 bg-gradient-to-b from-[#fafbfc] to-white'}`}>
+                <footer className={`relative border-t px-4 py-10 sm:px-6 sm:py-20 ${isDark ? 'border-white/[0.04] bg-gradient-to-b from-transparent to-[#040609]' : 'border-neutral-100 bg-gradient-to-b from-[#fafbfc] to-white'}`}>
+                    {/* Top gradient line */}
                     <div className="absolute inset-x-0 top-0 h-px animated-border" />
-                    <div className="mx-auto max-w-7xl">
-                        <div className="grid gap-10 sm:grid-cols-3">
+
+                    {/* Subtle background glow */}
+                    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+                        <div className={`absolute left-1/2 bottom-0 -translate-x-1/2 w-[800px] h-[300px] rounded-full blur-[120px] ${isDark ? 'opacity-[0.03]' : 'opacity-[0.02]'}`}
+                            style={{ background: 'radial-gradient(ellipse, #3b82f6, transparent 70%)' }}
+                        />
+                    </div>
+
+                    <div className="relative mx-auto max-w-7xl">
+                        <div className="grid grid-cols-1 gap-8 text-center sm:gap-10 sm:grid-cols-3 sm:text-left">
                             {/* Brand */}
                             <div>
-                                <div className="flex items-center gap-3 mb-4">
-                                    <AppLogoIcon className="size-9 rounded-[12px] shadow-lg shadow-blue-900/15" />
-                                    <span className={`text-sm font-bold ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>FloodTrack</span>
+                                <div className="flex items-center justify-center gap-3 mb-5 sm:justify-start">
+                                    <AppLogoIcon className="size-10 rounded-[14px] shadow-lg shadow-blue-900/15" />
+                                    <span className="text-[1.05rem] font-bold tracking-tight">
+                                        <span className={isDark ? 'text-white/70' : 'text-neutral-700'}>Flood</span>
+                                        <GradientTextRB
+                                            colors={isDark ? ['#67e8f9', '#60a5fa', '#67e8f9'] : ['#0891b2', '#2563eb', '#0891b2']}
+                                            animationSpeed={4}
+                                            className="text-[1.05rem] font-bold tracking-tight"
+                                        >
+                                            Track
+                                        </GradientTextRB>
+                                    </span>
                                 </div>
-                                <p className={`text-[13px] leading-relaxed max-w-[260px] ${isDark ? 'text-white/20' : 'text-neutral-400'}`}>
+                                <p className={`text-[13px] leading-relaxed max-w-[280px] mx-auto sm:mx-0 ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>
                                     Community-driven flood and hazard reporting for Nasugbu, Batangas. In partnership with MDRRMO.
                                 </p>
                             </div>
 
                             {/* Quick links */}
                             <div>
-                                <h4 className={`text-[11px] font-bold tracking-[0.15em] uppercase mb-4 ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>Quick Links</h4>
-                                <ul className="space-y-2.5">
+                                <h4 className={`text-[11px] font-bold tracking-[0.15em] uppercase mb-5 ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Quick Links</h4>
+                                <ul className="space-y-3">
                                     {([
                                         { label: 'Sign in', href: login() },
                                         ...(canRegister ? [{ label: 'Create account', href: '/register' }] : []),
                                     ]).map(l => (
                                         <li key={l.label}>
-                                            <Link href={l.href} className={`text-[13px] transition-colors duration-200 ${isDark ? 'text-white/30 hover:text-white/60' : 'text-neutral-400 hover:text-neutral-600'}`}>{l.label}</Link>
+                                            <Link href={l.href} className={`group inline-flex items-center justify-center gap-2 text-[13px] transition-colors duration-200 sm:justify-start ${isDark ? 'text-white/30 hover:text-white/60' : 'text-neutral-400 hover:text-neutral-600'}`}>
+                                                <ArrowRight className="size-3 opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 hidden sm:block" />
+                                                {l.label}
+                                            </Link>
                                         </li>
                                     ))}
                                 </ul>
@@ -1031,18 +1178,24 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                             {/* Emergency */}
                             <div>
-                                <h4 className={`text-[11px] font-bold tracking-[0.15em] uppercase mb-4 ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>Emergency</h4>
-                                <ul className="space-y-2.5">
-                                    <li className="flex items-center gap-2">
-                                        <PhoneCall className="size-3 text-red-400/50" />
+                                <h4 className={`text-[11px] font-bold tracking-[0.15em] uppercase mb-5 ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Emergency</h4>
+                                <ul className="space-y-3">
+                                    <li className="flex items-center justify-center gap-2.5 sm:justify-start">
+                                        <div className="flex size-7 items-center justify-center rounded-lg bg-red-500/[0.08]">
+                                            <PhoneCall className="size-3.5 text-red-400/60" />
+                                        </div>
                                         <span className={`text-[13px] ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Emergency: <span className={`font-bold ${isDark ? 'text-white/50' : 'text-neutral-600'}`}>911</span></span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <Shield className="size-3 text-cyan-400/50" />
+                                    <li className="flex items-center justify-center gap-2.5 sm:justify-start">
+                                        <div className="flex size-7 items-center justify-center rounded-lg bg-cyan-500/[0.08]">
+                                            <Shield className="size-3.5 text-cyan-400/60" />
+                                        </div>
                                         <span className={`text-[13px] ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>MDRRMO Nasugbu</span>
                                     </li>
-                                    <li className="flex items-center gap-2">
-                                        <Siren className="size-3 text-amber-400/50" />
+                                    <li className="flex items-center justify-center gap-2.5 sm:justify-start">
+                                        <div className="flex size-7 items-center justify-center rounded-lg bg-amber-500/[0.08]">
+                                            <Siren className="size-3.5 text-amber-400/60" />
+                                        </div>
                                         <span className={`text-[13px] ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Red Cross: <span className={`font-bold ${isDark ? 'text-white/50' : 'text-neutral-600'}`}>143</span></span>
                                     </li>
                                 </ul>
@@ -1050,13 +1203,14 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                         </div>
 
                         {/* Bottom bar */}
-                        <div className={`mt-10 pt-6 border-t flex flex-col items-center justify-between gap-3 sm:flex-row ${isDark ? 'border-white/[0.03]' : 'border-neutral-200'}`}>
-                            <p className={`text-[12px] ${isDark ? 'text-white/15' : 'text-neutral-400'}`}>&copy; {new Date().getFullYear()} FloodTrack. All rights reserved.</p>
-                            <p className={`text-[12px] ${isDark ? 'text-white/10' : 'text-neutral-300'}`}>Built for the community of Nasugbu, Batangas</p>
+                        <div className={`mt-8 sm:mt-12 pt-5 sm:pt-6 border-t flex flex-col items-center justify-between gap-2 sm:gap-3 sm:flex-row ${isDark ? 'border-white/[0.04]' : 'border-neutral-200/60'}`}>
+                            <p className={`text-[11px] sm:text-[12px] ${isDark ? 'text-white/15' : 'text-neutral-400'}`}>&copy; {new Date().getFullYear()} FloodTrack. All rights reserved.</p>
+                            <p className={`text-[11px] sm:text-[12px] ${isDark ? 'text-white/10' : 'text-neutral-300'}`}>Built for the community of Nasugbu, Batangas</p>
                         </div>
                     </div>
                 </footer>
             </div>
+            </ClickSpark>
 
             {/* ── Global styles ──────────────────────────────────── */}
             <style>{`
@@ -1250,6 +1404,16 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     100% { transform: scale(1.15); opacity: 0; }
                 }
 
+                /* Star border animations */
+                @keyframes star-movement-bottom {
+                    0% { transform: translate(0%, 0%); opacity: 1; }
+                    100% { transform: translate(-100%, 0%); opacity: 0; }
+                }
+                @keyframes star-movement-top {
+                    0% { transform: translate(0%, 0%); opacity: 1; }
+                    100% { transform: translate(100%, 0%); opacity: 0; }
+                }
+
                 /* Theme toggle burst */
                 @keyframes themeBurst {
                     0%   { clip-path: circle(0% at var(--bx) var(--by)); opacity: 1; animation-timing-function: cubic-bezier(0.4, 0, 0.4, 1); }
@@ -1258,20 +1422,6 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     100% { clip-path: circle(160% at var(--bx) var(--by)); opacity: 0; }
                 }
             `}</style>
-
-            {/* Dark/Light mode toggle */}
-            <button
-                ref={themeBtnRef}
-                onClick={handleThemeToggle}
-                aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                className={`fixed bottom-6 right-6 z-[510] flex size-12 items-center justify-center rounded-2xl backdrop-blur-xl transition-all duration-300 hover:scale-110 hover:shadow-xl active:scale-95 ${isDark ? 'border border-white/10 bg-white/[0.06] shadow-lg shadow-black/30 hover:bg-white/[0.12]' : 'border border-neutral-200/80 bg-white/80 shadow-lg shadow-blue-500/[0.06] ring-1 ring-neutral-100 hover:bg-white hover:border-blue-200/60'}`}
-            >
-                {isDark ? (
-                    <Sun className="size-[18px] text-amber-400 drop-shadow-[0_0_6px_rgba(251,191,36,0.4)]" />
-                ) : (
-                    <Moon className="size-[18px] text-indigo-500 drop-shadow-[0_0_6px_rgba(99,102,241,0.3)]" />
-                )}
-            </button>
 
             {/* Theme transition burst */}
             {themeFlash && (
@@ -1758,25 +1908,53 @@ function GlowDivider() {
 function Gradient({ children }: { children: ReactNode }) {
     const { resolvedAppearance } = useAppearance();
     const isDark = resolvedAppearance === 'dark';
-    return <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-cyan-300 via-blue-400 to-indigo-400' : 'bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600'}`}>{children}</span>;
+    return (
+        <GradientTextRB
+            colors={isDark ? ['#67e8f9', '#60a5fa', '#818cf8', '#67e8f9'] : ['#06b6d4', '#3b82f6', '#6366f1', '#06b6d4']}
+            animationSpeed={6}
+        >
+            {children}
+        </GradientTextRB>
+    );
 }
 
 function GradientAlt({ children }: { children: ReactNode }) {
     const { resolvedAppearance } = useAppearance();
     const isDark = resolvedAppearance === 'dark';
-    return <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-emerald-300 to-cyan-400' : 'bg-gradient-to-r from-emerald-500 to-cyan-600'}`}>{children}</span>;
+    return (
+        <GradientTextRB
+            colors={isDark ? ['#6ee7b7', '#22d3ee', '#6ee7b7'] : ['#10b981', '#0891b2', '#10b981']}
+            animationSpeed={5}
+        >
+            {children}
+        </GradientTextRB>
+    );
 }
 
 function GradientWarm({ children }: { children: ReactNode }) {
     const { resolvedAppearance } = useAppearance();
     const isDark = resolvedAppearance === 'dark';
-    return <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-amber-300 via-orange-400 to-red-400' : 'bg-gradient-to-r from-amber-500 via-orange-500 to-red-500'}`}>{children}</span>;
+    return (
+        <GradientTextRB
+            colors={isDark ? ['#fcd34d', '#fb923c', '#f87171', '#fcd34d'] : ['#f59e0b', '#f97316', '#ef4444', '#f59e0b']}
+            animationSpeed={5}
+        >
+            {children}
+        </GradientTextRB>
+    );
 }
 
 function GradientPurple({ children }: { children: ReactNode }) {
     const { resolvedAppearance } = useAppearance();
     const isDark = resolvedAppearance === 'dark';
-    return <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-r from-violet-300 to-blue-400' : 'bg-gradient-to-r from-violet-500 to-blue-600'}`}>{children}</span>;
+    return (
+        <GradientTextRB
+            colors={isDark ? ['#c4b5fd', '#60a5fa', '#c4b5fd'] : ['#8b5cf6', '#3b82f6', '#8b5cf6']}
+            animationSpeed={5}
+        >
+            {children}
+        </GradientTextRB>
+    );
 }
 
 function SectionHead({ visible, badge, badgeIcon, badgeColor, title, sub }: {
@@ -1785,15 +1963,15 @@ function SectionHead({ visible, badge, badgeIcon, badgeColor, title, sub }: {
     const { resolvedAppearance } = useAppearance();
     const isDark = resolvedAppearance === 'dark';
     return (
-        <div className={`mb-10 text-center transition-all duration-[800ms] sm:mb-20 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <span className={`mb-5 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] ${isDark ? badgeColor : badgeColor.replace(/\/20/g, '/30').replace(/\/\[0\.06\]/g, '/[0.08]')}`}>
+        <div className={`mb-8 text-center transition-all duration-[800ms] sm:mb-20 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+            <span className={`mb-4 sm:mb-5 inline-flex items-center gap-2 rounded-full border px-3 sm:px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] ${isDark ? badgeColor : badgeColor.replace(/\/20/g, '/30').replace(/\/\[0\.06\]/g, '/[0.08]')}`}>
                 {badgeIcon}
                 {badge}
             </span>
-            <h2 className="mt-5 text-[clamp(1.8rem,4vw,3rem)] font-bold tracking-tight">
+            <h2 className="mt-4 sm:mt-5 text-[clamp(1.5rem,4vw,3rem)] font-bold tracking-tight">
                 <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white to-white/60' : 'bg-gradient-to-b from-slate-900 to-slate-400'}`}>{title}</span>
             </h2>
-            <p className={`mx-auto mt-4 max-w-xl text-[1.05rem] font-[350] ${isDark ? 'text-white/30' : 'text-neutral-500'}`}>{sub}</p>
+            <p className={`mx-auto mt-3 sm:mt-4 max-w-xl text-[0.95rem] sm:text-[1.05rem] font-[350] ${isDark ? 'text-white/30' : 'text-neutral-500'}`}>{sub}</p>
         </div>
     );
 }

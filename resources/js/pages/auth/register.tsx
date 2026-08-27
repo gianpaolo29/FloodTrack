@@ -53,7 +53,8 @@ export default function Register() {
 
             <div className="mb-8">
                 <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">
-                    Create your account
+                    Create{' '}
+                    <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent dark:from-cyan-400 dark:to-blue-400">your account</span>
                 </h1>
                 <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">
                     Start reporting and tracking hazards in your area.
@@ -200,7 +201,7 @@ export default function Register() {
                             type="submit"
                             tabIndex={7}
                             data-test="register-user-button"
-                            className="mt-1 h-11 w-full rounded-xl bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:shadow-blue-500/30 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
+                            className="auth-cta mt-1 h-11 w-full rounded-xl text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:shadow-blue-500/30 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
                         >
                             {processing ? (
                                 <Spinner />
