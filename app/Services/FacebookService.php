@@ -22,18 +22,18 @@ class FacebookService
     }
 
     /**
-     * Fetch recent posts from the managed Facebook Page.
+     * Fetch recent posts from the Facebook Page (including visitor posts).
      */
     public function getRecentPosts(int $limit = 25): array
     {
-        $response = Http::get("{$this->baseUrl}/{$this->pageId}/posts", [
+        $response = Http::get("{$this->baseUrl}/{$this->pageId}/feed", [
             'access_token' => $this->pageAccessToken,
-            'fields'       => 'id,message,created_time,full_picture,attachments{media,subattachments},place',
+            'fields'       => 'id,message,created_time,full_picture,attachments{media,subattachments},place,from',
             'limit'        => $limit,
         ]);
 
         if ($response->failed()) {
-            Log::error('[FacebookService] Failed to fetch posts', [
+            Log::error('[FacebookService] Failed to fetch page posts', [
                 'status' => $response->status(),
                 'body'   => $response->body(),
             ]);
@@ -41,6 +41,18 @@ class FacebookService
         }
 
         return $response->json('data', []);
+    }
+
+    /**
+     * Check if a post contains the #floodtrack hashtag.
+     */
+    public function hasFloodTrackHashtag(?string $message): bool
+    {
+        if (empty($message)) {
+            return false;
+        }
+
+        return (bool) preg_match('/#floodtrack\b/i', $message);
     }
 
     /**
@@ -75,8 +87,15 @@ class FacebookService
     }
 
     /**
+     * Check if a post should be imported as a report.
+     */
+    public function shouldImport(?string $message): bool
+    {
+        return $this->hasFloodTrackHashtag($message) || $this->isFloodRelated($message);
+    }
+
+    /**
      * Download an image from a URL and store it in the report's media directory.
-     * Returns the storage path or null on failure.
      */
     public function downloadImage(string $url, int $reportId): ?string
     {
@@ -106,6 +125,28 @@ class FacebookService
             ]);
             return null;
         }
+    }
+
+    /**
+     * Post a comment on a Facebook post as the Page.
+     */
+    public function commentOnPost(string $postId, string $message): bool
+    {
+        $response = Http::post("{$this->baseUrl}/{$postId}/comments", [
+            'access_token' => $this->pageAccessToken,
+            'message'      => $message,
+        ]);
+
+        if ($response->failed()) {
+            Log::error('[FacebookService] Failed to comment on post', [
+                'post_id' => $postId,
+                'status'  => $response->status(),
+                'body'    => $response->body(),
+            ]);
+            return false;
+        }
+
+        return true;
     }
 
     /**

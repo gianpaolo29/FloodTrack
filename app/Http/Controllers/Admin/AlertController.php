@@ -80,16 +80,19 @@ class AlertController extends Controller
             'target_barangays'  => $targetBarangays,
         ]);
 
-        // Real-time alert to all connected users (residents, responders)
-        SocketService::toAll('new-alert', $alert->toArray());
-
-        // Push notification (filtered by barangay if targeted)
+        // Push notification & real-time (filtered by barangay if targeted)
         $prefKey = $alert->type === 'critical' ? 'critical' : 'advisory';
         $pushData = ['type' => 'alert', 'alertId' => $alert->id];
 
         if ($targetBarangays) {
+            // Send real-time event only to targeted users
+            $targetUserIds = User::whereIn('home_address', $targetBarangays)->pluck('id');
+            foreach ($targetUserIds as $uid) {
+                SocketService::toUser($uid, 'new-alert', $alert->toArray());
+            }
             ExpoPushService::sendToBarangays($targetBarangays, $alert->title, $alert->body, $pushData, $prefKey);
         } else {
+            SocketService::toAll('new-alert', $alert->toArray());
             ExpoPushService::sendToAll($alert->title, $alert->body, $pushData, $prefKey);
         }
 
@@ -125,16 +128,19 @@ class AlertController extends Controller
             'target_barangays'  => $targetBarangays,
         ]);
 
-        // Real-time alert update to all connected users
-        SocketService::toAll('alert-updated', $alert->fresh()->toArray());
-
-        // Push notification for updated alert (filtered by barangay if targeted)
+        // Push notification & real-time for updated alert (filtered by barangay if targeted)
         $updatedPrefKey = $alert->type === 'critical' ? 'critical' : 'advisory';
         $pushData = ['type' => 'alert', 'alertId' => $alert->id];
+        $freshAlert = $alert->fresh()->toArray();
 
         if ($targetBarangays) {
+            $targetUserIds = User::whereIn('home_address', $targetBarangays)->pluck('id');
+            foreach ($targetUserIds as $uid) {
+                SocketService::toUser($uid, 'alert-updated', $freshAlert);
+            }
             ExpoPushService::sendToBarangays($targetBarangays, $alert->title, $alert->body, $pushData, $updatedPrefKey);
         } else {
+            SocketService::toAll('alert-updated', $freshAlert);
             ExpoPushService::sendToAll($alert->title, $alert->body, $pushData, $updatedPrefKey);
         }
 

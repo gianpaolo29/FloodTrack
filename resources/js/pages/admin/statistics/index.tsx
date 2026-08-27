@@ -5,7 +5,9 @@ import {
     AlertTriangle,
     BarChart3,
     Building2,
+    Calendar,
     CheckCircle2,
+    ChevronLeft,
     ChevronRight,
     Church,
     Clock,
@@ -19,9 +21,11 @@ import {
     TrendingUp,
     Trophy,
     Users,
+    X,
     Zap,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import ReactDOM from 'react-dom';
 import ReactApexChart from 'react-apexcharts';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -58,7 +62,17 @@ interface Props {
     critical_count: number;
     evacuation_stats: { total_centers: number; total_capacity: number; total_occupancy: number };
     evacuation_centers: Pick<EvacuationCenter, 'id' | 'name' | 'address' | 'type' | 'capacity' | 'current_occupancy' | 'is_active'>[];
+    trends: {
+        reports: number;
+        resolved: number;
+        avg_response: number;
+        critical: number;
+        label: string;
+        period_label: string;
+    };
     period: string;
+    custom_from?: string | null;
+    custom_to?: string | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -74,6 +88,7 @@ const PERIODS = [
     { key: 'week',  label: 'This Week' },
     { key: 'month', label: 'Monthly' },
     { key: 'all',   label: 'All' },
+    { key: 'custom', label: 'Custom' },
 ] as const;
 
 /* ─── Tooltip ─── */
@@ -172,6 +187,292 @@ function EmptyState({ text }: { text: string }) {
     );
 }
 
+/* ─── Calendar Date Range Picker (portal) ─── */
+function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
+    fromDate: string | null; toDate: string | null;
+    onApply: (from: string, to: string) => void; onClose: () => void;
+    anchorRef: React.RefObject<HTMLDivElement | null>;
+}) {
+    const [viewDate, setViewDate] = useState(() => {
+        if (fromDate) return new Date(fromDate + 'T00:00:00');
+        return new Date();
+    });
+    const [rangeStart, setRangeStart] = useState<string | null>(fromDate ?? null);
+    const [rangeEnd, setRangeEnd] = useState<string | null>(toDate ?? null);
+    const [selecting, setSelecting] = useState<'start' | 'end'>('start');
+    const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+    const year = viewDate.getFullYear();
+    const month = viewDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    useEffect(() => {
+        if (!anchorRef.current) return;
+        const rect = anchorRef.current.getBoundingClientRect();
+        const calW = 320;
+        let left = rect.right - calW;
+        if (left < 8) left = 8;
+        if (left + calW > window.innerWidth - 8) left = window.innerWidth - calW - 8;
+        setPos({ top: rect.bottom + 8, left });
+    }, [anchorRef]);
+
+    const days: (number | null)[] = [];
+    for (let i = 0; i < firstDay; i++) days.push(null);
+    for (let d = 1; d <= daysInMonth; d++) days.push(d);
+
+    const fmt = (d: number) => `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+
+    const isInRange = (dateStr: string) => {
+        if (!rangeStart || !rangeEnd) return false;
+        return dateStr >= rangeStart && dateStr <= rangeEnd;
+    };
+
+    const handleDayClick = (d: number) => {
+        const dateStr = fmt(d);
+        if (selecting === 'start') {
+            setRangeStart(dateStr);
+            setRangeEnd(null);
+            setSelecting('end');
+        } else {
+            if (rangeStart && dateStr < rangeStart) {
+                setRangeStart(dateStr);
+                setRangeEnd(rangeStart);
+            } else {
+                setRangeEnd(dateStr);
+            }
+            setSelecting('start');
+        }
+    };
+
+    const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
+    const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
+    const monthName = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const formatDisplay = (d: string | null) => {
+        if (!d) return '—';
+        const dt = new Date(d + 'T00:00:00');
+        return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
+    return ReactDOM.createPortal(
+        <div
+            className="calendar-portal fixed z-[9999] w-[320px] rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xl shadow-black/15 dark:border-neutral-700 dark:bg-neutral-900 animate-in fade-in slide-in-from-top-2 duration-200"
+            style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, opacity: pos ? 1 : 0 }}
+        >
+            <div className="mb-3 flex items-center justify-between">
+                <button onClick={prevMonth} className="flex size-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300">
+                    <ChevronLeft className="size-4" />
+                </button>
+                <span className="text-sm font-semibold text-neutral-800 dark:text-white">{monthName}</span>
+                <button onClick={nextMonth} className="flex size-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300">
+                    <ChevronRight className="size-4" />
+                </button>
+            </div>
+            <div className="mb-1 grid grid-cols-7 text-center">
+                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                    <span key={d} className="py-1 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">{d}</span>
+                ))}
+            </div>
+            <div className="grid grid-cols-7 gap-y-0.5">
+                {days.map((d, i) => {
+                    if (d === null) return <span key={`e-${i}`} />;
+                    const dateStr = fmt(d);
+                    const isStart = dateStr === rangeStart;
+                    const isEnd = dateStr === rangeEnd;
+                    const inRange = isInRange(dateStr);
+                    const isToday = dateStr === todayStr;
+                    const isFuture = dateStr > todayStr;
+                    return (
+                        <button
+                            key={d}
+                            disabled={isFuture}
+                            onClick={() => handleDayClick(d)}
+                            className={`relative flex size-9 items-center justify-center text-xs font-medium transition-all mx-auto rounded-lg
+                                ${isFuture ? 'cursor-not-allowed text-neutral-200 dark:text-neutral-700' : 'cursor-pointer'}
+                                ${isStart || isEnd
+                                    ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/30'
+                                    : inRange
+                                        ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                                        : isToday
+                                            ? 'ring-1 ring-indigo-300 text-indigo-600 dark:ring-indigo-700 dark:text-indigo-400'
+                                            : !isFuture ? 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800' : ''
+                                }
+                            `}
+                        >
+                            {d}
+                        </button>
+                    );
+                })}
+            </div>
+            <div className="mt-3 flex items-center gap-2 rounded-xl bg-neutral-50 p-2.5 dark:bg-neutral-800/60">
+                <div className="flex-1 text-center">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">From</p>
+                    <p className={`mt-0.5 text-xs font-bold ${rangeStart ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-300 dark:text-neutral-600'}`}>
+                        {formatDisplay(rangeStart)}
+                    </p>
+                </div>
+                <ChevronRight className="size-3 text-neutral-300 dark:text-neutral-600" />
+                <div className="flex-1 text-center">
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">To</p>
+                    <p className={`mt-0.5 text-xs font-bold ${rangeEnd ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-300 dark:text-neutral-600'}`}>
+                        {formatDisplay(rangeEnd)}
+                    </p>
+                </div>
+            </div>
+            <div className="mt-3 flex items-center gap-2">
+                <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2 text-[11px] font-semibold text-neutral-500 transition-all hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800">
+                    Cancel
+                </button>
+                <button
+                    onClick={() => { if (rangeStart && rangeEnd) onApply(rangeStart, rangeEnd); }}
+                    disabled={!rangeStart || !rangeEnd}
+                    className={`flex-1 rounded-xl py-2 text-[11px] font-semibold transition-all ${
+                        rangeStart && rangeEnd
+                            ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/30 hover:shadow-md hover:brightness-110'
+                            : 'bg-neutral-100 text-neutral-300 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-600'
+                    }`}
+                >
+                    Apply
+                </button>
+            </div>
+        </div>,
+        document.body
+    );
+}
+
+/* ─── KPI Tooltip ─── */
+interface InsightRow { label: string; value: string | number; color?: string }
+
+function KpiTooltip({ desc, insights, visible, parentRef }: {
+    desc: string; insights: InsightRow[];
+    visible: boolean; parentRef: React.RefObject<HTMLDivElement | null>;
+}) {
+    const tooltipRef = useRef<HTMLDivElement>(null);
+    const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+
+    useEffect(() => {
+        if (!visible || !parentRef.current) { setPos(null); return; }
+        const rect = parentRef.current.getBoundingClientRect();
+        const tooltipW = 260;
+        const top = rect.bottom + 8;
+        let left = rect.left + rect.width / 2;
+        left = Math.max(tooltipW / 2 + 8, Math.min(left, window.innerWidth - tooltipW / 2 - 8));
+        setPos({ top, left });
+    }, [visible, parentRef]);
+
+    if (!visible) return null;
+
+    return ReactDOM.createPortal(
+        <div
+            ref={tooltipRef}
+            className="fixed z-[9999] pointer-events-none"
+            style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, transform: 'translate(-50%, 0)', opacity: pos ? 1 : 0 }}
+        >
+            <div className="flex justify-center mb-[-5px]">
+                <div className="size-2.5 rotate-45 bg-white/95 ring-1 ring-neutral-200/60 dark:bg-neutral-900/95 dark:ring-neutral-700/60" />
+            </div>
+            <div className="w-[260px] rounded-xl bg-white/95 backdrop-blur-xl px-4 py-3 shadow-2xl shadow-black/15 ring-1 ring-neutral-200/60 dark:bg-neutral-900/95 dark:ring-neutral-700/60 animate-in fade-in slide-in-from-top-2 duration-200">
+                {insights.length > 0 && (
+                    <div className="flex flex-col gap-1.5 mb-2">
+                        {insights.map((row, i) => (
+                            <div key={i} className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: row.color ?? '#94a3b8' }} />
+                                    <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{row.label}</span>
+                                </div>
+                                <span className="text-[11px] font-bold tabular-nums text-neutral-800 dark:text-neutral-200">{row.value}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                {insights.length > 0 && (
+                    <div className="mb-2 h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-neutral-700" />
+                )}
+                <p className="text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">{desc}</p>
+            </div>
+        </div>,
+        document.body
+    );
+}
+
+/* ─── Stat KPI Card ─── */
+function StatKpiCard({ label, value, subtitle, icon: Icon, grad, shadow, alert, desc, insights, trend, trendLabel }: {
+    label: string; value: string; subtitle: string; icon: React.ElementType;
+    grad: string; shadow: string; alert?: boolean; desc: string; insights: InsightRow[];
+    trend?: number; trendLabel?: string;
+}) {
+    const [showTooltip, setShowTooltip] = useState(false);
+    const cardRef = useRef<HTMLDivElement>(null);
+    return (
+        <div
+            ref={cardRef}
+            className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${grad} p-4 shadow-lg ${shadow} sm:p-5 transition-all hover:scale-[1.02] hover:shadow-2xl cursor-pointer`}
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+        >
+            <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} />
+            <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-xl" />
+            <div className="pointer-events-none absolute -bottom-4 -left-4 size-16 rounded-full bg-black/10 blur-xl" />
+            {alert && (
+                <span className="absolute right-3 top-3 flex size-2.5">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-white opacity-60" />
+                    <span className="relative inline-flex size-2.5 rounded-full bg-white shadow-sm" />
+                </span>
+            )}
+            <div className="relative flex items-start justify-between">
+                <div className="min-w-0 flex-1">
+                    <p className="text-[11px] font-semibold text-white/80 sm:text-xs">{label}</p>
+                    <p className="mt-2 text-2xl font-extrabold tabular-nums tracking-tight text-white sm:text-3xl">{value}</p>
+                    {trend !== undefined && (
+                        <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                            <span className={`inline-flex items-center gap-0.5 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white backdrop-blur-sm`}>
+                                {trend >= 0 ? '▲' : '▼'} {Math.abs(trend)}%
+                            </span>
+                            {trendLabel && (
+                                <span className="text-[9px] text-white/50">{trendLabel}</span>
+                            )}
+                        </div>
+                    )}
+                    {trend === undefined && <p className="mt-0.5 text-[10px] text-white/55">{subtitle}</p>}
+                </div>
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm ring-1 ring-white/20 sm:size-11">
+                    <Icon className="size-5 text-white sm:size-[22px]" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* ─── Secondary Stat Card ─── */
+function SecStatCard({ icon: Icon, label, value, subtitle, grad, shadow, desc, insights }: {
+    icon: React.ElementType; label: string; value: string; subtitle: string;
+    grad: string; shadow: string; desc: string; insights: InsightRow[];
+}) {
+    const [showTooltip, setShowTooltip] = useState(false);
+    const cardRef = useRef<HTMLDivElement>(null);
+    return (
+        <div
+            ref={cardRef}
+            className="relative flex items-start justify-between gap-4 rounded-2xl border border-white/60 bg-white p-4 shadow-sm shadow-black/[0.04] transition-all hover:shadow-md hover:scale-[1.01] cursor-pointer sm:p-5 dark:border-neutral-700/50 dark:bg-neutral-900"
+            onMouseEnter={() => setShowTooltip(true)}
+            onMouseLeave={() => setShowTooltip(false)}
+        >
+            <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} />
+            <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">{label}</p>
+                <p className="mt-1 text-xl font-extrabold tabular-nums tracking-tight text-neutral-900 sm:text-2xl dark:text-white">{value}</p>
+                <p className="mt-0.5 text-[10px] text-neutral-400">{subtitle}</p>
+            </div>
+            <div className={`flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${grad} shadow-lg ${shadow}`}>
+                <Icon className="size-5 text-white" />
+            </div>
+        </div>
+    );
+}
+
 export default function StatisticsPage({
     daily_reports,
     avg_response_time,
@@ -188,16 +489,51 @@ export default function StatisticsPage({
     critical_count,
     evacuation_stats,
     evacuation_centers,
+    trends,
     period,
+    custom_from,
+    custom_to,
 }: Props) {
     const [aiState, setAiState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
     const [aiData, setAiData] = useState<AiInsight | null>(null);
+    const [showCalendar, setShowCalendar] = useState(false);
+    const calendarRef = useRef<HTMLDivElement>(null);
+
+    // Close calendar on outside click
+    useEffect(() => {
+        if (!showCalendar) return;
+        const handler = (e: MouseEvent) => {
+            const target = e.target as Node;
+            if (calendarRef.current?.contains(target)) return;
+            const portal = document.querySelector('.calendar-portal');
+            if (portal?.contains(target)) return;
+            setShowCalendar(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [showCalendar]);
 
     const setPeriod = (p: string) => {
         setAiState('idle');
         setAiData(null);
+        if (p === 'custom') {
+            setShowCalendar(true);
+            return;
+        }
+        setShowCalendar(false);
         router.get('/admin/statistics', { period: p }, { preserveState: true, preserveScroll: true });
     };
+
+    const applyCustomRange = (from: string, to: string) => {
+        setAiState('idle');
+        setAiData(null);
+        setShowCalendar(false);
+        router.get('/admin/statistics', { period: 'custom', from, to }, { preserveState: true, preserveScroll: true });
+    };
+
+    const customRangeLabel = custom_from && custom_to
+        ? `${new Date(custom_from + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(custom_to + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+        : null;
 
     async function generateInsights() {
         setAiState('loading');
@@ -255,6 +591,72 @@ export default function StatisticsPage({
 
     // Top areas max
     const maxAreaCount = Math.max(...top_areas.map(a => a.count), 1);
+
+    // Derived stats for tooltips
+    const resolvedCount  = status_breakdown['resolved'] ?? 0;
+    const pendingCount   = status_breakdown['pending'] ?? 0;
+    const activeCount    = (status_breakdown['verified'] ?? 0) + (status_breakdown['assigned'] ?? 0);
+    const rejectedCount  = status_breakdown['rejected'] ?? 0;
+    const highCount      = severity_breakdown['high'] ?? 0;
+    const critPct        = total_reports > 0 ? Math.round((critical_count / total_reports) * 100) : 0;
+    const availableCapacity = evacuation_stats.total_capacity - evacuation_stats.total_occupancy;
+
+    /* ── Smart descriptions ── */
+    function statDesc(key: string): string {
+        switch (key) {
+            case 'total_reports': {
+                const parts: string[] = [];
+                if (total_reports === 0) return 'No reports submitted yet.';
+                parts.push(`${resolvedCount} resolved, ${activeCount} active, ${pendingCount} pending.`);
+                if (pendingCount > 0 && total_reports > 0 && (pendingCount / total_reports) > 0.3)
+                    parts.push('Pending queue is high — review may be falling behind.');
+                if (resolution_rate >= 80) parts.push('Strong resolution rate.');
+                return parts.join(' ');
+            }
+            case 'resolution_rate': {
+                if (total_reports === 0) return 'No reports to calculate rate from.';
+                if (resolution_rate >= 90) return `Excellent — ${resolvedCount} of ${total_reports} reports resolved. Team is highly effective.`;
+                if (resolution_rate >= 70) return `Good progress — ${resolvedCount} resolved, but ${pendingCount + activeCount} still open.`;
+                if (resolution_rate >= 40) return `Needs improvement — ${pendingCount} pending and ${activeCount} active reports need attention.`;
+                return `Only ${resolution_rate}% resolved — most reports remain open. Consider allocating more resources.`;
+            }
+            case 'avg_response': {
+                if (avg_response_time <= 0) return 'No resolved reports to measure response time.';
+                if (avg_response_time < 30) return 'Excellent response time — under 30 minutes. Team is reacting quickly.';
+                if (avg_response_time < 60) return 'Good response time — under an hour. Reports are being handled promptly.';
+                if (avg_response_time < 180) return `Response time of ${formatResponseTime(avg_response_time)} — consider prioritizing critical reports to bring this down.`;
+                return `Response time of ${formatResponseTime(avg_response_time)} is slow — backlog or staffing may need review.`;
+            }
+            case 'critical': {
+                if (critical_count === 0) return 'No critical reports — all severity levels are manageable.';
+                const parts: string[] = [];
+                parts.push(`${critical_count} critical report${critical_count > 1 ? 's' : ''} — ${critPct}% of all reports.`);
+                if (highCount > 0) parts.push(`Combined with ${highCount} high-severity, these need priority response.`);
+                if (critical_count > 5) parts.push('High critical count — consider emergency protocols.');
+                return parts.join(' ');
+            }
+            case 'evac_centers':
+                if (evacuation_stats.total_centers === 0) return 'No evacuation centers registered yet.';
+                return `${evacuation_stats.total_centers} centers available with total capacity for ${evacuation_stats.total_capacity.toLocaleString()} people.`;
+            case 'evac_capacity':
+                if (evacuation_stats.total_capacity === 0) return 'No capacity registered.';
+                return `${availableCapacity.toLocaleString()} spots still available. ${occupancyPct}% of total capacity is currently occupied.`;
+            case 'evac_occupancy': {
+                if (evacuation_stats.total_occupancy === 0) return 'No evacuees currently sheltered.';
+                if (occupancyPct >= 90) return `${evacuation_stats.total_occupancy.toLocaleString()} evacuees — capacity is nearly full at ${occupancyPct}%. Prepare overflow facilities.`;
+                if (occupancyPct >= 70) return `${evacuation_stats.total_occupancy.toLocaleString()} evacuees — ${occupancyPct}% capacity used. Monitor closely.`;
+                return `${evacuation_stats.total_occupancy.toLocaleString()} people sheltered. Capacity is well within limits at ${occupancyPct}%.`;
+            }
+            case 'evac_rate': {
+                if (evacuation_stats.total_capacity === 0) return 'No capacity data available.';
+                if (occupancyPct >= 90) return `Critical — ${occupancyPct}% full. Only ${availableCapacity.toLocaleString()} spots remain. Activate additional centers.`;
+                if (occupancyPct >= 70) return `Getting crowded at ${occupancyPct}%. Keep overflow centers on standby.`;
+                if (occupancyPct >= 30) return `Moderate usage at ${occupancyPct}%. Sufficient capacity available.`;
+                return `Low occupancy at ${occupancyPct}%. Plenty of room for additional evacuees if needed.`;
+            }
+            default: return '';
+        }
+    }
 
     /* ── Area Chart (Daily Reports) ── */
     const areaOptions: ApexOptions = {
@@ -456,20 +858,43 @@ export default function StatisticsPage({
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                         {/* Period pills */}
-                        <div className="flex items-center gap-1 rounded-xl border border-neutral-200 bg-neutral-100/80 p-1 dark:border-neutral-700 dark:bg-neutral-800/80">
+                        <div className="relative flex items-center gap-1 rounded-xl border border-neutral-200 bg-neutral-100/80 p-1 dark:border-neutral-700 dark:bg-neutral-800/80" ref={calendarRef}>
                             {PERIODS.map(p => (
                                 <button
                                     key={p.key}
                                     onClick={() => setPeriod(p.key)}
                                     className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
-                                        period === p.key
+                                        period === p.key || (p.key === 'custom' && showCalendar)
                                             ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/30'
                                             : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
                                     }`}
                                 >
-                                    {p.label}
+                                    {p.key === 'custom' ? (
+                                        <span className="flex items-center gap-1">
+                                            <Calendar className="size-3" />
+                                            {period === 'custom' && customRangeLabel ? customRangeLabel : p.label}
+                                        </span>
+                                    ) : p.label}
                                 </button>
                             ))}
+                            {period === 'custom' && customRangeLabel && !showCalendar && (
+                                <button
+                                    onClick={() => setPeriod('all')}
+                                    className="ml-0.5 flex size-5 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
+                                    title="Clear custom range"
+                                >
+                                    <X className="size-3" />
+                                </button>
+                            )}
+                            {showCalendar && (
+                                <CalendarPicker
+                                    fromDate={custom_from ?? null}
+                                    toDate={custom_to ?? null}
+                                    onApply={applyCustomRange}
+                                    onClose={() => setShowCalendar(false)}
+                                    anchorRef={calendarRef}
+                                />
+                            )}
                         </div>
                         {/* Export button */}
                         <a
@@ -484,128 +909,51 @@ export default function StatisticsPage({
 
                 {/* Summary Stat Cards */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                    {/* Total Reports */}
-                    <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 via-blue-500 to-cyan-500 p-4 shadow-lg shadow-indigo-500/40 sm:p-5">
-                        <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-xl" />
-                        <div className="pointer-events-none absolute -bottom-4 -left-4 size-16 rounded-full bg-black/10 blur-xl" />
-                        <div className="relative flex size-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm sm:size-11">
-                            <FileText className="size-5 text-white sm:size-[22px]" />
-                        </div>
-                        <p className="relative mt-3 text-2xl font-extrabold tabular-nums tracking-tight text-white sm:text-3xl">
-                            {total_reports.toLocaleString()}
-                        </p>
-                        <p className="relative mt-0.5 text-[11px] font-semibold text-white/80 sm:text-xs">Total Reports</p>
-                        <p className="relative mt-0.5 text-[10px] text-white/60">All time</p>
-                    </div>
-
-                    {/* Resolution Rate */}
-                    <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 p-4 shadow-lg shadow-emerald-500/40 sm:p-5">
-                        <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-xl" />
-                        <div className="pointer-events-none absolute -bottom-4 -left-4 size-16 rounded-full bg-black/10 blur-xl" />
-                        <div className="relative flex size-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm sm:size-11">
-                            <CheckCircle2 className="size-5 text-white sm:size-[22px]" />
-                        </div>
-                        <p className="relative mt-3 text-2xl font-extrabold tabular-nums tracking-tight text-white sm:text-3xl">
-                            {resolution_rate}%
-                        </p>
-                        <p className="relative mt-0.5 text-[11px] font-semibold text-white/80 sm:text-xs">Resolution Rate</p>
-                        <p className="relative mt-0.5 text-[10px] text-white/60">Resolved / total</p>
-                    </div>
-
-                    {/* Avg Response Time */}
-                    <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-400 via-orange-500 to-rose-500 p-4 shadow-lg shadow-amber-500/40 sm:p-5">
-                        <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-xl" />
-                        <div className="pointer-events-none absolute -bottom-4 -left-4 size-16 rounded-full bg-black/10 blur-xl" />
-                        <div className="relative flex size-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm sm:size-11">
-                            <Clock className="size-5 text-white sm:size-[22px]" />
-                        </div>
-                        <p className="relative mt-3 text-2xl font-extrabold tabular-nums tracking-tight text-white sm:text-3xl">
-                            {formatResponseTime(avg_response_time)}
-                        </p>
-                        <p className="relative mt-0.5 text-[11px] font-semibold text-white/80 sm:text-xs">Avg Response Time</p>
-                        <p className="relative mt-0.5 text-[10px] text-white/60">Time to resolve</p>
-                    </div>
-
-                    {/* Critical Reports */}
-                    <div className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-500 via-red-500 to-pink-600 p-4 shadow-lg shadow-rose-500/40 sm:p-5">
-                        <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-xl" />
-                        <div className="pointer-events-none absolute -bottom-4 -left-4 size-16 rounded-full bg-black/10 blur-xl" />
-                        {critical_count > 0 && (
-                            <span className="absolute right-3 top-3 flex size-2.5">
-                                <span className="absolute inline-flex size-full animate-ping rounded-full bg-white opacity-60" />
-                                <span className="relative inline-flex size-2.5 rounded-full bg-white shadow-sm" />
-                            </span>
-                        )}
-                        <div className="relative flex size-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm sm:size-11">
-                            <AlertTriangle className="size-5 text-white sm:size-[22px]" />
-                        </div>
-                        <p className="relative mt-3 text-2xl font-extrabold tabular-nums tracking-tight text-white sm:text-3xl">
-                            {critical_count.toLocaleString()}
-                        </p>
-                        <p className="relative mt-0.5 text-[11px] font-semibold text-white/80 sm:text-xs">Critical Reports</p>
-                        <p className="relative mt-0.5 text-[10px] text-white/60">Highest severity</p>
-                    </div>
+                    <StatKpiCard label="Total Reports" value={total_reports.toLocaleString()} subtitle="All time" icon={FileText} grad="from-indigo-500 via-blue-500 to-cyan-500" shadow="shadow-indigo-500/40" trend={trends.reports} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('total_reports')} insights={[
+                        { label: 'Resolved', value: resolvedCount, color: '#10b981' },
+                        { label: 'Active', value: activeCount, color: '#3b82f6' },
+                        { label: 'Pending', value: pendingCount, color: '#f59e0b' },
+                        { label: 'Rejected', value: rejectedCount, color: '#94a3b8' },
+                    ]} />
+                    <StatKpiCard label="Resolution Rate" value={`${resolution_rate}%`} subtitle="Resolved / total" icon={CheckCircle2} grad="from-emerald-500 via-teal-500 to-cyan-500" shadow="shadow-emerald-500/40" trend={trends.resolved} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('resolution_rate')} insights={[
+                        { label: 'Resolved', value: resolvedCount, color: '#10b981' },
+                        { label: 'Total reports', value: total_reports, color: '#6366f1' },
+                        { label: 'Still open', value: pendingCount + activeCount, color: '#f59e0b' },
+                    ]} />
+                    <StatKpiCard label="Avg Response Time" value={formatResponseTime(avg_response_time)} subtitle="Time to resolve" icon={Clock} grad="from-amber-400 via-orange-500 to-rose-500" shadow="shadow-amber-500/40" trend={trends.avg_response} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('avg_response')} insights={[
+                        { label: 'Pending queue', value: pendingCount, color: '#f59e0b' },
+                        { label: 'Active reports', value: activeCount, color: '#3b82f6' },
+                        { label: 'Resolution rate', value: `${resolution_rate}%`, color: '#10b981' },
+                    ]} />
+                    <StatKpiCard label="Critical Reports" value={critical_count.toLocaleString()} subtitle="Highest severity" icon={AlertTriangle} grad="from-rose-500 via-red-500 to-pink-600" shadow="shadow-rose-500/40" alert={critical_count > 0} trend={trends.critical} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('critical')} insights={[
+                        { label: 'Critical', value: critical_count, color: '#ef4444' },
+                        { label: 'High', value: highCount, color: '#f97316' },
+                        { label: '% of total', value: `${critPct}%`, color: '#ef4444' },
+                    ]} />
                 </div>
 
                 {/* Evacuation Centers Quick Stats — 4 cards */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                    {([
-                        {
-                            icon: Building2,
-                            label: 'Total Centers',
-                            value: evacuation_stats.total_centers.toLocaleString(),
-                            subtitle: 'Active centers',
-                            grad: 'from-sky-500 to-blue-600',
-                            shadow: 'shadow-sky-500/20',
-                            accent: 'text-sky-600 bg-sky-50 dark:bg-sky-900/20 dark:text-sky-400',
-                        },
-                        {
-                            icon: Users,
-                            label: 'Total Capacity',
-                            value: evacuation_stats.total_capacity.toLocaleString(),
-                            subtitle: 'Maximum capacity',
-                            grad: 'from-violet-500 to-purple-600',
-                            shadow: 'shadow-violet-500/20',
-                            accent: 'text-violet-600 bg-violet-50 dark:bg-violet-900/20 dark:text-violet-400',
-                        },
-                        {
-                            icon: TrendingUp,
-                            label: 'Current Evacuees',
-                            value: evacuation_stats.total_occupancy.toLocaleString(),
-                            subtitle: 'People sheltered',
-                            grad: 'from-emerald-500 to-teal-600',
-                            shadow: 'shadow-emerald-500/20',
-                            accent: occupancyPct >= 90
-                                ? 'text-rose-600 bg-rose-50 dark:bg-rose-900/20 dark:text-rose-400'
-                                : occupancyPct >= 70
-                                    ? 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 dark:text-amber-400'
-                                    : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400',
-                        },
-                        {
-                            icon: AlertCircle,
-                            label: 'Occupancy Rate',
-                            value: `${occupancyPct}%`,
-                            subtitle: 'Of total capacity',
-                            grad: 'from-teal-500 to-cyan-600',
-                            shadow: 'shadow-teal-500/20',
-                            accent: 'text-teal-600 bg-teal-50 dark:bg-teal-900/20 dark:text-teal-400',
-                        },
-                    ] as const).map(({ icon: Icon, label, value, subtitle, grad, shadow, accent }) => (
-                        <div key={label} className="flex items-center gap-4 rounded-2xl border border-white/60 bg-white p-4 shadow-sm shadow-black/[0.04] transition-all hover:shadow-md sm:p-5 dark:border-neutral-700/50 dark:bg-neutral-900">
-                            <div className={`flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${grad} shadow-lg ${shadow}`}>
-                                <Icon className="size-5 text-white" />
-                            </div>
-                            <div className="min-w-0">
-                                <p className="text-xl font-extrabold tabular-nums tracking-tight text-neutral-900 sm:text-2xl dark:text-white">
-                                    {value}
-                                </p>
-                                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">{label}</p>
-                                <span className={`mt-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${accent}`}>
-                                    {subtitle}
-                                </span>
-                            </div>
-                        </div>
-                    ))}
+                    <SecStatCard icon={Building2} label="Total Centers" value={evacuation_stats.total_centers.toLocaleString()} subtitle="Active centers" grad="from-sky-500 to-blue-600" shadow="shadow-sky-500/20" desc={statDesc('evac_centers')} insights={[
+                        { label: 'Total capacity', value: evacuation_stats.total_capacity.toLocaleString(), color: '#8b5cf6' },
+                        { label: 'Currently sheltered', value: evacuation_stats.total_occupancy.toLocaleString(), color: '#10b981' },
+                        { label: 'Occupancy', value: `${occupancyPct}%`, color: '#06b6d4' },
+                    ]} />
+                    <SecStatCard icon={Users} label="Total Capacity" value={evacuation_stats.total_capacity.toLocaleString()} subtitle="Maximum capacity" grad="from-violet-500 to-purple-600" shadow="shadow-violet-500/20" desc={statDesc('evac_capacity')} insights={[
+                        { label: 'Currently used', value: evacuation_stats.total_occupancy.toLocaleString(), color: '#10b981' },
+                        { label: 'Available spots', value: availableCapacity.toLocaleString(), color: '#3b82f6' },
+                        { label: 'Occupancy rate', value: `${occupancyPct}%`, color: '#06b6d4' },
+                    ]} />
+                    <SecStatCard icon={TrendingUp} label="Current Evacuees" value={evacuation_stats.total_occupancy.toLocaleString()} subtitle="People sheltered" grad="from-emerald-500 to-teal-600" shadow="shadow-emerald-500/20" desc={statDesc('evac_occupancy')} insights={[
+                        { label: 'Total capacity', value: evacuation_stats.total_capacity.toLocaleString(), color: '#8b5cf6' },
+                        { label: 'Available spots', value: availableCapacity.toLocaleString(), color: '#3b82f6' },
+                        { label: 'Centers', value: evacuation_stats.total_centers, color: '#0ea5e9' },
+                    ]} />
+                    <SecStatCard icon={AlertCircle} label="Occupancy Rate" value={`${occupancyPct}%`} subtitle="Of total capacity" grad="from-teal-500 to-cyan-600" shadow="shadow-teal-500/20" desc={statDesc('evac_rate')} insights={[
+                        { label: 'Sheltered', value: evacuation_stats.total_occupancy.toLocaleString(), color: '#10b981' },
+                        { label: 'Capacity', value: evacuation_stats.total_capacity.toLocaleString(), color: '#8b5cf6' },
+                        { label: 'Available', value: availableCapacity.toLocaleString(), color: '#3b82f6' },
+                    ]} />
                 </div>
 
                 {/* Charts Row 1: Area + Donut */}

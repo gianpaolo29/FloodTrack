@@ -64,7 +64,7 @@ class ImportFacebookReports extends Command
             $message = $post['message'] ?? '';
 
             // Check if flood-related
-            if (!$facebook->isFloodRelated($message)) {
+            if (!$facebook->shouldImport($message)) {
                 FacebookImportLog::create([
                     'facebook_post_id' => $postId,
                     'imported'         => false,
@@ -204,6 +204,22 @@ class ImportFacebookReports extends Command
 
             // Initialize SLA tracking
             app(SlaService::class)->initializeTracking($report);
+
+            // Auto-comment on the Facebook post
+            $report->refresh();
+            $statusLabel = match ($report->status) {
+                'verified' => 'verified and is now being processed',
+                'rejected' => 'reviewed but could not be verified',
+                default    => 'received and is pending review',
+            };
+
+            $comment = "Salamat sa iyong report! Ang iyong flood report ay na-record na sa FloodTrack system.\n\n"
+                . "Reference No: {$report->reference_number}\n"
+                . "Status: Your report has been {$statusLabel}.\n\n"
+                . "Maa-update ka sa status ng iyong report. Mag-ingat po!\n"
+                . "- FloodTrack Nasugbu";
+
+            $facebook->commentOnPost($postId, $comment);
 
             // Log the import
             FacebookImportLog::create([

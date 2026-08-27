@@ -25,17 +25,28 @@ class DashboardController extends Controller
     {
         $period = $request->get('period', 'all');
 
-        // Date range based on period
-        $from = match ($period) {
-            'today' => today(),
-            'week'  => now()->startOfWeek(),
-            'month' => now()->startOfMonth(),
-            default => null,
-        };
+        // Custom date range
+        $customFrom = $request->get('from');
+        $customTo   = $request->get('to');
+
+        if ($period === 'custom' && $customFrom) {
+            $from = Carbon::parse($customFrom)->startOfDay();
+            $to   = $customTo ? Carbon::parse($customTo)->endOfDay() : now()->endOfDay();
+        } else {
+            $from = match ($period) {
+                'today' => today(),
+                'week'  => now()->startOfWeek(),
+                'month' => now()->startOfMonth(),
+                default => null,
+            };
+            $to = null;
+        }
 
         // Base query scoped by period
         $reportQuery = Report::query();
-        if ($from) {
+        if ($from && $to) {
+            $reportQuery->whereBetween('created_at', [$from, $to]);
+        } elseif ($from) {
             $reportQuery->where('created_at', '>=', $from);
         }
 
@@ -50,18 +61,90 @@ class DashboardController extends Controller
             'total_responders' => User::where('role', 'responder')->count(),
         ];
 
-        // Percentage changes (compare this week vs last week)
-        $thisWeekReports = Report::where('created_at', '>=', now()->startOfWeek())->count();
-        $lastWeekReports = Report::whereBetween('created_at', [now()->subWeek()->startOfWeek(), now()->startOfWeek()])->count();
-        $reportsTrend = $lastWeekReports > 0
-            ? round((($thisWeekReports - $lastWeekReports) / $lastWeekReports) * 100, 1)
-            : 0;
+        // Determine comparison period based on selected period
+        if ($period === 'custom' && $from) {
+            $currentFrom = $from;
+            $currentTo   = $to ?? now()->endOfDay();
+            $rangeDays   = $currentFrom->diffInDays($currentTo);
+            $previousTo  = $currentFrom->copy()->subDay()->endOfDay();
+            $previousFrom = $previousTo->copy()->subDays($rangeDays)->startOfDay();
+            $trendLabel       = 'vs prior period';
+            $trendPeriodLabel = $currentFrom->format('M d') . ' – ' . $currentTo->format('M d, Y');
+        } else {
+            $currentFrom = match ($period) {
+                'today' => today(),
+                'week'  => now()->startOfWeek(),
+                'month' => now()->startOfMonth(),
+                default => now()->startOfMonth(),
+            };
+            $currentTo = null;
+            $previousFrom = match ($period) {
+                'today' => today()->subDay(),
+                'week'  => now()->subWeek()->startOfWeek(),
+                'month' => now()->subMonth()->startOfMonth(),
+                default => now()->subMonth()->startOfMonth(),
+            };
+            $previousTo = match ($period) {
+                'today' => today(),
+                'week'  => now()->startOfWeek(),
+                'month' => now()->startOfMonth(),
+                default => now()->startOfMonth(),
+            };
+            $trendLabel = match ($period) {
+                'today' => 'vs yesterday',
+                'week'  => 'vs last week',
+                'month' => 'vs last month',
+                default => 'vs last month',
+            };
+            $trendPeriodLabel = match ($period) {
+                'today' => today()->format('M d, Y'),
+                'week'  => now()->startOfWeek()->format('M d') . ' – ' . now()->endOfWeek()->format('M d, Y'),
+                'month' => now()->startOfMonth()->format('M d') . ' – ' . now()->endOfMonth()->format('M d, Y'),
+                default => now()->startOfMonth()->format('M d') . ' – ' . now()->endOfMonth()->format('M d, Y'),
+            };
+        }
 
-        $thisWeekResolved = Report::where('status', 'resolved')->where('resolved_at', '>=', now()->startOfWeek())->count();
-        $lastWeekResolved = Report::where('status', 'resolved')->whereBetween('resolved_at', [now()->subWeek()->startOfWeek(), now()->startOfWeek()])->count();
-        $resolvedTrend = $lastWeekResolved > 0
-            ? round((($thisWeekResolved - $lastWeekResolved) / $lastWeekResolved) * 100, 1)
-            : 0;
+        // Helper to calculate trend percentage
+        $calcTrend = function (int $current, int $previous): float {
+            return $previous > 0
+                ? round((($current - $previous) / $previous) * 100, 1)
+                : ($current > 0 ? 100 : 0);
+        };
+
+        // Reports trend
+        $curReportsQ = Report::where('created_at', '>=', $currentFrom);
+        if ($currentTo) $curReportsQ->where('created_at', '<=', $currentTo);
+        $thisWeekReports = $curReportsQ->count();
+        $lastWeekReports = Report::whereBetween('created_at', [$previousFrom, $previousTo])->count();
+        $reportsTrend = $calcTrend($thisWeekReports, $lastWeekReports);
+
+        // Resolved trend
+        $curResolvedQ = Report::where('status', 'resolved')->where('resolved_at', '>=', $currentFrom);
+        if ($currentTo) $curResolvedQ->where('resolved_at', '<=', $currentTo);
+        $thisWeekResolved = $curResolvedQ->count();
+        $lastWeekResolved = Report::where('status', 'resolved')->whereBetween('resolved_at', [$previousFrom, $previousTo])->count();
+        $resolvedTrend = $calcTrend($thisWeekResolved, $lastWeekResolved);
+
+        // Active floods trend
+        $curActiveQ = Report::whereIn('status', ['verified', 'assigned'])->where('created_at', '>=', $currentFrom);
+        if ($currentTo) $curActiveQ->where('created_at', '<=', $currentTo);
+        $currentActive = $curActiveQ->count();
+        $previousActive = Report::whereIn('status', ['verified', 'assigned'])->whereBetween('created_at', [$previousFrom, $previousTo])->count();
+        $activeTrend = $calcTrend($currentActive, $previousActive);
+
+        // Pending trend
+        $curPendingQ = Report::where('status', 'pending')->where('created_at', '>=', $currentFrom);
+        if ($currentTo) $curPendingQ->where('created_at', '<=', $currentTo);
+        $currentPending = $curPendingQ->count();
+        $previousPending = Report::where('status', 'pending')->whereBetween('created_at', [$previousFrom, $previousTo])->count();
+        $pendingTrend = $calcTrend($currentPending, $previousPending);
+
+        // Alerts trend
+        $curAlertsQ = Alert::where('created_at', '>=', $currentFrom);
+        if ($currentTo) $curAlertsQ->where('created_at', '<=', $currentTo);
+        $currentAlerts = $curAlertsQ->count();
+        $previousAlerts = Alert::whereBetween('created_at', [$previousFrom, $previousTo])->count();
+        $alertsTrend = $calcTrend($currentAlerts, $previousAlerts);
 
         // Daily reports for the last 30 days
         $dailyReports = Report::select(
@@ -186,6 +269,11 @@ class DashboardController extends Controller
             'trends'             => [
                 'reports'  => $reportsTrend,
                 'resolved' => $resolvedTrend,
+                'active'   => $activeTrend,
+                'pending'  => $pendingTrend,
+                'alerts'   => $alertsTrend,
+                'label'    => $trendLabel,
+                'period_label' => $trendPeriodLabel,
             ],
             'daily_reports'      => $dailyReports,
             'monthly_reports'    => $monthlyReports,
@@ -200,6 +288,8 @@ class DashboardController extends Controller
             'affected_areas'     => $affected_areas,
             'map_reports'        => $map_reports,
             'period'             => $period,
+            'custom_from'        => $customFrom,
+            'custom_to'          => $customTo,
         ]);
     }
 }

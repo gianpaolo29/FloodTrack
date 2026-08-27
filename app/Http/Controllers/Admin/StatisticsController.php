@@ -7,6 +7,7 @@ use App\Models\EvacuationCenter;
 use App\Models\Report;
 use App\Models\Team;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -19,14 +20,30 @@ class StatisticsController extends Controller
     {
         // Period filter
         $period = $request->get('period', 'all');
-        $from = match($period) {
-            'today' => today(),
-            'week'  => now()->startOfWeek(),
-            'month' => now()->startOfMonth(),
-            default => null,
-        };
+
+        // Custom date range
+        $customFrom = $request->get('from');
+        $customTo   = $request->get('to');
+
+        if ($period === 'custom' && $customFrom) {
+            $from = Carbon::parse($customFrom)->startOfDay();
+            $to   = $customTo ? Carbon::parse($customTo)->endOfDay() : now()->endOfDay();
+        } else {
+            $from = match($period) {
+                'today' => today(),
+                'week'  => now()->startOfWeek(),
+                'month' => now()->startOfMonth(),
+                default => null,
+            };
+            $to = null;
+        }
+
         $reportQuery = Report::query();
-        if ($from) $reportQuery->where('created_at', '>=', $from);
+        if ($from && $to) {
+            $reportQuery->whereBetween('created_at', [$from, $to]);
+        } elseif ($from) {
+            $reportQuery->where('created_at', '>=', $from);
+        }
 
         // Reports per day (last 30 days) — scoped by period
         $daily_reports = (clone $reportQuery)
@@ -167,6 +184,90 @@ class StatisticsController extends Controller
                 ];
             });
 
+        // ── Trend calculations ──
+        if ($period === 'custom' && $from) {
+            $trendCurrentFrom = $from;
+            $trendCurrentTo   = $to ?? now()->endOfDay();
+            $rangeDays        = $trendCurrentFrom->diffInDays($trendCurrentTo);
+            $trendPreviousTo  = $trendCurrentFrom->copy()->subDay()->endOfDay();
+            $trendPreviousFrom = $trendPreviousTo->copy()->subDays($rangeDays)->startOfDay();
+            $trendLabel       = 'vs prior period';
+            $trendPeriodLabel = $trendCurrentFrom->format('M d') . ' – ' . $trendCurrentTo->format('M d, Y');
+        } else {
+            $trendCurrentFrom = match ($period) {
+                'today' => today(),
+                'week'  => now()->startOfWeek(),
+                'month' => now()->startOfMonth(),
+                default => now()->startOfMonth(),
+            };
+            $trendCurrentTo = null;
+            $trendPreviousFrom = match ($period) {
+                'today' => today()->subDay(),
+                'week'  => now()->subWeek()->startOfWeek(),
+                'month' => now()->subMonth()->startOfMonth(),
+                default => now()->subMonth()->startOfMonth(),
+            };
+            $trendPreviousTo = match ($period) {
+                'today' => today(),
+                'week'  => now()->startOfWeek(),
+                'month' => now()->startOfMonth(),
+                default => now()->startOfMonth(),
+            };
+            $trendLabel = match ($period) {
+                'today' => 'vs yesterday',
+                'week'  => 'vs last week',
+                'month' => 'vs last month',
+                default => 'vs last month',
+            };
+            $trendPeriodLabel = match ($period) {
+                'today' => today()->format('M d, Y'),
+                'week'  => now()->startOfWeek()->format('M d') . ' – ' . now()->endOfWeek()->format('M d, Y'),
+                'month' => now()->startOfMonth()->format('M d') . ' – ' . now()->endOfMonth()->format('M d, Y'),
+                default => now()->startOfMonth()->format('M d') . ' – ' . now()->endOfMonth()->format('M d, Y'),
+            };
+        }
+
+        $calcTrend = function (int $current, int $previous): float {
+            return $previous > 0
+                ? round((($current - $previous) / $previous) * 100, 1)
+                : ($current > 0 ? 100 : 0);
+        };
+
+        // Reports trend
+        $curReportsQ = Report::where('created_at', '>=', $trendCurrentFrom);
+        if ($trendCurrentTo) $curReportsQ->where('created_at', '<=', $trendCurrentTo);
+        $currentReports = $curReportsQ->count();
+        $previousReports = Report::whereBetween('created_at', [$trendPreviousFrom, $trendPreviousTo])->count();
+
+        // Resolution rate trend
+        $curResolvedQ = Report::where('status', 'resolved')->where('resolved_at', '>=', $trendCurrentFrom);
+        if ($trendCurrentTo) $curResolvedQ->where('resolved_at', '<=', $trendCurrentTo);
+        $currentResolved = $curResolvedQ->count();
+        $previousResolved = Report::where('status', 'resolved')->whereBetween('resolved_at', [$trendPreviousFrom, $trendPreviousTo])->count();
+
+        // Avg response time trend
+        $curAvgQ = Report::where('status', 'resolved')->whereNotNull('resolved_at')->where('resolved_at', '>=', $trendCurrentFrom);
+        if ($trendCurrentTo) $curAvgQ->where('resolved_at', '<=', $trendCurrentTo);
+        $currentAvgResp = $curAvgQ->selectRaw("$avgExpr as avg_minutes")->value('avg_minutes');
+        $previousAvgResp = Report::where('status', 'resolved')->whereNotNull('resolved_at')
+            ->whereBetween('resolved_at', [$trendPreviousFrom, $trendPreviousTo])
+            ->selectRaw("$avgExpr as avg_minutes")->value('avg_minutes');
+
+        // Critical trend
+        $curCritQ = Report::where('severity', 'critical')->where('created_at', '>=', $trendCurrentFrom);
+        if ($trendCurrentTo) $curCritQ->where('created_at', '<=', $trendCurrentTo);
+        $currentCritical = $curCritQ->count();
+        $previousCritical = Report::where('severity', 'critical')->whereBetween('created_at', [$trendPreviousFrom, $trendPreviousTo])->count();
+
+        $trends = [
+            'reports'      => $calcTrend($currentReports, $previousReports),
+            'resolved'     => $calcTrend($currentResolved, $previousResolved),
+            'avg_response' => $calcTrend((int) round((float) ($currentAvgResp ?? 0)), (int) round((float) ($previousAvgResp ?? 0))),
+            'critical'     => $calcTrend($currentCritical, $previousCritical),
+            'label'        => $trendLabel,
+            'period_label' => $trendPeriodLabel,
+        ];
+
         // Evacuation center stats
         $evacuation_stats = [
             'total_centers'   => EvacuationCenter::count(),
@@ -195,7 +296,10 @@ class StatisticsController extends Controller
             'evacuation_stats'   => $evacuation_stats,
             'evacuation_centers' => $evacuation_centers,
             'team_performance'   => $team_performance,
+            'trends'             => $trends,
             'period'             => $period,
+            'custom_from'        => $customFrom,
+            'custom_to'          => $customTo,
         ]);
     }
 
