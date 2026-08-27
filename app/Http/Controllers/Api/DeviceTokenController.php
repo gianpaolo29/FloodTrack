@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\DeviceToken;
+use App\Services\ExpoPushService;
 use Illuminate\Http\Request;
 
 class DeviceTokenController extends Controller
@@ -44,5 +45,30 @@ class DeviceTokenController extends Controller
             ->delete();
 
         return response()->json(['message' => 'Device token removed.']);
+    }
+
+    /**
+     * Send a test push notification to the authenticated user.
+     */
+    public function testPush(Request $request)
+    {
+        $userId = $request->user()->id;
+        $tokens = DeviceToken::where('user_id', $userId)->pluck('token')->toArray();
+
+        if (empty($tokens)) {
+            return response()->json(['message' => 'No device tokens found for your account.'], 404);
+        }
+
+        ExpoPushService::sendToUsers(
+            $userId,
+            'FloodTrack Test',
+            'Push notifications are working!',
+            ['type' => 'test']
+        );
+
+        return response()->json([
+            'message' => 'Test notification sent.',
+            'tokens'  => $tokens,
+        ]);
     }
 }

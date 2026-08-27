@@ -134,10 +134,32 @@ class ExpoPushService
 
         foreach ($chunks as $chunk) {
             try {
-                Http::withHeaders([
+                $response = Http::withHeaders([
                     'Accept'       => 'application/json',
                     'Content-Type' => 'application/json',
                 ])->post(self::EXPO_PUSH_URL, $chunk);
+
+                $body = $response->json();
+                Log::info('[ExpoPush] Response', ['status' => $response->status(), 'body' => $body]);
+
+                // Check for per-ticket errors (e.g. DeviceNotRegistered)
+                if (isset($body['data'])) {
+                    foreach ($body['data'] as $i => $ticket) {
+                        if (($ticket['status'] ?? '') === 'error') {
+                            Log::error('[ExpoPush] Ticket error', [
+                                'token'   => $chunk[$i]['to'] ?? 'unknown',
+                                'message' => $ticket['message'] ?? '',
+                                'details' => $ticket['details'] ?? [],
+                            ]);
+
+                            // Remove invalid tokens
+                            if (($ticket['details']['error'] ?? '') === 'DeviceNotRegistered') {
+                                DeviceToken::where('token', $chunk[$i]['to'] ?? '')->delete();
+                                Log::info('[ExpoPush] Removed invalid token', ['token' => $chunk[$i]['to'] ?? '']);
+                            }
+                        }
+                    }
+                }
             } catch (\Throwable $e) {
                 Log::error('[ExpoPush] Failed to send notifications', [
                     'error' => $e->getMessage(),

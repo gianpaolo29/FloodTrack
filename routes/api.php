@@ -49,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Push notification tokens
     Route::post('/device-tokens',   [DeviceTokenController::class, 'store']);
     Route::delete('/device-tokens', [DeviceTokenController::class, 'destroy']);
+    Route::post('/device-tokens/test', [DeviceTokenController::class, 'testPush']);
     Route::patch('/user/profile', [UserController::class, 'update']);
     Route::post('/user/password', [UserController::class, 'changePassword']);
     Route::patch('/user/duty-status', [UserController::class, 'updateDutyStatus']);
