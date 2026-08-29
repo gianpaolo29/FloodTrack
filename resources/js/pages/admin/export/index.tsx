@@ -178,15 +178,15 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Export" />
 
-            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-3 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* ─── Header ─── */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                        <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                             Export Reports
                         </h1>
-                        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                        <p className="mt-1 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                             Download report data as Excel with optional filters. Export is capped at {EXPORT_LIMIT.toLocaleString()} records.
                         </p>
                     </div>
@@ -295,7 +295,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                             <p className="text-[11px] text-neutral-400">Download a formatted PDF summary of the dashboard</p>
                         </div>
                     </div>
-                    <div className="flex flex-col gap-4 p-6">
+                    <div className="flex flex-col gap-4 p-3 sm:p-6">
                         <p className="text-sm text-neutral-500 dark:text-neutral-400">
                             Includes summary stats, status &amp; severity breakdowns, top responders, and the latest 20 reports.
                             Choose a period to scope the data.
@@ -331,7 +331,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                     </div>
 
                     {/* Card body */}
-                    <div className="flex flex-col gap-5 p-6">
+                    <div className="flex flex-col gap-4 sm:gap-5 p-3 sm:p-6">
                         <div className="grid gap-4 sm:grid-cols-2">
                             <FilterField label="Status">
                                 <div className="relative">

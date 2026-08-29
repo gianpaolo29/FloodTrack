@@ -228,20 +228,20 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
             <Head title="Reports" />
 
             <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-cyan-50/20 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
-            <div className="flex flex-col gap-5 p-4 sm:gap-6 sm:p-6 lg:p-8">
+            <div className="flex flex-col gap-4 sm:gap-5 p-3 sm:p-6 lg:p-8">
 
                 {/* ── Header ── */}
                 <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-all duration-700 ${mounted ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0'}`}>
-                    <div className="flex items-center gap-4">
-                        <div className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-500 shadow-xl shadow-teal-500/30">
-                            <FileText className="size-5 text-white" />
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-500 shadow-xl shadow-teal-500/30">
+                            <FileText className="size-4 sm:size-5 text-white" />
                             <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
                         </div>
                         <div>
-                            <h1 className="bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent dark:from-white dark:to-neutral-400">
+                            <h1 className="bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-lg sm:text-2xl font-extrabold tracking-tight text-transparent dark:from-white dark:to-neutral-400">
                                 {activeStatusLabel}
                             </h1>
-                            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                            <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Monitor, verify, and manage incoming flood reports.
                             </p>
                         </div>
@@ -374,7 +374,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500/25 to-transparent" />
 
                     {/* ── Toolbar ── */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 bg-neutral-50/50 px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/30">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/30">
                         <div className="flex items-center gap-2.5">
                             <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{activeStatusLabel}</span>
                             <span className="inline-flex items-center rounded-full bg-teal-500/10 px-2.5 py-0.5 text-[11px] font-bold text-teal-600 dark:bg-teal-400/10 dark:text-teal-400">
@@ -573,7 +573,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
 
                     {/* ── Pagination ── */}
                     {reports.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t border-neutral-100 bg-neutral-50/40 px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/20">
+                        <div className="flex items-center justify-between border-t border-neutral-100 bg-neutral-50/40 px-3 sm:px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/20">
                             <p className="text-xs text-neutral-500 dark:text-neutral-400">
                                 <span className="font-semibold text-neutral-900 dark:text-neutral-100">{reports.total}</span> report{reports.total !== 1 ? 's' : ''}
                                 {' '}· Page <span className="font-semibold text-neutral-900 dark:text-neutral-100">{reports.current_page}</span> of {reports.last_page}

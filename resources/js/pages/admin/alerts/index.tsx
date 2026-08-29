@@ -377,13 +377,13 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Alerts" />
 
-            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
+            <div className="flex flex-col gap-4 sm:gap-5 p-3 sm:p-6 lg:p-8">
 
                 {/* ── Page Header ── */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/25">
-                            <Bell className="size-6 text-white" />
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/25">
+                            <Bell className="size-5 sm:size-6 text-white" />
                             {stats.critical > 0 && (
                                 <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white ring-2 ring-white dark:ring-neutral-900">
                                     {stats.critical > 9 ? '9+' : stats.critical}
@@ -391,10 +391,10 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                             )}
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                                 Alert Management
                             </h1>
-                            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                            <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Publish advisories and critical notifications to residents
                             </p>
                         </div>
@@ -516,7 +516,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500/25 to-transparent" />
 
                     {/* ── Toolbar ── */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 bg-neutral-50/50 px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/30">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/30">
                         <div className="flex items-center gap-2.5">
                             <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">All Alerts</span>
                             <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-bold text-amber-600 dark:bg-amber-400/10 dark:text-amber-400">
@@ -728,7 +728,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
 
                     {/* Pagination */}
                     {alerts.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t border-neutral-100 bg-neutral-50/40 px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/20">
+                        <div className="flex items-center justify-between border-t border-neutral-100 bg-neutral-50/40 px-3 sm:px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/20">
                             <p className="text-xs text-neutral-500 dark:text-neutral-400">
                                 <span className="font-semibold text-neutral-900 dark:text-neutral-100">{alerts.total}</span> alert{alerts.total !== 1 ? 's' : ''}
                                 {' '}&middot; Page <span className="font-semibold text-neutral-900 dark:text-neutral-100">{alerts.current_page}</span> of {alerts.last_page}

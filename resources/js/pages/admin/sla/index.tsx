@@ -273,20 +273,20 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
             <Head title="SLA Rules" />
 
             <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-cyan-50/20 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
-            <div className="flex flex-col gap-5 p-4 sm:gap-6 sm:p-6 lg:p-8">
+            <div className="flex flex-col gap-4 sm:gap-6 p-3 sm:p-6 lg:p-8">
 
                 {/* Header */}
                 <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-all duration-700 ${mounted ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0'}`}>
-                    <div className="flex items-center gap-4">
-                        <div className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-500 shadow-xl shadow-teal-500/30">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-500 shadow-xl shadow-teal-500/30">
                             <Clock className="size-5 text-white" />
-                            <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
+                            <div className="absolute inset-[1px] rounded-[11px] sm:rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
                         </div>
                         <div>
-                            <h1 className="bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent dark:from-white dark:to-neutral-400">
+                            <h1 className="bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-lg sm:text-2xl font-extrabold tracking-tight text-transparent dark:from-white dark:to-neutral-400">
                                 SLA Rules
                             </h1>
-                            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                            <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Configure response time thresholds and monitor compliance.
                             </p>
                         </div>
@@ -382,7 +382,7 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                 </div>
 
                 {/* Period filter + Charts */}
-                <div className="grid gap-5 lg:grid-cols-2">
+                <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
 
                     {/* Compliance donut */}
                     <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">

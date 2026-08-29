@@ -242,7 +242,7 @@ export default function AdminWeather({ current, daily_forecast, hourly_forecast,
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Weather" />
 
-            <div className="space-y-4 p-4 sm:p-5">
+            <div className="space-y-4 p-3 sm:p-5">
 
                 {/* ─── Search Bar ─── */}
                 <div className="flex items-center gap-3">
@@ -640,7 +640,7 @@ export default function AdminWeather({ current, daily_forecast, hourly_forecast,
                                 )}
 
                                 {aiState === 'done' && aiData && (
-                                    <div className="flex flex-col gap-5">
+                                    <div className="flex flex-col gap-4 sm:gap-5">
                                         {/* Risk Level + Refresh */}
                                         <div className="flex items-center justify-between">
                                             <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${AI_RISK_STYLES[aiData.risk_level]}`}>

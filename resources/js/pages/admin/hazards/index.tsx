@@ -265,22 +265,22 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Hazards" />
 
-            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
+            <div className="flex flex-col gap-4 sm:gap-5 p-3 sm:p-6 lg:p-8">
 
                 {/* ── Page Header ── */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-red-500/25">
-                            <ShieldAlert className="size-6 text-white" />
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-red-500/25">
+                            <ShieldAlert className="size-5 sm:size-6 text-white" />
                             <span className="absolute -right-1 -top-1 flex size-3.5 items-center justify-center rounded-full bg-red-500 ring-2 ring-white dark:ring-neutral-900">
                                 <span className="size-1.5 animate-pulse rounded-full bg-white" />
                             </span>
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                                 Hazard Management
                             </h1>
-                            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                            <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Manage flood &amp; road hazards visible on the resident map
                             </p>
                         </div>
@@ -425,7 +425,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Toolbar */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-3 sm:px-5 py-4 dark:border-neutral-800">
                         <div className="flex items-center gap-2">
                             <div className="relative">
                                 <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
@@ -563,7 +563,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
 
                     {/* Pagination */}
                     {hazards.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t border-neutral-100 px-5 py-4 dark:border-neutral-800">
+                        <div className="flex items-center justify-between border-t border-neutral-100 px-3 sm:px-5 py-4 dark:border-neutral-800">
                             <span className="text-xs text-neutral-500 dark:text-neutral-400">
                                 Page{' '}
                                 <span className="font-semibold text-neutral-800 dark:text-neutral-200">{hazards.current_page}</span>

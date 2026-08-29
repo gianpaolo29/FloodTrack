@@ -180,19 +180,19 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Residents" />
 
-            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-3 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* ── Page Header ── */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25">
-                            <Users2 className="size-6 text-white" />
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25">
+                            <Users2 className="size-5 sm:size-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                                 Residents
                             </h1>
-                            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                            <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Manage resident accounts and their information
                             </p>
                         </div>
@@ -691,8 +691,8 @@ function UserFormModal({
                 </div>
 
                 {/* Modal body */}
-                <form onSubmit={handleSubmit} className="flex flex-col gap-5 p-6">
-                    <div className="grid gap-5 sm:grid-cols-2">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5 p-3 sm:p-6">
+                    <div className="grid gap-4 sm:gap-5 sm:grid-cols-2">
                         <FormField label="Full Name" error={form.errors.name}>
                             <input
                                 type="text"
@@ -714,7 +714,7 @@ function UserFormModal({
                             />
                         </FormField>
                     </div>
-                    <div className="grid gap-5 sm:grid-cols-2">
+                    <div className="grid gap-4 sm:gap-5 sm:grid-cols-2">
                         <FormField label="Contact Number" error={form.errors.contact_number}>
                             <input
                                 type="text"

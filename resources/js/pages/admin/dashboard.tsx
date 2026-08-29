@@ -1,5 +1,5 @@
-import { Head, Link, router } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import type { ApexOptions } from 'apexcharts';
 import {
     AlertTriangle,
@@ -25,10 +25,7 @@ import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import type { Report, Alert as AlertType } from '@/types/admin';
 import { SEVERITY_COLORS as SEV, STATUS_COLORS as STA } from '@/types/admin';
-import { useCountUp } from '@/hooks/use-count-up';
-import { PERIODS, formatResponseTime } from '@/lib/kpi-utils';
-import type { InsightRow } from '@/lib/kpi-utils';
-import { KpiTooltip } from '@/components/admin/kpi/KpiTooltip';
+import { formatResponseTime } from '@/lib/kpi-utils';
 import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
 import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
@@ -401,19 +398,19 @@ export default function AdminDashboard({
 
             {/* Page background */}
             <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
-            <div className="flex flex-col gap-5 p-4 sm:p-6 lg:gap-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-3 sm:gap-5 sm:p-6 lg:gap-6 lg:p-8">
 
                 {/* Header */}
                 <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
-                    <div className="flex items-center gap-4">
-                        <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 shadow-xl shadow-indigo-500/30">
-                            <LayoutDashboard className="size-6 text-white" />
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 shadow-xl shadow-indigo-500/30">
+                            <LayoutDashboard className="size-5 sm:size-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-xl font-extrabold tracking-tight text-transparent sm:text-2xl dark:from-white dark:to-neutral-400">
+                            <h1 className="bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-lg font-extrabold tracking-tight text-transparent sm:text-2xl dark:from-white dark:to-neutral-400">
                                 Dashboard
                             </h1>
-                            <p className="mt-0.5 text-xs text-neutral-500 sm:text-sm dark:text-neutral-400">Overview of your flood tracking system</p>
+                            <p className="mt-0.5 text-[11px] text-neutral-500 sm:text-sm dark:text-neutral-400">Overview of your flood tracking system</p>
                         </div>
                     </div>
                     <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin" />

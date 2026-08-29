@@ -51,13 +51,13 @@ export default function AdminSettings({ settings }: Props) {
             <Head title="Settings" />
 
             <form onSubmit={handleSubmit}>
-                <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
+                <div className="flex flex-col gap-4 p-3 sm:gap-6 sm:p-6 lg:p-8">
 
                     {/* ─── Header ─── */}
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Settings</h1>
-                            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Settings</h1>
+                            <p className="mt-1 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 System configuration and platform information.
                             </p>
                         </div>
@@ -79,7 +79,7 @@ export default function AdminSettings({ settings }: Props) {
                     )}
 
                     {/* ─── Grid ─── */}
-                    <div className="grid gap-5 lg:grid-cols-2">
+                    <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
 
                         {/* General */}
                         <SettingsCard

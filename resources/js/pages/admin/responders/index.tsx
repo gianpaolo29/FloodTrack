@@ -147,17 +147,17 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Responders" />
 
-            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-3 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="relative flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/25">
-                            <ShieldCheck className="size-5 text-white" />
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/25">
+                            <ShieldCheck className="size-5 sm:size-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Responders</h1>
-                            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Responders</h1>
+                            <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Manage responder accounts and track their assignments.
                             </p>
                         </div>
@@ -623,8 +623,8 @@ function ResponderFormModal({
                 </div>
 
                 {/* Modal body */}
-                <form onSubmit={handleSubmit} className="flex flex-col gap-5 p-6">
-                    <div className="grid gap-5 sm:grid-cols-2">
+                <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5 p-3 sm:p-6">
+                    <div className="grid gap-4 sm:gap-5 sm:grid-cols-2">
                         <FormField label="Full Name" error={form.errors.name}>
                             <input
                                 type="text"
@@ -646,7 +646,7 @@ function ResponderFormModal({
                             />
                         </FormField>
                     </div>
-                    <div className="grid gap-5 sm:grid-cols-2">
+                    <div className="grid gap-4 sm:gap-5 sm:grid-cols-2">
                         <FormField label="Contact Number" error={form.errors.contact_number}>
                             <input
                                 type="text"

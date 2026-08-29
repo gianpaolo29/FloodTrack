@@ -698,7 +698,6 @@ class MainSeeder extends Seeder
                     'title'       => $a['title'],
                     'body'        => $a['body'],
                     'type'        => $a['type'],
-                    'is_critical' => $a['is_critical'],
                     'created_at'  => now()->subHours($a['hours_ago']),
                     'updated_at'  => now()->subHours($a['hours_ago']),
                 ]

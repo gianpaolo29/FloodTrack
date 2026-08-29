@@ -163,17 +163,17 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Activity Log" />
 
-            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-3 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="relative flex size-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25">
-                            <History className="size-5 text-white" />
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25">
+                            <History className="size-5 sm:size-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Activity Log</h1>
-                            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Activity Log</h1>
+                            <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Track every status change across all reports.
                             </p>
                         </div>

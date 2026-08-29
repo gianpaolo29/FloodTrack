@@ -4,8 +4,10 @@ import {
     AlertCircle,
     AlertTriangle,
     BarChart3,
+    Bell,
     Building2,
     Calendar,
+    ChartScatter,
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
@@ -14,10 +16,13 @@ import {
     FileText,
     GraduationCap,
     Landmark,
+    MapPin,
+    PieChart,
     RefreshCw,
     Shield,
     ShieldCheck,
     Sparkles,
+    Timer,
     TrendingUp,
     Trophy,
     Users,
@@ -42,10 +47,14 @@ interface AiInsight {
 }
 
 interface MonthlyPoint { month: string; total: number; critical: number; high: number; }
-interface BacklogPoint { date: string; new_reports: number; resolved: number; }
-interface TopArea { address: string; count: number; }
 interface TopResponder { id: number; name: string; resolved_count: number; total_assigned: number; efficiency: number; avg_response: number; }
 interface TeamPerformance { id: number; name: string; is_active: boolean; total_assigned: number; resolved_count: number; efficiency: number; avg_response: number; }
+interface ResponseTimeTrendItem { date: string; avg_minutes: number }
+interface EvacOccupancySeries { name: string; data: { date: string; occupancy: number }[] }
+interface AlertFrequencyItem { date: string; critical: number; advisory: number; info: number }
+interface SeverityVsResponseItem { severity: string; minutes: number }
+interface BarangayReport { area: string; count: number }
+interface MonthComparisonSide { label: string; critical: number; high: number; moderate: number; low: number }
 interface Props {
     daily_reports: Record<string, number>;
     avg_response_time: number;
@@ -55,8 +64,6 @@ interface Props {
     team_performance: TeamPerformance[];
     monthly_trend: MonthlyPoint[];
     peak_hours: Record<number, number>;
-    top_areas: TopArea[];
-    backlog_trend: BacklogPoint[];
     total_reports: number;
     resolution_rate: number;
     critical_count: number;
@@ -73,6 +80,15 @@ interface Props {
     period: string;
     custom_from?: string | null;
     custom_to?: string | null;
+    response_time_trend: ResponseTimeTrendItem[];
+    evac_occupancy_timeline: EvacOccupancySeries[];
+    alert_frequency: AlertFrequencyItem[];
+    severity_vs_response: SeverityVsResponseItem[];
+    barangay_reports: BarangayReport[];
+    month_comparison: { this_month: MonthComparisonSide; last_month: MonthComparisonSide };
+    source_breakdown: Record<string, number>;
+    evac_by_type: Record<string, number>;
+    user_roles: Record<string, number>;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -108,7 +124,7 @@ function tooltipHtml(label: string, rows: { color: string; name: string; value: 
 /* ─── Card ─── */
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={`rounded-2xl border border-white/60 bg-white shadow-sm shadow-black/[0.04] transition-shadow hover:shadow-md hover:shadow-black/[0.07] dark:border-neutral-700/50 dark:bg-neutral-900 ${className}`}>
+        <div className={`overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm shadow-black/[0.04] transition-shadow hover:shadow-md hover:shadow-black/[0.07] dark:border-neutral-700/50 dark:bg-neutral-900 ${className}`}>
             {children}
         </div>
     );
@@ -482,8 +498,6 @@ export default function StatisticsPage({
     team_performance,
     monthly_trend,
     peak_hours,
-    top_areas,
-    backlog_trend,
     total_reports,
     resolution_rate,
     critical_count,
@@ -493,6 +507,15 @@ export default function StatisticsPage({
     period,
     custom_from,
     custom_to,
+    response_time_trend,
+    evac_occupancy_timeline,
+    alert_frequency,
+    severity_vs_response,
+    barangay_reports,
+    month_comparison,
+    source_breakdown,
+    evac_by_type,
+    user_roles,
 }: Props) {
     const [aiState, setAiState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
     const [aiData, setAiData] = useState<AiInsight | null>(null);
@@ -582,16 +605,6 @@ export default function StatisticsPage({
     });
     const peakHoursSeries = [{ name: 'Reports', data: Array.from({ length: 24 }, (_, h) => peak_hours[h] ?? 0) }];
 
-    // Backlog trend series
-    const backlogSeries = [
-        { name: 'New Reports', data: backlog_trend.map(b => b.new_reports) },
-        { name: 'Resolved',    data: backlog_trend.map(b => b.resolved) },
-    ];
-    const backlogLabels = backlog_trend.map(b => b.date);
-
-    // Top areas max
-    const maxAreaCount = Math.max(...top_areas.map(a => a.count), 1);
-
     // Derived stats for tooltips
     const resolvedCount  = status_breakdown['resolved'] ?? 0;
     const pendingCount   = status_breakdown['pending'] ?? 0;
@@ -671,6 +684,7 @@ export default function StatisticsPage({
         grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } }, padding: { left: 0, right: 4 } },
         xaxis: {
             categories: dailyDates,
+            tickAmount: 8,
             axisBorder: { show: false }, axisTicks: { show: false },
             labels: {
                 style: { fontSize: '10px', colors: '#94a3b8' },
@@ -790,7 +804,7 @@ export default function StatisticsPage({
         colors: ['#f59e0b'],
         fill: { type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 0.3, opacityFrom: 1, opacityTo: 0.75, stops: [0, 100] } },
         legend: { show: false },
-        xaxis: { categories: peakHoursLabels, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '9px', colors: '#94a3b8' }, rotate: -45 } },
+        xaxis: { categories: peakHoursLabels, tickAmount: 12, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '9px', colors: '#94a3b8' }, rotate: -45 } },
         yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
         grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } } },
         states: { hover: { filter: { type: 'darken', value: 0.88 } }, active: { filter: { type: 'none' } } },
@@ -802,34 +816,211 @@ export default function StatisticsPage({
         },
     };
 
-    /* ── Backlog Trend Area Chart ── */
-    const backlogOptions: ApexOptions = {
-        chart: { type: 'area', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600, easing: 'easeinout' }, selection: { enabled: false } },
+    /* ── TREND: Response Time Trend ── */
+    const responseTimeOptions: ApexOptions = {
+        chart: { type: 'line', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
         dataLabels: { enabled: false },
         stroke: { curve: 'smooth', width: 2.5 },
-        fill: {
-            type: 'gradient',
-            gradient: { type: 'vertical', shadeIntensity: 1, opacityFrom: 0.2, opacityTo: 0.02, stops: [0, 90, 100] },
-        },
-        colors: ['#6366f1', '#10b981'],
-        legend: { show: false },
+        colors: ['#f97316'],
         grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } }, padding: { left: 0, right: 4 } },
-        xaxis: {
-            categories: backlogLabels,
-            axisBorder: { show: false }, axisTicks: { show: false },
-            labels: { style: { fontSize: '10px', colors: '#94a3b8' }, rotate: -45 },
-            tooltip: { enabled: false },
+        xaxis: { categories: response_time_trend.map(d => d.date), tickAmount: 8, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, rotate: 0 } },
+        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, formatter: v => `${Math.round(v)}m` } },
+        legend: { show: false },
+        markers: { size: 0, hover: { size: 5 } },
+        tooltip: {
+            custom: ({ series, dataPointIndex, w }) => {
+                const label = w.globals.categoryLabels[dataPointIndex] ?? w.globals.labels[dataPointIndex];
+                const mins = series[0][dataPointIndex];
+                const display = mins >= 60 ? `${Math.floor(mins / 60)}h ${Math.round(mins % 60)}m` : `${Math.round(mins)}m`;
+                return tooltipHtml(label, [{ color: '#f97316', name: 'Avg Response', value: display }]);
+            },
         },
+    };
+    const responseTimeSeries = [{ name: 'Avg Response (min)', data: response_time_trend.map(d => d.avg_minutes) }];
+
+    /* ── TREND: Evacuation Occupancy Over Time ── */
+    const EVAC_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6'];
+    const allEvacDates = [...new Set(evac_occupancy_timeline.flatMap(s => s.data.map(d => d.date)))].sort();
+    const evacOccupancyOptions: ApexOptions = {
+        chart: { type: 'area', toolbar: { show: false }, fontFamily: 'inherit', stacked: true, animations: { enabled: true, speed: 600 } },
+        dataLabels: { enabled: false },
+        stroke: { curve: 'smooth', width: 2 },
+        colors: EVAC_COLORS.slice(0, evac_occupancy_timeline.length),
+        fill: { type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 90, 100] } },
+        grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } } },
+        xaxis: { categories: allEvacDates, tickAmount: 8, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, rotate: 0 } },
         yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
-        markers: { size: 0, hover: { size: 4 } },
+        legend: { position: 'top', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
+        tooltip: { shared: true, intersect: false },
+    };
+    const evacOccupancySeries = evac_occupancy_timeline.map(s => {
+        const dateMap = Object.fromEntries(s.data.map(d => [d.date, d.occupancy]));
+        return { name: s.name, data: allEvacDates.map(d => dateMap[d] ?? 0) };
+    });
+
+    /* ── TREND: Alert Frequency Timeline ── */
+    const alertFreqOptions: ApexOptions = {
+        chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'inherit', stacked: true, animations: { enabled: true, speed: 600 } },
+        plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
+        dataLabels: { enabled: false },
+        colors: ['#ef4444', '#f97316', '#3b82f6'],
+        grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } } },
+        xaxis: { categories: alert_frequency.map(d => d.date), tickAmount: 8, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, rotate: 0 } },
+        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
+        legend: { position: 'top', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
         tooltip: {
             shared: true, intersect: false,
             custom: ({ series, dataPointIndex, w }) => {
                 const label = w.globals.categoryLabels[dataPointIndex] ?? w.globals.labels[dataPointIndex];
                 return tooltipHtml(label, [
-                    { color: '#6366f1', name: 'New Reports', value: series[0][dataPointIndex] },
-                    { color: '#10b981', name: 'Resolved',    value: series[1][dataPointIndex] },
+                    { color: '#ef4444', name: 'Critical', value: series[0][dataPointIndex] },
+                    { color: '#f97316', name: 'Advisory', value: series[1][dataPointIndex] },
+                    { color: '#3b82f6', name: 'Info', value: series[2][dataPointIndex] },
                 ]);
+            },
+        },
+    };
+    const alertFreqSeries = [
+        { name: 'Critical', data: alert_frequency.map(d => d.critical) },
+        { name: 'Advisory', data: alert_frequency.map(d => d.advisory) },
+        { name: 'Info', data: alert_frequency.map(d => d.info) },
+    ];
+
+    /* ── RELATIONSHIP: Severity vs Response Time (scatter) ── */
+    const SEVERITY_MAP: Record<string, { x: number; color: string }> = {
+        low: { x: 1, color: '#10b981' }, moderate: { x: 2, color: '#f59e0b' },
+        high: { x: 3, color: '#f97316' }, critical: { x: 4, color: '#ef4444' },
+    };
+    const scatterGroups = ['critical', 'high', 'moderate', 'low'];
+    const severityScatterOptions: ApexOptions = {
+        chart: { type: 'scatter', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 }, zoom: { enabled: false } },
+        colors: ['#ef4444', '#f97316', '#f59e0b', '#10b981'],
+        xaxis: { type: 'numeric', min: 0.5, max: 4.5, tickAmount: 4, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, formatter: (v: number) => ['', 'Low', 'Moderate', 'High', 'Critical'][Math.round(v)] || '' }, axisBorder: { show: false }, axisTicks: { show: false } },
+        yaxis: { title: { text: 'Response Time (min)', style: { fontSize: '10px', color: '#94a3b8', fontWeight: 500 } }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, formatter: (v: number) => v >= 60 ? `${Math.floor(v / 60)}h` : `${Math.round(v)}m` }, axisBorder: { show: false }, axisTicks: { show: false } },
+        grid: { borderColor: '#f1f5f9', strokeDashArray: 4 },
+        legend: { position: 'top', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
+        markers: { size: 6, strokeWidth: 0, hover: { size: 8 } },
+        tooltip: {
+            custom: ({ seriesIndex, dataPointIndex, w }) => {
+                const point = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
+                const mins = point[1];
+                const display = mins >= 60 ? `${Math.floor(mins / 60)}h ${Math.round(mins % 60)}m` : `${Math.round(mins)}m`;
+                return tooltipHtml(w.globals.seriesNames[seriesIndex], [{ color: w.globals.colors[seriesIndex], name: 'Response', value: display }]);
+            },
+        },
+    };
+    const severityScatterSeries = scatterGroups.map(sev => ({
+        name: sev.charAt(0).toUpperCase() + sev.slice(1),
+        data: severity_vs_response.filter(d => d.severity === sev).map(d => [SEVERITY_MAP[sev]?.x ?? 0, d.minutes]),
+    }));
+
+    /* ── COMPARISON: Barangay Report Treemap ── */
+    const treemapOptions: ApexOptions = {
+        chart: { type: 'treemap', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
+        colors: ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#818cf8', '#6d28d9', '#4f46e5', '#4338ca', '#7c3aed', '#5b21b6'],
+        dataLabels: { enabled: true, style: { fontSize: '12px', fontWeight: 700 }, formatter: (_: any, opt: any) => { const d = opt.w.globals.initialSeries[0].data[opt.dataPointIndex]; return d ? `${d.x}` : ''; } },
+        plotOptions: { treemap: { distributed: true, enableShades: false } },
+        legend: { show: false },
+        tooltip: {
+            custom: ({ seriesIndex, dataPointIndex, w }) => {
+                const d = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
+                return tooltipHtml(d.x, [{ color: '#6366f1', name: 'Reports', value: d.y }]);
+            },
+        },
+    };
+    const treemapSeries = [{ data: barangay_reports.map(b => ({ x: b.area, y: b.count })) }];
+
+    /* ── COMPARISON: This Month vs Last Month ── */
+    const sevKeys = ['critical', 'high', 'moderate', 'low'] as const;
+    const monthCompOptions: ApexOptions = {
+        chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
+        plotOptions: { bar: { borderRadius: 6, columnWidth: '55%' } },
+        dataLabels: { enabled: false },
+        colors: ['#6366f1', '#a78bfa'],
+        grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } } },
+        xaxis: { categories: ['Critical', 'High', 'Moderate', 'Low'], axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
+        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
+        legend: { position: 'top', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
+        tooltip: {
+            shared: true, intersect: false,
+            custom: ({ series, dataPointIndex, w }) => {
+                const label = w.globals.labels[dataPointIndex];
+                return tooltipHtml(label, [
+                    { color: '#6366f1', name: month_comparison.this_month.label, value: series[0][dataPointIndex] },
+                    { color: '#a78bfa', name: month_comparison.last_month.label, value: series[1][dataPointIndex] },
+                ]);
+            },
+        },
+    };
+    const monthCompSeries = [
+        { name: month_comparison.this_month.label, data: sevKeys.map(k => month_comparison.this_month[k]) },
+        { name: month_comparison.last_month.label, data: sevKeys.map(k => month_comparison.last_month[k]) },
+    ];
+
+    /* ── COMPOSITION: Reports by Source (donut) ── */
+    const sourceLabels = Object.keys(source_breakdown);
+    const sourceValues = Object.values(source_breakdown);
+    const SOURCE_COLORS = ['#6366f1', '#10b981', '#f97316', '#ef4444', '#8b5cf6'];
+    const sourceDonutOptions: ApexOptions = {
+        chart: { type: 'donut', fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
+        labels: sourceLabels.map(s => s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')),
+        colors: SOURCE_COLORS.slice(0, sourceLabels.length),
+        dataLabels: { enabled: false },
+        legend: { position: 'bottom', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
+        stroke: { width: 2, colors: ['#ffffff'] },
+        plotOptions: { pie: { donut: { size: '68%', labels: { show: true, name: { show: true, fontSize: '10px', fontWeight: '500', color: '#94a3b8', offsetY: 8 }, value: { show: true, fontSize: '24px', fontWeight: '800', color: '#111827', offsetY: -10, formatter: v => v }, total: { show: true, showAlways: true, label: 'total', fontSize: '10px', fontWeight: '500', color: '#94a3b8', formatter: () => String(sourceValues.reduce((a, b) => a + b, 0)) } } } } },
+        tooltip: {
+            custom: ({ series, seriesIndex, w }) => {
+                const label = w.globals.labels[seriesIndex];
+                const color = SOURCE_COLORS[seriesIndex % SOURCE_COLORS.length];
+                const total = series.reduce((a: number, b: number) => a + b, 0);
+                const pct = total > 0 ? Math.round((series[seriesIndex] / total) * 100) : 0;
+                return tooltipHtml(label, [{ color, name: 'Count', value: series[seriesIndex] }, { color, name: 'Share', value: `${pct}%` }]);
+            },
+        },
+    };
+
+    /* ── COMPOSITION: Evacuation Centers by Type (pie) ── */
+    const evacTypeLabels = Object.keys(evac_by_type).map(t => t.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()));
+    const evacTypeValues = Object.values(evac_by_type);
+    const EVAC_TYPE_PIE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
+    const evacTypeOptions: ApexOptions = {
+        chart: { type: 'pie', fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
+        labels: evacTypeLabels,
+        colors: EVAC_TYPE_PIE_COLORS.slice(0, evacTypeLabels.length),
+        dataLabels: { enabled: true, style: { fontSize: '11px', fontWeight: 600 }, dropShadow: { enabled: false } },
+        legend: { position: 'bottom', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
+        stroke: { width: 2, colors: ['#ffffff'] },
+        tooltip: {
+            custom: ({ series, seriesIndex, w }) => {
+                const label = w.globals.labels[seriesIndex];
+                const color = EVAC_TYPE_PIE_COLORS[seriesIndex % EVAC_TYPE_PIE_COLORS.length];
+                const total = series.reduce((a: number, b: number) => a + b, 0);
+                const pct = total > 0 ? Math.round((series[seriesIndex] / total) * 100) : 0;
+                return tooltipHtml(label, [{ color, name: 'Count', value: series[seriesIndex] }, { color, name: 'Share', value: `${pct}%` }]);
+            },
+        },
+    };
+
+    /* ── COMPOSITION: User Role Distribution (donut) ── */
+    const roleLabels = Object.keys(user_roles).map(r => r.charAt(0).toUpperCase() + r.slice(1));
+    const roleValues = Object.values(user_roles);
+    const ROLE_COLORS = ['#ef4444', '#6366f1', '#10b981', '#f59e0b'];
+    const roleDonutOptions: ApexOptions = {
+        chart: { type: 'donut', fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
+        labels: roleLabels,
+        colors: ROLE_COLORS.slice(0, roleLabels.length),
+        dataLabels: { enabled: false },
+        legend: { position: 'bottom', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
+        stroke: { width: 2, colors: ['#ffffff'] },
+        plotOptions: { pie: { donut: { size: '68%', labels: { show: true, name: { show: true, fontSize: '10px', fontWeight: '500', color: '#94a3b8', offsetY: 8 }, value: { show: true, fontSize: '24px', fontWeight: '800', color: '#111827', offsetY: -10, formatter: v => v }, total: { show: true, showAlways: true, label: 'users', fontSize: '10px', fontWeight: '500', color: '#94a3b8', formatter: () => String(roleValues.reduce((a, b) => a + b, 0)) } } } } },
+        tooltip: {
+            custom: ({ series, seriesIndex, w }) => {
+                const label = w.globals.labels[seriesIndex];
+                const color = ROLE_COLORS[seriesIndex % ROLE_COLORS.length];
+                const total = series.reduce((a: number, b: number) => a + b, 0);
+                const pct = total > 0 ? Math.round((series[seriesIndex] / total) * 100) : 0;
+                return tooltipHtml(label, [{ color, name: 'Count', value: series[seriesIndex] }, { color, name: 'Share', value: `${pct}%` }]);
             },
         },
     };
@@ -839,19 +1030,19 @@ export default function StatisticsPage({
             <Head title="Statistics" />
 
             <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
-            <div className="flex flex-col gap-5 p-4 sm:p-6 lg:gap-6 lg:p-8">
+            <div className="flex flex-col gap-5 p-3 sm:gap-6 sm:p-6 lg:gap-7 lg:p-8">
 
                 {/* Page Header */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 shadow-xl shadow-indigo-500/30">
-                            <BarChart3 className="size-6 text-white" />
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 shadow-xl shadow-indigo-500/30">
+                            <BarChart3 className="size-5 sm:size-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-xl font-extrabold tracking-tight text-transparent sm:text-2xl dark:from-white dark:to-neutral-400">
+                            <h1 className="bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-lg font-extrabold tracking-tight text-transparent sm:text-2xl dark:from-white dark:to-neutral-400">
                                 Statistics
                             </h1>
-                            <p className="mt-0.5 text-xs text-neutral-500 sm:text-sm dark:text-neutral-400">
+                            <p className="mt-0.5 text-[11px] text-neutral-500 sm:text-sm dark:text-neutral-400">
                                 Flood incident analytics &amp; AI insights
                             </p>
                         </div>
@@ -957,7 +1148,7 @@ export default function StatisticsPage({
                 </div>
 
                 {/* Charts Row 1: Area + Donut */}
-                <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
+                <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
                     <Card>
                         <CardHeader icon={TrendingUp} gradient="from-indigo-500 to-violet-600" title="Daily Reports (Last 30 Days)" subtitle="Flood report submissions">
                             <div className="ml-auto hidden items-center gap-4 text-[10px] sm:flex">
@@ -1000,7 +1191,7 @@ export default function StatisticsPage({
                 </div>
 
                 {/* Charts Row 2: Status + Monthly Trend */}
-                <div className="grid gap-4 lg:grid-cols-2">
+                <div className="grid gap-5 lg:grid-cols-2">
                     <Card>
                         <CardHeader icon={BarChart3} gradient="from-violet-500 to-purple-600" title="Status Distribution" subtitle="All-time by status" />
                         <div className="px-2 pb-2 pt-1 sm:px-3">
@@ -1033,63 +1224,16 @@ export default function StatisticsPage({
                     </Card>
                 </div>
 
-                {/* Top Affected Areas — full width */}
+                {/* Peak Report Hours */}
                 <Card>
-                    <CardHeader icon={BarChart3} gradient="from-rose-500 to-pink-600" title="Top Affected Areas" subtitle="Locations with highest report count" />
-                    <div className="flex flex-col divide-y divide-neutral-100 py-1 dark:divide-neutral-800">
-                        {top_areas.length > 0 ? top_areas.map(a => (
-                            <div key={a.address} className="flex items-center gap-3 px-5 py-3">
-                                <div className="min-w-0 flex-1">
-                                    <p className="truncate text-xs font-medium text-neutral-700 dark:text-neutral-300" title={a.address}>{a.address}</p>
-                                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
-                                        <div
-                                            className="h-full rounded-full bg-gradient-to-r from-rose-400 to-pink-500"
-                                            style={{ width: `${Math.round((a.count / maxAreaCount) * 100)}%` }}
-                                        />
-                                    </div>
-                                </div>
-                                <span className="shrink-0 rounded-lg bg-rose-50 px-2.5 py-1 text-xs font-bold tabular-nums text-rose-600 dark:bg-rose-900/20 dark:text-rose-400">{a.count}</span>
-                            </div>
-                        )) : (
-                            <div className="px-5 py-8"><EmptyState text="No location data available" /></div>
-                        )}
+                    <CardHeader icon={Clock} gradient="from-amber-400 to-orange-500" title="Peak Report Hours" subtitle="By hour of day (all time)" />
+                    <div className="px-2 pb-2 pt-1 sm:px-3">
+                        <ReactApexChart type="bar" series={peakHoursSeries} options={peakHoursOptions} height={220} />
                     </div>
                 </Card>
 
-                {/* Peak Hours + Backlog Trend */}
-                <div className="grid gap-4 lg:grid-cols-2">
-                    {/* Peak Hours */}
-                    <Card>
-                        <CardHeader icon={Clock} gradient="from-amber-400 to-orange-500" title="Peak Report Hours" subtitle="By hour of day (all time)" />
-                        <div className="px-2 pb-2 pt-1 sm:px-3">
-                            <ReactApexChart type="bar" series={peakHoursSeries} options={peakHoursOptions} height={200} />
-                        </div>
-                    </Card>
-
-                    {/* Backlog Trend */}
-                    <Card>
-                        <CardHeader icon={TrendingUp} gradient="from-sky-500 to-blue-600" title="New vs Resolved (Last 30 Days)" subtitle="Daily report flow">
-                            <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
-                                <span className="flex items-center gap-1.5 text-neutral-400">
-                                    <span className="size-2 rounded-full bg-indigo-500" />
-                                    New Reports
-                                </span>
-                                <span className="flex items-center gap-1.5 text-neutral-400">
-                                    <span className="size-2 rounded-full bg-emerald-500" />
-                                    Resolved
-                                </span>
-                            </div>
-                        </CardHeader>
-                        <div className="px-2 pb-2 pt-1 sm:px-3">
-                            {backlog_trend.length > 0
-                                ? <ReactApexChart type="area" series={backlogSeries} options={backlogOptions} height={200} />
-                                : <EmptyState text="No backlog data available" />}
-                        </div>
-                    </Card>
-                </div>
-
                 {/* Bottom: Top Responders + AI Insights */}
-                <div className="grid gap-4 lg:grid-cols-2">
+                <div className="grid gap-5 lg:grid-cols-2">
                     {/* Top Responders */}
                     <Card>
                         <CardHeader icon={Trophy} gradient="from-amber-400 to-orange-500" title="Top Responders" subtitle="By resolved reports" />
@@ -1417,8 +1561,132 @@ export default function StatisticsPage({
                     )}
                 </Card>
 
+                {/* ═══ ADVANCED TRENDS ═══ */}
+                <SectionDivider title="Trends" subtitle="How metrics change over time" />
+
+                <div className="grid gap-5 lg:grid-cols-2">
+                    <Card>
+                        <CardHeader icon={Timer} gradient="from-orange-400 to-amber-500" title="Response Time Trend" subtitle="Avg resolution time — last 30 days" />
+                        <div className="px-2 pb-2 pt-1 sm:px-3">
+                            {response_time_trend.length > 0
+                                ? <ReactApexChart type="line" series={responseTimeSeries} options={responseTimeOptions} height={250} />
+                                : <EmptyState text="No resolved reports data" />}
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <CardHeader icon={Bell} gradient="from-red-500 to-rose-600" title="Alert Frequency" subtitle="Alerts issued — last 30 days">
+                            <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
+                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-red-500" />Critical</span>
+                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-orange-400" />Advisory</span>
+                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-blue-500" />Info</span>
+                            </div>
+                        </CardHeader>
+                        <div className="px-2 pb-2 pt-1 sm:px-3">
+                            {alert_frequency.length > 0
+                                ? <ReactApexChart type="bar" series={alertFreqSeries} options={alertFreqOptions} height={250} />
+                                : <EmptyState text="No alert data" />}
+                        </div>
+                    </Card>
+                </div>
+
+                <Card>
+                    <CardHeader icon={Building2} gradient="from-teal-500 to-cyan-600" title="Evacuation Occupancy" subtitle="Center occupancy — last 30 days" />
+                    <div className="px-2 pb-2 pt-1 sm:px-3">
+                        {evacOccupancySeries.length > 0
+                            ? <ReactApexChart type="area" series={evacOccupancySeries} options={evacOccupancyOptions} height={250} />
+                            : <EmptyState text="No occupancy data" />}
+                    </div>
+                </Card>
+
+                {/* ═══ ANALYSIS ═══ */}
+                <SectionDivider title="Analysis" subtitle="Patterns and comparisons" />
+
+                <div className="grid gap-5 lg:grid-cols-2">
+                    <Card>
+                        <CardHeader icon={ChartScatter} gradient="from-rose-500 to-red-600" title="Severity vs Response Time" subtitle="Are critical reports resolved faster?">
+                            <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
+                                {[['Critical', '#ef4444'], ['High', '#f97316'], ['Moderate', '#f59e0b'], ['Low', '#10b981']].map(([n, c]) => (
+                                    <span key={n} className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full" style={{ background: c }} />{n}</span>
+                                ))}
+                            </div>
+                        </CardHeader>
+                        <div className="px-2 pb-2 pt-1 sm:px-3">
+                            {severity_vs_response.length > 0
+                                ? <ReactApexChart type="scatter" series={severityScatterSeries} options={severityScatterOptions} height={280} />
+                                : <EmptyState text="No resolved reports data" />}
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <CardHeader icon={BarChart3} gradient="from-indigo-500 to-blue-600" title="Month-over-Month" subtitle={`${month_comparison.this_month.label} vs ${month_comparison.last_month.label}`}>
+                            <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
+                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-indigo-500" />{month_comparison.this_month.label}</span>
+                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-violet-400" />{month_comparison.last_month.label}</span>
+                            </div>
+                        </CardHeader>
+                        <div className="px-2 pb-2 pt-1 sm:px-3">
+                            <ReactApexChart type="bar" series={monthCompSeries} options={monthCompOptions} height={280} />
+                        </div>
+                    </Card>
+                </div>
+
+                {barangay_reports.length > 0 && (
+                    <Card>
+                        <CardHeader icon={MapPin} gradient="from-violet-500 to-purple-600" title="Reports by Barangay" subtitle="Top areas by report volume" />
+                        <div className="px-2 pb-2 pt-1 sm:px-3">
+                            <ReactApexChart type="treemap" series={treemapSeries} options={treemapOptions} height={320} />
+                        </div>
+                    </Card>
+                )}
+
+                {/* ═══ COMPOSITION ═══ */}
+                <SectionDivider title="Composition" subtitle="Parts of the whole" />
+
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                    <Card>
+                        <CardHeader icon={PieChart} gradient="from-indigo-500 to-violet-600" title="Report Sources" subtitle="Where reports come from" />
+                        <div className="flex items-center justify-center px-4 pb-6 pt-4">
+                            {sourceValues.length > 0
+                                ? <ReactApexChart type="donut" series={sourceValues} options={sourceDonutOptions} height={220} width={220} />
+                                : <EmptyState text="No data" />}
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <CardHeader icon={Building2} gradient="from-amber-400 to-orange-500" title="Center Types" subtitle="Evacuation facilities" />
+                        <div className="flex items-center justify-center px-4 pb-6 pt-4">
+                            {evacTypeValues.length > 0
+                                ? <ReactApexChart type="pie" series={evacTypeValues} options={evacTypeOptions} height={220} width={220} />
+                                : <EmptyState text="No data" />}
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <CardHeader icon={Users} gradient="from-sky-500 to-blue-600" title="User Roles" subtitle="Role distribution" />
+                        <div className="flex items-center justify-center px-4 pb-6 pt-4">
+                            {roleValues.length > 0
+                                ? <ReactApexChart type="donut" series={roleValues} options={roleDonutOptions} height={220} width={220} />
+                                : <EmptyState text="No users" />}
+                        </div>
+                    </Card>
+                </div>
+
             </div>
             </div>
         </AppLayout>
+    );
+}
+
+function SectionDivider({ title, subtitle }: { title: string; subtitle: string }) {
+    return (
+        <div className="flex items-center gap-4 pt-2">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-neutral-700" />
+            <div className="text-center">
+                <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{title}</p>
+                <p className="text-[10px] text-neutral-300 dark:text-neutral-600">{subtitle}</p>
+            </div>
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-neutral-700" />
+        </div>
     );
 }

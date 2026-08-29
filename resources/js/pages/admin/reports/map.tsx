@@ -238,7 +238,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                 <div className="flex w-full flex-col border-b border-neutral-200/70 bg-white lg:w-[340px] lg:border-b-0 lg:border-r dark:border-neutral-800 dark:bg-neutral-900">
 
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
+                    <div className="flex items-center justify-between border-b border-neutral-100 px-3 sm:px-5 py-4 dark:border-neutral-800">
                         <div>
                             <h1 className="text-sm font-bold tracking-tight text-neutral-900 dark:text-white">Map View</h1>
                             <p className="mt-0.5 text-[11px] text-neutral-400">Flood report locations</p>
@@ -254,7 +254,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                     </div>
 
                     {/* Severity stat pills */}
-                    <div className="grid grid-cols-4 gap-2 border-b border-neutral-100 px-5 py-3 dark:border-neutral-800">
+                    <div className="grid grid-cols-4 gap-2 border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
                         {(['critical', 'high', 'moderate', 'low'] as Severity[]).map((s) => (
                             <button
                                 key={s}
@@ -274,7 +274,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                     </div>
 
                     {/* View mode toggle */}
-                    <div className="border-b border-neutral-100 px-5 py-3 dark:border-neutral-800">
+                    <div className="border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
                         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">View mode</p>
                         <div className="grid grid-cols-3 gap-1.5">
                             {([
@@ -298,7 +298,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                     </div>
 
                     {/* Layers */}
-                    <div className="border-b border-neutral-100 px-5 py-3 dark:border-neutral-800">
+                    <div className="border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
                         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Layers</p>
                         <button
                             onClick={() => { setShowEvacCenters((v) => !v); setSelectedEvacCenter(null); }}
@@ -320,7 +320,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                     </div>
 
                     {/* Filters */}
-                    <div className="border-b border-neutral-100 px-5 py-3 dark:border-neutral-800">
+                    <div className="border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
                         <div className="mb-2 flex items-center justify-between">
                             <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Filters</p>
                             {hasFilters && (
@@ -351,7 +351,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                     </div>
 
                     {/* Legend + Report list */}
-                    <div className="flex-1 overflow-y-auto px-5 py-3">
+                    <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-3">
                         {/* Legend */}
                         <div className="mb-3">
                             <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Severity legend</p>

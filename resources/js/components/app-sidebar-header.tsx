@@ -234,7 +234,7 @@ export function AppSidebarHeader({
     }, [showNotifications]);
 
     return (
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-4 rounded-tl-2xl rounded-tr-2xl border-b border-border/[0.35] bg-background/90 px-6 shadow-sm shadow-black/[0.025] backdrop-blur-2xl">
+        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-2 sm:gap-4 rounded-tl-xl rounded-tr-xl sm:rounded-tl-2xl sm:rounded-tr-2xl border-b border-border/[0.35] bg-background/90 px-3 sm:px-6 shadow-sm shadow-black/[0.025] backdrop-blur-2xl">
             {/* Left — trigger + breadcrumbs */}
             <div className="flex items-center gap-3">
                 <SidebarTrigger className="-ml-1 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white transition-colors" />
@@ -247,7 +247,7 @@ export function AppSidebarHeader({
                 {/* Search */}
                 <div ref={searchRef} className="relative">
                     {searchOpen ? (
-                        <div className="relative w-64">
+                        <div className="relative w-48 sm:w-64">
                             {/* Input */}
                             <div className="relative flex items-center">
                                 {searchLoading ? (
@@ -351,7 +351,7 @@ export function AppSidebarHeader({
 
                     {/* Dropdown */}
                     {showNotifications && (
-                        <div className="absolute right-0 top-full mt-2 w-96 max-h-[28rem] overflow-hidden rounded-2xl border border-border/50 bg-card shadow-xl shadow-black/10 z-50 animate-in slide-in-from-top-2 fade-in duration-200">
+                        <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 max-h-[28rem] overflow-hidden rounded-2xl border border-border/50 bg-card shadow-xl shadow-black/10 z-50 animate-in slide-in-from-top-2 fade-in duration-200 sm:w-96">
                             {/* Header */}
                             <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
                                 <h3 className="text-sm font-semibold">Notifications</h3>
@@ -429,7 +429,7 @@ export function AppSidebarHeader({
                                 </Avatar>
                             </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="min-w-56 rounded-xl" align="end" sideOffset={8}>
+                        <DropdownMenuContent className="min-w-48 sm:min-w-56 rounded-xl" align="end" sideOffset={8}>
                             <UserMenuContent user={auth.user} />
                         </DropdownMenuContent>
                     </DropdownMenu>

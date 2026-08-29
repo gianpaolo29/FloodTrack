@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Alert;
 use App\Models\EvacuationCenter;
+use App\Models\OccupancyLog;
 use App\Models\Report;
 use App\Models\Team;
 use App\Models\User;
@@ -109,28 +111,6 @@ class StatisticsController extends Controller
             ->orderBy('hour')
             ->pluck('count', 'hour');
         $peak_hours = collect(range(0, 23))->mapWithKeys(fn($h) => [$h => $raw_peak[$h] ?? 0])->toArray();
-
-        // Top affected areas — scoped by period
-        $top_areas = (clone $reportQuery)
-            ->whereNotNull('address')
-            ->where('address', '!=', '')
-            ->selectRaw('address, count(*) as count')
-            ->groupBy('address')
-            ->orderByDesc('count')
-            ->limit(8)
-            ->get(['address', 'count']);
-
-        // Backlog trend — always last 30 days
-        $backlog_trend = Report::selectRaw("DATE(created_at) as date, count(*) as new_reports, SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved")
-            ->where('created_at', '>=', now()->subDays(30))
-            ->groupBy(DB::raw('DATE(created_at)'))
-            ->orderBy('date')
-            ->get()
-            ->map(fn($r) => [
-                'date'        => \Carbon\Carbon::parse($r->date)->format('M d'),
-                'new_reports' => (int) $r->new_reports,
-                'resolved'    => (int) $r->resolved,
-            ]);
 
         // Top 5 responders — with efficiency and avg response time
         $top_responders = User::where('role', 'responder')
@@ -280,6 +260,152 @@ class StatisticsController extends Controller
             ->orderByDesc('current_occupancy')
             ->get(['id', 'name', 'address', 'type', 'capacity', 'current_occupancy', 'is_active']);
 
+        // ── Additional Chart Data ──────────────────────────────────────
+
+        $timeDiffExpr = DB::getDriverName() === 'sqlite'
+            ? "(julianday(resolved_at) - julianday(created_at)) * 1440"
+            : "TIMESTAMPDIFF(MINUTE, created_at, resolved_at)";
+
+        // Response Time Trend — avg response time per day (last 30 days)
+        $responseTimeTrend = Report::where('status', 'resolved')
+            ->whereNotNull('resolved_at')
+            ->where('resolved_at', '>=', now()->subDays(30))
+            ->select(
+                DB::raw("DATE(resolved_at) as date"),
+                DB::raw("ROUND(AVG($timeDiffExpr), 1) as avg_minutes")
+            )
+            ->groupBy(DB::raw("DATE(resolved_at)"))
+            ->orderBy('date')
+            ->get()
+            ->map(fn ($r) => [
+                'date' => Carbon::parse($r->date)->format('M d'),
+                'avg_minutes' => round((float) $r->avg_minutes, 1),
+            ]);
+
+        // Evacuation Occupancy Over Time — last 30 days
+        $evacOccupancyTimeline = [];
+        if (class_exists(OccupancyLog::class)) {
+            try {
+                $evacOccupancyTimeline = OccupancyLog::with('evacuationCenter:id,name')
+                    ->where('created_at', '>=', now()->subDays(30))
+                    ->select(
+                        DB::raw("DATE(created_at) as date"),
+                        'evacuation_center_id',
+                        DB::raw("MAX(new_occupancy) as occupancy")
+                    )
+                    ->groupBy(DB::raw("DATE(created_at)"), 'evacuation_center_id')
+                    ->orderBy('date')
+                    ->get()
+                    ->groupBy('evacuation_center_id')
+                    ->map(function ($logs, $centerId) {
+                        $center = $logs->first()->evacuationCenter;
+                        return [
+                            'name' => $center?->name ?? "Center #$centerId",
+                            'data' => $logs->map(fn ($l) => [
+                                'date' => Carbon::parse($l->date)->format('M d'),
+                                'occupancy' => (int) $l->occupancy,
+                            ])->values(),
+                        ];
+                    })
+                    ->values();
+            } catch (\Exception $e) {
+                $evacOccupancyTimeline = [];
+            }
+        }
+
+        // Alert Frequency Timeline — alerts per day by type (last 30 days)
+        $alertFrequency = Alert::where('created_at', '>=', now()->subDays(30))
+            ->select(
+                DB::raw("DATE(created_at) as date"),
+                'type',
+                DB::raw("COUNT(*) as count")
+            )
+            ->groupBy(DB::raw("DATE(created_at)"), 'type')
+            ->orderBy('date')
+            ->get()
+            ->groupBy('date')
+            ->map(fn ($group, $date) => [
+                'date' => Carbon::parse($date)->format('M d'),
+                'critical' => (int) $group->where('type', 'critical')->sum('count'),
+                'advisory' => (int) ($group->where('type', 'warning')->sum('count') + $group->where('type', 'advisory')->sum('count')),
+                'info' => (int) $group->where('type', 'info')->sum('count'),
+            ])
+            ->values();
+
+        // Severity vs Response Time — scatter data
+        $severityVsResponse = Report::where('status', 'resolved')
+            ->whereNotNull('resolved_at')
+            ->select(
+                'severity',
+                DB::raw("$timeDiffExpr as response_minutes")
+            )
+            ->limit(200)
+            ->get()
+            ->map(fn ($r) => [
+                'severity' => $r->severity,
+                'minutes' => round((float) $r->response_minutes, 1),
+            ]);
+
+        // Barangay Report Heatmap — report counts per area (top 20)
+        $barangayReports = Report::select('address', DB::raw('COUNT(*) as count'))
+            ->whereNotNull('address')
+            ->where('address', '!=', '')
+            ->groupBy('address')
+            ->orderByDesc('count')
+            ->limit(20)
+            ->get()
+            ->map(fn ($r) => [
+                'area' => $r->address,
+                'count' => (int) $r->count,
+            ]);
+
+        // This Month vs Last Month — comparative bar by severity
+        $curMonthStart = now()->startOfMonth();
+        $prevMonthStart = now()->subMonth()->startOfMonth();
+        $prevMonthEnd = now()->subMonth()->endOfMonth();
+
+        $thisMonthBySeverity = Report::where('created_at', '>=', $curMonthStart)
+            ->selectRaw('severity, COUNT(*) as count')
+            ->groupBy('severity')
+            ->pluck('count', 'severity');
+
+        $lastMonthBySeverity = Report::whereBetween('created_at', [$prevMonthStart, $prevMonthEnd])
+            ->selectRaw('severity, COUNT(*) as count')
+            ->groupBy('severity')
+            ->pluck('count', 'severity');
+
+        $monthComparison = [
+            'this_month' => [
+                'label' => now()->format('M Y'),
+                'critical' => (int) ($thisMonthBySeverity['critical'] ?? 0),
+                'high' => (int) ($thisMonthBySeverity['high'] ?? 0),
+                'moderate' => (int) ($thisMonthBySeverity['moderate'] ?? 0),
+                'low' => (int) ($thisMonthBySeverity['low'] ?? 0),
+            ],
+            'last_month' => [
+                'label' => now()->subMonth()->format('M Y'),
+                'critical' => (int) ($lastMonthBySeverity['critical'] ?? 0),
+                'high' => (int) ($lastMonthBySeverity['high'] ?? 0),
+                'moderate' => (int) ($lastMonthBySeverity['moderate'] ?? 0),
+                'low' => (int) ($lastMonthBySeverity['low'] ?? 0),
+            ],
+        ];
+
+        // Report Source Breakdown — donut
+        $sourceBreakdown = Report::selectRaw("COALESCE(source, 'mobile') as source, COUNT(*) as count")
+            ->groupBy(DB::raw("COALESCE(source, 'mobile')"))
+            ->pluck('count', 'source');
+
+        // Evacuation Centers by Type — pie
+        $evacByType = EvacuationCenter::selectRaw('type, COUNT(*) as count')
+            ->groupBy('type')
+            ->pluck('count', 'type');
+
+        // User Role Distribution — donut
+        $userRoles = User::selectRaw('role, COUNT(*) as count')
+            ->groupBy('role')
+            ->pluck('count', 'role');
+
         return Inertia::render('admin/statistics/index', [
             'daily_reports'      => $daily_reports,
             'avg_response_time'  => round((float) ($avg_response_time ?? 0), 1),
@@ -288,8 +414,6 @@ class StatisticsController extends Controller
             'top_responders'     => $top_responders,
             'monthly_trend'      => $monthly_trend->values(),
             'peak_hours'         => $peak_hours,
-            'top_areas'          => $top_areas,
-            'backlog_trend'      => $backlog_trend,
             'total_reports'      => $total_reports,
             'resolution_rate'    => $resolution_rate,
             'critical_count'     => $critical_count,
@@ -300,6 +424,15 @@ class StatisticsController extends Controller
             'period'             => $period,
             'custom_from'        => $customFrom,
             'custom_to'          => $customTo,
+            'response_time_trend'     => $responseTimeTrend,
+            'evac_occupancy_timeline' => $evacOccupancyTimeline,
+            'alert_frequency'         => $alertFrequency,
+            'severity_vs_response'    => $severityVsResponse,
+            'barangay_reports'        => $barangayReports,
+            'month_comparison'        => $monthComparison,
+            'source_breakdown'        => $sourceBreakdown,
+            'evac_by_type'            => $evacByType,
+            'user_roles'              => $userRoles,
         ]);
     }
 

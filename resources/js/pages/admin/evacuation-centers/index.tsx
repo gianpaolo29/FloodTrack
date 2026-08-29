@@ -242,22 +242,22 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Evacuation Centers" />
 
-            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
+            <div className="flex flex-col gap-4 p-3 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* ── Page Header ── */}
-                <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="relative flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-lg shadow-blue-500/25">
-                            <ShieldCheck className="size-6 text-white" />
+                <div className="flex flex-col gap-4 sm:gap-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-lg shadow-blue-500/25">
+                            <ShieldCheck className="size-5 sm:size-6 text-white" />
                             <span className="absolute -right-1 -top-1 flex size-3.5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white dark:ring-neutral-900">
                                 <span className="size-1.5 animate-pulse rounded-full bg-white" />
                             </span>
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                                 Evacuation Centers
                             </h1>
-                            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+                            <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Manage centers visible on the resident map
                             </p>
                         </div>

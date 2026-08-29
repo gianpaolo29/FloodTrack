@@ -109,11 +109,11 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={report.reference_number} />
 
-            <div className="flex flex-col gap-4 p-4 sm:gap-6 sm:p-6 lg:p-8">
+            <div className="flex flex-col gap-4 sm:gap-5 p-3 sm:p-6 lg:p-8">
 
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
                         <Link
                             href="/admin/reports"
                             className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-500 shadow-sm transition-all hover:bg-neutral-50 hover:text-neutral-700 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800"
@@ -122,7 +122,7 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
                         </Link>
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className="text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
                                     {report.reference_number}
                                 </h1>
                                 <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${SEVERITY_COLORS[report.severity]}`}>
@@ -132,7 +132,7 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
                                     {report.status}
                                 </span>
                             </div>
-                            <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">
+                            <p className="mt-0.5 text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400">
                                 Submitted {new Date(report.created_at).toLocaleString('en-PH', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </p>
                         </div>
@@ -885,7 +885,7 @@ function AiBadge({ icon, label, color }: { icon: React.ReactNode; label: string;
 
 function DetailRow({ icon: Icon, label, children }: { icon: typeof Clock; label: string; children: React.ReactNode }) {
     return (
-        <div className="flex items-center gap-3 px-5 py-3.5">
+        <div className="flex items-center gap-3 px-3 sm:px-5 py-3.5">
             <Icon className="size-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
             <div className="min-w-0 flex-1">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{label}</p>
