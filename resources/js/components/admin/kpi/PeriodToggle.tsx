@@ -110,11 +110,11 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
                             className={`relative flex size-9 items-center justify-center text-xs font-medium transition-all mx-auto rounded-lg
                                 ${isFuture ? 'cursor-not-allowed text-neutral-200 dark:text-neutral-700' : 'cursor-pointer'}
                                 ${isStart || isEnd
-                                    ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/30'
+                                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                                     : inRange
-                                        ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                                        ? 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
                                         : isToday
-                                            ? 'ring-1 ring-indigo-300 text-indigo-600 dark:ring-indigo-700 dark:text-indigo-400'
+                                            ? 'ring-1 ring-neutral-400 text-neutral-700 dark:ring-neutral-600 dark:text-neutral-300'
                                             : !isFuture ? 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800' : ''
                                 }
                             `}
@@ -127,14 +127,14 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
             <div className="mt-3 flex items-center gap-2 rounded-xl bg-neutral-50 p-2.5 dark:bg-neutral-800/60">
                 <div className="flex-1 text-center">
                     <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">From</p>
-                    <p className={`mt-0.5 text-xs font-bold ${rangeStart ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-300 dark:text-neutral-600'}`}>
+                    <p className={`mt-0.5 text-xs font-bold ${rangeStart ? 'text-neutral-800 dark:text-neutral-200' : 'text-neutral-300 dark:text-neutral-600'}`}>
                         {formatDisplay(rangeStart)}
                     </p>
                 </div>
                 <ChevronRight className="size-3 text-neutral-300 dark:text-neutral-600" />
                 <div className="flex-1 text-center">
                     <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">To</p>
-                    <p className={`mt-0.5 text-xs font-bold ${rangeEnd ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-300 dark:text-neutral-600'}`}>
+                    <p className={`mt-0.5 text-xs font-bold ${rangeEnd ? 'text-neutral-800 dark:text-neutral-200' : 'text-neutral-300 dark:text-neutral-600'}`}>
                         {formatDisplay(rangeEnd)}
                     </p>
                 </div>
@@ -148,7 +148,7 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
                     disabled={!rangeStart || !rangeEnd}
                     className={`flex-1 rounded-xl py-2 text-[11px] font-semibold transition-all ${
                         rangeStart && rangeEnd
-                            ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/30 hover:shadow-md hover:brightness-110'
+                            ? 'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200'
                             : 'bg-neutral-100 text-neutral-300 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-600'
                     }`}
                 >
@@ -215,14 +215,14 @@ export function PeriodToggle({ period, customFrom, customTo, baseUrl, extraParam
     };
 
     return (
-        <div className="relative flex items-center rounded-xl border border-neutral-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/60" ref={calendarRef}>
+        <div className="relative flex flex-wrap items-center rounded-xl border border-neutral-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/60" ref={calendarRef}>
             {PERIODS.map(({ key, label }) => (
                 <button
                     key={key}
                     onClick={() => setPeriod(key)}
-                    className={`rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                    className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all sm:px-3.5 sm:text-xs ${
                         period === key || (key === 'custom' && showCalendar)
-                            ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-md shadow-indigo-500/25'
+                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                             : 'text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
                     }`}
                 >

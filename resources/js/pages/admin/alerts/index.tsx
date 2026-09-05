@@ -49,7 +49,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Admin', href: '/admin' },
-    { title: 'Alerts', href: '/admin/alerts' },
+    { title: 'Announcements', href: '/admin/alerts' },
 ];
 
 const TYPE_STYLES: Record<string, string> = {
@@ -77,7 +77,7 @@ const SORT_OPTIONS = [
 ];
 
 const inputClass =
-    'w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/10 dark:border-neutral-700 dark:bg-neutral-800/60 dark:placeholder:text-neutral-500 dark:focus:border-amber-500 dark:focus:ring-amber-500/15';
+    'w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/60 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:ring-neutral-500/15';
 
 const modalSpring = { type: 'spring' as const, stiffness: 400, damping: 28 };
 
@@ -150,20 +150,20 @@ function BarangayMultiSelect({
                         <button
                             type="button"
                             onClick={toggleAll}
-                            className="sticky top-0 z-10 flex w-full items-center gap-2 border-b border-neutral-100 bg-neutral-50 px-3.5 py-2 text-xs font-semibold text-amber-600 hover:bg-amber-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-amber-400 dark:hover:bg-neutral-750"
+                            className="sticky top-0 z-10 flex w-full items-center gap-2 border-b border-neutral-100 bg-neutral-50 px-3.5 py-2 text-xs font-semibold text-neutral-900 hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white dark:hover:bg-neutral-750"
                         >
                             {allSelected ? 'Clear all' : 'Select all'}
                         </button>
                         {barangays.map((b) => (
                             <label
                                 key={b}
-                                className="flex cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition-colors hover:bg-amber-50/60 dark:hover:bg-amber-950/20"
+                                className="flex cursor-pointer items-center gap-2.5 px-3.5 py-2 text-sm transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                             >
                                 <input
                                     type="checkbox"
                                     checked={selected.includes(b)}
                                     onChange={() => toggle(b)}
-                                    className="size-3.5 rounded border-neutral-300 text-amber-500 focus:ring-amber-500/20 dark:border-neutral-600"
+                                    className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
                                 />
                                 <span className="text-neutral-700 dark:text-neutral-300">{b}</span>
                             </label>
@@ -177,14 +177,14 @@ function BarangayMultiSelect({
                     {selected.map((b) => (
                         <span
                             key={b}
-                            className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-700/40"
+                            className="inline-flex items-center gap-1 rounded-lg bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700/40"
                         >
                             <MapPin className="size-2.5" />
                             {b}
                             <button
                                 type="button"
                                 onClick={() => toggle(b)}
-                                className="ml-0.5 rounded-full p-0.5 hover:bg-amber-200/60 dark:hover:bg-amber-800/40"
+                                className="ml-0.5 rounded-full p-0.5 hover:bg-neutral-200/60 dark:hover:bg-neutral-700/40"
                             >
                                 <X className="size-2.5" />
                             </button>
@@ -309,7 +309,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
 
     const SortIcon = ({ field }: { field: string }) => {
         if (filters.sort !== field) return <ArrowUpDown className="size-3 text-neutral-300 dark:text-neutral-600" />;
-        return <ArrowDownAZ className={`size-3 text-amber-500 ${filters.dir === 'asc' ? 'rotate-180' : ''}`} />;
+        return <ArrowDownAZ className={`size-3 text-neutral-900 dark:text-white ${filters.dir === 'asc' ? 'rotate-180' : ''}`} />;
     };
 
     /* ── Smart KPI descriptions ── */
@@ -375,15 +375,15 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Alerts" />
+            <Head title="Announcements" />
 
             <div className="flex flex-col gap-4 sm:gap-5 p-3 sm:p-6 lg:p-8">
 
                 {/* ── Page Header ── */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/25">
-                            <Bell className="size-5 sm:size-6 text-white" />
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 shadow-sm dark:bg-white">
+                            <Bell className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                             {stats.critical > 0 && (
                                 <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white ring-2 ring-white dark:ring-neutral-900">
                                     {stats.critical > 9 ? '9+' : stats.critical}
@@ -392,10 +392,10 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                         </div>
                         <div>
                             <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                                Alert Management
+                                Announcement Management
                             </h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-                                Publish advisories and critical notifications to residents
+                                Publish flood advisories and critical announcements to residents
                             </p>
                         </div>
                     </div>
@@ -403,10 +403,10 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/alerts" />
                         <button
                             onClick={() => { form.reset(); setShowCreateModal(true); }}
-                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-amber-500/20 transition-all hover:shadow-lg hover:shadow-amber-500/30 hover:brightness-110 active:scale-[0.97]"
+                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
                         >
                             <Plus className="size-4" />
-                            Publish Alert
+                            Publish Announcement
                         </button>
                     </div>
                 </div>
@@ -414,7 +414,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                 {/* ── Stats Row ── */}
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
                     <PrimaryStatCard
-                        label="Total Alerts"
+                        label="Total Announcements"
                         value={stats.total}
                         trend={trends.total}
                         trendLabel={`${trends.label}, ${trends.period_label}`}
@@ -424,14 +424,14 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                             { label: 'Advisory', value: stats.advisory, color: '#3b82f6' },
                         ]}
                         icon={Bell}
-                        grad="from-amber-500 via-orange-500 to-yellow-500"
-                        shadow="shadow-amber-500/40"
+                        grad="from-neutral-700 via-neutral-800 to-neutral-900"
+                        shadow="shadow-neutral-500/40"
                         alert={false}
                         index={0}
                         mounted={mounted}
                     />
                     <PrimaryStatCard
-                        label="Critical"
+                        label="Critical Announcements"
                         value={stats.critical}
                         trend={trends.critical}
                         trendLabel={`${trends.label}, ${trends.period_label}`}
@@ -448,10 +448,10 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                     />
                     <SecondaryStatCard
                         icon={Info}
-                        grad="from-amber-500 to-orange-500"
-                        shadow="shadow-amber-500/25"
+                        grad="from-neutral-600 to-neutral-700"
+                        shadow="shadow-neutral-500/25"
                         value={stats.advisory}
-                        label="Advisory"
+                        label="Advisories"
                         trend={trends.advisory}
                         desc={smartDesc('advisory')}
                         insights={[]}
@@ -462,10 +462,10 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                     />
                     <SecondaryStatCard
                         icon={Megaphone}
-                        grad="from-emerald-500 to-teal-500"
-                        shadow="shadow-emerald-500/25"
+                        grad="from-neutral-500 to-neutral-600"
+                        shadow="shadow-sm"
                         value={stats.update}
-                        label="Updates"
+                        label="General Updates"
                         trend={trends.update}
                         desc={smartDesc('update')}
                         insights={[]}
@@ -484,13 +484,13 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -8, scale: 0.99 }}
                             transition={{ duration: 0.18 }}
-                            className="overflow-hidden rounded-2xl border border-amber-200/60 bg-gradient-to-r from-amber-50 to-orange-50/60 px-5 py-3.5 dark:border-amber-800/40 dark:from-amber-950/30 dark:to-orange-950/20"
+                            className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-neutral-50 px-5 py-3.5 dark:border-neutral-700/40 dark:bg-neutral-800/30"
                         >
                             <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                                <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-200">
                                     {selected.length} selected
                                 </span>
-                                <div className="h-4 w-px bg-amber-300/60 dark:bg-amber-700/60" />
+                                <div className="h-4 w-px bg-neutral-300/60 dark:bg-neutral-600/60" />
                                 <button
                                     onClick={runBulkDelete}
                                     disabled={bulkProcessing}
@@ -500,7 +500,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                 </button>
                                 <button
                                     onClick={() => setSelected([])}
-                                    className="ml-auto rounded-lg px-3 py-1.5 text-xs font-medium text-amber-700 transition-colors hover:bg-amber-100 dark:text-amber-400 dark:hover:bg-amber-900/40"
+                                    className="ml-auto rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700/40"
                                 >
                                     Clear selection
                                 </button>
@@ -513,13 +513,13 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Animated top border */}
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber-500/25 to-transparent" />
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-neutral-500/25 to-transparent" />
 
                     {/* ── Toolbar ── */}
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/30">
                         <div className="flex items-center gap-2.5">
                             <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">All Alerts</span>
-                            <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[11px] font-bold text-amber-600 dark:bg-amber-400/10 dark:text-amber-400">
+                            <span className="inline-flex items-center rounded-full bg-neutral-500/10 px-2.5 py-0.5 text-[11px] font-bold text-neutral-600 dark:bg-neutral-400/10 dark:text-neutral-400">
                                 {alerts.total}
                             </span>
                         </div>
@@ -534,7 +534,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
                                     placeholder="Search alerts..."
-                                    className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-amber-400 focus:ring-2 focus:ring-amber-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-amber-500"
+                                    className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
                                 />
                                 {searchValue && (
                                     <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -574,11 +574,11 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.88 }}
                                         transition={{ duration: 0.15 }}
-                                        className="inline-flex items-center gap-1.5 rounded-full border border-orange-200/80 bg-orange-50 px-2.5 py-1 text-xs font-medium capitalize text-orange-700 dark:border-orange-800/40 dark:bg-orange-950/30 dark:text-orange-400"
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200/80 bg-neutral-50 px-2.5 py-1 text-xs font-medium capitalize text-neutral-700 dark:border-neutral-700/40 dark:bg-neutral-800/30 dark:text-neutral-400"
                                     >
                                         <Filter className="size-3" />
                                         {filters.type}
-                                        <button onClick={() => applyFilter('type', '')} className="rounded-full p-0.5 hover:bg-orange-100 dark:hover:bg-orange-900/40">
+                                        <button onClick={() => applyFilter('type', '')} className="rounded-full p-0.5 hover:bg-neutral-100 dark:hover:bg-neutral-700/40">
                                             <X className="size-3" />
                                         </button>
                                     </motion.span>
@@ -601,10 +601,10 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                     <div className="block divide-y divide-neutral-100 sm:hidden dark:divide-neutral-800">
                         {filtered.map((alert) => {
                             const published = new Date(alert.created_at);
-                            const publishedStr = published.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            const publishedStr = published.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
                             return (
-                                <div key={alert.id} className="flex flex-col gap-2 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
+                                <div key={alert.id} className="flex flex-col gap-2 px-4 py-3.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                                     <div className="flex items-start justify-between gap-2">
                                         <div className="flex min-w-0 items-center gap-2.5">
                                             <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${
@@ -623,7 +623,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                         <div className="flex shrink-0 items-center gap-1">
                                             <button
                                                 onClick={() => setEditingAlert(alert)}
-                                                className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400"
+                                                className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
                                             >
                                                 <Pencil className="size-3.5" />
                                             </button>
@@ -634,7 +634,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                         <div className="flex items-center gap-1.5">
                                             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold capitalize ${TYPE_STYLES[alert.type] ?? TYPE_STYLES.update}`}>{alert.type}</span>
                                             {alert.target_barangays && alert.target_barangays.length > 0 && (
-                                                <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-medium text-amber-600 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-700/40">
+                                                <span className="inline-flex items-center gap-0.5 rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] font-medium text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700/40">
                                                     <MapPin className="size-2" />
                                                     {alert.target_barangays.length}
                                                 </span>
@@ -660,7 +660,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                             type="checkbox"
                                             checked={allOnPageSelected}
                                             onChange={toggleAll}
-                                            className="size-3.5 rounded border-neutral-300 text-amber-500 focus:ring-amber-500/20 dark:border-neutral-600"
+                                            className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
                                         />
                                     </th>
                                     <th className="px-4 py-3.5 text-left">
@@ -703,8 +703,8 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                     {/* Empty state */}
                     {filtered.length === 0 && (
                         <div className="flex flex-col items-center gap-4 py-20">
-                            <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/20">
-                                <Bell className="size-8 text-amber-400 dark:text-amber-500" />
+                            <div className="flex size-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+                                <Bell className="size-8 text-neutral-400 dark:text-neutral-500" />
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
@@ -717,7 +717,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                             {hasActiveFilters && (
                                 <button
                                     onClick={clearFilters}
-                                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-amber-600 transition-colors hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                                    className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800/30"
                                 >
                                     <X className="size-3.5" />
                                     Clear filters
@@ -748,7 +748,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-all ${
                                                 link.active
-                                                    ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/25'
+                                                    ? 'bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900'
                                                     : 'border border-neutral-200/80 bg-white text-neutral-500 shadow-sm hover:border-neutral-300 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
@@ -791,8 +791,8 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                             {/* Header */}
                             <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 shadow-sm">
-                                        <Megaphone className="size-4 text-white" />
+                                    <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                                        <Megaphone className="size-4 text-white dark:text-neutral-900" />
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Publish Alert</h3>
@@ -810,12 +810,12 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                 <button
                                     type="button"
                                     onClick={applyTemplate}
-                                    className="mb-4 flex items-center gap-2.5 rounded-xl border border-dashed border-amber-300 bg-amber-50/60 px-4 py-2.5 text-left transition-all hover:border-amber-400 hover:bg-amber-50 dark:border-amber-700/50 dark:bg-amber-950/20 dark:hover:border-amber-600/60 dark:hover:bg-amber-950/30"
+                                    className="mb-4 flex items-center gap-2.5 rounded-xl border border-dashed border-neutral-300 bg-neutral-50/60 px-4 py-2.5 text-left transition-all hover:border-neutral-400 hover:bg-neutral-50 dark:border-neutral-600/50 dark:bg-neutral-800/20 dark:hover:border-neutral-500/60 dark:hover:bg-neutral-800/30"
                                 >
-                                    <FileText className="size-4 shrink-0 text-amber-500" />
+                                    <FileText className="size-4 shrink-0 text-neutral-500 dark:text-neutral-400" />
                                     <div>
-                                        <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">Use Template</p>
-                                        <p className="text-[10px] text-amber-600/70 dark:text-amber-400/60">Fill form with a ready-made alert structure</p>
+                                        <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Use Template</p>
+                                        <p className="text-[10px] text-neutral-500 dark:text-neutral-500">Fill form with a ready-made alert structure</p>
                                     </div>
                                 </button>
 
@@ -892,7 +892,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                     <button
                                         type="submit"
                                         disabled={form.processing}
-                                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
+                                        className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                                     >
                                         <Send className="size-4" />
                                         {form.processing ? 'Publishing...' : 'Publish'}
@@ -963,8 +963,8 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                     <div className="flex items-center gap-3">
-                        <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
-                            <Pencil className="size-4 text-white" />
+                        <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-900 dark:bg-white shadow-sm">
+                            <Pencil className="size-4 text-white dark:text-neutral-900" />
                         </div>
                         <div>
                             <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Edit Alert</h3>
@@ -1062,7 +1062,7 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
                             <button
                                 type="submit"
                                 disabled={editForm.processing || !editForm.isDirty}
-                                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
+                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                             >
                                 <Save className="size-4" />
                                 {editForm.processing ? 'Saving...' : 'Save Changes'}
@@ -1093,14 +1093,14 @@ function AlertRow({
     const deleteForm = useForm({});
 
     const published = new Date(alert.created_at);
-    const publishedDate = published.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const publishedDate = published.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     const publishedTime = published.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
 
     return (
         <tr className={`group transition-colors ${
             isSelected
-                ? 'bg-amber-50/60 dark:bg-amber-950/20'
-                : 'hover:bg-neutral-50/60 dark:hover:bg-neutral-800/30'
+                ? 'bg-neutral-100/60 dark:bg-neutral-800/40'
+                : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
         }`}>
             {/* Checkbox */}
             <td className="w-12 px-5 py-4 text-center">
@@ -1108,7 +1108,7 @@ function AlertRow({
                     type="checkbox"
                     checked={isSelected}
                     onChange={onToggle}
-                    className="size-3.5 rounded border-neutral-300 text-amber-500 focus:ring-amber-500/20 dark:border-neutral-600"
+                    className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
                 />
             </td>
 
@@ -1144,7 +1144,7 @@ function AlertRow({
             <td className="px-4 py-4">
                 {alert.target_barangays && alert.target_barangays.length > 0 ? (
                     <span
-                        className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-600 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-700/40"
+                        className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700"
                         title={alert.target_barangays.join(', ')}
                     >
                         <MapPin className="size-2.5" />
@@ -1166,7 +1166,7 @@ function AlertRow({
                 <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                         onClick={onEdit}
-                        className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400"
+                        className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
                         title="Edit alert"
                     >
                         <Pencil className="size-3.5" />

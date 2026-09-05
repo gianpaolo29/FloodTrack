@@ -59,18 +59,18 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Activity Log', href: '/admin/activity' },
 ];
 
-const STATUS_OPTIONS = ['pending', 'verified', 'assigned', 'en_route', 'on_scene', 'resolved', 'rejected'];
+const STATUS_OPTIONS = ['pending', 'verified', 'acknowledged', 'assigned', 'en_route', 'on_scene', 'resolved', 'rejected'];
 
 const ROLE_STYLES: Record<string, string> = {
-    admin:     'bg-purple-50 text-purple-700 ring-1 ring-purple-500/20 dark:bg-purple-950/40 dark:text-purple-400',
-    responder: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-500/20 dark:bg-indigo-950/40 dark:text-indigo-400',
+    admin:     'bg-neutral-100 text-neutral-800 ring-1 ring-neutral-500/20 dark:bg-neutral-800 dark:text-neutral-300',
+    responder: 'bg-neutral-100 text-neutral-700 ring-1 ring-neutral-500/20 dark:bg-neutral-800 dark:text-neutral-400',
     resident:  'bg-zinc-100 text-zinc-600 ring-1 ring-zinc-500/10 dark:bg-zinc-800 dark:text-zinc-400',
 };
 
 const ROLE_AVATAR: Record<string, string> = {
-    admin:     'from-purple-500 to-violet-600',
-    responder: 'from-indigo-500 to-blue-600',
-    resident:  'from-slate-400 to-slate-500',
+    admin:     'from-neutral-800 to-neutral-900',
+    responder: 'from-neutral-600 to-neutral-700',
+    resident:  'from-neutral-400 to-neutral-500',
 };
 
 export default function AdminActivityLog({ activities, filters, stats, trends, period, custom_from, custom_to, teams }: Props) {
@@ -168,8 +168,8 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25">
-                            <History className="size-5 sm:size-6 text-white" />
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 shadow-sm dark:bg-white">
+                            <History className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                         </div>
                         <div>
                             <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Activity Log</h1>
@@ -184,7 +184,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                 {/* Stats cards */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                     <PrimaryStatCard
-                        label="Total Updates"
+                        label="Total Status Updates"
                         value={stats.total}
                         trend={trends.total}
                         trendLabel={`${trends.label}, ${trends.period_label}`}
@@ -194,31 +194,31 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                             { label: 'Pending', value: stats.pending, color: '#f59e0b' },
                         ]}
                         icon={History}
-                        grad="from-indigo-500 via-blue-500 to-cyan-500"
-                        shadow="shadow-indigo-500/40"
+                        grad="from-neutral-700 via-neutral-800 to-neutral-900"
+                        shadow="shadow-neutral-500/40"
                         alert={false}
                         index={0}
                         mounted={mounted}
                     />
                     <PrimaryStatCard
-                        label="Today's Activity"
+                        label="Today's Updates"
                         value={stats.today}
                         trendLabel={`${trends.label}, ${trends.period_label}`}
                         desc={smartDesc('today')}
                         insights={[]}
                         icon={Sparkles}
-                        grad="from-cyan-500 via-sky-500 to-blue-500"
-                        shadow="shadow-cyan-500/40"
+                        grad="from-neutral-600 via-neutral-700 to-neutral-800"
+                        shadow="shadow-neutral-500/40"
                         alert={false}
                         index={1}
                         mounted={mounted}
                     />
                     <SecondaryStatCard
                         icon={CheckCircle2}
-                        grad="from-emerald-500 to-teal-500"
-                        shadow="shadow-emerald-500/25"
+                        grad="from-neutral-600 to-neutral-700"
+                        shadow="shadow-sm"
                         value={stats.resolved}
-                        label="Resolved Actions"
+                        label="Resolved Cases"
                         trend={trends.resolved}
                         desc={smartDesc('resolved')}
                         insights={[
@@ -231,10 +231,10 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                     />
                     <SecondaryStatCard
                         icon={Clock}
-                        grad="from-amber-500 to-orange-500"
-                        shadow="shadow-amber-500/25"
+                        grad="from-neutral-500 to-neutral-600"
+                        shadow="shadow-sm"
                         value={stats.pending}
-                        label="Pending Actions"
+                        label="Pending Cases"
                         trend={trends.pending}
                         desc={smartDesc('pending')}
                         insights={[]}
@@ -252,7 +252,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
                         <div className="flex items-center gap-2.5">
                             <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Event Timeline</span>
-                            <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                            <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                                 {activities.total.toLocaleString()}
                             </span>
                         </div>
@@ -266,7 +266,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                     placeholder="Search reference…"
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-blue-500 dark:focus:bg-neutral-900"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-900"
                                 />
                                 {searchValue && (
                                     <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -280,7 +280,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                 <select
                                     value={filters.status ?? ''}
                                     onChange={(e) => filter('status', e.target.value)}
-                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50/50 pl-3 pr-8 text-sm outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100"
+                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50/50 pl-3 pr-8 text-sm outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100"
                                 >
                                     <option value="">All actions</option>
                                     {STATUS_OPTIONS.map((opt) => (
@@ -297,7 +297,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                 <select
                                     value={filters.team_id ?? ''}
                                     onChange={(e) => filter('team_id', e.target.value)}
-                                    className="h-9 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 text-sm outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100"
+                                    className="h-9 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 text-sm outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100"
                                 >
                                     <option value="">All Teams</option>
                                     {teams.map((t) => (
@@ -321,8 +321,8 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                     {/* Activity list */}
                     {filtered.length === 0 ? (
                         <div className="flex flex-col items-center gap-4 py-20">
-                            <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/25">
-                                <History className="size-7 text-white" />
+                            <div className="flex size-16 items-center justify-center rounded-2xl bg-neutral-900 shadow-sm dark:bg-white">
+                                <History className="size-7 text-white dark:text-neutral-900" />
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">No activity found</p>
@@ -343,7 +343,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                 const severity = a.report?.severity;
 
                                 return (
-                                    <div key={a.id} className="flex flex-col gap-1.5 px-4 py-3.5 transition-colors hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30">
+                                    <div key={a.id} className="flex flex-col gap-1.5 px-4 py-3.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2 min-w-0">
                                                 <div className={`flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${ROLE_AVATAR[userRole] ?? ROLE_AVATAR.resident} text-[10px] font-bold text-white shadow-sm`}>
@@ -365,7 +365,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                             </span>
                                             <span>on</span>
                                             {reportId ? (
-                                                <Link href={`/admin/reports/${reportId}`} className="font-mono text-xs font-semibold text-blue-600 dark:text-blue-400">
+                                                <Link href={`/admin/reports/${reportId}`} className="font-mono text-xs font-semibold text-neutral-900 dark:text-neutral-200">
                                                     {refNumber}
                                                 </Link>
                                             ) : (
@@ -397,7 +397,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                 return (
                                 <div
                                     key={a.id}
-                                    className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30"
+                                    className="flex items-start gap-4 px-5 py-4 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                                 >
                                     {/* Avatar */}
                                     <div className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${ROLE_AVATAR[userRole] ?? ROLE_AVATAR.resident} text-xs font-bold text-white shadow-sm`}>
@@ -419,7 +419,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                             {reportId ? (
                                             <Link
                                                 href={`/admin/reports/${reportId}`}
-                                                className="font-mono text-xs font-semibold text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+                                                className="font-mono text-xs font-semibold text-neutral-900 transition-colors hover:text-neutral-700 dark:text-neutral-200 dark:hover:text-neutral-100"
                                             >
                                                 {refNumber}
                                             </Link>
@@ -477,7 +477,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
                                                 link.active
-                                                    ? 'bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-sm'
+                                                    ? 'bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900'
                                                     : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
                                             }`}
                                         >

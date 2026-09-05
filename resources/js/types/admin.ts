@@ -1,7 +1,7 @@
 // ─── Shared admin domain types ────────────────────────────────────────────────
 
 export type Severity        = 'low' | 'moderate' | 'high' | 'critical';
-export type ReportStatus    = 'pending' | 'verified' | 'assigned' | 'resolved' | 'rejected';
+export type ReportStatus    = 'pending' | 'verified' | 'acknowledged' | 'assigned' | 'resolved' | 'rejected';
 export type ResponderStatus = 'pending' | 'en_route' | 'on_scene' | 'resolved';
 export type AlertType       = 'advisory' | 'update' | 'critical';
 export type UserRole        = 'resident' | 'responder';
@@ -105,6 +105,15 @@ export interface Report {
     ai_exif_status: 'pass' | 'fail' | 'no_data' | null;
     ai_exif_notes: string | null;
     potential_duplicate_of: number | null;
+    advisory?: {
+        nearby_centers: Array<{
+            id: number; name: string; address: string; type: string;
+            distance_km: number; capacity: number; current_occupancy: number; occupancy_pct: number;
+        }>;
+        safety_tips: Array<{ tip: string; steps: string[] }>;
+        suggested_actions: string[];
+        generated_at: string;
+    } | null;
 }
 
 export interface FieldReport {
@@ -204,11 +213,12 @@ export const SLA_STAGE_LABELS: Record<SlaStage, string> = {
 };
 
 export const STATUS_COLORS: Record<ReportStatus, string> = {
-    pending:  'bg-amber-50 text-amber-700 ring-1 ring-amber-600/10',
-    verified: 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/10',
-    assigned: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/10',
-    resolved: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/10',
-    rejected: 'bg-zinc-100 text-zinc-500 ring-1 ring-zinc-500/10',
+    pending:      'bg-amber-50 text-amber-700 ring-1 ring-amber-600/10',
+    verified:     'bg-blue-50 text-blue-700 ring-1 ring-blue-600/10',
+    acknowledged: 'bg-teal-50 text-teal-700 ring-1 ring-teal-600/10',
+    assigned:     'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/10',
+    resolved:     'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/10',
+    rejected:     'bg-zinc-100 text-zinc-500 ring-1 ring-zinc-500/10',
 };
 
 /* ─── Evacuation Center Management ─── */

@@ -67,12 +67,17 @@ class SlaService
         }
 
         // Terminal statuses don't start a new stage
-        if (in_array($newStatus, ['resolved', 'rejected'])) {
+        if (in_array($newStatus, ['resolved', 'rejected', 'acknowledged'])) {
             return;
         }
 
         // Determine the next stage to start
         $nextStage = self::STAGE_MAP[$newStatus] ?? null;
+
+        // Low/moderate: skip assignment stage, go straight to resolution tracking
+        if ($nextStage === 'verified_to_assigned' && ! $report->requiresAssignment()) {
+            $nextStage = 'assigned_to_resolved';
+        }
 
         if (! $nextStage) {
             return;

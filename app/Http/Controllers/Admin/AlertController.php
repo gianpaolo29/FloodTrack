@@ -33,10 +33,13 @@ class AlertController extends Controller
 
     public function index(Request $request): Response
     {
+        [$from, $to, $period] = $this->parsePeriod($request);
+
         $sortField = in_array($request->sort, ['title', 'type', 'created_at']) ? $request->sort : 'created_at';
         $sortDir   = $request->dir === 'asc' ? 'asc' : 'desc';
 
         $alerts = Alert::with('creator:id,name')
+            ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
             ->when($request->search, fn ($q) => $q->where(function ($q2) use ($request) {
                 $q2->where('title', 'like', "%{$request->search}%")
                    ->orWhere('body', 'like', "%{$request->search}%");
@@ -45,8 +48,6 @@ class AlertController extends Controller
             ->orderBy($sortField, $sortDir)
             ->paginate(20)
             ->withQueryString();
-
-        [$from, $to, $period] = $this->parsePeriod($request);
         [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
 
         $curTotal    = $this->scopeByPeriod(Alert::query(), $from, $to)->count();

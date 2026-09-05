@@ -16,10 +16,13 @@ class ActivityController extends Controller
 
     public function index(Request $request): Response
     {
+        [$from, $to, $period] = $this->parsePeriod($request);
+
         $activities = ReportStatusUpdate::with([
                 'user:id,name,role',
                 'report:id,reference_number,severity',
             ])
+            ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->team_id, fn ($q) => $q->whereHas('report', function ($q2) use ($request) {
                 $q2->where('assigned_team_id', $request->team_id);
@@ -30,8 +33,6 @@ class ActivityController extends Controller
             ->latest()
             ->paginate(20)
             ->withQueryString();
-
-        [$from, $to, $period] = $this->parsePeriod($request);
         [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
 
         $curTotal    = $this->scopeByPeriod(ReportStatusUpdate::query(), $from, $to)->count();

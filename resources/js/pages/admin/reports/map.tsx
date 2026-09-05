@@ -27,7 +27,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Map view', href: '/admin/reports/map' },
 ];
 
-const STATUS_OPTIONS = ['', 'pending', 'verified', 'assigned', 'resolved', 'rejected'];
+const STATUS_OPTIONS = ['', 'pending', 'verified', 'acknowledged', 'assigned', 'resolved', 'rejected'];
 const SEVERITY_OPTIONS = ['', 'critical', 'high', 'moderate', 'low'];
 
 const SEVERITY_META: Record<Severity, { color: string; hex: string; rgb: string; label: string }> = {
@@ -88,6 +88,12 @@ const mapOptions: google.maps.MapOptions = {
     disableDefaultUI: true,
     zoomControl: true,
     fullscreenControl: true,
+    mapTypeControl: true,
+    mapTypeControlOptions: {
+        style: 1, // google.maps.MapTypeControlStyle.HORIZONTAL_BAR
+        position: 3, // google.maps.ControlPosition.TOP_RIGHT
+        mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain'],
+    },
     gestureHandling: 'greedy',
     styles: MAP_STYLES,
 };
@@ -145,7 +151,7 @@ function FilterSelect({ value, onChange, options, placeholder }: {
             <select
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                className="h-8 w-full appearance-none rounded-lg border border-neutral-200 bg-white pl-2.5 pr-7 text-xs text-neutral-700 outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+                className="h-8 w-full appearance-none rounded-lg border border-neutral-200 bg-white pl-2.5 pr-7 text-xs text-neutral-700 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
             >
                 <option value="">{placeholder}</option>
                 {options.filter(Boolean).map((opt) => (
@@ -168,8 +174,8 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
 
     const [selectedReport, setSelectedReport]       = useState<Report | null>(null);
     const [selectedEvacCenter, setSelectedEvacCenter] = useState<EvacuationCenter | null>(null);
-    const [viewMode, setViewMode]                   = useState<ViewMode>('markers');
-    const [showEvacCenters, setShowEvacCenters]     = useState(true);
+    const [viewMode, setViewMode]                   = useState<ViewMode>('heatmap');
+    const [showEvacCenters, setShowEvacCenters]     = useState(false);
     const [zoom, setZoom]                           = useState(12);
 
     const showMarkers = viewMode === 'markers' || viewMode === 'both';
@@ -189,7 +195,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
     const focusOnLocation = useCallback((lat: number, lng: number) => {
         if (!mapRef.current) return;
         mapRef.current.panTo({ lat, lng });
-        mapRef.current.setZoom(17);
     }, []);
 
     const onMapLoad = useCallback((map: google.maps.Map) => {
@@ -244,7 +249,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                             <p className="mt-0.5 text-[11px] text-neutral-400">Flood report locations</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className="rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700 dark:bg-sky-950/40 dark:text-sky-400">
+                            <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                                 {reports.length} report{reports.length !== 1 ? 's' : ''}
                             </span>
                             <Link href="/admin/reports" className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-neutral-600 transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
@@ -287,7 +292,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                                     onClick={() => setViewMode(value)}
                                     className={`flex items-center justify-center gap-1.5 rounded-lg border py-1.5 text-[11px] font-semibold transition-all ${
                                         viewMode === value
-                                            ? 'border-sky-500 bg-sky-50 text-sky-700 dark:border-sky-600 dark:bg-sky-950/40 dark:text-sky-400'
+                                            ? 'border-neutral-900 bg-neutral-100 text-neutral-900 dark:border-white dark:bg-neutral-800 dark:text-white'
                                             : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400'
                                     }`}
                                 >
@@ -300,23 +305,15 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                     {/* Layers */}
                     <div className="border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
                         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Layers</p>
-                        <button
-                            onClick={() => { setShowEvacCenters((v) => !v); setSelectedEvacCenter(null); }}
-                            className={`flex w-full items-center gap-2.5 rounded-lg border px-3 py-2 text-xs font-medium transition-all ${
-                                showEvacCenters
-                                    ? 'border-teal-300 bg-teal-50 text-teal-700 dark:border-teal-700 dark:bg-teal-950/30 dark:text-teal-400'
-                                    : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400'
-                            }`}
-                        >
-                            <span className="flex size-5 shrink-0 items-center justify-center rounded bg-teal-600 text-white">
-                                <Building2 className="size-3" />
-                            </span>
+                        <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+                            <input
+                                type="checkbox"
+                                checked={showEvacCenters}
+                                onChange={(e) => setShowEvacCenters(e.target.checked)}
+                                className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500 dark:border-neutral-600 dark:text-white"
+                            />
                             Evacuation Centers
-                            <span className="ml-auto text-[10px] font-semibold">{evacuation_centers.length}</span>
-                            <span className={`size-4 shrink-0 rounded border-2 transition-colors ${showEvacCenters ? 'border-teal-500 bg-teal-500' : 'border-neutral-300 dark:border-neutral-600'}`}>
-                                {showEvacCenters && <svg viewBox="0 0 16 16" className="size-full text-white" fill="currentColor"><path d="M13.5 3.5l-7 7-3-3-1.5 1.5 4.5 4.5 8.5-8.5z"/></svg>}
-                            </span>
-                        </button>
+                        </label>
                     </div>
 
                     {/* Filters */}
@@ -339,12 +336,12 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                                 <div>
                                     <label className="mb-1 block text-[10px] text-neutral-400">From</label>
                                     <input type="date" value={filters.date_from ?? ''} onChange={(e) => filter('date_from', e.target.value)}
-                                        className="h-8 w-full rounded-lg border border-neutral-200 bg-white px-2 text-xs outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200" />
+                                        className="h-8 w-full rounded-lg border border-neutral-200 bg-white px-2 text-xs outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200" />
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-[10px] text-neutral-400">To</label>
                                     <input type="date" value={filters.date_to ?? ''} onChange={(e) => filter('date_to', e.target.value)} min={filters.date_from ?? undefined}
-                                        className="h-8 w-full rounded-lg border border-neutral-200 bg-white px-2 text-xs outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200" />
+                                        className="h-8 w-full rounded-lg border border-neutral-200 bg-white px-2 text-xs outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200" />
                                 </div>
                             </div>
                         </div>
@@ -354,41 +351,47 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                     <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-3">
                         {/* Legend */}
                         <div className="mb-3">
-                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Severity legend</p>
-                            <div className="flex flex-wrap gap-3">
-                                {(['critical', 'high', 'moderate', 'low'] as Severity[]).map((s) => (
-                                    <span key={s} className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                                        <span className={`h-2.5 w-2.5 rounded-full ${SEVERITY_META[s].color}`} />
-                                        {SEVERITY_META[s].label}
-                                    </span>
-                                ))}
-                                {showEvacCenters && (
-                                    <>
-                                        <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                                            <span className="h-2.5 w-2.5 rounded-sm bg-teal-600" />
-                                            Evac Center
-                                        </span>
-                                        <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                                            <span className="h-2.5 w-2.5 rounded-sm bg-red-600" />
-                                            Full
-                                        </span>
-                                    </>
-                                )}
-                            </div>
+                            {showMarkers && (
+                                <>
+                                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Marker legend</p>
+                                    <div className="flex flex-wrap gap-3">
+                                        {(['critical', 'high', 'moderate', 'low'] as Severity[]).map((s) => (
+                                            <span key={s} className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                                                <span className={`h-2.5 w-2.5 rounded-full ${SEVERITY_META[s].color}`} />
+                                                {SEVERITY_META[s].label}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
                             {showHeatmap && (
-                                <div className="mt-2 flex flex-wrap gap-3">
-                                    <span className="text-[11px] font-medium text-neutral-500">Density:</span>
-                                    {[
-                                        { label: 'Low',      cls: 'bg-emerald-500' },
-                                        { label: 'Moderate', cls: 'bg-amber-400'   },
-                                        { label: 'High',     cls: 'bg-orange-500'  },
-                                        { label: 'Critical', cls: 'bg-red-500'     },
-                                    ].map(({ label, cls }) => (
-                                        <span key={label} className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                                            <span className={`h-2.5 w-2.5 rounded-full ${cls} opacity-70`} />
-                                            {label}
-                                        </span>
-                                    ))}
+                                <>
+                                    <p className={`mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400 ${showMarkers ? 'mt-2' : ''}`}>Density legend</p>
+                                    <div className="flex flex-wrap gap-3">
+                                        {[
+                                            { label: 'Low',      cls: 'bg-emerald-500' },
+                                            { label: 'Moderate', cls: 'bg-amber-400'   },
+                                            { label: 'High',     cls: 'bg-orange-500'  },
+                                            { label: 'Critical', cls: 'bg-red-500'     },
+                                        ].map(({ label, cls }) => (
+                                            <span key={label} className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                                                <span className={`h-2.5 w-2.5 rounded-full ${cls} opacity-70`} />
+                                                {label}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                            {showEvacCenters && (
+                                <div className={`flex flex-wrap gap-3 ${showMarkers || showHeatmap ? 'mt-2' : ''}`}>
+                                    <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                                        <span className="h-2.5 w-2.5 rounded-sm bg-teal-600" />
+                                        Evac Center
+                                    </span>
+                                    <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                                        <span className="h-2.5 w-2.5 rounded-sm bg-red-600" />
+                                        Full
+                                    </span>
                                 </div>
                             )}
                         </div>
@@ -401,10 +404,15 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                             {sortedReports.map((r) => (
                                 <button
                                     key={r.id}
-                                    onClick={() => { setSelectedEvacCenter(null); setSelectedReport(selectedReport?.id === r.id ? null : r); if (selectedReport?.id !== r.id) focusOnLocation(r.latitude, r.longitude); }}
+                                    onClick={() => {
+                                        setSelectedEvacCenter(null);
+                                        const isDeselecting = selectedReport?.id === r.id;
+                                        setSelectedReport(isDeselecting ? null : r);
+                                        if (!isDeselecting) focusOnLocation(r.latitude, r.longitude);
+                                    }}
                                     className={`w-full rounded-xl border p-2.5 text-left transition-all ${
                                         selectedReport?.id === r.id
-                                            ? 'border-sky-300 bg-sky-50 ring-1 ring-sky-200 dark:border-sky-700 dark:bg-sky-950/30'
+                                            ? 'border-neutral-400 bg-neutral-100 ring-1 ring-neutral-300 dark:border-neutral-600 dark:bg-neutral-800/60'
                                             : 'border-neutral-100 bg-neutral-50/50 hover:border-neutral-200 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-800/40 dark:hover:border-neutral-700'
                                     }`}
                                 >
@@ -419,9 +427,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                                             </span>
                                         </div>
                                         <div className="flex shrink-0 items-center gap-1">
-                                            <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${SEVERITY_COLORS[r.severity]}`}>
-                                                {r.severity}
-                                            </span>
                                             <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${STATUS_COLORS[r.status]}`}>
                                                 {r.status}
                                             </span>
@@ -434,7 +439,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                                         <span>{r.user?.name ?? 'Unknown'}</span>
                                         <span className="flex items-center gap-1">
                                             <CalendarDays className="size-2.5" />
-                                            {new Date(r.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
+                                            {new Date(r.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>
                                 </button>
@@ -452,7 +457,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                         <GoogleMap
                             mapContainerStyle={mapContainerStyle}
                             center={DEFAULT_CENTER}
-                            zoom={13}
+                            zoom={zoom}
                             options={mapOptions}
                             onLoad={onMapLoad}
                             onZoomChanged={function (this: google.maps.Map) { setZoom(this.getZoom() ?? 12); }}
@@ -472,7 +477,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                                 />
                             ))}
 
-                            {showMarkers && selectedReport && (
+                            {selectedReport && (
                                 <InfoWindowF
                                     position={{ lat: selectedReport.latitude, lng: selectedReport.longitude }}
                                     onCloseClick={() => setSelectedReport(null)}
@@ -499,12 +504,12 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
 
                                         <div className="flex items-center justify-between text-[11px] text-gray-400">
                                             <span>{selectedReport.user?.name ?? 'Unknown'}</span>
-                                            <span>{new Date(selectedReport.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                            <span>{new Date(selectedReport.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                         </div>
 
                                         <Link
                                             href={`/admin/reports/${selectedReport.id}`}
-                                            className="mt-0.5 block rounded-lg bg-sky-600 px-3 py-2 text-center text-[11px] font-semibold text-white transition hover:bg-sky-700"
+                                            className="mt-0.5 block rounded-lg bg-neutral-900 px-3 py-2 text-center text-[11px] font-semibold text-white transition hover:bg-neutral-800"
                                         >
                                             View full report →
                                         </Link>
@@ -585,7 +590,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
 
                                         <Link
                                             href="/admin/evacuation-centers"
-                                            className="mt-0.5 block rounded-lg bg-teal-600 px-3 py-2 text-center text-[11px] font-semibold text-white transition hover:bg-teal-700"
+                                            className="mt-0.5 block rounded-lg bg-neutral-900 px-3 py-2 text-center text-[11px] font-semibold text-white transition hover:bg-neutral-800"
                                         >
                                             Manage centers →
                                         </Link>
@@ -598,7 +603,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                     ) : (
                         <div className="flex h-full items-center justify-center bg-neutral-50 dark:bg-neutral-900">
                             <div className="flex flex-col items-center gap-3">
-                                <div className="size-8 animate-spin rounded-full border-2 border-neutral-200 border-t-sky-500" />
+                                <div className="size-8 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-900 dark:border-neutral-700 dark:border-t-white" />
                                 <p className="text-xs text-neutral-400">Loading map…</p>
                             </div>
                         </div>

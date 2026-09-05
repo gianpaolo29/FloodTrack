@@ -47,6 +47,7 @@ class HazardController extends Controller
         ];
 
         $hazards = Hazard::with('creator:id,name')
+            ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
             ->latest()
             ->paginate(20);
 

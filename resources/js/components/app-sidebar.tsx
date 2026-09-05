@@ -62,7 +62,7 @@ const mainItems: NavItem[] = [
 
 const managementItems: NavItem[] = [
     {
-        title: 'Reports',
+        title: 'Flood Reports',
         href: '/admin/reports',
         icon: FileText,
         children: [
@@ -75,7 +75,7 @@ const managementItems: NavItem[] = [
         ],
     },
     {
-        title: 'Hazards',
+        title: 'Hazard Zones',
         href: '/admin/hazards',
         icon: ShieldAlert,
     },
@@ -85,7 +85,7 @@ const managementItems: NavItem[] = [
         icon: Building2,
     },
     {
-        title: 'Alerts',
+        title: 'Announcements',
         href: '/admin/alerts',
         icon: AlertTriangle,
     },
@@ -95,12 +95,12 @@ const managementItems: NavItem[] = [
         icon: Users,
     },
     {
-        title: 'Responders',
+        title: 'Rescue Personnel',
         href: '/admin/responders',
         icon: ShieldCheck,
     },
     {
-        title: 'Teams',
+        title: 'Response Teams',
         href: '/admin/teams',
         icon: UsersRound,
     },

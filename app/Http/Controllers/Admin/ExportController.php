@@ -56,23 +56,9 @@ class ExportController extends Controller
 
     public function pdf(Request $request): HttpResponse
     {
-        $request->validate([
-            'period' => 'nullable|in:today,week,month,all',
-        ]);
+        [$from, $to, $period] = $this->parsePeriod($request);
 
-        $period = $request->get('period', 'all');
-
-        $from = match ($period) {
-            'today' => today(),
-            'week'  => now()->startOfWeek(),
-            'month' => now()->startOfMonth(),
-            default => null,
-        };
-
-        $reportQuery = Report::query();
-        if ($from) {
-            $reportQuery->where('created_at', '>=', $from);
-        }
+        $reportQuery = $this->scopeByPeriod(Report::query(), $from, $to);
 
         $stats = [
             'total_reports' => (clone $reportQuery)->count(),
@@ -95,8 +81,9 @@ class ExportController extends Controller
             ->groupBy('status')
             ->pluck('count', 'status');
 
-        $recent_reports = Report::with('user:id,name', 'assignedTeam:id,name')
-            ->when($from, fn ($q) => $q->where('created_at', '>=', $from))
+        $recent_reports = $this->scopeByPeriod(
+                Report::with('user:id,name', 'assignedTeam:id,name'), $from, $to
+            )
             ->latest()
             ->limit(20)
             ->get(['id', 'reference_number', 'severity', 'status', 'address', 'user_id', 'assigned_team_id', 'created_at']);
@@ -109,10 +96,11 @@ class ExportController extends Controller
             ->get(['id', 'name', 'email']);
 
         $periodLabel = match ($period) {
-            'today' => 'Today (' . now()->format('F j, Y') . ')',
-            'week'  => 'This Week (' . now()->startOfWeek()->format('M j') . ' – ' . now()->format('M j, Y') . ')',
-            'month' => 'This Month (' . now()->format('F Y') . ')',
-            default => 'All Time',
+            'today'  => 'Today (' . now()->format('F j, Y') . ')',
+            'week'   => 'This Week (' . now()->startOfWeek()->format('M j') . ' – ' . now()->format('M j, Y') . ')',
+            'month'  => 'This Month (' . now()->format('F Y') . ')',
+            'custom' => ($from ? $from->format('M j') : '') . ' – ' . ($to ? $to->format('M j, Y') : now()->format('M j, Y')),
+            default  => 'All Time',
         };
 
         $pdf = Pdf::loadView('exports.dashboard', compact(

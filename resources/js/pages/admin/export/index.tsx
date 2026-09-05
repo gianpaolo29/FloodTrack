@@ -46,7 +46,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Export', href: '/admin/export' },
 ];
 
-const STATUS_OPTIONS   = ['', 'pending', 'verified', 'assigned', 'resolved', 'rejected'];
+const STATUS_OPTIONS   = ['', 'pending', 'verified', 'acknowledged', 'assigned', 'resolved', 'rejected'];
 const SEVERITY_OPTIONS = ['', 'critical', 'high', 'moderate', 'low'];
 const EXPORT_LIMIT     = 10_000;
 
@@ -206,16 +206,16 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                             { label: 'Resolved', value: stats.resolved, color: '#10b981' },
                         ]}
                         icon={FileText}
-                        grad="from-blue-500 via-indigo-500 to-violet-500"
-                        shadow="shadow-blue-500/40"
+                        grad="from-neutral-800 via-neutral-900 to-neutral-950"
+                        shadow="shadow-sm"
                         alert={false}
                         index={0}
                         mounted={mounted}
                     />
                     <SecondaryStatCard
                         icon={Clock}
-                        grad="from-amber-500 to-orange-500"
-                        shadow="shadow-amber-500/25"
+                        grad="from-neutral-700 to-neutral-800"
+                        shadow="shadow-sm"
                         value={stats.pending}
                         label="Pending"
                         trend={undefined}
@@ -228,8 +228,8 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                     />
                     <SecondaryStatCard
                         icon={ShieldCheck}
-                        grad="from-blue-500 to-sky-500"
-                        shadow="shadow-blue-500/25"
+                        grad="from-neutral-600 to-neutral-700"
+                        shadow="shadow-sm"
                         value={stats.verified}
                         label="Verified"
                         trend={undefined}
@@ -242,8 +242,8 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                     />
                     <SecondaryStatCard
                         icon={Users}
-                        grad="from-purple-500 to-violet-500"
-                        shadow="shadow-purple-500/25"
+                        grad="from-neutral-700 to-neutral-800"
+                        shadow="shadow-sm"
                         value={stats.assigned}
                         label="Assigned"
                         trend={undefined}
@@ -256,8 +256,8 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                     />
                     <SecondaryStatCard
                         icon={CheckCircle2}
-                        grad="from-emerald-500 to-teal-500"
-                        shadow="shadow-emerald-500/25"
+                        grad="from-neutral-600 to-neutral-700"
+                        shadow="shadow-sm"
                         value={stats.resolved}
                         label="Resolved"
                         trend={trends.resolved}
@@ -271,7 +271,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                     <SecondaryStatCard
                         icon={XCircle}
                         grad="from-neutral-400 to-neutral-500"
-                        shadow="shadow-neutral-400/25"
+                        shadow="shadow-sm"
                         value={stats.rejected}
                         label="Rejected"
                         trend={undefined}
@@ -287,8 +287,8 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                 {/* ─── PDF Export ─── */}
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                     <div className="flex items-center gap-2.5 border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
-                        <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-red-600 shadow-sm">
-                            <Printer className="size-3.5 text-white" />
+                        <div className="flex size-8 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                            <Printer className="size-3.5 text-white dark:text-neutral-900" />
                         </div>
                         <div>
                             <h2 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Dashboard PDF Report</h2>
@@ -305,7 +305,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                                 <a
                                     key={p}
                                     href={`/admin/export/pdf${p !== 'all' ? `?period=${p}` : ''}`}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-700 transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-rose-700 dark:hover:bg-rose-900/20 dark:hover:text-rose-400"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-700 transition-all hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-white"
                                 >
                                     <Printer className="size-3.5" />
                                     {{ all: 'All Time', month: 'This Month', week: 'This Week', today: 'Today' }[p]}
@@ -319,8 +319,8 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                     {/* Card header */}
                     <div className="flex items-center gap-2.5 border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
-                        <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
-                            <Download className="size-3.5 text-white" />
+                        <div className="flex size-8 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                            <Download className="size-3.5 text-white dark:text-neutral-900" />
                         </div>
                         <div>
                             <h2 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
@@ -410,7 +410,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                             <a
                                 href={buildUrl()}
                                 onClick={handleDownload}
-                                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
+                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
                             >
                                 <FileDown className="size-4" />
                                 Download Excel
@@ -437,7 +437,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
 /* ─── Shared styles ─── */
 
 const selectCls =
-    'h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 py-2 text-sm outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-sky-500 dark:focus:bg-neutral-800';
+    'h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 py-2 text-sm outline-none transition-all focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-neutral-500 dark:focus:bg-neutral-800';
 
 /* ─── Sub-components ─── */
 

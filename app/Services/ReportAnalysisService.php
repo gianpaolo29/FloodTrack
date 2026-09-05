@@ -11,7 +11,10 @@ class ReportAnalysisService
 {
     private static function client(): \OpenAI\Client
     {
-        return OpenAI::client(config('services.openai.key'));
+        return OpenAI::factory()
+            ->withApiKey(config('services.openai.key'))
+            ->withHttpClient(new \GuzzleHttp\Client(['verify' => false]))
+            ->make();
     }
 
     /**

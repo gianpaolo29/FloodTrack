@@ -10,6 +10,7 @@ use App\Models\ReportResponder;
 use App\Models\ReportStatusUpdate;
 use App\Models\Team;
 use App\Notifications\ReportStatusChanged;
+use App\Services\AdvisoryService;
 use App\Services\ExpoPushService;
 use App\Services\SlaService;
 use App\Services\SocketService;
@@ -38,7 +39,7 @@ class ReportController extends Controller
             ])
             ->with(['user:id,name'])
             ->when($request->status, fn ($q) => $q->where('status', $request->status),
-                fn ($q) => $q->whereIn('status', ['verified', 'assigned', 'resolved']))
+                fn ($q) => $q->whereIn('status', ['verified', 'acknowledged', 'assigned', 'resolved']))
             ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
             ->when($request->date_from, fn ($q) => $q->whereDate('created_at', '>=', $request->date_from))
             ->when($request->date_to, fn ($q) => $q->whereDate('created_at', '<=', $request->date_to))
@@ -62,7 +63,10 @@ class ReportController extends Controller
 
     public function index(Request $request): Response
     {
+        [$from, $to, $period] = $this->parsePeriod($request);
+
         $reports = Report::with(['user:id,name', 'assignedResponder:id,name', 'assignedTeam:id,name', 'slaTracking'])
+            ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
             ->when($request->status, fn ($q) => $q->where('status', $request->status))
             ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
             ->when($request->team_id, fn ($q) => $q->where('assigned_team_id', $request->team_id))
@@ -73,8 +77,6 @@ class ReportController extends Controller
             ->latest()
             ->paginate(20)
             ->withQueryString();
-
-        [$from, $to, $period] = $this->parsePeriod($request);
         [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
 
         $curTotal    = $this->scopeByPeriod(Report::query(), $from, $to)->count();
@@ -208,8 +210,8 @@ class ReportController extends Controller
 
     public function reopen(Report $report, Request $request): RedirectResponse
     {
-        if (! in_array($report->status, ['resolved', 'rejected'])) {
-            Inertia::flash('toast', ['type' => 'error', 'message' => 'Only resolved or rejected reports can be reopened.']);
+        if (! in_array($report->status, ['resolved', 'rejected', 'acknowledged'])) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'Only resolved, rejected, or acknowledged reports can be reopened.']);
             return back();
         }
 
@@ -333,6 +335,30 @@ class ReportController extends Controller
 
         app(SlaService::class)->advanceStage($report, 'verified');
 
+        // Low/moderate: generate AI advisory and transition to acknowledged
+        if (! $report->requiresAssignment()) {
+            $advisory = AdvisoryService::generate($report);
+            $report->update([
+                'status'   => 'acknowledged',
+                'advisory' => $advisory,
+            ]);
+
+            ReportStatusUpdate::create([
+                'report_id' => $report->id,
+                'user_id'   => $request->user()->id,
+                'status'    => 'acknowledged',
+                'notes'     => 'AI advisory generated with nearby evacuation centers and safety guidance.',
+            ]);
+
+            app(SlaService::class)->advanceStage($report, 'acknowledged');
+
+            $this->notifyStatusChange($report, 'verified', 'acknowledged', $request->user()->name);
+
+            Inertia::flash('toast', ['type' => 'success', 'message' => 'Report verified and advisory sent to resident.']);
+
+            return back();
+        }
+
         $this->notifyStatusChange($report, $oldStatus, 'verified', $request->user()->name);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Report verified.']);
@@ -447,15 +473,17 @@ class ReportController extends Controller
 
         // Push notification
         $titles = [
-            'verified' => "Report {$report->reference_number} Verified",
-            'rejected' => "Report {$report->reference_number} Not Verified",
-            'assigned' => "Report {$report->reference_number} — Responder Assigned",
+            'verified'     => "Report {$report->reference_number} Verified",
+            'rejected'     => "Report {$report->reference_number} Not Verified",
+            'assigned'     => "Report {$report->reference_number} — Responder Assigned",
+            'acknowledged' => "Report {$report->reference_number} — Safety Advisory",
         ];
 
         $bodies = [
-            'verified' => 'Your flood report has been verified. Responders will be dispatched shortly.',
-            'rejected' => 'Your report could not be verified.',
-            'assigned' => 'A responder has been assigned to your report. Help is on the way.',
+            'verified'     => 'Your flood report has been verified. Responders will be dispatched shortly.',
+            'rejected'     => 'Your report could not be verified.',
+            'assigned'     => 'A responder has been assigned to your report. Help is on the way.',
+            'acknowledged' => 'We\'ve reviewed your report and prepared safety guidance for you. Open the app for details.',
         ];
 
         if (isset($titles[$newStatus])) {

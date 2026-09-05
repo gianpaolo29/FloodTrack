@@ -59,7 +59,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Admin', href: '/admin' },
-    { title: 'Responders', href: '/admin/responders' },
+    { title: 'Rescue Personnel', href: '/admin/responders' },
 ];
 
 export default function AdminRespondersIndex({ responders, filters, teams_count, stats, trends, period, custom_from, custom_to }: Props) {
@@ -145,20 +145,20 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Responders" />
+            <Head title="Rescue Personnel" />
 
             <div className="flex flex-col gap-4 p-3 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/25">
-                            <ShieldCheck className="size-5 sm:size-6 text-white" />
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 shadow-sm dark:bg-white">
+                            <ShieldCheck className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Responders</h1>
+                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Rescue Personnel</h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-                                Manage responder accounts and track their assignments.
+                                Manage rescue personnel accounts and track their flood response assignments.
                             </p>
                         </div>
                     </div>
@@ -173,7 +173,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                         </Link>
                         <button
                             onClick={() => setShowCreate(true)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
+                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
                         >
                             <Plus className="size-4" />
                             Add Responder
@@ -184,12 +184,12 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                 {/* KPI Stat cards */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <PrimaryStatCard
-                        label="Total Responders"
+                        label="Total Personnel"
                         value={stats.total}
                         trend={trends.total}
                         trendLabel={`${trends.label}, ${trends.period_label}`}
                         desc={smartDesc('total')}
-                        insights={[{ label: 'In Teams', value: stats.in_teams }]}
+                        insights={[{ label: 'Assigned to Teams', value: stats.in_teams }]}
                         icon={ShieldCheck}
                         grad="from-violet-500 via-indigo-500 to-blue-500"
                         shadow="shadow-violet-500/40"
@@ -198,7 +198,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                         mounted={mounted}
                     />
                     <PrimaryStatCard
-                        label="Active Assignments"
+                        label="Active Deployments"
                         value={stats.active_assignments}
                         trend={trends.active_assignments}
                         trendLabel={`${trends.label}, ${trends.period_label}`}
@@ -216,7 +216,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                         grad="from-emerald-500 to-teal-500"
                         shadow="shadow-emerald-500/25"
                         value={stats.total_resolved}
-                        label="Total Resolved"
+                        label="Cases Resolved"
                         trend={trends.total_resolved}
                         desc={smartDesc('resolved')}
                         insights={[]}
@@ -230,7 +230,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                         grad="from-blue-500 to-indigo-500"
                         shadow="shadow-blue-500/25"
                         value={stats.in_teams}
-                        label="In Teams"
+                        label="Assigned to Teams"
                         trend={undefined}
                         desc={smartDesc('in_teams')}
                         insights={[]}
@@ -248,7 +248,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                     <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
                         <div className="flex items-center gap-2.5">
                             <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">All Responders</span>
-                            <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300">
+                            <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                                 {responders.total}
                             </span>
                         </div>
@@ -261,7 +261,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                                     placeholder="Search responders..."
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-indigo-500 dark:focus:bg-neutral-900"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-900"
                                 />
                                 {searchValue && (
                                     <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -277,9 +277,9 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                         {filtered.map((r) => (
                             <div key={r.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
                                 {r.avatar_url ? (
-                                    <img src={r.avatar_url} alt={r.name} className="size-9 shrink-0 rounded-xl object-cover shadow-sm shadow-indigo-500/20" />
+                                    <img src={r.avatar_url} alt={r.name} className="size-9 shrink-0 rounded-xl object-cover shadow-sm" />
                                 ) : (
-                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-sm font-bold text-white shadow-sm shadow-indigo-500/20">
+                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-neutral-900 dark:bg-white text-sm font-bold text-white dark:text-neutral-900 shadow-sm">
                                         {r.name.charAt(0).toUpperCase()}
                                     </div>
                                 )}
@@ -334,13 +334,13 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                             </thead>
                             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                                 {filtered.map((r) => (
-                                    <tr key={r.id} className="group transition-colors hover:bg-neutral-50/60 dark:hover:bg-neutral-800/20">
+                                    <tr key={r.id} className="group transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                                         <td className="px-5 py-4">
                                             <div className="flex items-center gap-3">
                                                 {r.avatar_url ? (
-                                                    <img src={r.avatar_url} alt={r.name} className="size-9 shrink-0 rounded-xl object-cover shadow-sm shadow-indigo-500/20" />
+                                                    <img src={r.avatar_url} alt={r.name} className="size-9 shrink-0 rounded-xl object-cover shadow-sm" />
                                                 ) : (
-                                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-sm font-bold text-white shadow-sm shadow-indigo-500/20">
+                                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-neutral-900 dark:bg-white text-sm font-bold text-white dark:text-neutral-900 shadow-sm">
                                                         {r.name.charAt(0).toUpperCase()}
                                                     </div>
                                                 )}
@@ -361,7 +361,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                                                 <div className="flex flex-wrap items-center gap-1.5">
                                                     <Link
                                                         href="/admin/teams"
-                                                        className="inline-flex items-center gap-1.5 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-semibold text-violet-700 ring-1 ring-violet-200 transition-colors hover:bg-violet-100 dark:bg-violet-950/30 dark:text-violet-300 dark:ring-violet-800/40"
+                                                        className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-700 ring-1 ring-neutral-200 transition-colors hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700"
                                                     >
                                                         <Users className="size-3" />
                                                         {r.team_name}
@@ -395,8 +395,8 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                                             )}
                                         </td>
                                         <td className="px-5 py-4 text-center">
-                                            <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-indigo-700 dark:text-indigo-400">
-                                                <ClipboardList className="size-4 text-indigo-500/70 dark:text-indigo-500/50" />
+                                            <span className="inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-neutral-900 dark:text-white">
+                                                <ClipboardList className="size-4 text-neutral-500 dark:text-neutral-400" />
                                                 {r.total_assigned}
                                             </span>
                                         </td>
@@ -417,7 +417,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                                             <div className="flex items-center justify-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                                                 <button
                                                     onClick={() => setEditingResponder(r)}
-                                                    className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-indigo-600 dark:hover:bg-neutral-800 dark:hover:text-indigo-400"
+                                                    className="rounded-lg p-2 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
                                                     title="Edit responder"
                                                 >
                                                     <Pencil className="size-3.5" />
@@ -440,8 +440,8 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                     {/* Empty state */}
                     {filtered.length === 0 && (
                         <div className="flex flex-col items-center gap-3 py-20">
-                            <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-lg shadow-indigo-500/25">
-                                <ShieldCheck className="size-7 text-white" />
+                            <div className="flex size-16 items-center justify-center rounded-2xl bg-neutral-900 shadow-sm dark:bg-white">
+                                <ShieldCheck className="size-7 text-white dark:text-neutral-900" />
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">No responders found</p>
@@ -476,7 +476,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
                                                 link.active
-                                                    ? 'bg-gradient-to-br from-indigo-500 to-blue-600 text-white shadow-sm'
+                                                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
                                                     : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
                                             }`}
                                         >
@@ -578,7 +578,7 @@ function ResponderFormModal({
     }, [onClose]);
 
     const inputClassName =
-        'w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-indigo-500 dark:focus:bg-neutral-900';
+        'w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-900';
 
     return (
         <motion.div
@@ -602,8 +602,8 @@ function ResponderFormModal({
                     {isEdit && responder?.avatar_url ? (
                         <img src={responder.avatar_url} alt={responder.name} className="size-9 shrink-0 rounded-xl object-cover shadow-sm" />
                     ) : (
-                        <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 shadow-sm">
-                            {isEdit ? <Pencil className="size-4 text-white" /> : <Plus className="size-4 text-white" />}
+                        <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                            {isEdit ? <Pencil className="size-4 text-white dark:text-neutral-900" /> : <Plus className="size-4 text-white dark:text-neutral-900" />}
                         </div>
                     )}
                     <div>
@@ -706,7 +706,7 @@ function ResponderFormModal({
                         <button
                             type="submit"
                             disabled={form.processing}
-                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
+                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                         >
                             {isEdit ? <Pencil className="size-3.5" /> : <Plus className="size-3.5" />}
                             {form.processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Responder'}
@@ -822,7 +822,7 @@ function HomeAddressAutocomplete({ value, onChange, className }: {
                 />
                 {fetching && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <div className="size-3.5 animate-spin rounded-full border-2 border-neutral-200 border-t-indigo-500" />
+                        <div className="size-3.5 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-500" />
                     </div>
                 )}
             </div>
@@ -832,7 +832,7 @@ function HomeAddressAutocomplete({ value, onChange, className }: {
                         <li
                             key={pred.place_id}
                             onMouseDown={(e) => { e.preventDefault(); selectPrediction(pred); }}
-                            className="flex cursor-pointer flex-col gap-0.5 px-3 py-2 transition-colors hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                            className="flex cursor-pointer flex-col gap-0.5 px-3 py-2 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                         >
                             <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
                                 {pred.structured_formatting.main_text}

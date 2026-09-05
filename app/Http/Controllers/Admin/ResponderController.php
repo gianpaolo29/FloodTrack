@@ -51,6 +51,7 @@ class ResponderController extends Controller
         ];
 
         $responders = User::where('role', 'responder')
+            ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
             ->with('team:id,name,leader_id,is_active')
             ->when($request->search, fn ($q) => $q->where(function ($q2) use ($request) {
                 $q2->where('name', 'like', "%{$request->search}%")

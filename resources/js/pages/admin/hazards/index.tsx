@@ -56,7 +56,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const inputClass =
-    'w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-sky-500 dark:focus:ring-sky-500/20';
+    'w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:ring-neutral-500/20';
 
 const modalSpring = { type: 'spring' as const, stiffness: 380, damping: 30 };
 
@@ -66,8 +66,8 @@ const CATEGORY_ICON: Record<HazardCategory, typeof Droplets> = {
 };
 
 const CATEGORY_COLORS: Record<HazardCategory, string> = {
-    flood: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-700/40',
-    road:  'bg-orange-50 text-orange-700 ring-1 ring-orange-200 dark:bg-orange-950/50 dark:text-orange-300 dark:ring-orange-700/40',
+    flood: 'bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700',
+    road:  'bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700',
 };
 
 
@@ -270,15 +270,15 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                 {/* ── Page Header ── */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 shadow-lg shadow-red-500/25">
-                            <ShieldAlert className="size-5 sm:size-6 text-white" />
-                            <span className="absolute -right-1 -top-1 flex size-3.5 items-center justify-center rounded-full bg-red-500 ring-2 ring-white dark:ring-neutral-900">
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 shadow-sm dark:bg-white">
+                            <ShieldAlert className="size-5 sm:size-6 text-white dark:text-neutral-900" />
+                            <span className="absolute -right-1 -top-1 flex size-3.5 items-center justify-center rounded-full bg-neutral-600 ring-2 ring-white dark:bg-neutral-400 dark:ring-neutral-900">
                                 <span className="size-1.5 animate-pulse rounded-full bg-white" />
                             </span>
                         </div>
                         <div>
                             <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                                Hazard Management
+                                Hazard Zone Management
                             </h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Manage flood &amp; road hazards visible on the resident map
@@ -296,14 +296,14 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                                 });
                             }}
                             disabled={syncing}
-                            className="inline-flex items-center gap-2 rounded-xl border border-sky-200 bg-sky-50 px-4 py-2.5 text-sm font-semibold text-sky-700 shadow-sm transition-all hover:bg-sky-100 hover:shadow-md active:scale-[0.97] disabled:opacity-60 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-300 dark:hover:bg-sky-900/50"
+                            className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition-all hover:bg-neutral-100 hover:shadow-md active:scale-[0.97] disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                         >
                             <CloudRain className={`size-4 ${syncing ? 'animate-pulse' : ''}`} />
                             {syncing ? 'Syncing…' : 'Sync Weather Alerts'}
                         </button>
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-orange-500 to-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-red-500/20 transition-all hover:shadow-lg hover:shadow-red-500/30 hover:brightness-110 active:scale-[0.97]"
+                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 active:scale-[0.97] dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                         >
                             <Plus className="size-4" />
                             Add Hazard
@@ -314,29 +314,29 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                 {/* ── KPI Stats ── */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     <PrimaryStatCard
-                        label="Total Hazards"
+                        label="Total Hazard Zones"
                         value={stats.total}
                         trend={trends.total}
                         trendLabel={`${trends.label}, ${trends.period_label}`}
                         desc={smartDesc('total')}
                         insights={[{ label: 'Active', value: stats.active, color: '#10b981' }, { label: 'Inactive', value: stats.inactive }]}
                         icon={ShieldAlert}
-                        grad="from-indigo-500 via-blue-500 to-cyan-500"
-                        shadow="shadow-indigo-500/40"
+                        grad="from-neutral-800 via-neutral-900 to-neutral-950"
+                        shadow="shadow-sm"
                         alert={false}
                         index={0}
                         mounted={mounted}
                     />
                     <PrimaryStatCard
-                        label="Active Hazards"
+                        label="Active Hazard Zones"
                         value={stats.active}
                         trend={undefined}
                         trendLabel={`${trends.label}, ${trends.period_label}`}
                         desc={smartDesc('active')}
                         insights={[]}
                         icon={AlertTriangle}
-                        grad="from-red-500 via-rose-500 to-pink-500"
-                        shadow="shadow-red-500/40"
+                        grad="from-neutral-700 via-neutral-800 to-neutral-900"
+                        shadow="shadow-sm"
                         alert={stats.active > 0}
                         index={1}
                         mounted={mounted}
@@ -344,9 +344,9 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                     <SecondaryStatCard
                         icon={Power}
                         grad="from-neutral-400 to-neutral-500"
-                        shadow="shadow-neutral-400/25"
+                        shadow="shadow-sm"
                         value={stats.inactive}
-                        label="Inactive"
+                        label="Cleared Zones"
                         trend={undefined}
                         desc={smartDesc('inactive')}
                         insights={[]}
@@ -357,10 +357,10 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                     />
                     <SecondaryStatCard
                         icon={Droplets}
-                        grad="from-blue-500 to-cyan-500"
-                        shadow="shadow-blue-500/25"
+                        grad="from-neutral-600 to-neutral-700"
+                        shadow="shadow-sm"
                         value={stats.flood}
-                        label="Flood Type"
+                        label="Flood Hazards"
                         trend={trends.flood}
                         desc={smartDesc('flood')}
                         insights={[]}
@@ -371,10 +371,10 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                     />
                     <SecondaryStatCard
                         icon={Car}
-                        grad="from-amber-500 to-orange-500"
-                        shadow="shadow-amber-500/25"
+                        grad="from-neutral-500 to-neutral-600"
+                        shadow="shadow-sm"
                         value={stats.road}
-                        label="Road Type"
+                        label="Road Hazards"
                         trend={trends.road}
                         desc={smartDesc('road')}
                         insights={[]}
@@ -393,13 +393,13 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -8, scale: 0.99 }}
                             transition={{ duration: 0.18 }}
-                            className="overflow-hidden rounded-2xl border border-orange-200/60 bg-gradient-to-r from-orange-50 to-red-50/60 px-5 py-3.5 dark:border-orange-800/40 dark:from-orange-950/30 dark:to-red-950/20"
+                            className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-neutral-50 px-5 py-3.5 dark:border-neutral-700/40 dark:bg-neutral-800/50"
                         >
                             <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-sm font-semibold text-orange-900 dark:text-orange-200">
+                                <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-200">
                                     {selected.length} selected
                                 </span>
-                                <div className="h-4 w-px bg-orange-300/60 dark:bg-orange-700/60" />
+                                <div className="h-4 w-px bg-neutral-300/60 dark:bg-neutral-600/60" />
                                 <button onClick={() => runBulkAction('activate')} disabled={bulkProcessing}
                                     className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-emerald-700 disabled:opacity-50">
                                     <Power className="size-3.5" /> Activate
@@ -413,7 +413,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                                     <Trash2 className="size-3.5" /> Delete
                                 </button>
                                 <button onClick={() => setSelected([])}
-                                    className="ml-auto rounded-lg px-3 py-1.5 text-xs font-medium text-orange-700 transition-colors hover:bg-orange-100 dark:text-orange-400 dark:hover:bg-orange-900/40">
+                                    className="ml-auto rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700/40">
                                     Clear selection
                                 </button>
                             </div>
@@ -429,7 +429,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                         <div className="flex items-center gap-2">
                             <div className="relative">
                                 <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
-                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                                     <option value="">All categories</option>
                                     <option value="flood">Flood</option>
                                     <option value="road">Road</option>
@@ -438,7 +438,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                             </div>
                             <div className="relative">
                                 <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-orange-400 focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                                     <option value="">All statuses</option>
                                     <option value="active">Active</option>
                                     <option value="inactive">Inactive</option>
@@ -454,7 +454,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                                     placeholder="Search hazards..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-orange-400 focus:bg-white focus:ring-2 focus:ring-orange-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
                                 />
                                 {search && (
                                     <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -478,11 +478,9 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                             const CatIcon = CATEGORY_ICON[hazard.category] ?? ShieldAlert;
                             const isFlood = hazard.category === 'flood';
                             return (
-                                <div key={hazard.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
-                                    <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
-                                        isFlood ? 'bg-blue-100 dark:bg-blue-950/50' : 'bg-orange-100 dark:bg-orange-950/50'
-                                    }`}>
-                                        <CatIcon className={`size-4 ${isFlood ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400'}`} />
+                                <div key={hazard.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
+                                        <CatIcon className="size-4 text-neutral-600 dark:text-neutral-400" />
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center justify-between gap-2">
@@ -507,7 +505,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                                         )}
                                     </div>
                                     <button onClick={() => setEditingHazard(hazard)}
-                                        className="shrink-0 rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400">
+                                        className="shrink-0 rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white">
                                         <Pencil className="size-3.5" />
                                     </button>
                                 </div>
@@ -522,7 +520,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                                 <tr className="border-b border-neutral-100 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-800/40">
                                     <th className="w-10 px-5 py-3 text-center">
                                         <input type="checkbox" checked={allOnPageSelected} onChange={toggleAll}
-                                            className="size-3.5 rounded border-neutral-300 text-orange-500 focus:ring-orange-500/20 dark:border-neutral-600" />
+                                            className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600" />
                                     </th>
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Hazard</th>
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Type</th>
@@ -549,8 +547,8 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                     {/* Empty state */}
                     {filtered.length === 0 && (
                         <div className="flex flex-col items-center gap-4 py-20">
-                            <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/20">
-                                <ShieldAlert className="size-8 text-orange-400 dark:text-orange-500" />
+                            <div className="flex size-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+                                <ShieldAlert className="size-8 text-neutral-400 dark:text-neutral-500" />
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">No hazards found</p>
@@ -579,7 +577,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                                     if (isPrev || isNext) {
                                         return link.url ? (
                                             <button key={i} onClick={() => router.get(link.url!)}
-                                                className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-orange-700/40 dark:hover:bg-orange-950/20 dark:hover:text-orange-400">
+                                                className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300">
                                                 {isPrev ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
                                             </button>
                                         ) : (
@@ -592,8 +590,8 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                                         <button key={i} onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                                                 link.active
-                                                    ? 'bg-gradient-to-br from-orange-500 to-red-600 text-white shadow-sm'
-                                                    : 'border border-neutral-200 text-neutral-500 hover:border-orange-300 hover:bg-orange-50 hover:text-orange-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-orange-700/40 dark:hover:bg-orange-950/20 dark:hover:text-orange-400'
+                                                    ? 'bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900'
+                                                    : 'border border-neutral-200 text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
                                         />
@@ -629,22 +627,18 @@ function HazardRow({ hazard, isSelected, onToggle, onEdit }: {
 
     return (
         <tr className={`group transition-colors ${
-            isSelected ? 'bg-orange-50/60 dark:bg-orange-950/20' : 'hover:bg-neutral-50/60 dark:hover:bg-neutral-800/30'
+            isSelected ? 'bg-neutral-50 dark:bg-neutral-800/50' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
         }`}>
             <td className="w-10 px-5 py-4 text-center">
                 <input type="checkbox" checked={isSelected} onChange={onToggle}
-                    className="size-3.5 rounded border-neutral-300 text-orange-500 focus:ring-orange-500/20 dark:border-neutral-600" />
+                    className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600" />
             </td>
 
             {/* Hazard (icon + title + category badge) */}
             <td className="px-5 py-4">
                 <div className="flex items-center gap-3">
-                    <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
-                        isFlood
-                            ? 'bg-blue-100 dark:bg-blue-950/50'
-                            : 'bg-orange-100 dark:bg-orange-950/50'
-                    }`}>
-                        <CatIcon className={`size-4 ${isFlood ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400'}`} />
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
+                        <CatIcon className="size-4 text-neutral-600 dark:text-neutral-400" />
                     </div>
                     <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-neutral-800 dark:text-neutral-200">
@@ -694,7 +688,7 @@ function HazardRow({ hazard, isSelected, onToggle, onEdit }: {
             {/* Created */}
             <td className="whitespace-nowrap px-5 py-4">
                 <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                    {new Date(hazard.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {new Date(hazard.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </p>
             </td>
 
@@ -712,7 +706,7 @@ function HazardRow({ hazard, isSelected, onToggle, onEdit }: {
                         <Power className="size-3.5" />
                     </button>
                     <button onClick={onEdit}
-                        className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400"
+                        className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
                         title="Edit hazard">
                         <Pencil className="size-3.5" />
                     </button>
@@ -811,9 +805,9 @@ function HazardFormModal({ hazard, onClose }: { hazard?: Hazard; onClose: () => 
                 className="w-full max-w-3xl overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-2xl shadow-black/20 dark:border-neutral-700/60 dark:bg-neutral-900"
             >
                 {/* Modal Header */}
-                <div className="flex items-center gap-3.5 bg-gradient-to-r from-orange-500/5 to-red-600/5 px-6 py-4 dark:from-orange-500/10 dark:to-red-600/10">
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-600 shadow-md shadow-red-500/20">
-                        <ShieldAlert className="size-5 text-white" />
+                <div className="flex items-center gap-3.5 bg-neutral-50 px-6 py-4 dark:bg-neutral-800/50">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                        <ShieldAlert className="size-5 text-white dark:text-neutral-900" />
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -872,9 +866,7 @@ function HazardFormModal({ hazard, onClose }: { hazard?: Hazard; onClose: () => 
                                                 onClick={() => { setCatLocked(true); form.setData('category', cat); form.setData('type', ''); }}
                                                 className={`flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-semibold transition-all ${
                                                     active
-                                                        ? cat === 'flood'
-                                                            ? 'border-blue-500 bg-blue-50 text-blue-700 dark:border-blue-400 dark:bg-blue-950/30 dark:text-blue-300'
-                                                            : 'border-orange-500 bg-orange-50 text-orange-700 dark:border-orange-400 dark:bg-orange-950/30 dark:text-orange-300'
+                                                        ? 'border-neutral-900 bg-neutral-50 text-neutral-900 dark:border-white dark:bg-neutral-800 dark:text-white'
                                                         : 'border-neutral-200 text-neutral-500 hover:border-neutral-300 dark:border-neutral-700 dark:text-neutral-400'
                                                 }`}
                                             >
@@ -951,10 +943,10 @@ function HazardFormModal({ hazard, onClose }: { hazard?: Hazard; onClose: () => 
                             <button type="submit"
                                 disabled={form.processing || (!isEditing && !isReady)}
                                 title={!isReady && !isEditing ? 'Fill in all fields and pin a location first' : undefined}
-                                className={`inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 ${
+                                className={`inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold shadow-sm transition-all hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40 ${
                                     isReady || isEditing
-                                        ? 'bg-gradient-to-r from-orange-500 to-red-600 shadow-red-500/20 hover:shadow-red-500/30'
-                                        : 'bg-neutral-400 shadow-neutral-400/20'
+                                        ? 'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200'
+                                        : 'bg-neutral-400 text-white shadow-neutral-400/20'
                                 }`}
                             >
                                 {isEditing ? <Save className="size-4" /> : <Plus className="size-4" />}
@@ -1086,7 +1078,7 @@ function MapPicker({ latitude, longitude, address, onChange, onGeocode }: {
             <p className="flex items-center gap-1 text-[10px] text-neutral-400 dark:text-neutral-500">
                 <Crosshair className="size-3" />
                 {hasPin ? 'Drag the pin to fine-tune the location' : 'Click on the map to place the pin'}
-                {resolving && <span className="ml-1 text-sky-500">· Resolving…</span>}
+                {resolving && <span className="ml-1 text-neutral-500">· Resolving…</span>}
             </p>
         </div>
     );
@@ -1203,7 +1195,7 @@ function AddressAutocomplete({ value, onAddressChange, onPlaceSelect, className,
                 />
                 {fetching && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <div className="size-3.5 animate-spin rounded-full border-2 border-neutral-200 border-t-orange-500" />
+                        <div className="size-3.5 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-900 dark:border-t-white" />
                     </div>
                 )}
             </div>
@@ -1214,7 +1206,7 @@ function AddressAutocomplete({ value, onAddressChange, onPlaceSelect, className,
                         <li
                             key={pred.place_id}
                             onMouseDown={(e) => { e.preventDefault(); selectPrediction(pred); }}
-                            className="flex cursor-pointer flex-col gap-0.5 px-3 py-2.5 transition-colors hover:bg-orange-50 dark:hover:bg-orange-950/30"
+                            className="flex cursor-pointer flex-col gap-0.5 px-3 py-2.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-700/30"
                         >
                             <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
                                 {pred.structured_formatting.main_text}

@@ -34,6 +34,7 @@ class Report extends Model
         'potential_duplicate_of',
         'source',
         'facebook_post_id',
+        'advisory',
     ];
 
     protected $appends = ['hazard_type', 'sla_status'];
@@ -53,6 +54,7 @@ class Report extends Model
             'resolved_at'       => 'datetime',
             'ai_flagged'        => 'boolean',
             'ai_image_verified' => 'boolean',
+            'advisory'          => 'array',
         ];
     }
 
@@ -61,6 +63,11 @@ class Report extends Model
         static::creating(function (Report $report) {
             $report->reference_number ??= 'FT-' . strtoupper(Str::random(8));
         });
+    }
+
+    public function requiresAssignment(): bool
+    {
+        return in_array($this->severity, ['high', 'critical']);
     }
 
     public function user()
@@ -116,7 +123,7 @@ class Report extends Model
             return null;
         }
 
-        if (in_array($this->status, ['resolved', 'rejected'])) {
+        if (in_array($this->status, ['resolved', 'rejected', 'acknowledged'])) {
             $tracking = $this->relationLoaded('slaTracking')
                 ? $this->slaTracking
                 : $this->slaTracking()->get();

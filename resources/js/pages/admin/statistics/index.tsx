@@ -135,8 +135,8 @@ function CardHeader({ icon: Icon, gradient, title, subtitle, children }: {
 }) {
     return (
         <div className="flex items-center gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
-            <div className={`flex size-9 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-lg`}>
-                <Icon className="size-4 text-white" />
+            <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                <Icon className="size-4 text-white dark:text-neutral-900" />
             </div>
             <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-neutral-900 dark:text-white">{title}</p>
@@ -309,11 +309,11 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
                             className={`relative flex size-9 items-center justify-center text-xs font-medium transition-all mx-auto rounded-lg
                                 ${isFuture ? 'cursor-not-allowed text-neutral-200 dark:text-neutral-700' : 'cursor-pointer'}
                                 ${isStart || isEnd
-                                    ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/30'
+                                    ? 'bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900'
                                     : inRange
-                                        ? 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300'
+                                        ? 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
                                         : isToday
-                                            ? 'ring-1 ring-indigo-300 text-indigo-600 dark:ring-indigo-700 dark:text-indigo-400'
+                                            ? 'ring-1 ring-neutral-300 text-neutral-600 dark:ring-neutral-600 dark:text-neutral-400'
                                             : !isFuture ? 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800' : ''
                                 }
                             `}
@@ -326,14 +326,14 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
             <div className="mt-3 flex items-center gap-2 rounded-xl bg-neutral-50 p-2.5 dark:bg-neutral-800/60">
                 <div className="flex-1 text-center">
                     <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">From</p>
-                    <p className={`mt-0.5 text-xs font-bold ${rangeStart ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-300 dark:text-neutral-600'}`}>
+                    <p className={`mt-0.5 text-xs font-bold ${rangeStart ? 'text-neutral-900 dark:text-neutral-100' : 'text-neutral-300 dark:text-neutral-600'}`}>
                         {formatDisplay(rangeStart)}
                     </p>
                 </div>
                 <ChevronRight className="size-3 text-neutral-300 dark:text-neutral-600" />
                 <div className="flex-1 text-center">
                     <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">To</p>
-                    <p className={`mt-0.5 text-xs font-bold ${rangeEnd ? 'text-indigo-600 dark:text-indigo-400' : 'text-neutral-300 dark:text-neutral-600'}`}>
+                    <p className={`mt-0.5 text-xs font-bold ${rangeEnd ? 'text-neutral-900 dark:text-neutral-100' : 'text-neutral-300 dark:text-neutral-600'}`}>
                         {formatDisplay(rangeEnd)}
                     </p>
                 </div>
@@ -347,7 +347,7 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
                     disabled={!rangeStart || !rangeEnd}
                     className={`flex-1 rounded-xl py-2 text-[11px] font-semibold transition-all ${
                         rangeStart && rangeEnd
-                            ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/30 hover:shadow-md hover:brightness-110'
+                            ? 'bg-neutral-900 text-white shadow-sm hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200'
                             : 'bg-neutral-100 text-neutral-300 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-600'
                     }`}
                 >
@@ -425,37 +425,39 @@ function StatKpiCard({ label, value, subtitle, icon: Icon, grad, shadow, alert, 
     return (
         <div
             ref={cardRef}
-            className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${grad} p-4 shadow-lg ${shadow} sm:p-5 transition-all hover:scale-[1.02] hover:shadow-2xl cursor-pointer`}
+            className="group relative overflow-hidden rounded-2xl border border-neutral-200/70 bg-white p-4 shadow-sm sm:p-5 transition-all hover:shadow-lg hover:border-neutral-300/80 cursor-pointer dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700"
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
         >
             <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} />
-            <div className="pointer-events-none absolute -right-6 -top-6 size-24 rounded-full bg-white/10 blur-xl" />
-            <div className="pointer-events-none absolute -bottom-4 -left-4 size-16 rounded-full bg-black/10 blur-xl" />
             {alert && (
-                <span className="absolute right-3 top-3 flex size-2.5">
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-white opacity-60" />
-                    <span className="relative inline-flex size-2.5 rounded-full bg-white shadow-sm" />
+                <span className="absolute right-3 top-3 flex size-2">
+                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-neutral-900 opacity-20 dark:bg-white dark:opacity-30" />
+                    <span className="relative inline-flex size-2 rounded-full bg-neutral-900 dark:bg-white" />
                 </span>
             )}
             <div className="relative flex items-start justify-between">
                 <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-semibold text-white/80 sm:text-xs">{label}</p>
-                    <p className="mt-2 text-2xl font-extrabold tabular-nums tracking-tight text-white sm:text-3xl">{value}</p>
+                    <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{label}</p>
+                    <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight text-neutral-900 sm:text-3xl dark:text-white">{value}</p>
                     {trend !== undefined && (
-                        <div className="mt-1 flex items-center gap-1.5 flex-wrap">
-                            <span className={`inline-flex items-center gap-0.5 rounded-full bg-white/20 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white backdrop-blur-sm`}>
-                                {trend >= 0 ? '▲' : '▼'} {Math.abs(trend)}%
+                        <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                            <span className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
+                                trend >= 0
+                                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                    : 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
+                            }`}>
+                                {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
                             </span>
                             {trendLabel && (
-                                <span className="text-[9px] text-white/50">{trendLabel}</span>
+                                <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{trendLabel}</span>
                             )}
                         </div>
                     )}
-                    {trend === undefined && <p className="mt-0.5 text-[10px] text-white/55">{subtitle}</p>}
+                    {trend === undefined && <p className="mt-1 text-[10px] text-neutral-400 dark:text-neutral-500">{subtitle}</p>}
                 </div>
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm ring-1 ring-white/20 sm:size-11">
-                    <Icon className="size-5 text-white sm:size-[22px]" />
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800 sm:size-11 transition-colors duration-300 group-hover:bg-neutral-200 dark:group-hover:bg-neutral-700">
+                    <Icon className="size-5 text-neutral-500 dark:text-neutral-400 sm:size-[22px]" />
                 </div>
             </div>
         </div>
@@ -482,8 +484,8 @@ function SecStatCard({ icon: Icon, label, value, subtitle, grad, shadow, desc, i
                 <p className="mt-1 text-xl font-extrabold tabular-nums tracking-tight text-neutral-900 sm:text-2xl dark:text-white">{value}</p>
                 <p className="mt-0.5 text-[10px] text-neutral-400">{subtitle}</p>
             </div>
-            <div className={`flex size-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br ${grad} shadow-lg ${shadow}`}>
-                <Icon className="size-5 text-white" />
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800 transition-colors">
+                <Icon className="size-5 text-neutral-500 dark:text-neutral-400" />
             </div>
         </div>
     );
@@ -580,7 +582,7 @@ export default function StatisticsPage({
         severity_breakdown['low']      ?? 0,
     ];
     const totalSeverity = severityValues.reduce((a, b) => a + b, 0);
-    const statusValues  = ['pending', 'verified', 'assigned', 'resolved', 'rejected'].map(s => status_breakdown[s] ?? 0);
+    const statusValues  = ['pending', 'verified', 'acknowledged', 'assigned', 'resolved', 'rejected'].map(s => status_breakdown[s] ?? 0);
 
     const dailyDates  = Object.keys(daily_reports);
     const dailyCounts = Object.values(daily_reports);
@@ -1029,17 +1031,17 @@ export default function StatisticsPage({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Statistics" />
 
-            <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/40 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
+            <div className="min-h-full bg-neutral-50 dark:bg-neutral-950">
             <div className="flex flex-col gap-5 p-3 sm:gap-6 sm:p-6 lg:gap-7 lg:p-8">
 
                 {/* Page Header */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-purple-600 shadow-xl shadow-indigo-500/30">
-                            <BarChart3 className="size-5 sm:size-6 text-white" />
+                        <div className="flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 shadow-sm dark:bg-white">
+                            <BarChart3 className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-lg font-extrabold tracking-tight text-transparent sm:text-2xl dark:from-white dark:to-neutral-400">
+                            <h1 className="text-lg font-extrabold tracking-tight text-neutral-900 sm:text-2xl dark:text-white">
                                 Statistics
                             </h1>
                             <p className="mt-0.5 text-[11px] text-neutral-500 sm:text-sm dark:text-neutral-400">
@@ -1056,7 +1058,7 @@ export default function StatisticsPage({
                                     onClick={() => setPeriod(p.key)}
                                     className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
                                         period === p.key || (p.key === 'custom' && showCalendar)
-                                            ? 'bg-gradient-to-r from-indigo-500 to-violet-600 text-white shadow-sm shadow-indigo-500/30'
+                                            ? 'bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900'
                                             : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
                                     }`}
                                 >
@@ -1090,7 +1092,7 @@ export default function StatisticsPage({
                         {/* Export button */}
                         <a
                             href="/admin/export"
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-[11px] font-semibold text-neutral-600 shadow-sm transition-all hover:border-indigo-300 hover:text-indigo-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-indigo-700 dark:hover:text-indigo-400"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-[11px] font-semibold text-neutral-600 shadow-sm transition-all hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-white"
                         >
                             <FileText className="size-3.5" />
                             Export
@@ -1100,23 +1102,23 @@ export default function StatisticsPage({
 
                 {/* Summary Stat Cards */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                    <StatKpiCard label="Total Reports" value={total_reports.toLocaleString()} subtitle="All time" icon={FileText} grad="from-indigo-500 via-blue-500 to-cyan-500" shadow="shadow-indigo-500/40" trend={trends.reports} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('total_reports')} insights={[
+                    <StatKpiCard label="Total Reports" value={total_reports.toLocaleString()} subtitle="All time" icon={FileText} grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" trend={trends.reports} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('total_reports')} insights={[
                         { label: 'Resolved', value: resolvedCount, color: '#10b981' },
                         { label: 'Active', value: activeCount, color: '#3b82f6' },
                         { label: 'Pending', value: pendingCount, color: '#f59e0b' },
                         { label: 'Rejected', value: rejectedCount, color: '#94a3b8' },
                     ]} />
-                    <StatKpiCard label="Resolution Rate" value={`${resolution_rate}%`} subtitle="Resolved / total" icon={CheckCircle2} grad="from-emerald-500 via-teal-500 to-cyan-500" shadow="shadow-emerald-500/40" trend={trends.resolved} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('resolution_rate')} insights={[
+                    <StatKpiCard label="Resolution Rate" value={`${resolution_rate}%`} subtitle="Resolved / total" icon={CheckCircle2} grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" trend={trends.resolved} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('resolution_rate')} insights={[
                         { label: 'Resolved', value: resolvedCount, color: '#10b981' },
                         { label: 'Total reports', value: total_reports, color: '#6366f1' },
                         { label: 'Still open', value: pendingCount + activeCount, color: '#f59e0b' },
                     ]} />
-                    <StatKpiCard label="Avg Response Time" value={formatResponseTime(avg_response_time)} subtitle="Time to resolve" icon={Clock} grad="from-amber-400 via-orange-500 to-rose-500" shadow="shadow-amber-500/40" trend={trends.avg_response} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('avg_response')} insights={[
+                    <StatKpiCard label="Avg Response Time" value={formatResponseTime(avg_response_time)} subtitle="Time to resolve" icon={Clock} grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" trend={trends.avg_response} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('avg_response')} insights={[
                         { label: 'Pending queue', value: pendingCount, color: '#f59e0b' },
                         { label: 'Active reports', value: activeCount, color: '#3b82f6' },
                         { label: 'Resolution rate', value: `${resolution_rate}%`, color: '#10b981' },
                     ]} />
-                    <StatKpiCard label="Critical Reports" value={critical_count.toLocaleString()} subtitle="Highest severity" icon={AlertTriangle} grad="from-rose-500 via-red-500 to-pink-600" shadow="shadow-rose-500/40" alert={critical_count > 0} trend={trends.critical} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('critical')} insights={[
+                    <StatKpiCard label="Critical Reports" value={critical_count.toLocaleString()} subtitle="Highest severity" icon={AlertTriangle} grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" alert={critical_count > 0} trend={trends.critical} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('critical')} insights={[
                         { label: 'Critical', value: critical_count, color: '#ef4444' },
                         { label: 'High', value: highCount, color: '#f97316' },
                         { label: '% of total', value: `${critPct}%`, color: '#ef4444' },
@@ -1125,22 +1127,22 @@ export default function StatisticsPage({
 
                 {/* Evacuation Centers Quick Stats — 4 cards */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                    <SecStatCard icon={Building2} label="Total Centers" value={evacuation_stats.total_centers.toLocaleString()} subtitle="Active centers" grad="from-sky-500 to-blue-600" shadow="shadow-sky-500/20" desc={statDesc('evac_centers')} insights={[
+                    <SecStatCard icon={Building2} label="Total Centers" value={evacuation_stats.total_centers.toLocaleString()} subtitle="Active centers" grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" desc={statDesc('evac_centers')} insights={[
                         { label: 'Total capacity', value: evacuation_stats.total_capacity.toLocaleString(), color: '#8b5cf6' },
                         { label: 'Currently sheltered', value: evacuation_stats.total_occupancy.toLocaleString(), color: '#10b981' },
                         { label: 'Occupancy', value: `${occupancyPct}%`, color: '#06b6d4' },
                     ]} />
-                    <SecStatCard icon={Users} label="Total Capacity" value={evacuation_stats.total_capacity.toLocaleString()} subtitle="Maximum capacity" grad="from-violet-500 to-purple-600" shadow="shadow-violet-500/20" desc={statDesc('evac_capacity')} insights={[
+                    <SecStatCard icon={Users} label="Total Capacity" value={evacuation_stats.total_capacity.toLocaleString()} subtitle="Maximum capacity" grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" desc={statDesc('evac_capacity')} insights={[
                         { label: 'Currently used', value: evacuation_stats.total_occupancy.toLocaleString(), color: '#10b981' },
                         { label: 'Available spots', value: availableCapacity.toLocaleString(), color: '#3b82f6' },
                         { label: 'Occupancy rate', value: `${occupancyPct}%`, color: '#06b6d4' },
                     ]} />
-                    <SecStatCard icon={TrendingUp} label="Current Evacuees" value={evacuation_stats.total_occupancy.toLocaleString()} subtitle="People sheltered" grad="from-emerald-500 to-teal-600" shadow="shadow-emerald-500/20" desc={statDesc('evac_occupancy')} insights={[
+                    <SecStatCard icon={TrendingUp} label="Current Evacuees" value={evacuation_stats.total_occupancy.toLocaleString()} subtitle="People sheltered" grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" desc={statDesc('evac_occupancy')} insights={[
                         { label: 'Total capacity', value: evacuation_stats.total_capacity.toLocaleString(), color: '#8b5cf6' },
                         { label: 'Available spots', value: availableCapacity.toLocaleString(), color: '#3b82f6' },
                         { label: 'Centers', value: evacuation_stats.total_centers, color: '#0ea5e9' },
                     ]} />
-                    <SecStatCard icon={AlertCircle} label="Occupancy Rate" value={`${occupancyPct}%`} subtitle="Of total capacity" grad="from-teal-500 to-cyan-600" shadow="shadow-teal-500/20" desc={statDesc('evac_rate')} insights={[
+                    <SecStatCard icon={AlertCircle} label="Occupancy Rate" value={`${occupancyPct}%`} subtitle="Of total capacity" grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" desc={statDesc('evac_rate')} insights={[
                         { label: 'Sheltered', value: evacuation_stats.total_occupancy.toLocaleString(), color: '#10b981' },
                         { label: 'Capacity', value: evacuation_stats.total_capacity.toLocaleString(), color: '#8b5cf6' },
                         { label: 'Available', value: availableCapacity.toLocaleString(), color: '#3b82f6' },
@@ -1153,7 +1155,7 @@ export default function StatisticsPage({
                         <CardHeader icon={TrendingUp} gradient="from-indigo-500 to-violet-600" title="Daily Reports (Last 30 Days)" subtitle="Flood report submissions">
                             <div className="ml-auto hidden items-center gap-4 text-[10px] sm:flex">
                                 <span className="flex items-center gap-1.5 text-neutral-400">
-                                    <span className="size-2 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500/50" />
+                                    <span className="size-2 rounded-full bg-indigo-500" />
                                     Reports
                                 </span>
                             </div>
@@ -1239,16 +1241,16 @@ export default function StatisticsPage({
                         <CardHeader icon={Trophy} gradient="from-amber-400 to-orange-500" title="Top Responders" subtitle="By resolved reports" />
                         <div className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
                             {top_responders.length > 0 ? top_responders.map((r, i) => (
-                                <div key={r.id} className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
+                                <div key={r.id} className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                                     <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold shadow-sm ${
-                                        i === 0 ? 'bg-gradient-to-br from-amber-400 to-yellow-500 text-white shadow-amber-400/30' :
-                                        i === 1 ? 'bg-gradient-to-br from-slate-300 to-slate-400 text-white shadow-slate-300/30 dark:from-slate-500 dark:to-slate-600' :
-                                        i === 2 ? 'bg-gradient-to-br from-orange-400 to-amber-500 text-white shadow-orange-400/30' :
+                                        i === 0 ? 'bg-neutral-900 text-white' :
+                                        i === 1 ? 'bg-neutral-600 text-white' :
+                                        i === 2 ? 'bg-neutral-400 text-white' :
                                                   'bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500'
                                     }`}>
                                         {i + 1}
                                     </span>
-                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-bold text-white shadow-md shadow-indigo-500/25">
+                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-500 text-xs font-bold text-white shadow-sm">
                                         {r.name.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="min-w-0 flex-1">
@@ -1267,7 +1269,7 @@ export default function StatisticsPage({
                                     <span className="shrink-0 rounded-lg bg-neutral-100 px-2 py-1 text-[10px] font-medium tabular-nums text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
                                         {formatResponseTime(r.avg_response)}
                                     </span>
-                                    <div className="shrink-0 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 px-2.5 py-1 dark:from-emerald-900/20 dark:to-teal-900/20">
+                                    <div className="shrink-0 rounded-lg bg-neutral-100 px-2.5 py-1 dark:bg-neutral-800">
                                         <span className="text-xs font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{r.resolved_count} done</span>
                                     </div>
                                 </div>
@@ -1283,8 +1285,8 @@ export default function StatisticsPage({
                         <div className="p-5">
                             {aiState === 'idle' && (
                                 <div className="flex flex-col items-center gap-4 py-6 text-center">
-                                    <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-fuchsia-100 dark:from-violet-900/30 dark:to-fuchsia-900/30">
-                                        <Sparkles className="size-7 text-violet-500" />
+                                    <div className="flex size-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+                                        <Sparkles className="size-7 text-neutral-500 dark:text-neutral-400" />
                                     </div>
                                     <div>
                                         <p className="text-sm font-semibold text-neutral-800 dark:text-white">AI-Powered Analysis</p>
@@ -1292,7 +1294,7 @@ export default function StatisticsPage({
                                     </div>
                                     <button
                                         onClick={generateInsights}
-                                        className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/30 transition-all hover:shadow-xl hover:shadow-violet-500/40 hover:brightness-110 active:scale-95"
+                                        className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 active:scale-95"
                                     >
                                         <Sparkles className="size-4" />
                                         Generate Insights
@@ -1303,8 +1305,8 @@ export default function StatisticsPage({
                             {aiState === 'loading' && (
                                 <div className="flex flex-col items-center gap-4 py-10 text-center">
                                     <div className="relative">
-                                        <div className="size-12 animate-spin rounded-full border-4 border-violet-100 border-t-violet-500" />
-                                        <Sparkles className="absolute inset-0 m-auto size-5 text-violet-400" />
+                                        <div className="size-12 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-600 dark:border-neutral-700 dark:border-t-neutral-300" />
+                                        <Sparkles className="absolute inset-0 m-auto size-5 text-neutral-400" />
                                     </div>
                                     <div>
                                         <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Analyzing flood data...</p>
@@ -1324,7 +1326,7 @@ export default function StatisticsPage({
                                     </div>
                                     <button
                                         onClick={generateInsights}
-                                        className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-600 shadow-sm transition-all hover:border-violet-300 hover:text-violet-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                                        className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-600 shadow-sm transition-all hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-neutral-100"
                                     >
                                         <RefreshCw className="size-3.5" />
                                         Retry
@@ -1342,7 +1344,7 @@ export default function StatisticsPage({
                                         </span>
                                         <button
                                             onClick={generateInsights}
-                                            className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1 text-[11px] font-medium text-neutral-400 transition-all hover:border-violet-300 hover:text-violet-600 dark:border-neutral-700 dark:hover:border-violet-700 dark:hover:text-violet-400"
+                                            className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1 text-[11px] font-medium text-neutral-400 transition-all hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-neutral-200"
                                         >
                                             <RefreshCw className="size-3" />
                                             Refresh
@@ -1371,7 +1373,7 @@ export default function StatisticsPage({
                                         <ul className="flex flex-col gap-2">
                                             {aiData.recommendations.map((rec, i) => (
                                                 <li key={i} className="flex items-start gap-2 text-xs text-neutral-600 dark:text-neutral-300">
-                                                    <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[9px] font-bold text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+                                                    <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-[9px] font-bold text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
                                                         {i + 1}
                                                     </span>
                                                     {rec}
@@ -1425,7 +1427,7 @@ export default function StatisticsPage({
                                         const pct = cap > 0 ? Math.round((occ / cap) * 100) : 0;
                                         const TypeIcon = EVAC_TYPE_ICONS[ec.type];
                                         return (
-                                            <tr key={ec.id} className="transition-colors hover:bg-neutral-50/70 dark:hover:bg-neutral-800/25">
+                                            <tr key={ec.id} className="transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                                                 <td className="px-5 py-3.5">
                                                     <div className="flex flex-col gap-0.5">
                                                         <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{ec.name}</span>
@@ -1519,7 +1521,7 @@ export default function StatisticsPage({
                                 </thead>
                                 <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/60">
                                     {team_performance.map((t) => (
-                                        <tr key={t.id} className="transition-colors hover:bg-neutral-50/70 dark:hover:bg-neutral-800/25">
+                                        <tr key={t.id} className="transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                                             <td className="px-5 py-3.5">
                                                 <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{t.name}</span>
                                             </td>

@@ -88,11 +88,12 @@ const SEVERITY_OPTIONS: { value: string; label: string }[] = [
 ];
 
 const STATUS_LABEL: Record<string, string> = {
-    pending:  'Pending',
-    verified: 'Approved',
-    assigned: 'Assigned',
-    resolved: 'Resolved',
-    rejected: 'Rejected',
+    pending:      'Pending',
+    verified:     'Approved',
+    acknowledged: 'Advisory Issued',
+    assigned:     'Assigned',
+    resolved:     'Resolved',
+    rejected:     'Rejected',
 };
 
 /* ─── Main page ─── */
@@ -227,22 +228,21 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Reports" />
 
-            <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-cyan-50/20 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
+            <div className="min-h-full bg-neutral-50/50 dark:bg-neutral-950">
             <div className="flex flex-col gap-4 sm:gap-5 p-3 sm:p-6 lg:p-8">
 
                 {/* ── Header ── */}
                 <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-all duration-700 ${mounted ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0'}`}>
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-500 shadow-xl shadow-teal-500/30">
-                            <FileText className="size-4 sm:size-5 text-white" />
-                            <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 dark:bg-white">
+                            <FileText className="size-4 sm:size-5 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-lg sm:text-2xl font-extrabold tracking-tight text-transparent dark:from-white dark:to-neutral-400">
+                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">
                                 {activeStatusLabel}
                             </h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-                                Monitor, verify, and manage incoming flood reports.
+                                Monitor, verify, and manage flood incident reports.
                             </p>
                         </div>
                     </div>
@@ -250,7 +250,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/reports" />
                         <Link
                             href="/admin/reports/map"
-                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-teal-500/25 transition-all hover:scale-[1.02] hover:shadow-teal-500/40 active:scale-[0.97]"
+                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold transition-all active:scale-[0.97]"
                         >
                             <Globe className="size-4" />
                             Map View
@@ -261,7 +261,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                 {/* ── Stats cards ── */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                     <PrimaryStatCard
-                        label="Total Reports"
+                        label="Total Flood Reports"
                         value={stats.total}
                         trend={trends.total}
                         trendLabel={`${trends.label}, ${trends.period_label}`}
@@ -278,7 +278,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                         mounted={mounted}
                     />
                     <PrimaryStatCard
-                        label="Pending Review"
+                        label="Awaiting Verification"
                         value={stats.pending}
                         trend={trends.pending}
                         trendLabel={`${trends.label}, ${trends.period_label}`}
@@ -298,7 +298,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                         grad="from-red-500 to-rose-500"
                         shadow="shadow-red-500/25"
                         value={stats.critical}
-                        label="Critical Severity"
+                        label="Critical Flood Incidents"
                         trend={trends.critical}
                         desc={smartDesc('critical')}
                         insights={[
@@ -335,13 +335,13 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -8, scale: 0.98 }}
                             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                            className="flex flex-wrap items-center gap-2 rounded-2xl border border-teal-200/70 bg-gradient-to-r from-teal-50 via-cyan-50/60 to-teal-50/30 px-5 py-3.5 shadow-sm shadow-teal-500/5 dark:border-teal-800/40 dark:from-teal-950/30 dark:to-cyan-950/20"
+                            className="flex flex-wrap items-center gap-2 rounded-2xl border border-neutral-200/70 bg-neutral-50 px-5 py-3.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
                         >
-                            <div className="flex size-6 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 text-[11px] font-bold text-white shadow-sm">
+                            <div className="flex size-6 items-center justify-center rounded-full bg-neutral-900 dark:bg-white text-[11px] font-bold text-white dark:text-neutral-900 shadow-sm">
                                 {selected.length}
                             </div>
-                            <span className="text-sm font-semibold text-teal-800 dark:text-teal-200">selected</span>
-                            <div className="mx-1 h-4 w-px bg-teal-200 dark:bg-teal-800" />
+                            <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">selected</span>
+                            <div className="mx-1 h-4 w-px bg-neutral-200 dark:bg-neutral-700" />
                             {[
                                 { action: 'verify', label: 'Verify', icon: CheckCircle2, cls: 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 dark:border-emerald-800/40 dark:bg-neutral-900 dark:text-emerald-400' },
                                 { action: 'reject', label: 'Reject', icon: XCircle,     cls: 'border-amber-200 bg-white text-amber-700 hover:bg-amber-50 hover:border-amber-300 dark:border-amber-800/40 dark:bg-neutral-900 dark:text-amber-400' },
@@ -368,16 +368,16 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                 </AnimatePresence>
 
                 {/* ── Table card ── */}
-                <div className={`relative overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm transition-all duration-700 delay-300 dark:border-neutral-700/60 dark:bg-neutral-900 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                <div className={`relative overflow-hidden rounded-2xl border border-neutral-200/70 bg-white hover:shadow-lg hover:border-neutral-300/80 transition-all duration-700 delay-300 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
 
                     {/* Animated top border */}
-                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-500/25 to-transparent" />
+                    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-neutral-300/50 to-transparent dark:via-neutral-600/50" />
 
                     {/* ── Toolbar ── */}
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/30">
                         <div className="flex items-center gap-2.5">
                             <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{activeStatusLabel}</span>
-                            <span className="inline-flex items-center rounded-full bg-teal-500/10 px-2.5 py-0.5 text-[11px] font-bold text-teal-600 dark:bg-teal-400/10 dark:text-teal-400">
+                            <span className="inline-flex items-center rounded-full bg-neutral-900/10 px-2.5 py-0.5 text-[11px] font-bold text-neutral-600 dark:bg-white/10 dark:text-neutral-400">
                                 {reports.total}
                             </span>
                         </div>
@@ -392,7 +392,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
                                     placeholder="Search reference or address…"
-                                    className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-teal-500"
+                                    className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
                                 />
                                 {searchValue && (
                                     <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -428,7 +428,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                 <select
                                     value={filters.team_id ?? ''}
                                     onChange={(e) => filter('team_id', e.target.value)}
-                                    className="h-9 rounded-xl border border-neutral-200/80 bg-white px-3 text-xs font-medium text-neutral-600 shadow-sm outline-none transition-all focus:border-teal-400 focus:ring-2 focus:ring-teal-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                                    className="h-9 rounded-xl border border-neutral-200/80 bg-white px-3 text-xs font-medium text-neutral-600 shadow-sm outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
                                 >
                                     <option value="">All Teams</option>
                                     {teams.map((t) => (
@@ -464,11 +464,11 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.88 }}
                                         transition={{ duration: 0.15 }}
-                                        className="inline-flex items-center gap-1.5 rounded-full border border-teal-200/80 bg-teal-50 px-2.5 py-1 text-xs font-medium text-teal-700 dark:border-teal-800/40 dark:bg-teal-950/30 dark:text-teal-400"
+                                        className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200/80 bg-neutral-50 px-2.5 py-1 text-xs font-medium text-neutral-700 dark:border-neutral-700/40 dark:bg-neutral-800/30 dark:text-neutral-400"
                                     >
                                         <Search className="size-3" />
                                         &ldquo;{searchValue}&rdquo;
-                                        <button onClick={() => setSearchValue('')} className="rounded-full hover:bg-teal-100 dark:hover:bg-teal-900/40">
+                                        <button onClick={() => setSearchValue('')} className="rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700/40">
                                             <X className="size-3" />
                                         </button>
                                     </motion.span>
@@ -490,9 +490,8 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                     {/* ── Content ── */}
                     {filtered.length === 0 ? (
                         <div className="flex flex-col items-center gap-4 py-28">
-                            <div className="relative flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-xl shadow-teal-500/25">
-                                <FileText className="size-7 text-white" />
-                                <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
+                            <div className="relative flex size-16 items-center justify-center rounded-2xl bg-neutral-900 dark:bg-white">
+                                <FileText className="size-7 text-white dark:text-neutral-900" />
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">No reports found</p>
@@ -530,7 +529,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                     )}
                                     <div className="flex items-center justify-between text-[10px] text-neutral-400 dark:text-neutral-500">
                                         <span>{report.user?.name ?? 'Unknown'}</span>
-                                        <span>{new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                        <span>{new Date(report.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                 </Link>
                             ))}
@@ -540,13 +539,13 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                         <div className="hidden sm:block overflow-x-auto">
                             <table className="w-full min-w-[720px] border-collapse text-sm">
                                 <thead>
-                                    <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                    <tr className="border-b border-neutral-100 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-800/30">
                                         <th className="w-12 px-5 py-3.5 text-center">
                                             <input
                                                 type="checkbox"
                                                 checked={allOnPageSelected}
                                                 onChange={toggleAll}
-                                                className="size-3.5 rounded border-neutral-300 text-teal-600 focus:ring-teal-500/20 dark:border-neutral-600"
+                                                className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
                                             />
                                         </th>
                                         {['Report', 'Location', 'Severity', 'Status', 'SLA', 'Team', 'Reporter', 'Date', ''].map((h) => (
@@ -593,7 +592,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-all ${
                                                 link.active
-                                                    ? 'bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-md shadow-teal-500/25'
+                                                    ? 'bg-neutral-900 text-white shadow-md dark:bg-white dark:text-neutral-900'
                                                     : 'border border-neutral-200/80 bg-white text-neutral-500 shadow-sm hover:border-neutral-300 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
                                             }`}
                                         >
@@ -641,13 +640,13 @@ function ReportRow({ report, isSelected, onToggle }: {
         <tr
             className={`group relative transition-colors duration-150 ${
                 isSelected
-                    ? 'bg-teal-50/60 dark:bg-teal-950/20'
-                    : 'hover:bg-neutral-50/70 dark:hover:bg-neutral-800/25'
+                    ? 'bg-neutral-100/60 dark:bg-neutral-800/40'
+                    : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
             }`}
         >
             {/* Selected left accent */}
             {isSelected && (
-                <td colSpan={0} className="absolute left-0 top-0 h-full w-[3px] rounded-r-sm bg-gradient-to-b from-teal-400 to-cyan-500" />
+                <td colSpan={0} className="absolute left-0 top-0 h-full w-[3px] rounded-r-sm bg-neutral-900 dark:bg-white" />
             )}
 
             {/* Checkbox */}
@@ -656,7 +655,7 @@ function ReportRow({ report, isSelected, onToggle }: {
                     type="checkbox"
                     checked={isSelected}
                     onChange={onToggle}
-                    className="size-3.5 rounded border-neutral-300 text-teal-600 focus:ring-teal-500/20 dark:border-neutral-600"
+                    className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
                 />
             </td>
 
@@ -735,7 +734,7 @@ function ReportRow({ report, isSelected, onToggle }: {
             {/* Reporter */}
             <td className="px-4 py-4">
                 <div className="flex items-center gap-2">
-                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 text-[10px] font-bold text-white shadow-sm shadow-teal-500/20">
+                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 dark:bg-white text-[10px] font-bold text-white dark:text-neutral-900 shadow-sm">
                         {initials}
                     </div>
                     <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
@@ -747,7 +746,7 @@ function ReportRow({ report, isSelected, onToggle }: {
             {/* Date */}
             <td className="px-4 py-4">
                 <span className="text-[11px] tabular-nums text-neutral-400 dark:text-neutral-500">
-                    {new Date(report.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    {new Date(report.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
             </td>
 
@@ -755,7 +754,7 @@ function ReportRow({ report, isSelected, onToggle }: {
             <td className="px-4 py-4 text-right">
                 <Link
                     href={`/admin/reports/${report.id}`}
-                    className="inline-flex translate-x-1 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-600 opacity-0 shadow-sm transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-600 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-teal-700/60 dark:hover:bg-teal-950/20 dark:hover:text-teal-400"
+                    className="inline-flex translate-x-1 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-600 opacity-0 shadow-sm transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-white"
                 >
                     View
                     <ArrowUpRight className="size-3.5" />

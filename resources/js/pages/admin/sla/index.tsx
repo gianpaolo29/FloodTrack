@@ -272,18 +272,17 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="SLA Rules" />
 
-            <div className="min-h-full bg-gradient-to-br from-slate-50 via-white to-cyan-50/20 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
+            <div className="min-h-full bg-neutral-50 dark:bg-neutral-950">
             <div className="flex flex-col gap-4 sm:gap-6 p-3 sm:p-6 lg:p-8">
 
                 {/* Header */}
                 <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-all duration-700 ${mounted ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0'}`}>
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-500 shadow-xl shadow-teal-500/30">
-                            <Clock className="size-5 text-white" />
-                            <div className="absolute inset-[1px] rounded-[11px] sm:rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 shadow-sm dark:bg-white">
+                            <Clock className="size-5 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="bg-gradient-to-r from-neutral-900 to-neutral-600 bg-clip-text text-lg sm:text-2xl font-extrabold tracking-tight text-transparent dark:from-white dark:to-neutral-400">
+                            <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight text-neutral-900 dark:text-white">
                                 SLA Rules
                             </h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
@@ -295,10 +294,10 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                         <PeriodToggle period={period} customFrom={custom_from ?? null} customTo={custom_to ?? null} baseUrl="/admin/sla" />
                         <button
                             onClick={handleToggle}
-                            className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.97] ${
+                            className={`inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold shadow-sm transition-all hover:scale-[1.02] active:scale-[0.97] ${
                                 sla_enabled
-                                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/25 hover:shadow-emerald-500/40'
-                                    : 'bg-gradient-to-r from-neutral-400 to-neutral-500 text-white shadow-neutral-500/25'
+                                    ? 'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200'
+                                    : 'bg-neutral-400 text-white hover:bg-neutral-500 dark:bg-neutral-600 dark:hover:bg-neutral-500'
                             }`}
                         >
                             {sla_enabled ? <CheckCircle2 className="size-4" /> : <Clock className="size-4" />}
@@ -317,8 +316,8 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                         desc={smartDesc('compliance')}
                         insights={[{ label: 'Met', value: stats.met_count, color: '#10b981' }, { label: 'Breached', value: stats.breached_count, color: '#ef4444' }]}
                         icon={ShieldCheck}
-                        grad="from-emerald-500 to-teal-600"
-                        shadow="shadow-emerald-500/40"
+                        grad="from-neutral-800 to-neutral-900"
+                        shadow="shadow-sm"
                         alert={false}
                         index={0}
                         mounted={mounted}
@@ -331,16 +330,16 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                         desc={smartDesc('breaches')}
                         insights={[]}
                         icon={AlertTriangle}
-                        grad="from-red-500 to-rose-600"
-                        shadow="shadow-red-500/40"
+                        grad="from-neutral-800 to-neutral-900"
+                        shadow="shadow-sm"
                         alert={stats.active_breaches > 0}
                         index={1}
                         mounted={mounted}
                     />
                     <SecondaryStatCard
                         icon={Clock}
-                        grad="from-blue-500 to-indigo-600"
-                        shadow="shadow-blue-500/25"
+                        grad="from-neutral-800 to-neutral-900"
+                        shadow="shadow-sm"
                         value={formatTime(stats.stage_stats.pending_to_verified.avg_minutes)}
                         label="Avg. Verify Time"
                         trend={undefined}
@@ -353,8 +352,8 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                     />
                     <SecondaryStatCard
                         icon={Zap}
-                        grad="from-violet-500 to-purple-600"
-                        shadow="shadow-violet-500/25"
+                        grad="from-neutral-800 to-neutral-900"
+                        shadow="shadow-sm"
                         value={formatTime(stats.stage_stats.verified_to_assigned.avg_minutes)}
                         label="Avg. Assign Time"
                         trend={undefined}
@@ -367,8 +366,8 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                     />
                     <SecondaryStatCard
                         icon={TrendingUp}
-                        grad="from-amber-500 to-orange-600"
-                        shadow="shadow-amber-500/25"
+                        grad="from-neutral-800 to-neutral-900"
+                        shadow="shadow-sm"
                         value={formatTime(stats.stage_stats.assigned_to_resolved.avg_minutes)}
                         label="Avg. Resolve Time"
                         trend={undefined}
@@ -387,8 +386,8 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                     {/* Compliance donut */}
                     <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                         <div className="flex items-center gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
-                            <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg">
-                                <ShieldCheck className="size-4 text-white" />
+                            <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                                <ShieldCheck className="size-4 text-white dark:text-neutral-900" />
                             </div>
                             <div className="min-w-0 flex-1">
                                 <p className="text-sm font-semibold text-neutral-900 dark:text-white">SLA Compliance</p>
@@ -401,7 +400,7 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                                         onClick={() => changePeriod(p.key)}
                                         className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
                                             period === p.key
-                                                ? 'bg-white text-teal-700 shadow-sm dark:bg-neutral-700 dark:text-teal-400'
+                                                ? 'bg-white text-neutral-900 shadow-sm dark:bg-neutral-700 dark:text-white'
                                                 : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
                                         }`}
                                     >
@@ -430,8 +429,8 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                     {/* Breach trend chart */}
                     <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                         <div className="flex items-center gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
-                            <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-rose-600 shadow-lg">
-                                <AlertTriangle className="size-4 text-white" />
+                            <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                                <AlertTriangle className="size-4 text-white dark:text-neutral-900" />
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-neutral-900 dark:text-white">Breach Trend</p>
@@ -459,8 +458,8 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                 {/* Severity compliance breakdown */}
                 <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                     <div className="flex items-center gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
-                        <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg">
-                            <Shield className="size-4 text-white" />
+                        <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                            <Shield className="size-4 text-white dark:text-neutral-900" />
                         </div>
                         <div>
                             <p className="text-sm font-semibold text-neutral-900 dark:text-white">Compliance by Severity</p>
@@ -495,8 +494,8 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                 {/* SLA Configuration table */}
                 <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                     <div className="flex items-center gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
-                        <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 shadow-lg">
-                            <Clock className="size-4 text-white" />
+                        <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                            <Clock className="size-4 text-white dark:text-neutral-900" />
                         </div>
                         <div className="min-w-0 flex-1">
                             <p className="text-sm font-semibold text-neutral-900 dark:text-white">SLA Thresholds</p>
@@ -521,7 +520,7 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                                 </thead>
                                 <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/60">
                                     {SEVERITIES.map((sev) => (
-                                        <tr key={sev} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/20">
+                                        <tr key={sev} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                                             <td className="px-5 py-3.5">
                                                 <span className={`text-xs font-bold uppercase tracking-wider ${SEV_COLORS[sev]}`}>{sev}</span>
                                             </td>
@@ -536,7 +535,7 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                                                                 max={9999}
                                                                 value={c.threshold_minutes}
                                                                 onChange={(e) => updateField(sev, stage, 'threshold_minutes', parseInt(e.target.value) || 1)}
-                                                                className="w-20 rounded-lg border border-neutral-200 bg-neutral-50/50 px-2.5 py-1.5 text-center text-xs font-medium tabular-nums outline-none transition-all focus:border-teal-400 focus:ring-2 focus:ring-teal-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+                                                                className="w-20 rounded-lg border border-neutral-200 bg-neutral-50/50 px-2.5 py-1.5 text-center text-xs font-medium tabular-nums outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
                                                             />
                                                             <span className="text-[10px] text-neutral-400">min</span>
                                                         </div>
@@ -553,7 +552,7 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                                                         const val = parseInt(e.target.value) || 80;
                                                         STAGES.forEach((stage) => updateField(sev, stage, 'warning_pct', val));
                                                     }}
-                                                    className="w-16 rounded-lg border border-neutral-200 bg-neutral-50/50 px-2.5 py-1.5 text-center text-xs font-medium tabular-nums outline-none transition-all focus:border-amber-400 focus:ring-2 focus:ring-amber-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+                                                    className="w-16 rounded-lg border border-neutral-200 bg-neutral-50/50 px-2.5 py-1.5 text-center text-xs font-medium tabular-nums outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
                                                 />
                                             </td>
                                             <td className="px-4 py-3.5 text-center">
@@ -566,7 +565,7 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                                                         const val = parseInt(e.target.value) || 150;
                                                         STAGES.forEach((stage) => updateField(sev, stage, 'critical_pct', val));
                                                     }}
-                                                    className="w-16 rounded-lg border border-neutral-200 bg-neutral-50/50 px-2.5 py-1.5 text-center text-xs font-medium tabular-nums outline-none transition-all focus:border-red-400 focus:ring-2 focus:ring-red-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+                                                    className="w-16 rounded-lg border border-neutral-200 bg-neutral-50/50 px-2.5 py-1.5 text-center text-xs font-medium tabular-nums outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
                                                 />
                                             </td>
                                         </tr>
@@ -582,7 +581,7 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                             <button
                                 type="submit"
                                 disabled={form.processing || !form.isDirty}
-                                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-teal-500 to-cyan-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-teal-500/25 transition-all hover:scale-[1.02] hover:shadow-teal-500/40 active:scale-[0.97] disabled:opacity-50"
+                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:scale-[1.02] hover:bg-neutral-800 active:scale-[0.97] disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                             >
                                 <Save className="size-4" />
                                 {form.processing ? 'Saving...' : 'Save Thresholds'}
@@ -594,8 +593,8 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                 {/* Stage performance table */}
                 <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                     <div className="flex items-center gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
-                        <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg">
-                            <TrendingUp className="size-4 text-white" />
+                        <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                            <TrendingUp className="size-4 text-white dark:text-neutral-900" />
                         </div>
                         <div>
                             <p className="text-sm font-semibold text-neutral-900 dark:text-white">Stage Performance</p>
@@ -616,7 +615,7 @@ export default function SlaIndex({ configs, stats, trends, sla_enabled, period, 
                                     const s = stats.stage_stats[stage];
                                     const rate = s.total > 0 ? Math.round((s.met / s.total) * 100) : 100;
                                     return (
-                                        <tr key={stage} className="hover:bg-neutral-50/50 dark:hover:bg-neutral-800/20">
+                                        <tr key={stage} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                                             <td className="px-5 py-3.5 text-xs font-semibold text-neutral-700 dark:text-neutral-300">{SLA_STAGE_LABELS[stage]}</td>
                                             <td className="px-5 py-3.5 text-xs tabular-nums text-neutral-600 dark:text-neutral-400">{formatTime(s.avg_minutes)}</td>
                                             <td className="px-5 py-3.5">

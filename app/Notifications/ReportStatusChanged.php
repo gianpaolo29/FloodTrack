@@ -32,16 +32,18 @@ class ReportStatusChanged extends Notification
             'assigned' => "A responder has been assigned to your report {$ref}.",
             'en_route' => "A responder is on the way to your location (Report {$ref}).",
             'on_scene' => "A responder has arrived at your location (Report {$ref}).",
-            'resolved' => "Your report {$ref} has been resolved. Thank you for helping keep your community safe.",
+            'resolved'     => "Your report {$ref} has been resolved. Thank you for helping keep your community safe.",
+            'acknowledged' => "We've reviewed your report {$ref} and prepared safety guidance for you. Open the app for details.",
         ];
 
         $titles = [
-            'verified' => 'Report Verified',
-            'rejected' => 'Report Not Verified',
-            'assigned' => 'Responder Assigned',
-            'en_route' => 'Responder En Route',
-            'on_scene' => 'Responder On Scene',
-            'resolved' => 'Report Resolved',
+            'verified'     => 'Report Verified',
+            'rejected'     => 'Report Not Verified',
+            'assigned'     => 'Responder Assigned',
+            'en_route'     => 'Responder En Route',
+            'on_scene'     => 'Responder On Scene',
+            'resolved'     => 'Report Resolved',
+            'acknowledged' => 'Safety Advisory',
         ];
 
         $message = $messages[$this->newStatus]

@@ -64,7 +64,7 @@ export default function AdminSettings({ settings }: Props) {
                         <button
                             type="submit"
                             disabled={form.processing || !form.isDirty}
-                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50"
+                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                         >
                             <Save className="size-4" />
                             {form.processing ? 'Saving…' : 'Save Changes'}
@@ -73,7 +73,7 @@ export default function AdminSettings({ settings }: Props) {
 
                     {/* Dirty banner */}
                     {form.isDirty && (
-                        <div className="rounded-xl border border-amber-200/60 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-200">
+                        <div className="rounded-xl border border-neutral-200/60 bg-neutral-50 px-4 py-3 text-sm font-medium text-neutral-800 dark:border-neutral-700/40 dark:bg-neutral-800/50 dark:text-neutral-200">
                             You have unsaved changes.
                         </div>
                     )}
@@ -84,7 +84,7 @@ export default function AdminSettings({ settings }: Props) {
                         {/* General */}
                         <SettingsCard
                             icon={Globe}
-                            grad="from-sky-500 to-blue-600"
+                            grad="from-neutral-800 to-neutral-900"
                             title="General"
                             sub="Platform identity and map defaults"
                         >
@@ -119,7 +119,7 @@ export default function AdminSettings({ settings }: Props) {
                         {/* Notifications */}
                         <SettingsCard
                             icon={Bell}
-                            grad="from-amber-500 to-orange-600"
+                            grad="from-neutral-800 to-neutral-900"
                             title="Notifications"
                             sub="Alert behaviour and push notification settings"
                         >
@@ -159,7 +159,7 @@ export default function AdminSettings({ settings }: Props) {
                         {/* About */}
                         <SettingsCard
                             icon={Info}
-                            grad="from-neutral-400 to-neutral-600"
+                            grad="from-neutral-800 to-neutral-900"
                             title="About"
                             sub="Platform build information"
                         >
@@ -184,7 +184,7 @@ export default function AdminSettings({ settings }: Props) {
                             <button
                                 type="submit"
                                 disabled={form.processing}
-                                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
+                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                             >
                                 <Save className="size-4" />
                                 {form.processing ? 'Saving…' : 'Save Changes'}
@@ -203,7 +203,7 @@ function SettingsCard({
     icon: Icon, grad, title, sub, children,
 }: {
     icon: React.ComponentType<{ className?: string }>;
-    grad: string;
+    grad?: string;
     title: string;
     sub: string;
     children: React.ReactNode;
@@ -211,8 +211,8 @@ function SettingsCard({
     return (
         <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
             <div className="flex items-center gap-3 border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
-                <div className={`flex size-8 items-center justify-center rounded-xl bg-gradient-to-br ${grad} shadow-sm`}>
-                    <Icon className="size-3.5 text-white" />
+                <div className="flex size-8 items-center justify-center rounded-xl bg-neutral-900 dark:bg-white">
+                    <Icon className="size-3.5 text-white dark:text-neutral-900" />
                 </div>
                 <div>
                     <h2 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">{title}</h2>
@@ -229,7 +229,7 @@ function SettingsCard({
 /* ─── Setting Row Components ─── */
 
 const inputCls =
-    'h-9 w-full shrink-0 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm text-right outline-none transition-all focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 sm:w-44 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-sky-500 dark:focus:bg-neutral-800';
+    'h-9 w-full shrink-0 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm text-right outline-none transition-all focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 sm:w-44 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-neutral-500 dark:focus:bg-neutral-800';
 
 function SettingInput({
     title, description, value, onChange, type = 'text',
@@ -275,13 +275,13 @@ function SettingToggle({
                 onClick={onToggle}
                 role="switch"
                 aria-checked={enabled}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:ring-offset-2 ${
-                    enabled ? 'bg-sky-500' : 'bg-neutral-200 dark:bg-neutral-700'
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-neutral-500/20 focus:ring-offset-2 ${
+                    enabled ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-200 dark:bg-neutral-700'
                 }`}
             >
                 <span
-                    className={`inline-block size-[18px] transform rounded-full bg-white shadow ring-0 transition-transform duration-200 ${
-                        enabled ? 'translate-x-[22px]' : 'translate-x-[3px]'
+                    className={`inline-block size-[18px] transform rounded-full shadow ring-0 transition-transform duration-200 ${
+                        enabled ? 'translate-x-[22px] bg-white dark:bg-neutral-900' : 'translate-x-[3px] bg-white'
                     }`}
                 />
             </button>

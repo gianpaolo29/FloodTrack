@@ -15,7 +15,7 @@ class AdminStatsController extends Controller
         $stats = [
             'total_reports'    => Report::count(),
             'pending'          => Report::where('status', 'pending')->count(),
-            'active'           => Report::whereIn('status', ['verified', 'assigned'])->count(),
+            'active'           => Report::whereIn('status', ['verified', 'acknowledged', 'assigned'])->count(),
             'resolved_today'   => Report::where('status', 'resolved')
                                         ->whereDate('resolved_at', today())
                                         ->count(),

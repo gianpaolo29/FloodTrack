@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Services\WeatherService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 
 class WeatherController extends Controller
@@ -17,15 +16,8 @@ class WeatherController extends Controller
         return config('barangays');
     }
 
-    public function index(Request $request, WeatherService $weather)
+    public function index(WeatherService $weather)
     {
-        if ($request->has('lat') && $request->has('lon')) {
-            $lat = (float) $request->get('lat');
-            $lon = (float) $request->get('lon');
-        } else {
-            [$lat, $lon] = $this->geolocateIp($request->ip());
-        }
-
         // Barangay weather data (cached 10 min)
         $barangayData = Cache::remember('admin:barangay-weather', 600, function () use ($weather) {
             $barangays = [];
@@ -66,18 +58,12 @@ class WeatherController extends Controller
 
             return [
                 'barangays'    => $barangays,
-                'analysis'     => $this->generateAiAnalysis($barangays),
                 'generated_at' => now()->toIso8601String(),
             ];
         });
 
         return Inertia::render('admin/weather/index', [
-            'current'         => $weather->current($lat, $lon),
-            'daily_forecast'  => $weather->dailyForecast($lat, $lon),
-            'hourly_forecast' => array_slice($weather->forecast($lat, $lon), 0, 12),
-            'alerts'          => $weather->alerts($lat, $lon),
-            'coordinates'     => ['lat' => $lat, 'lon' => $lon],
-            'barangay_data'   => $barangayData,
+            'barangay_data' => $barangayData,
         ]);
     }
 
@@ -126,177 +112,6 @@ class WeatherController extends Controller
         if ($score >= 45) return 'high';
         if ($score >= 25) return 'moderate';
         return 'low';
-    }
-
-    /* ── AI weather analysis ── */
-
-    private function generateAiAnalysis(array $barangays): array
-    {
-        $insights = [];
-        $total = count($barangays);
-
-        // 1. Overall pattern
-        $avgTemp     = round(collect($barangays)->avg('weather.temperature'), 1);
-        $avgHumidity = round(collect($barangays)->avg('weather.humidity'));
-        $avgWind     = round(collect($barangays)->avg('weather.wind_speed'), 1);
-        $maxRain     = collect($barangays)->max('weather.rain_1h');
-        $rainingCount = collect($barangays)->filter(fn ($b) => $b['weather']['rain_1h'] > 0)->count();
-
-        $insights[] = [
-            'type'  => 'overview',
-            'title' => 'Current Weather Pattern',
-            'body'  => "Average temperature across Nasugbu is {$avgTemp}°C with {$avgHumidity}% humidity. "
-                     . "Wind speeds average {$avgWind} km/h. "
-                     . ($rainingCount > 0
-                        ? "{$rainingCount} of {$total} barangays are currently experiencing rainfall."
-                        : "No rainfall is currently detected across the municipality."),
-            'icon'  => 'cloud-sun',
-        ];
-
-        // 2. Rainfall analysis
-        if ($maxRain >= 7.5) {
-            $names = collect($barangays)->filter(fn ($b) => $b['weather']['rain_1h'] >= 7.5)->pluck('name')->all();
-            $insights[] = [
-                'type'  => 'critical',
-                'title' => 'Heavy Rainfall Detected',
-                'body'  => 'Heavy rainfall (≥7.5 mm/h) is occurring in: ' . implode(', ', $names)
-                         . '. Flash flooding is possible in low-lying and riverside areas. '
-                         . 'Residents should prepare for potential evacuation.',
-                'icon'  => 'cloud-rain',
-            ];
-        } elseif ($maxRain >= 2.5) {
-            $names = collect($barangays)->filter(fn ($b) => $b['weather']['rain_1h'] >= 2.5)->pluck('name')->all();
-            $insights[] = [
-                'type'  => 'warning',
-                'title' => 'Moderate Rainfall Observed',
-                'body'  => 'Moderate rainfall is falling in: ' . implode(', ', $names)
-                         . '. Water levels in rivers and drainage should be monitored.',
-                'icon'  => 'cloud-rain',
-            ];
-        }
-
-        // 3. Flood risk areas
-        $criticalBrgys = collect($barangays)->filter(fn ($b) => $b['flood_risk']['level'] === 'critical');
-        $highBrgys     = collect($barangays)->filter(fn ($b) => $b['flood_risk']['level'] === 'high');
-
-        if ($criticalBrgys->isNotEmpty()) {
-            $insights[] = [
-                'type'  => 'critical',
-                'title' => 'Critical Flood Risk Areas',
-                'body'  => $criticalBrgys->count() . ' barangay(s) at critical flood risk: '
-                         . $criticalBrgys->pluck('name')->implode(', ')
-                         . '. These areas combine heavy rainfall with low elevation and historical flood vulnerability. '
-                         . 'Pre-emptive evacuation should be considered.',
-                'icon'  => 'alert-triangle',
-            ];
-        }
-
-        if ($highBrgys->isNotEmpty()) {
-            $insights[] = [
-                'type'  => 'warning',
-                'title' => 'Elevated Flood Risk',
-                'body'  => $highBrgys->count() . ' barangay(s) show elevated flood risk: '
-                         . $highBrgys->pluck('name')->implode(', ')
-                         . '. Responders should be on standby for these areas.',
-                'icon'  => 'alert-triangle',
-            ];
-        }
-
-        // 4. Forecast trend
-        $forecastRainTomorrow = collect($barangays)
-            ->map(fn ($b) => ['name' => $b['name'], 'rain' => $b['forecast'][0]['rain_total'] ?? 0])
-            ->filter(fn ($b) => $b['rain'] > 0)
-            ->sortByDesc('rain')
-            ->values();
-
-        if ($forecastRainTomorrow->isNotEmpty()) {
-            $heaviest = $forecastRainTomorrow->first();
-            $totalRain = round($forecastRainTomorrow->sum('rain'), 1);
-            $count = $forecastRainTomorrow->count();
-
-            $trend = $totalRain >= 50
-                ? 'Significant rainfall event approaching. Flood preparedness should be elevated municipality-wide.'
-                : ($totalRain >= 20
-                    ? 'Moderate rainfall is expected. Low-lying barangays should be monitored closely.'
-                    : 'Light scattered rainfall is forecast. No immediate flood concern, but conditions should be watched.');
-
-            $insights[] = [
-                'type'  => $totalRain >= 50 ? 'critical' : ($totalRain >= 20 ? 'warning' : 'info'),
-                'title' => 'Forecast Trend Analysis',
-                'body'  => "Rain is expected tomorrow in {$count} barangay(s), "
-                         . "with {$heaviest['name']} expecting the heaviest at {$heaviest['rain']} mm. "
-                         . "Total projected rainfall: {$totalRain} mm. {$trend}",
-                'icon'  => 'trending-up',
-            ];
-        } else {
-            $insights[] = [
-                'type'  => 'info',
-                'title' => 'Forecast Trend Analysis',
-                'body'  => 'No significant rainfall is forecast for the next 24 hours. Flood risk is expected to remain stable or decrease.',
-                'icon'  => 'trending-up',
-            ];
-        }
-
-        // 5. Coastal vs inland
-        $coastalBrgys = collect($barangays)->filter(fn ($b) => $b['coastal']);
-        $inlandBrgys  = collect($barangays)->filter(fn ($b) => !$b['coastal']);
-
-        if ($coastalBrgys->isNotEmpty() && $inlandBrgys->isNotEmpty()) {
-            $coastalRisk = round($coastalBrgys->avg('flood_risk.score'));
-            $inlandRisk  = round($inlandBrgys->avg('flood_risk.score'));
-            $higher      = $coastalRisk > $inlandRisk ? 'coastal' : 'inland';
-            $diff        = abs($coastalRisk - $inlandRisk);
-
-            if ($diff >= 10) {
-                $insights[] = [
-                    'type'  => 'info',
-                    'title' => 'Coastal vs Inland Risk Pattern',
-                    'body'  => "The AI observes that {$higher} barangays currently carry higher flood risk "
-                             . "(avg score: " . ($higher === 'coastal' ? $coastalRisk : $inlandRisk) . ") "
-                             . "compared to " . ($higher === 'coastal' ? 'inland' : 'coastal') . " areas "
-                             . "(avg score: " . ($higher === 'coastal' ? $inlandRisk : $coastalRisk) . "). "
-                             . ($higher === 'coastal'
-                                ? 'Storm surge and tidal factors may amplify flooding along the coast.'
-                                : 'River overflow and poor drainage are the primary concerns inland.'),
-                    'icon'  => 'git-compare',
-                ];
-            }
-        }
-
-        // 6. Humidity / saturation
-        $saturated = collect($barangays)->filter(fn ($b) => $b['weather']['humidity'] >= 90);
-        if ($saturated->count() >= $total * 0.6) {
-            $insights[] = [
-                'type'  => 'warning',
-                'title' => 'Ground Saturation Warning',
-                'body'  => 'Over 60% of barangays show humidity above 90%. The ground is likely saturated, '
-                         . 'meaning even light rainfall could cause rapid surface runoff and localized flooding. '
-                         . 'Drainage systems may be operating at capacity.',
-                'icon'  => 'droplets',
-            ];
-        }
-
-        // 7. Summary recommendation
-        $avgRisk = round(collect($barangays)->avg('flood_risk.score'));
-        $level   = $this->riskLevel($avgRisk);
-
-        $rec = match ($level) {
-            'critical' => 'IMMEDIATE ACTION RECOMMENDED: Activate emergency protocols. Pre-position rescue teams in critical barangays. Issue evacuation advisories for high-risk zones.',
-            'high'     => 'HEIGHTENED ALERT: Place responder teams on standby. Monitor river and coastal water levels. Prepare evacuation centers in flood-prone barangays.',
-            'moderate' => 'MONITORING ADVISED: Continue observing weather developments. Ensure drainage systems are clear. Communicate preparedness reminders to residents in vulnerable areas.',
-            default    => 'NORMAL CONDITIONS: No immediate flood threat detected. Maintain routine monitoring and ensure emergency equipment readiness.',
-        };
-
-        $insights[] = [
-            'type'               => $level === 'critical' ? 'critical' : ($level === 'high' ? 'warning' : 'info'),
-            'title'              => 'AI Recommendation',
-            'body'               => $rec,
-            'icon'               => 'sparkles',
-            'overall_risk_score' => $avgRisk,
-            'overall_risk_level' => $level,
-        ];
-
-        return $insights;
     }
 
     /**
@@ -398,18 +213,23 @@ Respond ONLY with a JSON object in this exact format:
 }
 PROMPT;
 
-            $client   = \OpenAI::client(config('services.openai.key'));
+            $client   = \OpenAI::factory()
+                ->withApiKey(config('services.openai.key'))
+                ->withHttpClient(new \GuzzleHttp\Client(['verify' => false]))
+                ->make();
             $response = $client->chat()->create([
-                'model'       => 'gpt-4o-mini',
-                'temperature' => 0.4,
+                'model'       => 'gpt-4o',
+                'temperature' => 0.3,
                 'max_tokens'  => 4096,
                 'messages'    => [
                     [
                         'role'    => 'system',
-                        'content' => 'You are a meteorological AI assistant specializing in flood disaster management for Philippine municipalities. '
-                                   . 'You analyze real-time weather data across barangays and provide actionable situational briefings for the MDRRMO (Municipal Disaster Risk Reduction and Management Office). '
-                                   . 'You understand Philippine geography, typhoon patterns, monsoon seasons (habagat/amihan), and local flood dynamics. '
-                                   . 'Be specific about barangay names. Consider that low-elevation coastal and riverside barangays are most vulnerable. '
+                        'content' => 'You are a senior meteorological analyst and disaster risk expert embedded in the MDRRMO (Municipal Disaster Risk Reduction and Management Office) of Nasugbu, Batangas, Philippines. '
+                                   . 'You have deep knowledge of Philippine weather systems — typhoons, habagat/amihan monsoons, ITCZ, localized thunderstorms, and La Niña/El Niño impacts on Batangas province. '
+                                   . 'You understand Nasugbu\'s geography: western Batangas coast facing the South China Sea, Nasugbu River watershed, mountainous eastern interior (Mt. Batulao area), and low-lying coastal poblacion. '
+                                   . 'When analyzing, cross-reference terrain (elevation, river proximity, coastal exposure) with weather data to identify cascading flood risks. '
+                                   . 'Be specific — name exact barangays, cite data points, and give concrete actionable steps (not generic advice). '
+                                   . 'Consider: ground saturation from prior rainfall, tidal factors for coastal barangays, upstream rainfall affecting downstream areas, and drainage capacity in urban poblacion. '
                                    . 'Return only valid JSON with no additional text or markdown.',
                     ],
                     [
@@ -440,38 +260,38 @@ PROMPT;
         }
     }
 
+    /**
+     * GET /admin/weather/my-location?lat=X&lon=Y
+     *
+     * Fetch current weather + hourly forecast for exact GPS coordinates.
+     */
+    public function myLocation(Request $request, WeatherService $weather): \Illuminate\Http\JsonResponse
+    {
+        $data = $request->validate([
+            'lat' => 'required|numeric|between:-90,90',
+            'lon' => 'required|numeric|between:-180,180',
+        ]);
+
+        $lat = (float) $data['lat'];
+        $lon = (float) $data['lon'];
+
+        $current  = $weather->current($lat, $lon);
+        $hourly   = $weather->forecast($lat, $lon);   // 3-hour intervals
+        $daily    = $weather->dailyForecast($lat, $lon);
+
+        // Take next 8 entries = 24 hours of 3-hour forecasts
+        $next24h = array_slice($hourly, 0, 8);
+
+        return response()->json([
+            'current'  => $current,
+            'hourly'   => $next24h,
+            'forecast' => $daily,
+        ]);
+    }
+
     private function nowFormatted(): string
     {
         return now()->timezone('Asia/Manila')->format('l, F j, Y g:i A');
     }
 
-    /**
-     * Get coordinates from IP address using ipapi.co
-     */
-    private function geolocateIp(string $ip): array
-    {
-        $defaultLat = (float) config('services.openweather.lat', 14.5995);
-        $defaultLon = (float) config('services.openweather.lon', 120.9842);
-
-        if (in_array($ip, ['127.0.0.1', '::1']) || str_starts_with($ip, '192.168.') || str_starts_with($ip, '10.')) {
-            return [$defaultLat, $defaultLon];
-        }
-
-        return Cache::remember("geo:ip:{$ip}", 3600, function () use ($ip, $defaultLat, $defaultLon) {
-            try {
-                $response = Http::withoutVerifying()->timeout(3)->get("https://ipapi.co/{$ip}/json/");
-
-                if ($response->ok()) {
-                    $data = $response->json();
-                    if (isset($data['latitude'], $data['longitude'])) {
-                        return [(float) $data['latitude'], (float) $data['longitude']];
-                    }
-                }
-            } catch (\Exception $e) {
-                // Fall through to defaults
-            }
-
-            return [$defaultLat, $defaultLon];
-        });
-    }
 }

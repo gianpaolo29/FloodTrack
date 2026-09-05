@@ -185,8 +185,8 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                 {/* ── Page Header ── */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25">
-                            <Users2 className="size-5 sm:size-6 text-white" />
+                        <div className="flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 dark:bg-white shadow-sm">
+                            <Users2 className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                         </div>
                         <div>
                             <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
@@ -201,7 +201,7 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/users" />
                         <button
                             onClick={() => setShowCreate(true)}
-                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-violet-500/20 transition-all hover:shadow-lg hover:shadow-violet-500/30 hover:brightness-110 active:scale-[0.97]"
+                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
                         >
                             <Plus className="size-4" />
                             Add Resident
@@ -219,8 +219,8 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                         desc={smartDesc('total')}
                         insights={[{ label: 'With Address', value: stats.with_address }, { label: 'Verified', value: stats.verified }]}
                         icon={Users2}
-                        grad="from-blue-500 via-indigo-500 to-violet-500"
-                        shadow="shadow-blue-500/40"
+                        grad="from-neutral-800 via-neutral-900 to-neutral-950"
+                        shadow="shadow-sm"
                         alert={false}
                         index={0}
                         mounted={mounted}
@@ -233,16 +233,16 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                         desc={smartDesc('new')}
                         insights={[]}
                         icon={Sparkles}
-                        grad="from-cyan-500 via-sky-500 to-blue-500"
-                        shadow="shadow-cyan-500/40"
+                        grad="from-neutral-700 via-neutral-800 to-neutral-900"
+                        shadow="shadow-sm"
                         alert={false}
                         index={1}
                         mounted={mounted}
                     />
                     <SecondaryStatCard
                         icon={MapPin}
-                        grad="from-violet-500 to-purple-500"
-                        shadow="shadow-violet-500/25"
+                        grad="from-neutral-700 to-neutral-800"
+                        shadow="shadow-sm"
                         value={stats.with_address}
                         label="With Address"
                         trend={undefined}
@@ -255,8 +255,8 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                     />
                     <SecondaryStatCard
                         icon={CheckCircle2}
-                        grad="from-emerald-500 to-teal-500"
-                        shadow="shadow-emerald-500/25"
+                        grad="from-neutral-600 to-neutral-700"
+                        shadow="shadow-sm"
                         value={stats.verified}
                         label="Verified Email"
                         trend={undefined}
@@ -277,13 +277,13 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -8, scale: 0.99 }}
                             transition={{ duration: 0.18 }}
-                            className="overflow-hidden rounded-2xl border border-violet-200/60 bg-gradient-to-r from-violet-50 to-purple-50/60 px-5 py-3.5 dark:border-violet-800/40 dark:from-violet-950/30 dark:to-purple-950/20"
+                            className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-neutral-50 px-5 py-3.5 dark:border-neutral-700/40 dark:bg-neutral-800/30"
                         >
                             <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-sm font-semibold text-violet-900 dark:text-violet-200">
+                                <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-200">
                                     {selected.length} selected
                                 </span>
-                                <div className="h-4 w-px bg-violet-300/60 dark:bg-violet-700/60" />
+                                <div className="h-4 w-px bg-neutral-300/60 dark:bg-neutral-600/60" />
                                 <button
                                     onClick={() => runBulkAction('delete')}
                                     disabled={bulkProcessing}
@@ -293,7 +293,7 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                                 </button>
                                 <button
                                     onClick={() => setSelected([])}
-                                    className="ml-auto rounded-lg px-3 py-1.5 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-100 dark:text-violet-400 dark:hover:bg-violet-900/40"
+                                    className="ml-auto rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800/40"
                                 >
                                     Clear selection
                                 </button>
@@ -321,7 +321,7 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                                     placeholder="Search residents..."
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
                                 />
                                 {searchValue && (
                                     <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -335,11 +335,11 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                     {/* Mobile card view */}
                     <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
                         {filtered.map((user) => (
-                            <div key={user.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
+                            <div key={user.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                                 {user.avatar_url ? (
                                     <img src={user.avatar_url} alt={user.name} className="size-9 shrink-0 rounded-full object-cover shadow-sm" />
                                 ) : (
-                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-sm font-bold text-white shadow-sm">
+                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-900 dark:bg-white text-sm font-bold text-white dark:text-neutral-900 shadow-sm">
                                         {user.name.charAt(0).toUpperCase()}
                                     </div>
                                 )}
@@ -372,7 +372,7 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                                 <div className="flex shrink-0 items-center gap-1">
                                     <button
                                         onClick={() => setEditingUser(user)}
-                                        className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400"
+                                        className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
                                     >
                                         <Pencil className="size-3.5" />
                                     </button>
@@ -397,7 +397,7 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                                             type="checkbox"
                                             checked={allOnPageSelected}
                                             onChange={toggleAll}
-                                            className="size-3.5 rounded border-neutral-300 text-violet-600 focus:ring-violet-500/20 dark:border-neutral-600"
+                                            className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
                                         />
                                     </th>
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Resident</th>
@@ -413,8 +413,8 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                                         key={user.id}
                                         className={`group transition-colors ${
                                             selected.includes(user.id)
-                                                ? 'bg-violet-50/60 dark:bg-violet-950/20'
-                                                : 'hover:bg-neutral-50/60 dark:hover:bg-neutral-800/30'
+                                                ? 'bg-neutral-100/60 dark:bg-neutral-800/40'
+                                                : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
                                         }`}
                                     >
                                         <td className="w-10 px-5 py-4 text-center">
@@ -422,7 +422,7 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                                                 type="checkbox"
                                                 checked={selected.includes(user.id)}
                                                 onChange={() => toggleOne(user.id)}
-                                                className="size-3.5 rounded border-neutral-300 text-violet-600 focus:ring-violet-500/20 dark:border-neutral-600"
+                                                className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
                                             />
                                         </td>
 
@@ -432,7 +432,7 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                                                 {user.avatar_url ? (
                                                     <img src={user.avatar_url} alt={user.name} className="size-9 shrink-0 rounded-full object-cover shadow-sm" />
                                                 ) : (
-                                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-purple-600 text-sm font-bold text-white shadow-sm">
+                                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-900 dark:bg-white text-sm font-bold text-white dark:text-neutral-900 shadow-sm">
                                                         {user.name.charAt(0).toUpperCase()}
                                                     </div>
                                                 )}
@@ -486,7 +486,7 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                                             <div className="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                                                 <button
                                                     onClick={() => setEditingUser(user)}
-                                                    className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400"
+                                                    className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
                                                     title="Edit resident"
                                                 >
                                                     <Pencil className="size-3.5" />
@@ -509,8 +509,8 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                     {/* Empty state */}
                     {filtered.length === 0 && (
                         <div className="flex flex-col items-center gap-4 py-20">
-                            <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/30 dark:to-purple-950/20">
-                                <Users2 className="size-8 text-violet-400 dark:text-violet-500" />
+                            <div className="flex size-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800/50">
+                                <Users2 className="size-8 text-neutral-400 dark:text-neutral-500" />
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">No residents found</p>
@@ -539,7 +539,7 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                                     if (isPrev || isNext) {
                                         return link.url ? (
                                             <button key={i} onClick={() => router.get(link.url!)}
-                                                className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-violet-300 hover:bg-violet-50 hover:text-violet-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-violet-700/40 dark:hover:bg-violet-950/20 dark:hover:text-violet-400">
+                                                className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-white">
                                                 {isPrev ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
                                             </button>
                                         ) : (
@@ -552,8 +552,8 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                                         <button key={i} onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                                                 link.active
-                                                    ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-sm'
-                                                    : 'border border-neutral-200 text-neutral-500 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-violet-700/40 dark:hover:bg-violet-950/20'
+                                                    ? 'bg-neutral-900 dark:bg-white text-white dark:text-neutral-900 shadow-sm'
+                                                    : 'border border-neutral-200 text-neutral-500 hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
                                         />
@@ -648,7 +648,7 @@ function UserFormModal({
     }, [onClose]);
 
     const inputClassName =
-        'w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-sky-500 dark:focus:bg-neutral-900';
+        'w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-900';
 
     return (
         <motion.div
@@ -672,8 +672,8 @@ function UserFormModal({
                     {isEdit && user?.avatar_url ? (
                         <img src={user.avatar_url} alt={user.name} className="size-9 shrink-0 rounded-xl object-cover shadow-sm" />
                     ) : (
-                        <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-sm">
-                            {isEdit ? <Pencil className="size-4 text-white" /> : <Plus className="size-4 text-white" />}
+                        <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-900 dark:bg-white shadow-sm">
+                            {isEdit ? <Pencil className="size-4 text-white dark:text-neutral-900" /> : <Plus className="size-4 text-white dark:text-neutral-900" />}
                         </div>
                     )}
                     <div>
@@ -783,7 +783,7 @@ function UserFormModal({
                         <button
                             type="submit"
                             disabled={form.processing}
-                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
+                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                         >
                             {isEdit ? <Pencil className="size-3.5" /> : <Plus className="size-3.5" />}
                             {form.processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Add Resident'}
@@ -911,7 +911,7 @@ function HomeAddressAutocomplete({ value, onChange, className }: {
                 />
                 {fetching && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <div className="size-3.5 animate-spin rounded-full border-2 border-neutral-200 border-t-sky-500" />
+                        <div className="size-3.5 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-600" />
                     </div>
                 )}
             </div>
@@ -921,7 +921,7 @@ function HomeAddressAutocomplete({ value, onChange, className }: {
                         <li
                             key={pred.place_id}
                             onMouseDown={(e) => { e.preventDefault(); selectPrediction(pred); }}
-                            className="flex cursor-pointer flex-col gap-0.5 px-3 py-2 transition-colors hover:bg-sky-50 dark:hover:bg-sky-950/30"
+                            className="flex cursor-pointer flex-col gap-0.5 px-3 py-2 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                         >
                             <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
                                 {pred.structured_formatting.main_text}

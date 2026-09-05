@@ -22,7 +22,11 @@ class EvacuationCenterController extends Controller
 
     public function index(Request $request): Response
     {
+        [$from, $to, $period] = $this->parsePeriod($request);
+
         $query = EvacuationCenter::query()->latest();
+
+        $this->scopeByPeriod($query, $from, $to);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -40,8 +44,6 @@ class EvacuationCenterController extends Controller
         }
 
         $centers = $query->paginate(20)->withQueryString();
-
-        [$from, $to, $period] = $this->parsePeriod($request);
         [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
 
         $curTotal  = $this->scopeByPeriod(EvacuationCenter::query(), $from, $to)->count();

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\HasPeriodStats;
 use App\Models\Alert;
 use App\Models\EvacuationCenter;
 use App\Models\OccupancyLog;
@@ -18,34 +19,12 @@ use OpenAI;
 
 class StatisticsController extends Controller
 {
+    use HasPeriodStats;
     public function index(Request $request): Response
     {
-        // Period filter
-        $period = $request->get('period', 'all');
+        [$from, $to, $period] = $this->parsePeriod($request);
 
-        // Custom date range
-        $customFrom = $request->get('from');
-        $customTo   = $request->get('to');
-
-        if ($period === 'custom' && $customFrom) {
-            $from = Carbon::parse($customFrom)->startOfDay();
-            $to   = $customTo ? Carbon::parse($customTo)->endOfDay() : now()->endOfDay();
-        } else {
-            $from = match($period) {
-                'today' => today(),
-                'week'  => now()->startOfWeek(),
-                'month' => now()->startOfMonth(),
-                default => null,
-            };
-            $to = null;
-        }
-
-        $reportQuery = Report::query();
-        if ($from && $to) {
-            $reportQuery->whereBetween('created_at', [$from, $to]);
-        } elseif ($from) {
-            $reportQuery->where('created_at', '>=', $from);
-        }
+        $reportQuery = $this->scopeByPeriod(Report::query(), $from, $to);
 
         // Reports per day (last 30 days) — scoped by period
         $daily_reports = (clone $reportQuery)
@@ -165,85 +144,32 @@ class StatisticsController extends Controller
             });
 
         // ── Trend calculations ──
-        if ($period === 'custom' && $from) {
-            $trendCurrentFrom = $from;
-            $trendCurrentTo   = $to ?? now()->endOfDay();
-            $rangeDays        = $trendCurrentFrom->diffInDays($trendCurrentTo);
-            $trendPreviousTo  = $trendCurrentFrom->copy()->subDay()->endOfDay();
-            $trendPreviousFrom = $trendPreviousTo->copy()->subDays($rangeDays)->startOfDay();
-            $trendLabel       = 'vs prior period';
-            $trendPeriodLabel = $trendCurrentFrom->format('M d') . ' – ' . $trendCurrentTo->format('M d, Y');
-        } else {
-            $trendCurrentFrom = match ($period) {
-                'today' => today(),
-                'week'  => now()->startOfWeek(),
-                'month' => now()->startOfMonth(),
-                default => now()->startOfMonth(),
-            };
-            $trendCurrentTo = null;
-            $trendPreviousFrom = match ($period) {
-                'today' => today()->subDay(),
-                'week'  => now()->subWeek()->startOfWeek(),
-                'month' => now()->subMonth()->startOfMonth(),
-                default => now()->subMonth()->startOfMonth(),
-            };
-            $trendPreviousTo = match ($period) {
-                'today' => today(),
-                'week'  => now()->startOfWeek(),
-                'month' => now()->startOfMonth(),
-                default => now()->startOfMonth(),
-            };
-            $trendLabel = match ($period) {
-                'today' => 'vs yesterday',
-                'week'  => 'vs last week',
-                'month' => 'vs last month',
-                default => 'vs last month',
-            };
-            $trendPeriodLabel = match ($period) {
-                'today' => today()->format('M d, Y'),
-                'week'  => now()->startOfWeek()->format('M d') . ' – ' . now()->endOfWeek()->format('M d, Y'),
-                'month' => now()->startOfMonth()->format('M d') . ' – ' . now()->endOfMonth()->format('M d, Y'),
-                default => now()->startOfMonth()->format('M d') . ' – ' . now()->endOfMonth()->format('M d, Y'),
-            };
-        }
-
-        $calcTrend = function (int $current, int $previous): float {
-            return $previous > 0
-                ? round((($current - $previous) / $previous) * 100, 1)
-                : ($current > 0 ? 100 : 0);
-        };
+        [$trendPreviousFrom, $trendPreviousTo, $trendLabel, $trendPeriodLabel] = $this->comparisonPeriod($period, $from, $to);
 
         // Reports trend
-        $curReportsQ = Report::where('created_at', '>=', $trendCurrentFrom);
-        if ($trendCurrentTo) $curReportsQ->where('created_at', '<=', $trendCurrentTo);
-        $currentReports = $curReportsQ->count();
+        $currentReports = $this->scopeByPeriod(Report::query(), $from, $to)->count();
         $previousReports = Report::whereBetween('created_at', [$trendPreviousFrom, $trendPreviousTo])->count();
 
         // Resolution rate trend
-        $curResolvedQ = Report::where('status', 'resolved')->where('resolved_at', '>=', $trendCurrentFrom);
-        if ($trendCurrentTo) $curResolvedQ->where('resolved_at', '<=', $trendCurrentTo);
-        $currentResolved = $curResolvedQ->count();
+        $currentResolved = $this->scopeByPeriod(Report::where('status', 'resolved'), $from, $to, 'resolved_at')->count();
         $previousResolved = Report::where('status', 'resolved')->whereBetween('resolved_at', [$trendPreviousFrom, $trendPreviousTo])->count();
 
         // Avg response time trend
-        $curAvgQ = Report::where('status', 'resolved')->whereNotNull('resolved_at')->where('resolved_at', '>=', $trendCurrentFrom);
-        if ($trendCurrentTo) $curAvgQ->where('resolved_at', '<=', $trendCurrentTo);
-        $currentAvgResp = $curAvgQ->selectRaw("$avgExpr as avg_minutes")->value('avg_minutes');
+        $currentAvgResp = $this->scopeByPeriod(Report::where('status', 'resolved')->whereNotNull('resolved_at'), $from, $to, 'resolved_at')
+            ->selectRaw("$avgExpr as avg_minutes")->value('avg_minutes');
         $previousAvgResp = Report::where('status', 'resolved')->whereNotNull('resolved_at')
             ->whereBetween('resolved_at', [$trendPreviousFrom, $trendPreviousTo])
             ->selectRaw("$avgExpr as avg_minutes")->value('avg_minutes');
 
         // Critical trend
-        $curCritQ = Report::where('severity', 'critical')->where('created_at', '>=', $trendCurrentFrom);
-        if ($trendCurrentTo) $curCritQ->where('created_at', '<=', $trendCurrentTo);
-        $currentCritical = $curCritQ->count();
+        $currentCritical = $this->scopeByPeriod(Report::where('severity', 'critical'), $from, $to)->count();
         $previousCritical = Report::where('severity', 'critical')->whereBetween('created_at', [$trendPreviousFrom, $trendPreviousTo])->count();
 
         $trends = [
-            'reports'      => $calcTrend($currentReports, $previousReports),
-            'resolved'     => $calcTrend($currentResolved, $previousResolved),
-            'avg_response' => $calcTrend((int) round((float) ($currentAvgResp ?? 0)), (int) round((float) ($previousAvgResp ?? 0))),
-            'critical'     => $calcTrend($currentCritical, $previousCritical),
+            'reports'      => $this->calcTrend($currentReports, $previousReports),
+            'resolved'     => $this->calcTrend($currentResolved, $previousResolved),
+            'avg_response' => $this->calcTrend((int) round((float) ($currentAvgResp ?? 0)), (int) round((float) ($previousAvgResp ?? 0))),
+            'critical'     => $this->calcTrend($currentCritical, $previousCritical),
             'label'        => $trendLabel,
             'period_label' => $trendPeriodLabel,
         ];
@@ -422,8 +348,8 @@ class StatisticsController extends Controller
             'team_performance'   => $team_performance,
             'trends'             => $trends,
             'period'             => $period,
-            'custom_from'        => $customFrom,
-            'custom_to'          => $customTo,
+            'custom_from'        => $request->get('from'),
+            'custom_to'          => $request->get('to'),
             'response_time_trend'     => $responseTimeTrend,
             'evac_occupancy_timeline' => $evacOccupancyTimeline,
             'alert_frequency'         => $alertFrequency,
@@ -439,24 +365,18 @@ class StatisticsController extends Controller
     public function aiInsights(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
-            // Period filter — same logic as index()
-            $period = $request->get('period', 'all');
-            $from = match($period) {
-                'today' => today(),
-                'week'  => now()->startOfWeek(),
-                'month' => now()->startOfMonth(),
-                default => null,
-            };
+            // Period filter — using shared trait
+            [$from, $to, $period] = $this->parsePeriod($request);
 
             $periodLabel = match($period) {
-                'today' => 'today (' . now()->format('M d, Y') . ')',
-                'week'  => 'this week (' . now()->startOfWeek()->format('M d') . ' – ' . now()->format('M d') . ')',
-                'month' => 'this month (' . now()->format('F Y') . ')',
-                default => 'all time',
+                'today'  => 'today (' . now()->format('M d, Y') . ')',
+                'week'   => 'this week (' . now()->startOfWeek()->format('M d') . ' – ' . now()->format('M d') . ')',
+                'month'  => 'this month (' . now()->format('F Y') . ')',
+                'custom' => ($from ? $from->format('M d') : '') . ' – ' . ($to ? $to->format('M d, Y') : now()->format('M d, Y')),
+                default  => 'all time',
             };
 
-            $reportQuery = Report::query();
-            if ($from) $reportQuery->where('created_at', '>=', $from);
+            $reportQuery = $this->scopeByPeriod(Report::query(), $from, $to);
 
             $avgExpr = DB::getDriverName() === 'sqlite'
                 ? 'AVG((julianday(resolved_at) - julianday(created_at)) * 1440)'
@@ -586,7 +506,10 @@ PROMPT;
                 default => 'You are an AI assistant specializing in flood disaster management and emergency response. You are providing a comprehensive all-time strategic overview. Use the daily trend data to assess current momentum — is the situation getting better or worse recently? Identify long-term patterns, systemic issues, whether resolution capacity matches report volume, evacuation center capacity planning needs, and strategic recommendations for improving flood response. Return only valid JSON with no additional text or markdown.',
             };
 
-            $client   = OpenAI::client(config('services.openai.key'));
+            $client   = OpenAI::factory()
+                ->withApiKey(config('services.openai.key'))
+                ->withHttpClient(new \GuzzleHttp\Client(['verify' => false]))
+                ->make();
             $response = $client->chat()->create([
                 'model'       => 'gpt-4o-mini',
                 'temperature' => 0.4,

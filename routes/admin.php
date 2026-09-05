@@ -97,6 +97,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     // Weather
     Route::get('/weather', [WeatherController::class, 'index'])->name('weather.index');
     Route::get('/weather/ai-insights', [WeatherController::class, 'aiInsights'])->name('weather.ai-insights');
+    Route::get('/weather/my-location', [WeatherController::class, 'myLocation'])->name('weather.my-location');
 
     // Statistics
     Route::get('/statistics', [StatisticsController::class, 'index'])->name('statistics.index');

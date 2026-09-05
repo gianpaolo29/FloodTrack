@@ -80,26 +80,26 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const inputClass =
-    'w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:ring-2 focus:ring-sky-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-sky-500 dark:focus:ring-sky-500/20';
+    'w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:ring-neutral-500/20';
 
 const modalSpring = { type: 'spring' as const, stiffness: 380, damping: 30 };
 
 const TYPE_OPTIONS: EvacuationCenterType[] = ['gymnasium', 'school', 'barangay_hall', 'church', 'community_center'];
 
 const TYPE_COLORS: Record<EvacuationCenterType, string> = {
-    gymnasium:        'bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-700/40',
-    school:           'bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-700/40',
-    barangay_hall:    'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-700/40',
-    church:           'bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-700/40',
-    community_center: 'bg-teal-50 text-teal-700 ring-1 ring-teal-200 dark:bg-teal-950/50 dark:text-teal-300 dark:ring-teal-700/40',
+    gymnasium:        'bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700',
+    school:           'bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700',
+    barangay_hall:    'bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700',
+    church:           'bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700',
+    community_center: 'bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700',
 };
 
 const TYPE_DOT: Record<EvacuationCenterType, string> = {
-    gymnasium:        'bg-blue-500',
-    school:           'bg-violet-500',
-    barangay_hall:    'bg-amber-500',
-    church:           'bg-rose-500',
-    community_center: 'bg-teal-500',
+    gymnasium:        'bg-neutral-500',
+    school:           'bg-neutral-500',
+    barangay_hall:    'bg-neutral-500',
+    church:           'bg-neutral-500',
+    community_center: 'bg-neutral-500',
 };
 
 const TYPE_ICON: Record<EvacuationCenterType, React.ElementType> = {
@@ -247,8 +247,8 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                 {/* ── Page Header ── */}
                 <div className="flex flex-col gap-4 sm:gap-5 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-lg shadow-blue-500/25">
-                            <ShieldCheck className="size-5 sm:size-6 text-white" />
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 dark:bg-white shadow-sm">
+                            <ShieldCheck className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                             <span className="absolute -right-1 -top-1 flex size-3.5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-white dark:ring-neutral-900">
                                 <span className="size-1.5 animate-pulse rounded-full bg-white" />
                             </span>
@@ -266,7 +266,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/evacuation-centers" />
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:shadow-lg hover:shadow-blue-500/30 hover:brightness-110 active:scale-[0.97]"
+                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
                         >
                             <Plus className="size-4" />
                             Add Center
@@ -277,7 +277,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                 {/* ── Stats Row ── */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                     <PrimaryStatCard
-                        label="Total Centers"
+                        label="Total Evacuation Centers"
                         value={stats.total}
                         trend={trends.total}
                         trendLabel={`${trends.label}, ${trends.period_label}`}
@@ -287,14 +287,14 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                             { label: 'Inactive', value: stats.total - stats.active, color: '#6b7280' },
                         ]}
                         icon={Building2}
-                        grad="from-sky-500 via-blue-500 to-indigo-500"
-                        shadow="shadow-sky-500/40"
+                        grad="from-neutral-800 via-neutral-900 to-neutral-950"
+                        shadow="shadow-sm"
                         alert={false}
                         index={0}
                         mounted={mounted}
                     />
                     <PrimaryStatCard
-                        label="Active Centers"
+                        label="Open Centers"
                         value={stats.active}
                         trend={trends.active}
                         trendLabel={`${trends.label}, ${trends.period_label}`}
@@ -303,16 +303,16 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                             { label: '% active', value: stats.total > 0 ? `${Math.round((stats.active / stats.total) * 100)}%` : '0%', color: '#10b981' },
                         ]}
                         icon={ShieldCheck}
-                        grad="from-emerald-500 via-teal-500 to-cyan-500"
-                        shadow="shadow-emerald-500/40"
+                        grad="from-neutral-700 via-neutral-800 to-neutral-900"
+                        shadow="shadow-sm"
                         alert={false}
                         index={1}
                         mounted={mounted}
                     />
                     <SecondaryStatCard
                         icon={Users}
-                        grad="from-violet-500 to-purple-500"
-                        shadow="shadow-violet-500/25"
+                        grad="from-neutral-600 to-neutral-700"
+                        shadow="shadow-sm"
                         value={stats.total_capacity.toLocaleString()}
                         label="Total Capacity"
                         desc={smartDesc('capacity')}
@@ -324,13 +324,13 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                     />
                     <SecondaryStatCard
                         icon={Users}
-                        grad="from-amber-500 to-orange-500"
-                        shadow="shadow-amber-500/25"
+                        grad="from-neutral-500 to-neutral-600"
+                        shadow="shadow-sm"
                         value={stats.total_occupancy.toLocaleString()}
-                        label="Evacuees"
+                        label="Current Evacuees"
                         desc={smartDesc('occupancy')}
                         insights={[
-                            { label: 'Occupancy', value: `${occupancyPct}%`, color: occupancyPct >= 90 ? '#ef4444' : occupancyPct >= 70 ? '#f59e0b' : '#8b5cf6' },
+                            { label: 'Occupancy', value: `${occupancyPct}%`, color: occupancyPct >= 90 ? '#ef4444' : occupancyPct >= 70 ? '#f59e0b' : '#737373' },
                             { label: 'Capacity', value: stats.total_capacity.toLocaleString() },
                         ]}
                         trendLabel={trends.label}
@@ -348,13 +348,13 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -8, scale: 0.99 }}
                             transition={{ duration: 0.18 }}
-                            className="overflow-hidden rounded-2xl border border-sky-200/60 bg-gradient-to-r from-sky-50 to-blue-50/60 px-5 py-3.5 dark:border-sky-800/40 dark:from-sky-950/30 dark:to-blue-950/20"
+                            className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-neutral-50 px-5 py-3.5 dark:border-neutral-700/40 dark:bg-neutral-800/50"
                         >
                             <div className="flex flex-wrap items-center gap-3">
-                                <span className="text-sm font-semibold text-sky-900 dark:text-sky-200">
+                                <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-200">
                                     {selected.length} selected
                                 </span>
-                                <div className="h-4 w-px bg-sky-300/60 dark:bg-sky-700/60" />
+                                <div className="h-4 w-px bg-neutral-300/60 dark:bg-neutral-600/60" />
                                 <button
                                     onClick={() => runBulkAction('activate')}
                                     disabled={bulkProcessing}
@@ -378,7 +378,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                                 </button>
                                 <button
                                     onClick={() => setSelected([])}
-                                    className="ml-auto rounded-lg px-3 py-1.5 text-xs font-medium text-sky-700 transition-colors hover:bg-sky-100 dark:text-sky-400 dark:hover:bg-sky-900/40"
+                                    className="ml-auto rounded-lg px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700/40"
                                 >
                                     Clear selection
                                 </button>
@@ -397,7 +397,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                                 <select
                                     value={filters.type ?? ''}
                                     onChange={(e) => filter('type', e.target.value)}
-                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
                                 >
                                     <option value="">All types</option>
                                     {TYPE_OPTIONS.map((t) => (
@@ -410,7 +410,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                                 <select
                                     value={filters.active ?? ''}
                                     onChange={(e) => filter('active', e.target.value)}
-                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-sky-400 focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
                                 >
                                     <option value="">All statuses</option>
                                     <option value="1">Active</option>
@@ -428,7 +428,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                                     placeholder="Search centers..."
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-sky-400 focus:bg-white focus:ring-2 focus:ring-sky-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
                                 />
                                 {searchValue && (
                                     <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -456,20 +456,8 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                             const capacity = center.capacity ?? 0;
                             return (
                                 <div key={center.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
-                                    <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
-                                        center.type === 'gymnasium'     ? 'bg-blue-100 dark:bg-blue-950/60' :
-                                        center.type === 'school'        ? 'bg-violet-100 dark:bg-violet-950/60' :
-                                        center.type === 'barangay_hall' ? 'bg-amber-100 dark:bg-amber-950/60' :
-                                        center.type === 'church'        ? 'bg-rose-100 dark:bg-rose-950/60' :
-                                                                          'bg-teal-100 dark:bg-teal-950/60'
-                                    }`}>
-                                        <TypeIcon className={`size-4 ${
-                                            center.type === 'gymnasium'     ? 'text-blue-600 dark:text-blue-400' :
-                                            center.type === 'school'        ? 'text-violet-600 dark:text-violet-400' :
-                                            center.type === 'barangay_hall' ? 'text-amber-600 dark:text-amber-400' :
-                                            center.type === 'church'        ? 'text-rose-600 dark:text-rose-400' :
-                                                                              'text-teal-600 dark:text-teal-400'
-                                        }`} />
+                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
+                                        <TypeIcon className="size-4 text-neutral-600 dark:text-neutral-400" />
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center justify-between gap-2">
@@ -496,7 +484,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                                         )}
                                     </div>
                                     <button onClick={() => setEditingCenter(center)}
-                                        className="shrink-0 rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400">
+                                        className="shrink-0 rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white">
                                         <Pencil className="size-3.5" />
                                     </button>
                                 </div>
@@ -514,7 +502,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                                             type="checkbox"
                                             checked={allOnPageSelected}
                                             onChange={toggleAll}
-                                            className="size-3.5 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
+                                            className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
                                         />
                                     </th>
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Center</th>
@@ -542,8 +530,8 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                     {/* Empty state */}
                     {filtered.length === 0 && (
                         <div className="flex flex-col items-center gap-4 py-20">
-                            <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950/30 dark:to-blue-950/20">
-                                <Building2 className="size-8 text-sky-400 dark:text-sky-500" />
+                            <div className="flex size-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+                                <Building2 className="size-8 text-neutral-400 dark:text-neutral-500" />
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">No evacuation centers found</p>
@@ -574,7 +562,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                                             <button
                                                 key={i}
                                                 onClick={() => router.get(link.url!)}
-                                                className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-sky-700/40 dark:hover:bg-sky-950/20 dark:hover:text-sky-400"
+                                                className="flex size-8 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-white"
                                             >
                                                 {isPrev ? <ChevronLeft className="size-4" /> : <ChevronRight className="size-4" />}
                                             </button>
@@ -590,8 +578,8 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                                                 link.active
-                                                    ? 'bg-gradient-to-br from-sky-500 to-blue-600 text-white shadow-sm'
-                                                    : 'border border-neutral-200 text-neutral-500 hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-sky-700/40 dark:hover:bg-sky-950/20'
+                                                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
+                                                    : 'border border-neutral-200 text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-white'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
                                         />
@@ -645,8 +633,8 @@ function CenterRow({
     return (
         <tr className={`group transition-colors ${
             isSelected
-                ? 'bg-sky-50/60 dark:bg-sky-950/20'
-                : 'hover:bg-neutral-50/60 dark:hover:bg-neutral-800/30'
+                ? 'bg-neutral-50 dark:bg-neutral-800/50'
+                : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
         }`}>
             {/* Checkbox */}
             <td className="w-10 px-5 py-4 text-center">
@@ -654,27 +642,15 @@ function CenterRow({
                     type="checkbox"
                     checked={isSelected}
                     onChange={onToggle}
-                    className="size-3.5 rounded border-neutral-300 text-sky-600 focus:ring-sky-500/20 dark:border-neutral-600"
+                    className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
                 />
             </td>
 
             {/* Name */}
             <td className="px-5 py-4">
                 <div className="flex items-center gap-3">
-                    <div className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
-                        center.type === 'gymnasium'        ? 'bg-blue-100 dark:bg-blue-950/60' :
-                        center.type === 'school'           ? 'bg-violet-100 dark:bg-violet-950/60' :
-                        center.type === 'barangay_hall'    ? 'bg-amber-100 dark:bg-amber-950/60' :
-                        center.type === 'church'           ? 'bg-rose-100 dark:bg-rose-950/60' :
-                                                             'bg-teal-100 dark:bg-teal-950/60'
-                    }`}>
-                        <TypeIcon className={`size-4 ${
-                            center.type === 'gymnasium'        ? 'text-blue-600 dark:text-blue-400' :
-                            center.type === 'school'           ? 'text-violet-600 dark:text-violet-400' :
-                            center.type === 'barangay_hall'    ? 'text-amber-600 dark:text-amber-400' :
-                            center.type === 'church'           ? 'text-rose-600 dark:text-rose-400' :
-                                                                 'text-teal-600 dark:text-teal-400'
-                        }`} />
+                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
+                        <TypeIcon className="size-4 text-neutral-600 dark:text-neutral-400" />
                     </div>
                     <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{center.name}</p>
                 </div>
@@ -740,7 +716,7 @@ function CenterRow({
                     </button>
                     <button
                         onClick={onEdit}
-                        className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-sky-50 hover:text-sky-600 dark:hover:bg-sky-950/30 dark:hover:text-sky-400"
+                        className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-900 dark:hover:bg-neutral-800 dark:hover:text-white"
                         title="Edit center"
                     >
                         <Pencil className="size-3.5" />
@@ -819,7 +795,7 @@ function OccupancyCell({ centerId, current, capacity }: { centerId: number; curr
                     type="button"
                     disabled={current <= 0 || updating}
                     onClick={() => patchOccupancy(current - 1)}
-                    className="flex size-6 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-sky-300 hover:bg-sky-50 hover:text-sky-600 disabled:cursor-not-allowed disabled:opacity-30 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-sky-700/40 dark:hover:bg-sky-950/20 dark:hover:text-sky-400"
+                    className="flex size-6 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-30 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-white"
                     title="Decrease occupancy"
                 >
                     <Minus className="size-3" />
@@ -833,13 +809,13 @@ function OccupancyCell({ centerId, current, capacity }: { centerId: number; curr
                     min={0}
                     max={capacity}
                     disabled={updating}
-                    className="h-6 w-14 rounded-lg border border-neutral-200 bg-white px-1.5 text-center text-xs tabular-nums text-neutral-800 outline-none transition-all focus:border-sky-400 focus:ring-1 focus:ring-sky-500/15 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:focus:border-sky-500"
+                    className="h-6 w-14 rounded-lg border border-neutral-200 bg-white px-1.5 text-center text-xs tabular-nums text-neutral-800 outline-none transition-all focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/15 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:focus:border-neutral-500"
                 />
                 <button
                     type="button"
                     disabled={current >= capacity || updating}
                     onClick={() => patchOccupancy(current + 1)}
-                    className="flex size-6 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-teal-300 hover:bg-teal-50 hover:text-teal-600 disabled:cursor-not-allowed disabled:opacity-30 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-teal-700/40 dark:hover:bg-teal-950/20 dark:hover:text-teal-400"
+                    className="flex size-6 items-center justify-center rounded-lg border border-neutral-200 text-neutral-500 transition-colors hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 disabled:cursor-not-allowed disabled:opacity-30 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-white"
                     title="Increase occupancy"
                 >
                     <Plus className="size-3" />
@@ -1012,9 +988,9 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                 className="w-full max-w-3xl overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-2xl shadow-black/20 dark:border-neutral-700/60 dark:bg-neutral-900"
             >
                 {/* Modal Header */}
-                <div className="flex items-center gap-3.5 bg-gradient-to-r from-sky-500/5 to-blue-600/5 px-6 py-4 dark:from-sky-500/10 dark:to-blue-600/10">
-                    <div className="flex size-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-blue-600 shadow-md shadow-blue-500/20">
-                        <ShieldCheck className="size-5 text-white" />
+                <div className="flex items-center gap-3.5 bg-neutral-50 px-6 py-4 dark:bg-neutral-800/50">
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-neutral-900 dark:bg-white shadow-sm">
+                        <ShieldCheck className="size-5 text-white dark:text-neutral-900" />
                     </div>
                     <div className="flex-1">
                         <h3 className="text-base font-bold text-neutral-900 dark:text-neutral-100">
@@ -1131,7 +1107,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                             >
                                 <div className="flex flex-col gap-1.5">
                                     <div className="relative">
-                                        <Users className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-violet-400" />
+                                        <Users className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                                         <input
                                             type="number"
                                             value={form.data.current_occupancy}
@@ -1139,7 +1115,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                             placeholder="0"
                                             min="0"
                                             max={form.data.capacity || undefined}
-                                            className={`${inputClass} pl-8 focus:border-violet-400 focus:ring-violet-500/15`}
+                                            className={`${inputClass} pl-8 focus:border-neutral-400 focus:ring-neutral-500/15`}
                                         />
                                     </div>
                                     {form.data.capacity && Number(form.data.capacity) > 0 && (
@@ -1151,7 +1127,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                                             ? 'bg-red-500'
                                                             : (Number(form.data.current_occupancy) / Number(form.data.capacity)) >= 0.7
                                                             ? 'bg-amber-500'
-                                                            : 'bg-violet-500'
+                                                            : 'bg-neutral-500'
                                                     }`}
                                                     style={{ width: `${Math.min(Math.round((Number(form.data.current_occupancy) / Number(form.data.capacity)) * 100), 100)}%` }}
                                                 />
@@ -1229,8 +1205,8 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                 title={!isReady && !isEditing ? 'Fill in all fields and pin a location first' : undefined}
                                 className={`inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 ${
                                     isReady || isEditing
-                                        ? 'bg-gradient-to-r from-sky-500 to-blue-600 shadow-blue-500/20 hover:shadow-blue-500/30'
-                                        : 'bg-neutral-400 shadow-neutral-400/20'
+                                        ? 'bg-neutral-900 dark:bg-white dark:text-neutral-900 shadow-sm hover:bg-neutral-800 dark:hover:bg-neutral-200'
+                                        : 'bg-neutral-400 shadow-sm'
                                 }`}
                             >
                                 {isEditing ? <Save className="size-4" /> : <Plus className="size-4" />}
@@ -1427,7 +1403,7 @@ function MapPicker({
             <p className="flex items-center gap-1 text-[10px] text-neutral-400 dark:text-neutral-500">
                 <Crosshair className="size-3" />
                 {hasPin ? 'Drag the pin to fine-tune the location' : 'Click on the map to place the pin'}
-                {resolving && <span className="ml-1 text-sky-500">· Resolving…</span>}
+                {resolving && <span className="ml-1 text-neutral-500">· Resolving…</span>}
             </p>
         </div>
     );
@@ -1564,7 +1540,7 @@ function AddressAutocomplete({
                 />
                 {fetching && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <div className="size-3.5 animate-spin rounded-full border-2 border-neutral-200 border-t-sky-500" />
+                        <div className="size-3.5 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-900 dark:border-t-white" />
                     </div>
                 )}
             </div>
@@ -1575,7 +1551,7 @@ function AddressAutocomplete({
                         <li
                             key={pred.place_id}
                             onMouseDown={(e) => { e.preventDefault(); selectPrediction(pred); }}
-                            className="flex cursor-pointer flex-col gap-0.5 px-3 py-2.5 transition-colors hover:bg-sky-50 dark:hover:bg-sky-950/30"
+                            className="flex cursor-pointer flex-col gap-0.5 px-3 py-2.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                         >
                             <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
                                 {pred.structured_formatting.main_text}
@@ -1598,7 +1574,7 @@ function FormField({ label, hint, error, children }: { label: string; hint?: str
         <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between gap-2">
                 <label className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">{label}</label>
-                {hint && <span className="text-[10px] font-medium text-sky-600 dark:text-sky-400">{hint}</span>}
+                {hint && <span className="text-[10px] font-medium text-neutral-600 dark:text-neutral-400">{hint}</span>}
             </div>
             {children}
             {error && <p className="text-xs font-medium text-red-600 dark:text-red-400">{error}</p>}

@@ -43,6 +43,7 @@ class UserController extends Controller
         ];
 
         $users = User::where('role', 'resident')
+            ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
             ->when($request->search, fn ($q) => $q->where(function ($q2) use ($request) {
                 $q2->where('name', 'like', "%{$request->search}%")
                    ->orWhere('email', 'like', "%{$request->search}%");

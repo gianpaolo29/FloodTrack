@@ -93,7 +93,7 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Admin', href: '/admin' },
-    { title: 'Teams', href: '/admin/teams' },
+    { title: 'Response Teams', href: '/admin/teams' },
 ];
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -183,20 +183,20 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Teams" />
+            <Head title="Response Teams" />
 
             <div className="flex flex-col gap-4 p-3 sm:gap-6 sm:p-6 lg:p-8">
 
                 {/* Header */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25">
-                            <Users className="size-5 sm:size-6 text-white" />
+                        <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 shadow-sm dark:bg-white">
+                            <Users className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Teams</h1>
+                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Response Teams</h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-                                Organize responders into coordinated teams.
+                                Organize rescue personnel into coordinated flood response teams.
                             </p>
                         </div>
                     </div>
@@ -204,7 +204,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/teams" />
                         <button
                             onClick={() => setShowCreate(true)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 active:scale-[0.97]"
+                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
                         >
                             <Plus className="size-4" />
                             Create Team
@@ -215,13 +215,13 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                 {/* Stat cards */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                     <PrimaryStatCard
-                        label="Total Teams"
+                        label="Total Response Teams"
                         value={stats.total_teams}
                         trend={trends.total_teams}
                         trendLabel={`${trends.label}, ${trends.period_label}`}
                         desc={smartDesc('total_teams')}
                         insights={[
-                            { label: 'In Teams', value: stats.in_teams, color: '#10b981' },
+                            { label: 'Assigned to Teams', value: stats.in_teams, color: '#10b981' },
                             { label: 'Unassigned', value: stats.unassigned, color: '#f59e0b' },
                         ]}
                         icon={Users}
@@ -236,7 +236,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                         grad="from-blue-500 to-indigo-500"
                         shadow="shadow-blue-500/25"
                         value={stats.total_responders}
-                        label="Total Responders"
+                        label="Total Personnel"
                         desc={smartDesc('total_responders')}
                         insights={[]}
                         trendLabel={trends.label}
@@ -249,7 +249,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                         grad="from-emerald-500 to-teal-500"
                         shadow="shadow-emerald-500/25"
                         value={stats.in_teams}
-                        label="In Teams"
+                        label="Assigned to Teams"
                         desc={smartDesc('in_teams')}
                         insights={[
                             { label: '% assigned', value: stats.total_responders > 0 ? `${Math.round((stats.in_teams / stats.total_responders) * 100)}%` : '0%', color: '#10b981' },
@@ -264,7 +264,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                         grad="from-amber-500 to-orange-500"
                         shadow="shadow-amber-500/25"
                         value={stats.unassigned}
-                        label="Unassigned"
+                        label="Unassigned Personnel"
                         desc={smartDesc('unassigned')}
                         insights={[]}
                         trendLabel={trends.label}
@@ -281,7 +281,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                     <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
                         <div className="flex items-center gap-2.5">
                             <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">All Teams</span>
-                            <span className="inline-flex items-center rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
+                            <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
                                 {teams.total}
                             </span>
                         </div>
@@ -293,7 +293,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                                     placeholder="Search teams..."
                                     value={searchValue}
                                     onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500"
+                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-900"
                                 />
                                 {searchValue && (
                                     <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -307,8 +307,8 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                     {/* Team cards grid */}
                     {filtered.length === 0 ? (
                         <div className="flex flex-col items-center gap-3 py-20">
-                            <div className="flex size-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25">
-                                <Users className="size-7 text-white" />
+                            <div className="flex size-16 items-center justify-center rounded-2xl bg-neutral-900 shadow-sm dark:bg-white">
+                                <Users className="size-7 text-white dark:text-neutral-900" />
                             </div>
                             <div className="text-center">
                                 <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">No teams found</p>
@@ -352,7 +352,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
                                                 link.active
-                                                    ? 'bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-sm'
+                                                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
                                                     : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800'
                                             }`}
                                         >
@@ -412,8 +412,8 @@ function TeamCard({ team, onEdit, onDelete, onToggle }: { team: Team; onEdit: ()
             {/* Header */}
             <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
-                    <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl shadow-sm ${team.is_active ? 'bg-gradient-to-br from-violet-500 to-purple-600 shadow-violet-500/20' : 'bg-neutral-300 dark:bg-neutral-600'}`}>
-                        <Shield className="size-5 text-white" />
+                    <div className={`flex size-10 shrink-0 items-center justify-center rounded-xl shadow-sm ${team.is_active ? 'bg-neutral-900 dark:bg-white' : 'bg-neutral-300 dark:bg-neutral-600'}`}>
+                        <Shield className={`size-5 ${team.is_active ? 'text-white dark:text-neutral-900' : 'text-white'}`} />
                     </div>
                     <div>
                         <div className="flex items-center gap-2">
@@ -466,7 +466,7 @@ function TeamCard({ team, onEdit, onDelete, onToggle }: { team: Team; onEdit: ()
             <div className="flex flex-col gap-1.5">
                 {team.members.slice(0, 4).map((m) => (
                     <div key={m.id} className="flex items-center gap-2.5">
-                        <div className={`flex size-6 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold text-white ${m.is_leader ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gradient-to-br from-indigo-400 to-blue-500'}`}>
+                        <div className={`flex size-6 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold text-white ${m.is_leader ? 'bg-neutral-900' : 'bg-neutral-500'}`}>
                             {m.name.charAt(0).toUpperCase()}
                         </div>
                         <span className="truncate text-xs text-neutral-700 dark:text-neutral-300">{m.name}</span>
@@ -508,7 +508,7 @@ function TeamCard({ team, onEdit, onDelete, onToggle }: { team: Team; onEdit: ()
             {/* Footer */}
             <div className="flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
                 <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
-                    Created {new Date(team.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    Created {new Date(team.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
                 {team.active_assignments > 0 && (
                     <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400">
@@ -579,7 +579,7 @@ function TeamFormModal({
     };
 
     const inputClass =
-        'w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-violet-400 focus:bg-white focus:ring-2 focus:ring-violet-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100 dark:placeholder:text-neutral-500';
+        'w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-900';
 
     return (
         <motion.div
@@ -600,8 +600,8 @@ function TeamFormModal({
             >
                 {/* Header */}
                 <div className="flex items-center gap-3 border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
-                    <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-sm">
-                        {isEdit ? <Pencil className="size-4 text-white" /> : <Plus className="size-4 text-white" />}
+                    <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                        {isEdit ? <Pencil className="size-4 text-white dark:text-neutral-900" /> : <Plus className="size-4 text-white dark:text-neutral-900" />}
                     </div>
                     <div>
                         <h3 className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
@@ -662,16 +662,16 @@ function TeamFormModal({
                                 return (
                                     <label
                                         key={r.id}
-                                        className={`flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors ${selected ? 'bg-violet-50/60 dark:bg-violet-950/20' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'} ${!isLast ? 'border-b border-neutral-100 dark:border-neutral-800' : ''}`}
+                                        className={`flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors ${selected ? 'bg-neutral-100 dark:bg-neutral-800/40' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'} ${!isLast ? 'border-b border-neutral-100 dark:border-neutral-800' : ''}`}
                                     >
                                         <input
                                             type="checkbox"
                                             checked={selected}
                                             onChange={() => toggleMember(String(r.id))}
                                             disabled={isLeader} // leader always included
-                                            className="size-4 rounded accent-violet-600"
+                                            className="size-4 rounded accent-neutral-900 dark:accent-white"
                                         />
-                                        <div className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white ${isLeader ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-gradient-to-br from-indigo-400 to-blue-500'}`}>
+                                        <div className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white ${isLeader ? 'bg-neutral-900' : 'bg-neutral-500'}`}>
                                             {r.name.charAt(0).toUpperCase()}
                                         </div>
                                         <div className="min-w-0 flex-1">
@@ -705,7 +705,7 @@ function TeamFormModal({
                         <button
                             type="submit"
                             disabled={form.processing}
-                            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:shadow-md hover:brightness-110 disabled:opacity-50"
+                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                         >
                             {isEdit ? <Pencil className="size-3.5" /> : <Plus className="size-3.5" />}
                             {form.processing ? (isEdit ? 'Saving...' : 'Creating...') : isEdit ? 'Save Changes' : 'Create Team'}

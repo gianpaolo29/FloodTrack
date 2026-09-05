@@ -19,11 +19,14 @@ class TeamController extends Controller
 
     public function index(Request $request): Response
     {
+        [$from, $to, $period] = $this->parsePeriod($request);
+
         $avgExpr = DB::getDriverName() === 'sqlite'
             ? "(julianday(resolved_at) - julianday(created_at)) * 1440"
             : "TIMESTAMPDIFF(MINUTE, created_at, resolved_at)";
 
         $teams = Team::with(['leader:id,name,avatar', 'members:id,name,avatar,team_id'])
+            ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
             ->withCount([
                 'reports as active_assignments' => fn ($q) => $q->where('status', 'assigned'),
                 'reports as total_assigned',
@@ -54,7 +57,6 @@ class TeamController extends Controller
             ->get(['id', 'name', 'email', 'avatar', 'team_id'])
             ->each(fn ($r) => $r->append('avatar_url'));
 
-        [$from, $to, $period] = $this->parsePeriod($request);
         [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
 
         $curTotalTeams  = $this->scopeByPeriod(Team::query(), $from, $to)->count();

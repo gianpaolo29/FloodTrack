@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Notifications\NewReportSubmitted;
 use App\Notifications\ReportStatusChanged;
 use App\Services\ExpoPushService;
+use App\Services\AdvisoryService;
 use App\Services\ReportAnalysisService;
 use App\Services\SlaService;
 use App\Services\SocketService;
@@ -116,24 +117,60 @@ class ReportController extends Controller
                 'notes'     => 'Auto-verified: AI confirmed flood in submitted photo.',
             ]);
 
-            $report->user->notify(new \App\Notifications\ReportStatusChanged($report, 'pending', 'verified'));
-
-            ExpoPushService::sendToUsers(
-                $report->user_id,
-                "Report {$report->reference_number} Verified",
-                'Your flood report has been verified automatically.',
-                [
-                    'type'     => 'status_update',
-                    'reportId' => $report->id,
-                    'status'   => 'verified',
-                ],
-                'my_reports'
-            );
-
-            SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'verified']);
-            SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'verified']);
-
             app(SlaService::class)->advanceStage($report, 'verified');
+
+            // Low/moderate: generate AI advisory and transition to acknowledged
+            if (! $report->requiresAssignment()) {
+                $advisory = AdvisoryService::generate($report);
+                $report->update([
+                    'status'   => 'acknowledged',
+                    'advisory' => $advisory,
+                ]);
+
+                ReportStatusUpdate::create([
+                    'report_id' => $report->id,
+                    'user_id'   => null,
+                    'status'    => 'acknowledged',
+                    'notes'     => 'AI advisory generated with nearby evacuation centers and safety guidance.',
+                ]);
+
+                $report->user->notify(new \App\Notifications\ReportStatusChanged($report, 'verified', 'acknowledged'));
+
+                ExpoPushService::sendToUsers(
+                    $report->user_id,
+                    "Report {$report->reference_number} — Safety Advisory",
+                    'We\'ve reviewed your report and prepared safety guidance for you. Open the app for details.',
+                    [
+                        'type'     => 'advisory',
+                        'reportId' => $report->id,
+                        'status'   => 'acknowledged',
+                    ],
+                    'my_reports'
+                );
+
+                SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'acknowledged']);
+                SocketService::toUser($report->user_id, 'new-notification', ['type' => 'advisory', 'reportId' => $report->id, 'status' => 'acknowledged']);
+
+                app(SlaService::class)->advanceStage($report, 'acknowledged');
+            } else {
+                // High/critical: just notify about verification
+                $report->user->notify(new \App\Notifications\ReportStatusChanged($report, 'pending', 'verified'));
+
+                ExpoPushService::sendToUsers(
+                    $report->user_id,
+                    "Report {$report->reference_number} Verified",
+                    'Your flood report has been verified automatically.',
+                    [
+                        'type'     => 'status_update',
+                        'reportId' => $report->id,
+                        'status'   => 'verified',
+                    ],
+                    'my_reports'
+                );
+
+                SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'verified']);
+                SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'verified']);
+            }
 
         } elseif ($autoRejected) {
             $rejectReason = $exifFailed

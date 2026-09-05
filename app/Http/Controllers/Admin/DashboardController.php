@@ -77,28 +77,6 @@ class DashboardController extends Controller
                 'resolved' => (int) $row->resolved,
             ]);
 
-        // Monthly reports for the last 6 months
-        $monthExpr = $this->isUsingSqlite()
-            ? "strftime('%Y-%m', created_at)"
-            : "DATE_FORMAT(created_at, '%Y-%m')";
-
-        $monthlyReports = Report::select(
-                DB::raw("$monthExpr as month"),
-                DB::raw("COUNT(*) as total"),
-                DB::raw("SUM(CASE WHEN severity = 'critical' THEN 1 ELSE 0 END) as critical"),
-                DB::raw("SUM(CASE WHEN severity = 'high' THEN 1 ELSE 0 END) as high")
-            )
-            ->where('created_at', '>=', now()->subMonths(6))
-            ->groupBy(DB::raw($monthExpr))
-            ->orderBy('month')
-            ->get()
-            ->map(fn ($row) => [
-                'month' => Carbon::parse($row->month . '-01')->format('M'),
-                'total' => (int) $row->total,
-                'critical' => (int) $row->critical,
-                'high' => (int) $row->high,
-            ]);
-
         // Breakdowns (scoped by period)
         $severity_breakdown = (clone $reportQuery)->selectRaw('severity, count(*) as count')
             ->groupBy('severity')
@@ -110,28 +88,20 @@ class DashboardController extends Controller
 
         // Recent reports
         $recent_reports = Report::with('user:id,name')
+            ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
             ->latest()
             ->limit(10)
             ->get(['id', 'reference_number', 'severity', 'status', 'address', 'latitude', 'longitude', 'user_id', 'created_at']);
 
         // Active alerts
-        $active_alerts = Alert::count();
+        $active_alerts = $this->scopeByPeriod(Alert::query(), $from, $to)->count();
 
         // Critical alerts list (for banner)
         $critical_alerts = Alert::where('type', 'critical')
+            ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
             ->latest()
             ->limit(3)
             ->get(['id', 'title', 'body', 'type', 'created_at']);
-
-        // Top responders
-        $top_responders = User::where('role', 'responder')
-            ->withCount(['assignedReports as resolved_count' => function ($q) {
-                $q->where('status', 'resolved');
-            }])
-            ->withCount('assignedReports as total_assigned')
-            ->orderByDesc('resolved_count')
-            ->limit(5)
-            ->get(['id', 'name', 'email']);
 
         // Average response time (minutes from created_at to resolved_at)
         $avgResponseQuery = Report::where('status', 'resolved')
@@ -151,6 +121,7 @@ class DashboardController extends Controller
         if (class_exists(ReportStatusUpdate::class)) {
             try {
                 $recent_activity = ReportStatusUpdate::with(['user:id,name,role', 'report:id,reference_number,severity'])
+                    ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
                     ->latest()
                     ->limit(8)
                     ->get();
@@ -166,16 +137,17 @@ class DashboardController extends Controller
 
         // Active flood reports (for map pins)
         $map_reports = Report::whereIn('status', ['pending', 'verified', 'assigned'])
+            ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
             ->latest()
             ->limit(50)
             ->get(['id', 'reference_number', 'severity', 'status', 'latitude', 'longitude', 'address']);
 
         $team_stats = [
-            'active'   => Team::where('is_active', true)->count(),
-            'deployed' => Team::where('is_active', true)
+            'active'   => $this->scopeByPeriod(Team::where('is_active', true), $from, $to)->count(),
+            'deployed' => $this->scopeByPeriod(Team::where('is_active', true), $from, $to)
                 ->whereHas('reports', fn ($q) => $q->where('status', 'assigned'))
                 ->count(),
-            'inactive' => Team::where('is_active', false)->count(),
+            'inactive' => $this->scopeByPeriod(Team::where('is_active', false), $from, $to)->count(),
         ];
 
         return Inertia::render('admin/dashboard', [
@@ -191,13 +163,11 @@ class DashboardController extends Controller
                 'period_label' => $trendPeriodLabel,
             ],
             'daily_reports'      => $dailyReports,
-            'monthly_reports'    => $monthlyReports,
             'severity_breakdown' => $severity_breakdown,
             'status_breakdown'   => $status_breakdown,
             'recent_reports'     => $recent_reports,
             'active_alerts'      => $active_alerts,
             'critical_alerts'    => $critical_alerts,
-            'top_responders'     => $top_responders,
             'avg_response_time'  => $avgResponseMinutes,
             'recent_activity'    => $recent_activity,
             'affected_areas'     => $affected_areas,
