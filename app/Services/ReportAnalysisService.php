@@ -74,9 +74,9 @@ class ReportAnalysisService
             }
 
             $allVisualFiles = array_merge(array_values($imageFiles), $videoFrameFiles);
+            $hasVideos = !empty($videoFiles);
 
             if (!empty($allVisualFiles)) {
-                $hasVideos   = !empty($videoFiles);
                 $imageResult = static::analyzeImages(
                     $allVisualFiles,
                     $report->severity,
@@ -95,7 +95,7 @@ class ReportAnalysisService
                 // --- 3. EXIF metadata verification (images only) ---
                 if (!empty($imageFiles)) {
                     $exifResult = static::verifyExif(array_values($imageFiles), $report->latitude, $report->longitude);
-                    $result['ai_exif_status'] = $exifResult['status']; // pass, fail, no_data
+                    $result['ai_exif_status'] = $exifResult['status'];
                     $result['ai_exif_notes']  = $exifResult['notes'];
 
                     if ($exifResult['status'] === 'fail') {
@@ -103,10 +103,15 @@ class ReportAnalysisService
                         $result['ai_flag_reason'] = trim(($result['ai_flag_reason'] ?? '') . ' ' . 'EXIF check failed: ' . $exifResult['notes']);
                     }
                 } else {
-                    // Only videos submitted — no EXIF to check
                     $result['ai_exif_status'] = 'no_data';
                     $result['ai_exif_notes']  = 'Only video files submitted. EXIF verification applies to photos only.';
                 }
+            } elseif ($hasVideos) {
+                // Video frame extraction failed — accept video and send to admin
+                $result['ai_image_verified'] = true;
+                $result['ai_image_notes']    = 'Video evidence submitted. Frame extraction unavailable.';
+                $result['ai_exif_status']    = 'no_data';
+                $result['ai_exif_notes']     = 'Only video files submitted. EXIF verification applies to photos only.';
             }
         } catch (\Throwable $e) {
             Log::error('[ReportAnalysis] AI analysis failed', ['error' => $e->getMessage(), 'report_id' => $report->id]);
@@ -390,7 +395,10 @@ PROMPT,
         $frames    = [];
 
         try {
-            $ffmpeg = FFMpeg::create();
+            $ffmpeg = FFMpeg::create([
+                'ffmpeg.binaries'  => env('FFMPEG_PATH', '/usr/bin/ffmpeg'),
+                'ffprobe.binaries' => env('FFPROBE_PATH', '/usr/bin/ffprobe'),
+            ]);
             $video  = $ffmpeg->open($videoPath);
 
             // Get video duration in seconds

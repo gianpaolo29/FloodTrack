@@ -71,6 +71,13 @@ class AnalyzeReportJob implements ShouldQueue
         $autoRejected = $aiFlags['ai_image_verified'] === false
             || $exifFailed;
 
+        // If AI couldn't verify media (e.g. FFmpeg unavailable), send to admin for manual review
+        if ($aiFlags['ai_image_verified'] === null && !$autoVerified && !$autoRejected) {
+            $admins = User::where('role', 'admin')->get();
+            Notification::send($admins, new NewReportSubmitted($report));
+            return;
+        }
+
         // Initialize SLA tracking
         app(SlaService::class)->initializeTracking($report);
 
