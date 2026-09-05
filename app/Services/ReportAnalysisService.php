@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\Report;
+use FFMpeg\Coordinate\TimeCode;
+use FFMpeg\FFMpeg;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
 use OpenAI;
@@ -33,6 +35,8 @@ class ReportAnalysisService
             'potential_duplicate_of' => null,
         ];
 
+        $tempFrames = [];
+
         try {
             // --- 1. Text analysis: fake/suspicious + duplicate check ---
             // ~1km bounding box (0.009 degrees ≈ 1km)
@@ -57,32 +61,62 @@ class ReportAnalysisService
                 $result['ai_flag_reason']         = trim(($result['ai_flag_reason'] ?? '') . ' ' . 'Possible duplicate report detected.');
             }
 
-            // --- 2. Image analysis ---
-            $imageFiles = array_filter($mediaFiles, fn ($f) => str_starts_with($f->getMimeType(), 'image'));
+            // --- 2. Image & video analysis ---
+            $imageFiles = array_filter($mediaFiles, fn ($f) => static::isImage($f));
+            $videoFiles = array_filter($mediaFiles, fn ($f) => static::isVideo($f));
 
-            if (!empty($imageFiles)) {
-                $imageResult = static::analyzeImages(array_values($imageFiles), $report->severity, $report->description);
+            // Extract frames from videos so AI can verify them alongside images
+            $videoFrameFiles = [];
+            foreach ($videoFiles as $video) {
+                $frames = static::extractVideoFrames($video);
+                $tempFrames = array_merge($tempFrames, $frames);
+                $videoFrameFiles = array_merge($videoFrameFiles, $frames);
+            }
+
+            $allVisualFiles = array_merge(array_values($imageFiles), $videoFrameFiles);
+
+            if (!empty($allVisualFiles)) {
+                $hasVideos   = !empty($videoFiles);
+                $imageResult = static::analyzeImages(
+                    $allVisualFiles,
+                    $report->severity,
+                    $report->description,
+                    $hasVideos,
+                );
 
                 $result['ai_image_verified'] = $imageResult['verified'];
                 $result['ai_image_notes']    = $imageResult['notes'];
 
                 if (!$imageResult['verified']) {
                     $result['ai_flagged']     = true;
-                    $result['ai_flag_reason'] = trim(($result['ai_flag_reason'] ?? '') . ' ' . 'Image verification failed: ' . $imageResult['notes']);
+                    $result['ai_flag_reason'] = trim(($result['ai_flag_reason'] ?? '') . ' ' . 'Media verification failed: ' . $imageResult['notes']);
                 }
 
-                // --- 3. EXIF metadata verification ---
-                $exifResult = static::verifyExif(array_values($imageFiles), $report->latitude, $report->longitude);
-                $result['ai_exif_status'] = $exifResult['status']; // pass, fail, no_data
-                $result['ai_exif_notes']  = $exifResult['notes'];
+                // --- 3. EXIF metadata verification (images only) ---
+                if (!empty($imageFiles)) {
+                    $exifResult = static::verifyExif(array_values($imageFiles), $report->latitude, $report->longitude);
+                    $result['ai_exif_status'] = $exifResult['status']; // pass, fail, no_data
+                    $result['ai_exif_notes']  = $exifResult['notes'];
 
-                if ($exifResult['status'] === 'fail') {
-                    $result['ai_flagged']     = true;
-                    $result['ai_flag_reason'] = trim(($result['ai_flag_reason'] ?? '') . ' ' . 'EXIF check failed: ' . $exifResult['notes']);
+                    if ($exifResult['status'] === 'fail') {
+                        $result['ai_flagged']     = true;
+                        $result['ai_flag_reason'] = trim(($result['ai_flag_reason'] ?? '') . ' ' . 'EXIF check failed: ' . $exifResult['notes']);
+                    }
+                } else {
+                    // Only videos submitted — no EXIF to check
+                    $result['ai_exif_status'] = 'no_data';
+                    $result['ai_exif_notes']  = 'Only video files submitted. EXIF verification applies to photos only.';
                 }
             }
         } catch (\Throwable $e) {
             Log::error('[ReportAnalysis] AI analysis failed', ['error' => $e->getMessage(), 'report_id' => $report->id]);
+        } finally {
+            // Clean up temporary frame files
+            foreach ($tempFrames as $framePath) {
+                if (is_string($framePath)) {
+                    @unlink($framePath);
+                }
+            }
         }
 
         return $result;
@@ -143,23 +177,27 @@ PROMPT;
         ];
     }
 
-    private static function analyzeImages(array $files, string $severity, ?string $description): array
+    private static function analyzeImages(array $files, string $severity, ?string $description, bool $hasVideos = false): array
     {
+        $mediaNote = $hasVideos
+            ? "\n\nSome images below are frames extracted from submitted video clips. Verify these the same way as photos — they should show real flood conditions, not recordings of screens, pre-recorded footage, or unrelated content."
+            : '';
+
         $content = [
             [
                 'type' => 'text',
                 'text' => <<<PROMPT
-You are verifying images submitted with a flood incident report in the Philippines.
+You are verifying media submitted with a flood incident report in the Philippines.
 
 Report severity: {$severity}
 Report description: {$description}
 
-NOTE: The description may be written in Tagalog, Filipino, or English — this is normal and should NOT affect your image verification decision. Focus solely on what is visible in the photo.
+NOTE: The description may be written in Tagalog, Filipino, or English — this is normal and should NOT affect your verification decision. Focus solely on what is visible in the media.{$mediaNote}
 
 For each image check:
 1. Does it show visible flooding, water damage, flood-related hazard, or people needing help due to flooding?
 2. Does the severity match what is visible?
-3. Does it appear to be a real photo (not AI-generated, stock photo, or unrelated image)?
+3. Does it appear to be a real photo/video frame (not AI-generated, stock photo, or unrelated image)?
 4. Is it a photo of a screen? Even zoomed-in screen photos have telltale signs:
    - Visible pixel grid, RGB subpixel pattern, or dot matrix
    - Moiré patterns (wavy interference lines)
@@ -168,12 +206,12 @@ For each image check:
    - Flat/unnatural color reproduction lacking depth and natural lighting variation
    - Unnaturally sharp or overly smooth areas (no lens blur, bokeh, or depth of field)
    - Watermarks, UI elements, browser chrome, or social media overlays
-   Photos of screens are NOT valid evidence, even if no device edges are visible.
+   Photos/recordings of screens are NOT valid evidence, even if no device edges are visible.
 
 Mark as NOT verified if:
-- The photo does NOT show any visible flood, water damage, or flood-related need for help
+- The media does NOT show any visible flood, water damage, or flood-related need for help
 - The image appears to be AI-generated, a stock photo, or downloaded from the internet
-- The image shows signs of being a photo of a screen (even without visible device edges)
+- The image shows signs of being a photo/recording of a screen (even without visible device edges)
 
 Respond ONLY with valid JSON:
 {
@@ -185,8 +223,17 @@ PROMPT,
         ];
 
         foreach ($files as $file) {
-            $base64   = base64_encode(file_get_contents($file->getRealPath()));
-            $mimeType = $file->getMimeType();
+            if (is_string($file)) {
+                $path = $file;
+                $mimeType = 'image/jpeg';
+            } elseif ($file instanceof UploadedFile) {
+                $path = $file->getRealPath();
+                $mimeType = $file->getMimeType();
+            } else {
+                $path = $file->getPathname();
+                $mimeType = mime_content_type($path) ?: 'image/jpeg';
+            }
+            $base64 = base64_encode(file_get_contents($path));
 
             $content[] = [
                 'type'      => 'image_url',
@@ -226,7 +273,7 @@ PROMPT,
         $hasExif = false;
 
         foreach ($files as $file) {
-            $path = $file->getRealPath();
+            $path = $file instanceof UploadedFile ? $file->getRealPath() : $file->getPathname();
 
             if (!function_exists('exif_read_data')) {
                 return ['status' => 'no_data', 'notes' => 'EXIF extension not available on server.'];
@@ -328,6 +375,79 @@ PROMPT,
         }
 
         return (float) $parts[0];
+    }
+
+    /**
+     * Extract frames from a video file using php-ffmpeg.
+     * Returns an array of temporary file paths (JPEG frames).
+     * Extracts 3 frames: at 1s, mid-point, and near the end.
+     *
+     * @return string[] Paths to temporary frame files
+     */
+    private static function extractVideoFrames($videoFile): array
+    {
+        $videoPath = $videoFile instanceof UploadedFile ? $videoFile->getRealPath() : $videoFile->getPathname();
+        $frames    = [];
+
+        try {
+            $ffmpeg = FFMpeg::create();
+            $video  = $ffmpeg->open($videoPath);
+
+            // Get video duration in seconds
+            $duration = $video->getStreams()->videos()->first()?->get('duration') ?? 15;
+            $duration = (float) $duration;
+
+            // Extract 3 frames: 1s, midpoint, and 1s before end
+            $timestamps = [
+                min(1, $duration * 0.1),
+                $duration * 0.5,
+                max(0, $duration - 1),
+            ];
+
+            foreach ($timestamps as $i => $ts) {
+                $tmpPath = sys_get_temp_dir() . '/floodtrack_frame_' . uniqid() . "_{$i}.jpg";
+
+                $video->frame(TimeCode::fromSeconds($ts))
+                    ->save($tmpPath);
+
+                if (file_exists($tmpPath) && filesize($tmpPath) > 0) {
+                    $frames[] = $tmpPath;
+                } else {
+                    @unlink($tmpPath);
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[ReportAnalysis] Failed to extract frames from video.', [
+                'path'  => $videoPath,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $frames;
+    }
+
+    /**
+     * Determine if a file is an image (supports UploadedFile and SplFileInfo).
+     */
+    private static function isImage($file): bool
+    {
+        if ($file instanceof UploadedFile) {
+            return str_starts_with($file->getMimeType(), 'image');
+        }
+        $ext = strtolower(pathinfo($file->getPathname(), PATHINFO_EXTENSION));
+        return in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp']);
+    }
+
+    /**
+     * Determine if a file is a video (supports UploadedFile and SplFileInfo).
+     */
+    private static function isVideo($file): bool
+    {
+        if ($file instanceof UploadedFile) {
+            return str_starts_with($file->getMimeType(), 'video');
+        }
+        $ext = strtolower(pathinfo($file->getPathname(), PATHINFO_EXTENSION));
+        return in_array($ext, ['mp4', 'mov', 'avi', 'mkv', 'webm']);
     }
 
     /**

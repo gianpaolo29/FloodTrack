@@ -8,16 +8,12 @@ use App\Models\Report;
 use App\Models\ReportMedia;
 use App\Models\ReportStatusUpdate;
 use App\Models\User;
-use App\Notifications\NewReportSubmitted;
+use App\Jobs\AnalyzeReportJob;
 use App\Notifications\ReportStatusChanged;
 use App\Services\ExpoPushService;
-use App\Services\AdvisoryService;
-use App\Services\ReportAnalysisService;
 use App\Services\SlaService;
 use App\Services\SocketService;
-use App\Services\WeatherService;
 use Illuminate\Http\Request;
-use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
@@ -54,7 +50,7 @@ class ReportController extends Controller
             'longitude'   => 'required|numeric|between:-180,180',
             'address'     => 'nullable|string|max:255',
             'media'       => 'nullable|array|max:5',
-            'media.*'     => 'file|mimes:jpg,jpeg,png,mp4,mov|max:51200',
+            'media.*'     => 'file|mimes:jpg,jpeg,png,mp4,mov,avi,mkv,webm|max:51200',
         ]);
 
         $report = $request->user()->reports()->create($data);
@@ -77,143 +73,8 @@ class ReportController extends Controller
             'notes'     => 'Report submitted.',
         ]);
 
-        // AI analysis: duplicate detection, fake report check, image verification
-        $mediaFiles = $request->hasFile('media') ? $request->file('media') : [];
-        $aiFlags    = ReportAnalysisService::analyze($report, $mediaFiles);
-        $report->update($aiFlags);
-
-        // Auto-process based on AI verdict
-        // Check if there's a thunderstorm at the report location
-        $hasThunderstorm = false;
-        try {
-            $weather = app(WeatherService::class)->current($report->latitude, $report->longitude);
-            $hasThunderstorm = str_contains(strtolower($weather['main'] ?? ''), 'thunderstorm');
-        } catch (\Throwable $e) {
-            // Weather check failed — proceed without it
-        }
-
-        $exifFailed = $aiFlags['ai_exif_status'] === 'fail';
-
-        $autoVerified = $aiFlags['ai_image_verified'] === true
-            && !$exifFailed
-            && ($hasThunderstorm || ($aiFlags['ai_flagged'] === false && $aiFlags['potential_duplicate_of'] === null));
-
-        $autoRejected = $aiFlags['ai_image_verified'] === false
-            || $exifFailed;
-
-        // Initialize SLA tracking for the new report
-        app(SlaService::class)->initializeTracking($report);
-
-        if ($autoVerified) {
-            $report->update([
-                'status'      => 'verified',
-                'verified_at' => now(),
-            ]);
-
-            ReportStatusUpdate::create([
-                'report_id' => $report->id,
-                'user_id'   => null,
-                'status'    => 'verified',
-                'notes'     => 'Auto-verified: AI confirmed flood in submitted photo.',
-            ]);
-
-            app(SlaService::class)->advanceStage($report, 'verified');
-
-            // Low/moderate: generate AI advisory and transition to acknowledged
-            if (! $report->requiresAssignment()) {
-                $advisory = AdvisoryService::generate($report);
-                $report->update([
-                    'status'   => 'acknowledged',
-                    'advisory' => $advisory,
-                ]);
-
-                ReportStatusUpdate::create([
-                    'report_id' => $report->id,
-                    'user_id'   => null,
-                    'status'    => 'acknowledged',
-                    'notes'     => 'AI advisory generated with nearby evacuation centers and safety guidance.',
-                ]);
-
-                $report->user->notify(new \App\Notifications\ReportStatusChanged($report, 'verified', 'acknowledged'));
-
-                ExpoPushService::sendToUsers(
-                    $report->user_id,
-                    "Report {$report->reference_number} — Safety Advisory",
-                    'We\'ve reviewed your report and prepared safety guidance for you. Open the app for details.',
-                    [
-                        'type'     => 'advisory',
-                        'reportId' => $report->id,
-                        'status'   => 'acknowledged',
-                    ],
-                    'my_reports'
-                );
-
-                SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'acknowledged']);
-                SocketService::toUser($report->user_id, 'new-notification', ['type' => 'advisory', 'reportId' => $report->id, 'status' => 'acknowledged']);
-
-                app(SlaService::class)->advanceStage($report, 'acknowledged');
-            } else {
-                // High/critical: just notify about verification
-                $report->user->notify(new \App\Notifications\ReportStatusChanged($report, 'pending', 'verified'));
-
-                ExpoPushService::sendToUsers(
-                    $report->user_id,
-                    "Report {$report->reference_number} Verified",
-                    'Your flood report has been verified automatically.',
-                    [
-                        'type'     => 'status_update',
-                        'reportId' => $report->id,
-                        'status'   => 'verified',
-                    ],
-                    'my_reports'
-                );
-
-                SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'verified']);
-                SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'verified']);
-            }
-
-        } elseif ($autoRejected) {
-            $rejectReason = $exifFailed
-                ? 'Auto-rejected: Photo metadata indicates it may not be an original photo from this location.'
-                : 'Auto-rejected: No flood detected in submitted photo.';
-
-            $report->update(['status' => 'rejected']);
-
-            ReportStatusUpdate::create([
-                'report_id' => $report->id,
-                'user_id'   => null,
-                'status'    => 'rejected',
-                'notes'     => $rejectReason,
-            ]);
-
-            $userMessage = $exifFailed
-                ? 'Your report could not be verified. The photo does not appear to be taken at the reported location.'
-                : 'Your report could not be verified. The photo does not show flooding.';
-
-            $report->user->notify(new \App\Notifications\ReportStatusChanged($report, 'pending', 'rejected'));
-
-            ExpoPushService::sendToUsers(
-                $report->user_id,
-                "Report {$report->reference_number} Not Verified",
-                $userMessage,
-                [
-                    'type'     => 'status_update',
-                    'reportId' => $report->id,
-                    'status'   => 'rejected',
-                ],
-                'my_reports'
-            );
-
-            SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'rejected']);
-            SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'rejected']);
-
-            app(SlaService::class)->advanceStage($report, 'rejected');
-
-        } else {
-            // Needs manual admin review — notify admins
-            $admins = User::where('role', 'admin')->get();
-            Notification::send($admins, new NewReportSubmitted($report));
-        }
+        // Dispatch async AI analysis (duplicate detection, verification, auto-processing)
+        AnalyzeReportJob::dispatch($report->id);
 
         return response()->json(
             $report->load(['media', 'statusUpdates.user:id,name,role']),

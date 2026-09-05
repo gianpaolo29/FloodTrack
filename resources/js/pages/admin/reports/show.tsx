@@ -427,16 +427,21 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
                                                     </div>
                                                 </a>
                                             ) : (
-                                                <a
-                                                    key={m.id}
-                                                    href={m.url}
-                                                    target="_blank"
-                                                    rel="noreferrer"
-                                                    className="group flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-xl bg-neutral-50 ring-1 ring-neutral-200/60 text-neutral-500 transition-all hover:bg-neutral-100 hover:ring-2 hover:ring-neutral-400 dark:bg-neutral-800 dark:ring-neutral-700/60"
-                                                >
-                                                    <Video className="size-6 text-neutral-400 transition-colors group-hover:text-neutral-700 dark:group-hover:text-neutral-200" />
-                                                    <span className="text-xs font-medium">Play Video</span>
-                                                </a>
+                                                <div key={m.id} className="relative overflow-hidden rounded-xl ring-1 ring-neutral-200/60 dark:ring-neutral-700/60">
+                                                    <video
+                                                        src={m.url}
+                                                        controls
+                                                        preload="metadata"
+                                                        className="aspect-video w-full bg-black object-contain"
+                                                    />
+                                                    <div className="flex items-center gap-1.5 bg-neutral-50 px-3 py-1.5 dark:bg-neutral-800">
+                                                        <Video className="size-3 text-neutral-400" />
+                                                        <span className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">Video evidence</span>
+                                                        <a href={m.url} target="_blank" rel="noreferrer" className="ml-auto text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                                            <ExternalLink className="size-3" />
+                                                        </a>
+                                                    </div>
+                                                </div>
                                             ),
                                         )}
                                     </div>
