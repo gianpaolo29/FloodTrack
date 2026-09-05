@@ -396,8 +396,8 @@ PROMPT,
 
         try {
             $ffmpeg = FFMpeg::create([
-                'ffmpeg.binaries'  => env('FFMPEG_PATH', '/usr/bin/ffmpeg'),
-                'ffprobe.binaries' => env('FFPROBE_PATH', '/usr/bin/ffprobe'),
+                'ffmpeg.binaries'  => config('services.ffmpeg.binaries', '/usr/bin/ffmpeg'),
+                'ffprobe.binaries' => config('services.ffmpeg.ffprobe', '/usr/bin/ffprobe'),
             ]);
             $video  = $ffmpeg->open($videoPath);
 

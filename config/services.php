@@ -50,6 +50,11 @@ return [
         'secret' => env('SOCKET_INTERNAL_SECRET', 'change-me-in-production'),
     ],
 
+    'ffmpeg' => [
+        'binaries' => env('FFMPEG_PATH', '/usr/bin/ffmpeg'),
+        'ffprobe'  => env('FFPROBE_PATH', '/usr/bin/ffprobe'),
+    ],
+
     'facebook' => [
         'app_id'            => env('FACEBOOK_APP_ID', ''),
         'app_secret'        => env('FACEBOOK_APP_SECRET', ''),
