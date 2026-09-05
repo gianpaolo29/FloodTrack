@@ -151,7 +151,7 @@ class AnalyzeReportJob implements ShouldQueue
 
         } elseif ($autoRejected) {
             $rejectReason = $exifFailed
-                ? 'Auto-rejected: Photo metadata indicates it may not be an original photo from this location.'
+                ? 'Auto-rejected: Media metadata indicates it may not be original or from this location.'
                 : 'Auto-rejected: No flood detected in submitted media.';
 
             $report->update(['status' => 'rejected']);
@@ -164,7 +164,7 @@ class AnalyzeReportJob implements ShouldQueue
             ]);
 
             $userMessage = $exifFailed
-                ? 'Your report could not be verified. The photo does not appear to be taken at the reported location.'
+                ? 'Your report could not be verified. The media does not appear to be taken at the reported location.'
                 : 'Your report could not be verified. The submitted media does not show flooding.';
 
             $report->user->notify(new \App\Notifications\ReportStatusChanged($report, 'pending', 'rejected'));

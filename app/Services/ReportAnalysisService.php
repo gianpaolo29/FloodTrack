@@ -333,7 +333,7 @@ PROMPT,
         if (!$hasExif) {
             return [
                 'status' => 'no_data',
-                'notes'  => 'No EXIF metadata found. Photo may be downloaded or screenshot.',
+                'notes'  => 'No EXIF metadata found. Media may be downloaded or screenshot.',
             ];
         }
 

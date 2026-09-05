@@ -627,7 +627,7 @@ function ReportRow({ report, isSelected, onToggle }: {
 }) {
     const aiFlags = [
         report.potential_duplicate_of != null && { icon: Copy,        label: 'Duplicate', cls: 'bg-amber-50 text-amber-600 ring-1 ring-amber-500/20 dark:bg-amber-950/30 dark:text-amber-400' },
-        report.ai_image_verified === false     && { icon: ImageOff,    label: 'Bad image', cls: 'bg-amber-50 text-amber-600 ring-1 ring-amber-500/20 dark:bg-amber-950/30 dark:text-amber-400' },
+        report.ai_image_verified === false     && { icon: ImageOff,    label: 'Bad media', cls: 'bg-amber-50 text-amber-600 ring-1 ring-amber-500/20 dark:bg-amber-950/30 dark:text-amber-400' },
         report.ai_flagged && report.potential_duplicate_of == null && report.ai_image_verified !== false
                                                && { icon: AlertCircle, label: 'Flagged',   cls: 'bg-amber-50 text-amber-600 ring-1 ring-amber-500/20 dark:bg-amber-950/30 dark:text-amber-400' },
         report.ai_image_verified === true && !report.ai_flagged

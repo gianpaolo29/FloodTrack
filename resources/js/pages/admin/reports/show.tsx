@@ -846,7 +846,7 @@ function AiAnalysisPanel({ report }: { report: Report }) {
                     <AiBadge icon={<Camera className="size-3" />} label="EXIF metadata verified" color="emerald" />
                 )}
                 {exifFail && (
-                    <AiBadge icon={<CameraOff className="size-3" />} label="EXIF check failed — possible internet photo" color="amber" />
+                    <AiBadge icon={<CameraOff className="size-3" />} label="EXIF check failed — possible downloaded media" color="amber" />
                 )}
                 {exifNoData && (
                     <AiBadge icon={<CameraOff className="size-3" />} label="No EXIF data — may be downloaded" color="amber" />
