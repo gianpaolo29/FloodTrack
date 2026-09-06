@@ -58,10 +58,20 @@ class ReportController extends Controller
         if ($request->hasFile('media')) {
             foreach ($request->file('media') as $file) {
                 $path = $file->store('reports/' . $report->id, 'public');
+                $isVideo = str_starts_with($file->getMimeType(), 'video');
+
+                // Trim videos longer than 15 seconds
+                if ($isVideo) {
+                    $fullPath = Storage::disk('public')->path($path);
+                    static::trimVideoIfNeeded($fullPath, 15);
+                }
+
                 $report->media()->create([
                     'file_path' => $path,
-                    'file_type' => str_starts_with($file->getMimeType(), 'video') ? 'video' : 'image',
-                    'file_size' => $file->getSize(),
+                    'file_type' => $isVideo ? 'video' : 'image',
+                    'file_size' => $isVideo
+                        ? filesize(Storage::disk('public')->path($path))
+                        : $file->getSize(),
                 ]);
             }
         }
@@ -377,5 +387,47 @@ class ReportController extends Controller
         SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'rejected']);
 
         return response()->json($report->fresh());
+    }
+
+    /**
+     * Trim a video to the given max duration (in seconds) using FFmpeg.
+     * Overwrites the original file in place.
+     */
+    private static function trimVideoIfNeeded(string $path, int $maxSeconds): void
+    {
+        try {
+            $ffprobe = config('services.ffmpeg.ffprobe', '/usr/bin/ffprobe');
+            $ffmpeg  = config('services.ffmpeg.binaries', '/usr/bin/ffmpeg');
+
+            // Get video duration
+            $duration = (float) trim(shell_exec(
+                escapeshellarg($ffprobe) . ' -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . escapeshellarg($path)
+            ) ?? '0');
+
+            if ($duration <= $maxSeconds) {
+                return;
+            }
+
+            $trimmed = $path . '.trimmed.mp4';
+            $cmd = sprintf(
+                '%s -y -i %s -t %d -c copy %s 2>/dev/null',
+                escapeshellarg($ffmpeg),
+                escapeshellarg($path),
+                $maxSeconds,
+                escapeshellarg($trimmed),
+            );
+            exec($cmd, $output, $exitCode);
+
+            if ($exitCode === 0 && file_exists($trimmed) && filesize($trimmed) > 0) {
+                rename($trimmed, $path);
+            } else {
+                @unlink($trimmed);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[VideoTrim] Failed to trim video', [
+                'path'  => $path,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

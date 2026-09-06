@@ -37,12 +37,7 @@ class Report extends Model
         'advisory',
     ];
 
-    protected $appends = ['hazard_type', 'sla_status'];
-
-    public function getHazardTypeAttribute(): string
-    {
-        return 'flood';
-    }
+    protected $appends = ['sla_status'];
 
     protected function casts(): array
     {
