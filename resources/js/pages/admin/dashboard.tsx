@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { ApexOptions } from 'apexcharts';
 import {
     AlertTriangle,
+    ArrowUpRight,
     CheckCircle2,
     Clock,
     Droplets,
@@ -16,6 +17,9 @@ import {
     TrendingUp,
     Waves,
     Zap,
+    BarChart3,
+    Target,
+    Activity,
 } from 'lucide-react';
 import ReactApexChart from 'react-apexcharts';
 import AppLayout from '@/layouts/app-layout';
@@ -33,6 +37,8 @@ interface DailyReport { date: string; total: number; resolved: number }
 interface ActivityItem { id: number; status: string; notes: string | null; created_at: string; user: { id: number; name: string; role: string }; report: { id: number; reference_number: string; severity: string } }
 interface MapReport { id: number; reference_number: string; severity: string; status: string; latitude: number; longitude: number; address: string | null }
 interface TeamStats { active: number; deployed: number; inactive: number }
+interface BarangayCount { barangay: string; count: number }
+interface FloodRisk { barangay: string; score: number; level: string; incidents: number }
 
 interface Props {
     stats: Stats;
@@ -48,6 +54,9 @@ interface Props {
     affected_areas: number;
     map_reports: MapReport[];
     team_stats: TeamStats;
+    verification_rate: number;
+    barangay_breakdown: BarangayCount[];
+    flood_risk_scores: FloodRisk[];
     period: string;
     custom_from?: string | null;
     custom_to?: string | null;
@@ -58,7 +67,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/admin' },
 ];
 
-const DONUT_COLORS  = ['#ef4444', '#f97316', '#f59e0b', '#10b981'];
+const DONUT_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#10b981'];
 
 /* ─── Tooltip ─── */
 function tooltipHtml(label: string, rows: { color: string; name: string; value: number | string }[]) {
@@ -74,12 +83,10 @@ function tooltipHtml(label: string, rows: { color: string; name: string; value: 
     </div>`;
 }
 
-/* CalendarPicker, KpiTooltip, PrimaryStatCard, SecondaryStatCard, PeriodToggle — imported from shared kpi modules */
-
 /* ─── Card ─── */
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={`rounded-2xl border border-neutral-200/70 bg-white transition-shadow hover:shadow-lg hover:border-neutral-300/80 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${className}`}>
+        <div className={`rounded-2xl border border-neutral-200/60 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-neutral-900/[0.04] hover:border-neutral-300/70 dark:border-neutral-800/80 dark:bg-neutral-900/80 dark:hover:border-neutral-700 dark:hover:shadow-black/20 ${className}`}>
             {children}
         </div>
     );
@@ -89,8 +96,8 @@ function CardHeader({ icon: Icon, title, subtitle, children }: {
     icon: React.ElementType; title: string; subtitle: string; children?: React.ReactNode;
 }) {
     return (
-        <div className="flex items-center gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
+        <div className="flex items-center gap-3 border-b border-neutral-100/80 px-5 py-4 dark:border-neutral-800/80">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/60">
                 <Icon className="size-4 text-neutral-500 dark:text-neutral-400" />
             </div>
             <div className="min-w-0 flex-1">
@@ -102,13 +109,21 @@ function CardHeader({ icon: Icon, title, subtitle, children }: {
     );
 }
 
+/* ─── Section Header ─── */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+    return (
+        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-400 dark:text-neutral-500">{children}</p>
+    );
+}
+
 export default function AdminDashboard({
     stats, trends, daily_reports,
     severity_breakdown, status_breakdown,
     recent_reports, active_alerts, critical_alerts,
     avg_response_time, recent_activity,
-    affected_areas, map_reports, team_stats, period,
-    custom_from, custom_to,
+    affected_areas, map_reports, team_stats,
+    verification_rate, barangay_breakdown, flood_risk_scores,
+    period, custom_from, custom_to,
 }: Props) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
@@ -137,7 +152,7 @@ export default function AdminDashboard({
         ? Math.round((team_stats.deployed / team_stats.active) * 100) : 0;
 
     /* ── Smart insight generator ── */
-    const tl = trends.label; // e.g. "vs last month"
+    const tl = trends.label;
 
     function smartDesc(key: string): string {
         switch (key) {
@@ -253,6 +268,24 @@ export default function AdminDashboard({
         }
     }
 
+    /* ── KPI Threshold Colors ── */
+    function kpiAccent(key: string): 'green' | 'amber' | 'red' | 'neutral' {
+        switch (key) {
+            case 'active':   return stats.active === 0 ? 'green' : stats.active <= 5 ? 'amber' : 'red';
+            case 'pending':  return stats.pending === 0 ? 'green' : stats.pending <= 5 ? 'amber' : 'red';
+            case 'alerts':   return active_alerts === 0 ? 'green' : active_alerts <= 3 ? 'amber' : 'red';
+            case 'resolved': return stats.resolved_today >= 5 ? 'green' : stats.resolved_today >= 1 ? 'amber' : 'red';
+            case 'response': return avg_response_time <= 0 ? 'neutral' : avg_response_time < 30 ? 'green' : avg_response_time < 120 ? 'amber' : 'red';
+            case 'resolution': return resolutionRate >= 80 ? 'green' : resolutionRate >= 50 ? 'amber' : 'red';
+            default: return 'neutral';
+        }
+    }
+
+    /* ── Verification Rate color ── */
+    const vrColor = verification_rate >= 80 ? '#10b981' : verification_rate >= 50 ? '#f59e0b' : '#ef4444';
+    const vrLabel = verification_rate >= 80 ? 'On Track' : verification_rate >= 50 ? 'Needs Attention' : 'Critical';
+    const vrBg    = verification_rate >= 80 ? 'bg-emerald-500' : verification_rate >= 50 ? 'bg-amber-500' : 'bg-red-500';
+
     /* ── Area Chart ── */
     const areaOptions: ApexOptions = {
         chart: { type: 'area', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600, easing: 'easeinout' }, selection: { enabled: false } },
@@ -325,146 +358,234 @@ export default function AdminDashboard({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
 
-            {/* Page background */}
-            <div className="min-h-full bg-neutral-50/50 dark:bg-neutral-950">
-            <div className="flex flex-col gap-4 p-3 sm:gap-5 sm:p-6 lg:gap-6 lg:p-8">
+            <div className="min-h-full bg-gradient-to-b from-neutral-50 via-neutral-50/80 to-white dark:from-neutral-950 dark:via-neutral-950/80 dark:to-neutral-900">
+            <div className="mx-auto flex max-w-[1600px] flex-col gap-6 p-4 sm:p-6 lg:gap-7 lg:p-8">
 
-                {/* Header */}
+                {/* ━━━ Header ━━━ */}
                 <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
-                    <div className="flex items-center gap-3 sm:gap-4">
-                        <div className="flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 dark:bg-white">
-                            <LayoutDashboard className="size-5 sm:size-6 text-white dark:text-neutral-900" />
+                    <div className="flex items-center gap-3.5">
+                        <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-neutral-900 shadow-lg shadow-neutral-900/20 dark:bg-white dark:shadow-white/10">
+                            <LayoutDashboard className="size-5 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="text-lg font-bold tracking-tight text-neutral-900 sm:text-2xl dark:text-white">
+                            <h1 className="text-xl font-bold tracking-tight text-neutral-900 sm:text-2xl dark:text-white">
                                 Dashboard
                             </h1>
-                            <p className="mt-0.5 text-[11px] text-neutral-500 sm:text-sm dark:text-neutral-400">Real-time overview of flood incidents, response teams, and system performance</p>
+                            <p className="mt-0.5 text-xs text-neutral-500 sm:text-sm dark:text-neutral-400">Real-time overview of flood incidents and system performance</p>
                         </div>
                     </div>
                     <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin" />
                 </div>
 
-                {/* Primary Stats */}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
-                    {([
-                        { label: 'Total Flood Reports',  value: stats.total_reports,    trend: trends.reports,  trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('total_reports'), icon: FileText, grad: 'from-indigo-500 via-blue-500 to-cyan-500', shadow: 'shadow-indigo-500/40', alert: false, insights: [
-                            { label: 'Resolved cases', value: resolvedCount, color: '#10b981' },
-                            { label: 'Flooded areas', value: stats.active, color: '#3b82f6' },
-                            { label: 'Awaiting verification', value: stats.pending, color: '#f59e0b' },
-                            { label: 'Rejected reports', value: rejectedCount, color: '#94a3b8' },
-                        ] },
-                        { label: 'Flooded Areas',  value: stats.active, trend: trends.active, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('active_floods'), icon: Waves, grad: 'from-cyan-500 via-teal-500 to-emerald-500', shadow: 'shadow-cyan-500/40', alert: false, insights: [
-                            { label: 'Critical flood incidents', value: criticalCount, color: '#ef4444' },
-                            { label: 'High severity floods', value: highCount, color: '#f97316' },
-                            { label: '% of total flood reports', value: `${activePct}%`, color: '#3b82f6' },
-                        ] },
-                        { label: 'Awaiting Verification', value: stats.pending, trend: trends.pending, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('pending'), icon: Clock, grad: 'from-amber-400 via-orange-500 to-rose-500', shadow: 'shadow-amber-500/40', alert: stats.pending > 0, insights: [
-                            { label: '% of total flood reports', value: `${pendingPct}%`, color: '#f59e0b' },
-                            { label: 'Resolved today', value: stats.resolved_today, color: '#10b981' },
-                            { label: 'Avg response time', value: formatResponseTime(avg_response_time), color: '#6366f1' },
-                        ] },
-                        { label: 'Rescue Personnel', value: stats.total_responders, trend: undefined, trendLabel: `${stats.resolved_today} cases resolved today`, desc: smartDesc('responders'), icon: ShieldCheck, grad: 'from-violet-500 via-purple-500 to-indigo-600', shadow: 'shadow-violet-500/40', alert: false, insights: [
-                            { label: 'Reports per personnel', value: reportsPerResponder, color: '#8b5cf6' },
-                            { label: 'Cases resolved today', value: stats.resolved_today, color: '#10b981' },
-                            { label: 'Response teams deployed', value: team_stats.deployed, color: '#06b6d4' },
-                        ] },
-                        { label: 'Announcements', value: active_alerts, trend: trends.alerts, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('alerts'), icon: AlertTriangle, grad: 'from-rose-500 via-red-500 to-pink-600', shadow: 'shadow-rose-500/40', alert: active_alerts > 0, insights: [
-                            { label: 'Critical announcements', value: critical_alerts.length, color: '#ef4444' },
-                            { label: 'Affected areas', value: affected_areas, color: '#8b5cf6' },
-                            { label: 'Flooded areas', value: stats.active, color: '#06b6d4' },
-                        ] },
-                    ] as const).map(({ label, value, trend, trendLabel, desc, insights, icon: Icon, grad, shadow, alert }, i) => (
-                        <PrimaryStatCard
-                            key={label}
-                            label={label} value={value} trend={trend} trendLabel={trendLabel} desc={desc} insights={[...insights]}
-                            icon={Icon} grad={grad} shadow={shadow} alert={alert}
-                            index={i} mounted={mounted}
-                        />
-                    ))}
+                {/* ━━━ Primary KPI Cards ━━━ */}
+                <div>
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
+                        {([
+                            { label: 'Total Flood Reports', value: stats.total_reports, trend: trends.reports, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('total_reports'), icon: FileText, grad: 'from-indigo-500 via-blue-500 to-cyan-500', shadow: 'shadow-indigo-500/40', alert: false, accent: 'neutral' as const, insights: [
+                                { label: 'Resolved cases', value: resolvedCount, color: '#10b981' },
+                                { label: 'Flooded areas', value: stats.active, color: '#3b82f6' },
+                                { label: 'Awaiting verification', value: stats.pending, color: '#f59e0b' },
+                                { label: 'Rejected reports', value: rejectedCount, color: '#94a3b8' },
+                            ] },
+                            { label: 'Flooded Areas', value: stats.active, trend: trends.active, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('active_floods'), icon: Waves, grad: 'from-cyan-500 via-teal-500 to-emerald-500', shadow: 'shadow-cyan-500/40', alert: false, accent: kpiAccent('active'), insights: [
+                                { label: 'Critical flood incidents', value: criticalCount, color: '#ef4444' },
+                                { label: 'High severity floods', value: highCount, color: '#f97316' },
+                                { label: '% of total flood reports', value: `${activePct}%`, color: '#3b82f6' },
+                            ] },
+                            { label: 'Awaiting Verification', value: stats.pending, trend: trends.pending, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('pending'), icon: Clock, grad: 'from-amber-400 via-orange-500 to-rose-500', shadow: 'shadow-amber-500/40', alert: stats.pending > 0, accent: kpiAccent('pending'), insights: [
+                                { label: '% of total flood reports', value: `${pendingPct}%`, color: '#f59e0b' },
+                                { label: 'Resolved today', value: stats.resolved_today, color: '#10b981' },
+                                { label: 'Avg response time', value: formatResponseTime(avg_response_time), color: '#6366f1' },
+                            ] },
+                            { label: 'Rescue Personnel', value: stats.total_responders, trend: undefined, trendLabel: `${stats.resolved_today} cases resolved today`, desc: smartDesc('responders'), icon: ShieldCheck, grad: 'from-violet-500 via-purple-500 to-indigo-600', shadow: 'shadow-violet-500/40', alert: false, accent: 'neutral' as const, insights: [
+                                { label: 'Reports per personnel', value: reportsPerResponder, color: '#8b5cf6' },
+                                { label: 'Cases resolved today', value: stats.resolved_today, color: '#10b981' },
+                                { label: 'Response teams deployed', value: team_stats.deployed, color: '#06b6d4' },
+                            ] },
+                            { label: 'Announcements', value: active_alerts, trend: trends.alerts, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('alerts'), icon: AlertTriangle, grad: 'from-rose-500 via-red-500 to-pink-600', shadow: 'shadow-rose-500/40', alert: active_alerts > 0, accent: kpiAccent('alerts'), insights: [
+                                { label: 'Critical announcements', value: critical_alerts.length, color: '#ef4444' },
+                                { label: 'Affected areas', value: affected_areas, color: '#8b5cf6' },
+                                { label: 'Flooded areas', value: stats.active, color: '#06b6d4' },
+                            ] },
+                        ] as const).map(({ label, value, trend, trendLabel, desc, insights, icon: Icon, grad, shadow, alert, accent }, i) => (
+                            <PrimaryStatCard
+                                key={label}
+                                label={label} value={value} trend={trend} trendLabel={trendLabel} desc={desc} insights={[...insights]}
+                                icon={Icon} grad={grad} shadow={shadow} alert={alert} accent={accent}
+                                index={i} mounted={mounted}
+                            />
+                        ))}
+                    </div>
                 </div>
 
-                {/* Secondary Stats */}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
+                {/* ━━━ Secondary KPI + Verification Gauge Row ━━━ */}
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
                     {([
-                        { icon: CheckCircle2, grad: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/20', value: stats.resolved_today, label: 'Resolved Today', trend: trends.resolved, desc: smartDesc('resolved_today'), insights: [
+                        { icon: CheckCircle2, grad: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/20', value: stats.resolved_today, label: 'Resolved Today', trend: trends.resolved, accent: kpiAccent('resolved'), desc: smartDesc('resolved_today'), insights: [
                             { label: 'Awaiting verification', value: stats.pending, color: '#f59e0b' },
                             { label: 'Flooded areas active', value: stats.active, color: '#3b82f6' },
                             { label: 'Resolution rate', value: `${resolutionRate}%`, color: '#10b981' },
                         ] },
-                        { icon: Clock, grad: 'from-orange-400 to-amber-500', shadow: 'shadow-orange-500/20', value: formatResponseTime(avg_response_time), label: 'Avg. Response Time', trend: undefined, desc: smartDesc('avg_response'), insights: [
+                        { icon: Clock, grad: 'from-orange-400 to-amber-500', shadow: 'shadow-orange-500/20', value: formatResponseTime(avg_response_time), label: 'Avg. Response Time', trend: undefined, accent: kpiAccent('response'), desc: smartDesc('avg_response'), insights: [
                             { label: 'Awaiting verification', value: stats.pending, color: '#f59e0b' },
                             { label: 'Rescue personnel', value: stats.total_responders, color: '#8b5cf6' },
                             { label: 'Reports per personnel', value: reportsPerResponder, color: '#6366f1' },
                         ] },
-                        { icon: TrendingUp, grad: 'from-teal-500 to-cyan-600', shadow: 'shadow-teal-500/20', value: `${resolutionRate}%`, label: 'Resolution Rate', trend: undefined, desc: smartDesc('resolution_rate'), insights: [
+                        { icon: TrendingUp, grad: 'from-teal-500 to-cyan-600', shadow: 'shadow-teal-500/20', value: `${resolutionRate}%`, label: 'Resolution Rate', trend: undefined, accent: kpiAccent('resolution'), desc: smartDesc('resolution_rate'), insights: [
                             { label: 'Resolved cases', value: resolvedCount, color: '#10b981' },
                             { label: 'Total flood reports', value: stats.total_reports, color: '#6366f1' },
                             { label: 'Rejected reports', value: rejectedCount, color: '#94a3b8' },
                         ] },
-                    ] as const).map(({ icon: Icon, grad, shadow, value, label, trend, desc, insights }, i) => (
-                        <SecondaryStatCard key={label} icon={Icon} grad={grad} shadow={shadow} value={value} label={label} trend={trend} desc={desc} insights={[...insights]} trendLabel={trends.label} periodLabel={trends.period_label} mounted={mounted} delay={i * 80 + 480} />
+                        { icon: Shield, grad: 'from-teal-400 to-cyan-500', shadow: 'shadow-teal-500/20', value: team_stats.active, label: 'Response Teams', trend: undefined, accent: 'neutral' as const, desc: smartDesc('active_teams'), insights: [
+                            { label: 'Teams deployed', value: team_stats.deployed, color: '#14b8a6' },
+                            { label: 'Inactive teams', value: team_stats.inactive, color: '#94a3b8' },
+                            { label: 'Deployment rate', value: `${deploymentRate}%`, color: '#06b6d4' },
+                        ] },
+                    ] as const).map(({ icon: Icon, grad, shadow, value, label, trend, accent, desc, insights }, i) => (
+                        <SecondaryStatCard key={label} icon={Icon} grad={grad} shadow={shadow} value={value} label={label} trend={trend} accent={accent} desc={desc} insights={[...insights]} trendLabel={i < 3 ? trends.label : `${team_stats.deployed} deployed${team_stats.inactive > 0 ? ` · ${team_stats.inactive} inactive` : ''}`} periodLabel={i < 3 ? trends.period_label : ''} mounted={mounted} delay={i * 80 + 480} />
                     ))}
-                    {/* Active Teams card */}
-                    <SecondaryStatCard icon={Shield} grad="from-teal-400 to-cyan-500" shadow="shadow-teal-500/20" value={team_stats.active} label="Response Teams" desc={smartDesc('active_teams')} insights={[
-                        { label: 'Teams deployed', value: team_stats.deployed, color: '#14b8a6' },
-                        { label: 'Inactive teams', value: team_stats.inactive, color: '#94a3b8' },
-                        { label: 'Deployment rate', value: `${deploymentRate}%`, color: '#06b6d4' },
-                    ]} trendLabel={`${team_stats.deployed} deployed${team_stats.inactive > 0 ? ` · ${team_stats.inactive} inactive` : ''}`} periodLabel="" mounted={mounted} delay={800} />
+
+                    {/* Inline Verification Gauge */}
+                    <div className={`group relative overflow-hidden rounded-2xl border border-neutral-200/60 bg-white/80 backdrop-blur-sm p-4 sm:p-5 transition-all duration-700 hover:shadow-xl hover:shadow-neutral-900/[0.04] hover:border-neutral-300/70 dark:border-neutral-800/80 dark:bg-neutral-900/80 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '800ms' }}>
+                        <div className={`absolute inset-x-0 top-0 h-[3px] ${vrBg}`} />
+                        <p className="truncate text-[10px] font-medium uppercase tracking-wider text-neutral-400 sm:text-[11px] dark:text-neutral-500">Verification Rate</p>
+                        <div className="mt-2 flex items-center gap-3">
+                            <div className="relative flex size-14 shrink-0 items-center justify-center">
+                                <svg className="size-full -rotate-90" viewBox="0 0 56 56">
+                                    <circle cx="28" cy="28" r="23" fill="none" stroke="#f1f5f9" strokeWidth="5" className="dark:stroke-neutral-800" />
+                                    <circle cx="28" cy="28" r="23" fill="none"
+                                        stroke={vrColor} strokeWidth="5" strokeLinecap="round"
+                                        strokeDasharray={`${(verification_rate / 100) * 144.5} 144.5`}
+                                    />
+                                </svg>
+                                <span className="absolute text-sm font-bold tabular-nums text-neutral-900 dark:text-white">{verification_rate}%</span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                                <span className="flex items-center gap-1.5 text-[10px]">
+                                    <span className={`size-1.5 rounded-full ${vrBg}`} />
+                                    <span className="text-neutral-500 dark:text-neutral-400">{vrLabel}</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Charts: Area + Donut */}
-                <div className="grid gap-3 sm:gap-4 lg:grid-cols-[1fr_340px]">
-                    <Card>
-                        <CardHeader icon={TrendingUp} title="Flood Incident Trend" subtitle="Daily reports over the last 30 days">
-                            <div className="ml-auto hidden items-center gap-4 text-[10px] sm:flex">
-                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full" style={{ background: '#6366f1' }} />Reports</span>
-                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full" style={{ background: '#10b981' }} />Resolved</span>
+                {/* ━━━ Charts Row: Trend + Severity + Flood Risk ━━━ */}
+                <div>
+                    <SectionLabel>Analytics</SectionLabel>
+                    <div className="mt-3 grid gap-4 lg:grid-cols-[1fr_280px_280px]">
+                        {/* Area Chart */}
+                        <Card>
+                            <CardHeader icon={TrendingUp} title="Flood Incident Trend" subtitle="Daily reports over the last 30 days">
+                                <div className="ml-auto hidden items-center gap-4 text-[10px] sm:flex">
+                                    <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full" style={{ background: '#6366f1' }} />Reports</span>
+                                    <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full" style={{ background: '#10b981' }} />Resolved</span>
+                                </div>
+                            </CardHeader>
+                            <div className="px-2 pb-2 pt-1 sm:px-3">
+                                {daily_reports.length > 0
+                                    ? <ReactApexChart type="area" series={areaSeries} options={areaOptions} height={280} />
+                                    : <Empty text="No flood report data available" />}
                             </div>
-                        </CardHeader>
-                        <div className="px-2 pb-2 pt-1 sm:px-3">
-                            {daily_reports.length > 0
-                                ? <ReactApexChart type="area" series={areaSeries} options={areaOptions} height={270} />
-                                : <Empty text="No flood report data available" />}
-                        </div>
-                    </Card>
+                        </Card>
 
-                    <Card>
-                        <CardHeader icon={AlertTriangle} title="Severity Breakdown" subtitle="Report distribution by severity level" />
-                        <div className="flex flex-col items-center px-5 pb-5 pt-4">
-                            <ReactApexChart type="donut" series={severityValues} options={donutOptions} height={200} width={200} />
-                            <div className="mt-3 flex w-full flex-col gap-2.5">
-                                {severityLabels.map((name, i) => {
-                                    const val = severityValues[i];
-                                    const pct = totalSeverity > 0 ? Math.round((val / totalSeverity) * 100) : 0;
-                                    return (
-                                        <div key={name} className="flex items-center gap-2.5">
-                                            <span className="size-2.5 shrink-0 rounded-full shadow-sm" style={{ backgroundColor: DONUT_COLORS[i], boxShadow: `0 0 0 3px ${DONUT_COLORS[i]}22` }} />
-                                            <span className="flex-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">{name}</span>
-                                            <div className="flex-1 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800" style={{ height: 4 }}>
-                                                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: DONUT_COLORS[i] }} />
+                        {/* Severity Donut */}
+                        <Card>
+                            <CardHeader icon={AlertTriangle} title="Severity" subtitle="By level" />
+                            <div className="flex flex-col items-center px-4 pb-4 pt-3">
+                                <ReactApexChart type="donut" series={severityValues} options={donutOptions} height={170} width={170} />
+                                <div className="mt-3 flex w-full flex-col gap-2">
+                                    {severityLabels.map((name, i) => {
+                                        const val = severityValues[i];
+                                        const pct = totalSeverity > 0 ? Math.round((val / totalSeverity) * 100) : 0;
+                                        return (
+                                            <div key={name} className="flex items-center gap-2">
+                                                <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: DONUT_COLORS[i] }} />
+                                                <span className="flex-1 text-[11px] text-neutral-500 dark:text-neutral-400">{name}</span>
+                                                <div className="w-16 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800" style={{ height: 3 }}>
+                                                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: DONUT_COLORS[i] }} />
+                                                </div>
+                                                <span className="w-8 text-right text-[10px] font-semibold tabular-nums text-neutral-900 dark:text-white">{val}</span>
                                             </div>
-                                            <span className="w-6 text-right text-[10px] tabular-nums text-neutral-400">{pct}%</span>
-                                            <span className="w-5 text-right text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{val}</span>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        </div>
-                    </Card>
+                        </Card>
+
+                        {/* Flood Risk Score */}
+                        <Card>
+                            <CardHeader icon={Target} title="Flood Risk" subtitle="Barangay ranking" />
+                            <div className="px-4 pb-4 pt-3">
+                                {flood_risk_scores.length > 0 ? (
+                                    <div className="flex flex-col gap-2">
+                                        {flood_risk_scores.map((r, i) => (
+                                            <div key={i} className="flex items-center gap-2.5 rounded-xl border border-neutral-100/80 bg-neutral-50/40 px-3 py-2 transition-colors hover:bg-neutral-50 dark:border-neutral-800/60 dark:bg-neutral-800/30 dark:hover:bg-neutral-800/50">
+                                                <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-neutral-900 text-[9px] font-bold text-white dark:bg-neutral-200 dark:text-neutral-900">
+                                                    {i + 1}
+                                                </span>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="truncate text-[11px] font-semibold text-neutral-900 dark:text-white" title={r.barangay}>
+                                                        {r.barangay.replace(/,.*$/, '').replace(/Nasugbu.*$/i, '').trim() || r.barangay}
+                                                    </p>
+                                                    <p className="text-[9px] text-neutral-400">{r.incidents} incident{r.incidents !== 1 ? 's' : ''}</p>
+                                                </div>
+                                                <div className="flex shrink-0 flex-col items-end">
+                                                    <span className="text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{r.score}</span>
+                                                    <span className={`inline-flex items-center rounded-md px-1 py-0.5 text-[8px] font-semibold ${
+                                                        r.level === 'High' ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
+                                                        : r.level === 'Moderate' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
+                                                        : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                                    }`}>{r.level}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : <Empty text="Not enough data" />}
+                            </div>
+                        </Card>
+                    </div>
                 </div>
 
-                {/* Recent Activity */}
+                {/* ━━━ Barangay + Activity Row ━━━ */}
+                <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
+                    {/* Barangay Comparison */}
                     <Card>
-                        <CardHeader icon={Zap} title="Recent Activity" subtitle="Latest flood report status changes and team actions">
-                            <Link href="/admin/activity" className="shrink-0 rounded-lg border border-neutral-200 px-2.5 py-1 text-[11px] font-medium text-neutral-400 transition-all hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-600 dark:hover:text-neutral-300">
-                                View all
+                        <CardHeader icon={BarChart3} title="Top Barangays" subtitle="By incident count" />
+                        <div className="px-5 pb-5 pt-3">
+                            {barangay_breakdown.length > 0 ? (
+                                <div className="flex flex-col gap-2.5">
+                                    {barangay_breakdown.map((b, i) => {
+                                        const maxCount = barangay_breakdown[0]?.count ?? 1;
+                                        const pct = Math.round((b.count / maxCount) * 100);
+                                        return (
+                                            <div key={i} className="group/bar flex items-center gap-2.5">
+                                                <span className="w-20 truncate text-[10px] font-medium text-neutral-500 transition-colors group-hover/bar:text-neutral-700 dark:text-neutral-400 dark:group-hover/bar:text-neutral-300" title={b.barangay}>
+                                                    {b.barangay.replace(/,.*$/, '').replace(/Nasugbu.*$/i, '').trim() || b.barangay}
+                                                </span>
+                                                <div className="flex-1 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800" style={{ height: 6 }}>
+                                                    <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-400 transition-all duration-700" style={{ width: `${pct}%` }} />
+                                                </div>
+                                                <span className="w-6 text-right text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{b.count}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : <Empty text="No barangay data available" />}
+                        </div>
+                    </Card>
+
+                    {/* Recent Activity */}
+                    <Card>
+                        <CardHeader icon={Activity} title="Recent Activity" subtitle="Latest status changes">
+                            <Link href="/admin/activity" className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-lg border border-neutral-200/80 px-2.5 py-1 text-[11px] font-medium text-neutral-400 transition-all hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-600 dark:hover:text-neutral-300">
+                                View all <ArrowUpRight className="size-3" />
                             </Link>
                         </CardHeader>
-                        <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                        <div className="divide-y divide-neutral-100/80 dark:divide-neutral-800/80">
                             {recent_activity.length > 0 ? recent_activity.map((a) => (
-                                <div key={a.id} className="flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
-                                    <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 text-[10px] font-bold text-white dark:bg-neutral-200 dark:text-neutral-900">
+                                <div key={a.id} className="flex items-start gap-3 px-5 py-3 transition-colors hover:bg-neutral-50/60 dark:hover:bg-neutral-800/30">
+                                    <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-neutral-900 to-neutral-700 text-[10px] font-bold text-white dark:from-neutral-200 dark:to-neutral-300 dark:text-neutral-900">
                                         {a.user?.name?.charAt(0) ?? '?'}
                                     </div>
                                     <div className="min-w-0 flex-1">
@@ -483,55 +604,61 @@ export default function AdminDashboard({
                             )) : <div className="px-5 py-10"><Empty text="No recent flood report activity" /></div>}
                         </div>
                     </Card>
+                </div>
 
-                {/* Live Incident Map */}
-                <Card className="overflow-hidden">
-                    <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
-                        <div className="flex items-center gap-3">
-                            <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
-                                <MapPin className="size-4 text-neutral-500 dark:text-neutral-400" />
+                {/* ━━━ Incident Map ━━━ */}
+                <div>
+                    <SectionLabel>Operations</SectionLabel>
+                    <div className="mt-3">
+                        <Card className="overflow-hidden">
+                            <div className="flex items-center justify-between border-b border-neutral-100/80 px-5 py-4 dark:border-neutral-800/80">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/60">
+                                        <MapPin className="size-4 text-neutral-500 dark:text-neutral-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm font-semibold text-neutral-900 dark:text-white">Flood Incident Map</p>
+                                        <p className="text-[11px] text-neutral-400">{map_reports.length} active flooded area{map_reports.length !== 1 ? 's' : ''}</p>
+                                    </div>
+                                </div>
+                                <Link href="/admin/reports/map" className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white px-3 py-1.5 text-xs font-medium text-neutral-500 transition-all hover:border-neutral-400 hover:text-neutral-900 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-white">
+                                    <Globe className="size-3.5" />
+                                    Full Map
+                                </Link>
                             </div>
-                            <div>
-                                <p className="text-sm font-semibold text-neutral-900 dark:text-white">Flood Incident Map</p>
-                                <p className="text-[11px] text-neutral-400">{map_reports.length} active flooded area{map_reports.length !== 1 ? 's' : ''}</p>
+                            <div className="p-3 sm:p-4">
+                                {map_reports.length > 0 ? (
+                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                                        {map_reports.slice(0, 8).map((r) => (
+                                            <Link key={r.id} href={`/admin/reports/${r.id}`}
+                                                className="group flex flex-col justify-between rounded-xl border border-neutral-100/80 bg-neutral-50/30 p-3.5 transition-all hover:border-neutral-300 hover:bg-white hover:shadow-lg hover:shadow-neutral-900/[0.03] dark:border-neutral-800/60 dark:bg-neutral-800/30 dark:hover:border-neutral-700 dark:hover:bg-neutral-800">
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className="truncate font-mono text-xs font-bold text-neutral-900 dark:text-white">{r.reference_number}</span>
+                                                        <span className={`shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${SEV[r.severity as keyof typeof SEV] ?? ''}`}>{r.severity}</span>
+                                                    </div>
+                                                    <p className="mt-1.5 truncate text-[10px] text-neutral-400">{r.address ?? 'No address'}</p>
+                                                </div>
+                                                <div className="mt-2.5 flex items-center gap-1 text-[10px] text-neutral-400">
+                                                    <MapPin className="size-3 shrink-0" />
+                                                    <span className="truncate tabular-nums">{r.latitude.toFixed(4)}, {r.longitude.toFixed(4)}</span>
+                                                </div>
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="flex h-32 items-center justify-center"><Empty text="No active flooded areas" /></div>
+                                )}
                             </div>
-                        </div>
-                        <Link href="/admin/reports/map" className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-xs font-medium text-neutral-500 transition-all hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-white">
-                            <Globe className="size-3.5" />
-                            Full Map
-                        </Link>
+                        </Card>
                     </div>
-                    <div className="p-3 sm:p-4">
-                        {map_reports.length > 0 ? (
-                            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                                {map_reports.slice(0, 8).map((r) => (
-                                    <Link key={r.id} href={`/admin/reports/${r.id}`}
-                                        className="group flex flex-col justify-between rounded-xl border border-neutral-100 bg-neutral-50/50 p-3.5 transition-all hover:border-neutral-300 hover:bg-white hover:shadow-md dark:border-neutral-800 dark:bg-neutral-800/40 dark:hover:border-neutral-700 dark:hover:bg-neutral-800">
-                                        <div className="min-w-0">
-                                            <div className="flex items-center justify-between gap-2">
-                                                <span className="truncate font-mono text-xs font-bold text-neutral-900 dark:text-white">{r.reference_number}</span>
-                                                <span className={`shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${SEV[r.severity as keyof typeof SEV] ?? ''}`}>{r.severity}</span>
-                                            </div>
-                                            <p className="mt-1.5 truncate text-[10px] text-neutral-400">{r.address ?? 'No address'}</p>
-                                        </div>
-                                        <div className="mt-2.5 flex items-center gap-1 text-[10px] text-neutral-400">
-                                            <MapPin className="size-3 shrink-0" />
-                                            <span className="truncate tabular-nums">{r.latitude.toFixed(4)}, {r.longitude.toFixed(4)}</span>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex h-32 items-center justify-center"><Empty text="No active flooded areas" /></div>
-                        )}
-                    </div>
-                </Card>
+                </div>
 
-                {/* Recent Reports Table */}
+                {/* ━━━ Recent Reports Table ━━━ */}
                 <Card className="overflow-hidden">
-                    <div className="flex items-center justify-between border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
+                    <div className="flex items-center justify-between border-b border-neutral-100/80 px-5 py-4 dark:border-neutral-800/80">
                         <div className="flex items-center gap-3">
-                            <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
+                            <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/60">
                                 <FileText className="size-4 text-neutral-500 dark:text-neutral-400" />
                             </div>
                             <div>
@@ -539,16 +666,16 @@ export default function AdminDashboard({
                                 <p className="text-[11px] text-neutral-400">Latest submitted flood incident reports</p>
                             </div>
                         </div>
-                        <Link href="/admin/reports" className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-xs font-medium text-neutral-500 transition-all hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-white">
+                        <Link href="/admin/reports" className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white px-3 py-1.5 text-xs font-medium text-neutral-500 transition-all hover:border-neutral-400 hover:text-neutral-900 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-white">
                             View all <ExternalLink className="size-3" />
                         </Link>
                     </div>
 
                     {/* Mobile */}
                     <div className="block sm:hidden">
-                        <div className="divide-y divide-neutral-100 dark:divide-neutral-800">
+                        <div className="divide-y divide-neutral-100/80 dark:divide-neutral-800/80">
                             {recent_reports.map((report) => (
-                                <Link key={report.id} href={`/admin/reports/${report.id}`} className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
+                                <Link key={report.id} href={`/admin/reports/${report.id}`} className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-neutral-50/60 dark:hover:bg-neutral-800/30">
                                     <div className="min-w-0 flex-1">
                                         <p className="font-mono text-xs font-bold text-neutral-800 dark:text-neutral-200">{report.reference_number}</p>
                                         <p className="mt-0.5 text-[10px] text-neutral-400">{report.user?.name ?? '—'} · {new Date(report.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
@@ -567,7 +694,7 @@ export default function AdminDashboard({
                     <div className="hidden overflow-x-auto sm:block">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-100 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                <tr className="border-b border-neutral-100/80 bg-neutral-50/30 dark:border-neutral-800/80 dark:bg-neutral-800/20">
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Reference</th>
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Date</th>
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Reporter</th>
@@ -575,9 +702,9 @@ export default function AdminDashboard({
                                     <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Status</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/80">
+                            <tbody className="divide-y divide-neutral-100/60 dark:divide-neutral-800/60">
                                 {recent_reports.map((report) => (
-                                    <tr key={report.id} className="group transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                                    <tr key={report.id} className="group transition-colors hover:bg-neutral-50/60 dark:hover:bg-neutral-800/30">
                                         <td className="px-5 py-3.5">
                                             <Link href={`/admin/reports/${report.id}`} className="font-mono text-xs font-bold text-neutral-800 transition-colors group-hover:text-neutral-950 dark:text-neutral-200 dark:group-hover:text-white">
                                                 {report.reference_number}
@@ -611,9 +738,9 @@ export default function AdminDashboard({
 
 function Empty({ text }: { text: string }) {
     return (
-        <div className="flex flex-col items-center justify-center gap-2 py-6 text-neutral-300">
+        <div className="flex flex-col items-center justify-center gap-2 py-6 text-neutral-300 dark:text-neutral-600">
             <Droplets className="size-6" />
-            <p className="text-xs font-medium text-neutral-400">{text}</p>
+            <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500">{text}</p>
         </div>
     );
 }

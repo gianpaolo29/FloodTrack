@@ -13,21 +13,30 @@ interface Props {
     insights: InsightRow[];
     trendLabel: string;
     periodLabel: string;
+    accent?: 'green' | 'amber' | 'red' | 'neutral';
     mounted: boolean;
     delay: number;
 }
 
-export function SecondaryStatCard({ icon: Icon, value, label, trend, desc, insights, trendLabel, periodLabel, mounted, delay }: Props) {
+const ACCENT_STYLES = {
+    green: 'bg-emerald-500',
+    amber: 'bg-amber-500',
+    red: 'bg-red-500',
+    neutral: 'bg-neutral-300 dark:bg-neutral-600',
+} as const;
+
+export function SecondaryStatCard({ icon: Icon, value, label, trend, desc, insights, trendLabel, periodLabel, accent, mounted, delay }: Props) {
     const [showTooltip, setShowTooltip] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
     return (
         <div
             ref={cardRef}
-            className={`group relative flex items-start justify-between gap-4 rounded-2xl border border-neutral-200/70 bg-white p-4 sm:p-5 transition-all duration-700 hover:shadow-lg hover:border-neutral-300/80 cursor-pointer dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+            className={`group relative overflow-hidden flex items-start justify-between gap-4 rounded-2xl border border-neutral-200/70 bg-white p-4 sm:p-5 transition-all duration-700 hover:shadow-lg hover:border-neutral-300/80 cursor-pointer dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
             style={{ transitionDelay: `${delay}ms` }}
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
         >
+            {accent && <div className={`absolute inset-x-0 top-0 h-[3px] ${ACCENT_STYLES[accent]}`} />}
             <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} />
             <div className="min-w-0 flex-1">
                 <p className="truncate text-[10px] font-medium uppercase tracking-wider text-neutral-400 sm:text-[11px] dark:text-neutral-500">{label}</p>

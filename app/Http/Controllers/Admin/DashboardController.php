@@ -150,6 +150,80 @@ class DashboardController extends Controller
             'inactive' => $this->scopeByPeriod(Team::where('is_active', false), $from, $to)->count(),
         ];
 
+        // ── Verification Rate ──
+        $totalReports = (clone $reportQuery)->count();
+        $verifiedReports = (clone $reportQuery)->whereIn('status', ['verified', 'assigned', 'resolved', 'rejected'])->count();
+        $verification_rate = $totalReports > 0 ? round(($verifiedReports / $totalReports) * 100) : 0;
+
+        // ── Barangay Breakdown (top 8 by report count) ──
+        $barangay_breakdown = (clone $reportQuery)
+            ->selectRaw('address, count(*) as count')
+            ->whereNotNull('address')
+            ->where('address', '!=', '')
+            ->groupBy('address')
+            ->orderByDesc('count')
+            ->limit(8)
+            ->get()
+            ->map(fn ($row) => [
+                'barangay' => $row->address,
+                'count'    => (int) $row->count,
+            ]);
+
+        // ── Flood Risk Score (all-time analysis per barangay) ──
+        $severityWeight = ['critical' => 4, 'high' => 3, 'moderate' => 2, 'low' => 1];
+        $currentMonth = now()->month;
+
+        $floodRiskData = Report::selectRaw('address, severity, count(*) as count')
+            ->whereNotNull('address')
+            ->where('address', '!=', '')
+            ->groupBy('address', 'severity')
+            ->get();
+
+        // Monthly pattern per barangay
+        $monthExpr = $this->isUsingSqlite()
+            ? "CAST(strftime('%m', created_at) AS INTEGER)"
+            : 'MONTH(created_at)';
+
+        $monthlyPattern = Report::selectRaw("address, {$monthExpr} as month, count(*) as count")
+            ->whereNotNull('address')
+            ->where('address', '!=', '')
+            ->groupBy('address', DB::raw($monthExpr))
+            ->get()
+            ->groupBy('address');
+
+        $riskScores = [];
+        $barangayTotals = $floodRiskData->groupBy('address');
+
+        foreach ($barangayTotals as $address => $rows) {
+            $totalCount = $rows->sum('count');
+            $weightedSeverity = $rows->sum(fn ($r) => ($severityWeight[$r->severity] ?? 1) * $r->count);
+            $avgSeverity = $totalCount > 0 ? $weightedSeverity / $totalCount : 0;
+
+            // Seasonal match: what % of this barangay's reports happen in the current month
+            $monthData = $monthlyPattern->get($address, collect());
+            $currentMonthCount = $monthData->firstWhere('month', $currentMonth)?->count ?? 0;
+            $totalAllTime = $monthData->sum('count');
+            $seasonalMatch = $totalAllTime > 0 ? ($currentMonthCount / $totalAllTime) : 0;
+
+            // Score: frequency (40%) + avg severity (30%) + seasonal match (30%)
+            $maxCount = max($barangayTotals->map(fn ($r) => $r->sum('count'))->toArray());
+            $freqNorm = $maxCount > 0 ? $totalCount / $maxCount : 0;
+            $sevNorm = $avgSeverity / 4; // max severity weight is 4
+
+            $score = round(($freqNorm * 40) + ($sevNorm * 30) + ($seasonalMatch * 30));
+            $level = $score >= 60 ? 'High' : ($score >= 30 ? 'Moderate' : 'Low');
+
+            $riskScores[] = [
+                'barangay'  => $address,
+                'score'     => $score,
+                'level'     => $level,
+                'incidents' => $totalCount,
+            ];
+        }
+
+        usort($riskScores, fn ($a, $b) => $b['score'] <=> $a['score']);
+        $flood_risk_scores = array_slice($riskScores, 0, 5);
+
         return Inertia::render('admin/dashboard', [
             'stats'              => $stats,
             'team_stats'         => $team_stats,
@@ -172,6 +246,9 @@ class DashboardController extends Controller
             'recent_activity'    => $recent_activity,
             'affected_areas'     => $affected_areas,
             'map_reports'        => $map_reports,
+            'verification_rate'  => $verification_rate,
+            'barangay_breakdown' => $barangay_breakdown,
+            'flood_risk_scores'  => $flood_risk_scores,
             'period'             => $period,
             'custom_from'        => $request->get('from'),
             'custom_to'          => $request->get('to'),

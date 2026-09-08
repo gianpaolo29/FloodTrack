@@ -14,11 +14,19 @@ interface Props {
     grad?: string;
     shadow?: string;
     alert?: boolean;
+    accent?: 'green' | 'amber' | 'red' | 'neutral';
     index: number;
     mounted: boolean;
 }
 
-export function PrimaryStatCard({ label, value, trend, trendLabel, desc, insights, icon: Icon, alert, index, mounted }: Props) {
+const ACCENT_STYLES = {
+    green: 'bg-emerald-500',
+    amber: 'bg-amber-500',
+    red: 'bg-red-500',
+    neutral: 'bg-neutral-300 dark:bg-neutral-600',
+} as const;
+
+export function PrimaryStatCard({ label, value, trend, trendLabel, desc, insights, icon: Icon, alert, accent, index, mounted }: Props) {
     const count = useCountUp(value, mounted, index * 90);
     const [showTooltip, setShowTooltip] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -30,6 +38,7 @@ export function PrimaryStatCard({ label, value, trend, trendLabel, desc, insight
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
         >
+            {accent && <div className={`absolute inset-x-0 top-0 h-[3px] ${ACCENT_STYLES[accent]}`} />}
             <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} />
             {alert && (
                 <span className="absolute right-3 top-3 flex size-2">
