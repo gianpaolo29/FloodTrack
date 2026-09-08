@@ -6,6 +6,7 @@ use App\Models\Alert;
 use App\Models\EvacuationCenter;
 use App\Models\Hazard;
 use App\Models\Report;
+use App\Models\ReportStatusUpdate;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -24,6 +25,7 @@ class MainSeeder extends Seeder
         $this->seedReports($residents, $teams, $admin);
         $this->seedHazards($admin);
         $this->seedAlerts($admin);
+        $this->seedEvacuationOccupancy();
 
         $this->command->info('✓ MainSeeder complete.');
     }
@@ -46,20 +48,30 @@ class MainSeeder extends Seeder
     }
 
     // -------------------------------------------------------------------------
-    // Residents
+    // Residents (15 realistic Nasugbu residents)
     // -------------------------------------------------------------------------
 
     private function seedResidents(): array
     {
         $data = [
-            ['name' => 'Maria Santos',    'email' => 'maria.santos@gmail.com',    'contact_number' => '09171000001'],
-            ['name' => 'Jose Reyes',      'email' => 'jose.reyes@gmail.com',      'contact_number' => '09171000002'],
-            ['name' => 'Ana Dela Cruz',   'email' => 'ana.delacruz@gmail.com',    'contact_number' => '09171000003'],
-            ['name' => 'Ramon Garcia',    'email' => 'ramon.garcia@gmail.com',    'contact_number' => '09171000004'],
-            ['name' => 'Liza Fernandez',  'email' => 'liza.fernandez@gmail.com',  'contact_number' => '09171000005'],
+            ['name' => 'Maria Santos',         'email' => 'maria.santos@gmail.com',         'contact_number' => '09171234501'],
+            ['name' => 'Jose Reyes',            'email' => 'jose.reyes@gmail.com',           'contact_number' => '09181234502'],
+            ['name' => 'Ana Dela Cruz',         'email' => 'ana.delacruz@gmail.com',         'contact_number' => '09191234503'],
+            ['name' => 'Ramon Garcia',          'email' => 'ramon.garcia@gmail.com',         'contact_number' => '09171234504'],
+            ['name' => 'Liza Fernandez',        'email' => 'liza.fernandez@gmail.com',       'contact_number' => '09181234505'],
+            ['name' => 'Roberto Mendoza',       'email' => 'roberto.mendoza@gmail.com',      'contact_number' => '09191234506'],
+            ['name' => 'Cristina Bautista',     'email' => 'cristina.bautista@gmail.com',    'contact_number' => '09171234507'],
+            ['name' => 'Eduardo Villanueva',    'email' => 'eduardo.villanueva@gmail.com',   'contact_number' => '09181234508'],
+            ['name' => 'Rosalinda Aquino',      'email' => 'rosalinda.aquino@gmail.com',     'contact_number' => '09191234509'],
+            ['name' => 'Fernando Pascual',      'email' => 'fernando.pascual@gmail.com',     'contact_number' => '09171234510'],
+            ['name' => 'Gloria Navarro',        'email' => 'gloria.navarro@gmail.com',       'contact_number' => '09181234511'],
+            ['name' => 'Antonio Ramos',         'email' => 'antonio.ramos@gmail.com',        'contact_number' => '09191234512'],
+            ['name' => 'Maricel Dizon',         'email' => 'maricel.dizon@gmail.com',        'contact_number' => '09171234513'],
+            ['name' => 'Ricardo Soriano',       'email' => 'ricardo.soriano@gmail.com',      'contact_number' => '09181234514'],
+            ['name' => 'Jeanette Ocampo',       'email' => 'jeanette.ocampo@gmail.com',      'contact_number' => '09191234515'],
         ];
 
-        return array_map(fn($d) => User::firstOrCreate(
+        return array_map(fn ($d) => User::firstOrCreate(
             ['email' => $d['email']],
             array_merge($d, [
                 'password'          => bcrypt('password123'),
@@ -70,16 +82,17 @@ class MainSeeder extends Seeder
     }
 
     // -------------------------------------------------------------------------
-    // Teams & Responders
+    // Teams & Responders (5 teams, 5 members each)
     // -------------------------------------------------------------------------
 
     private function seedTeams(User $admin): array
     {
         $teamData = [
             [
-                'name'      => 'Alpha Response Team',
+                'name'       => 'MDRRMO Rescue Unit 1',
+                'is_active'  => true,
                 'responders' => [
-                    ['name' => 'Carlos Mendoza',   'email' => 'carlos.mendoza@floodtrack.com',   'contact_number' => '09181001001'],
+                    ['name' => 'Carlos Mendoza',    'email' => 'carlos.mendoza@floodtrack.com',    'contact_number' => '09181001001'],
                     ['name' => 'Diana Ramos',       'email' => 'diana.ramos@floodtrack.com',       'contact_number' => '09181001002'],
                     ['name' => 'Eduardo Torres',    'email' => 'eduardo.torres@floodtrack.com',    'contact_number' => '09181001003'],
                     ['name' => 'Felicia Cruz',      'email' => 'felicia.cruz@floodtrack.com',      'contact_number' => '09181001004'],
@@ -87,7 +100,8 @@ class MainSeeder extends Seeder
                 ],
             ],
             [
-                'name'      => 'Bravo Rescue Unit',
+                'name'       => 'MDRRMO Rescue Unit 2',
+                'is_active'  => true,
                 'responders' => [
                     ['name' => 'Herminia Bautista', 'email' => 'herminia.bautista@floodtrack.com', 'contact_number' => '09181002001'],
                     ['name' => 'Ignacio Villanueva','email' => 'ignacio.villanueva@floodtrack.com','contact_number' => '09181002002'],
@@ -97,7 +111,8 @@ class MainSeeder extends Seeder
                 ],
             ],
             [
-                'name'      => 'Charlie Relief Group',
+                'name'       => 'Pantalan BRT',
+                'is_active'  => true,
                 'responders' => [
                     ['name' => 'Manuel Dizon',      'email' => 'manuel.dizon@floodtrack.com',      'contact_number' => '09181003001'],
                     ['name' => 'Nilda Ocampo',      'email' => 'nilda.ocampo@floodtrack.com',      'contact_number' => '09181003002'],
@@ -107,7 +122,8 @@ class MainSeeder extends Seeder
                 ],
             ],
             [
-                'name'      => 'Delta Emergency Corps',
+                'name'       => 'Bucana-Wawa BRT',
+                'is_active'  => true,
                 'responders' => [
                     ['name' => 'Rosario Castillo',  'email' => 'rosario.castillo@floodtrack.com',  'contact_number' => '09181004001'],
                     ['name' => 'Salvador Dela Rosa','email' => 'salvador.delarosa@floodtrack.com', 'contact_number' => '09181004002'],
@@ -117,7 +133,8 @@ class MainSeeder extends Seeder
                 ],
             ],
             [
-                'name'      => 'Echo Flood Task Force',
+                'name'       => 'Poblacion BRT',
+                'is_active'  => false,
                 'responders' => [
                     ['name' => 'Wilfredo Perez',    'email' => 'wilfredo.perez@floodtrack.com',    'contact_number' => '09181005001'],
                     ['name' => 'Xyza Hernandez',    'email' => 'xyza.hernandez@floodtrack.com',    'contact_number' => '09181005002'],
@@ -130,7 +147,6 @@ class MainSeeder extends Seeder
 
         $teams = [];
         foreach ($teamData as $td) {
-            // Create responders first (without team)
             $responderUsers = [];
             foreach ($td['responders'] as $rd) {
                 $responderUsers[] = User::firstOrCreate(
@@ -143,13 +159,11 @@ class MainSeeder extends Seeder
                 );
             }
 
-            // Create team with first responder as leader
             $team = Team::firstOrCreate(
                 ['name' => $td['name']],
-                ['leader_id' => $responderUsers[0]->id]
+                ['leader_id' => $responderUsers[0]->id, 'is_active' => $td['is_active']]
             );
 
-            // Assign team_id to all responders
             foreach ($responderUsers as $ru) {
                 $ru->update(['team_id' => $team->id]);
             }
@@ -158,322 +172,126 @@ class MainSeeder extends Seeder
             $teams[] = $team;
         }
 
-        $this->command->info('✓ Seeded 5 teams with 5 responders each.');
+        $this->command->info('✓ Seeded 5 teams with 25 responders (1 team inactive).');
         return $teams;
     }
 
     // -------------------------------------------------------------------------
-    // Reports (30 realistic flood reports)
+    // Reports — spread across June–September 2026 (Philippine wet season)
+    // 60 reports simulating 6 distinct flood events over 4 months
     // -------------------------------------------------------------------------
 
     private function seedReports(array $residents, array $teams, User $admin): void
     {
         $reports = [
-            // --- CRITICAL (recent, ongoing) ---
-            [
-                'address'   => 'Pantalan Riverside, Brgy. Pantalan, Nasugbu, Batangas',
-                'lat'       => 14.08530, 'lng' => 120.62910,
-                'severity'  => 'critical',
-                'status'    => 'assigned',
-                'desc'      => 'Severe flooding near the river mouth. Water level has risen over 1.5 meters. Several families stranded on rooftops.',
-                'hours_ago' => 2,
-                'team_idx'  => 0,
-            ],
-            [
-                'address'   => 'Brgy. Bucana Coastal Road, Nasugbu, Batangas',
-                'lat'       => 14.08050, 'lng' => 120.62300,
-                'severity'  => 'critical',
-                'status'    => 'assigned',
-                'desc'      => 'Storm surge combined with river overflow. Floodwater entered homes up to chest level. Road completely impassable.',
-                'hours_ago' => 3,
-                'team_idx'  => 1,
-            ],
-            [
-                'address'   => 'Wawa Creek, Brgy. Wawa, Nasugbu, Batangas',
-                'lat'       => 14.07140, 'lng' => 120.62640,
-                'severity'  => 'critical',
-                'status'    => 'verified',
-                'desc'      => 'Creek overflowing rapidly. Floodwater spreading into adjacent barangay. Elderly residents unable to evacuate.',
-                'hours_ago' => 4,
-                'team_idx'  => 2,
-            ],
-            [
-                'address'   => 'National Highway near Public Market, Nasugbu, Batangas',
-                'lat'       => 14.07830, 'lng' => 120.63120,
-                'severity'  => 'critical',
-                'status'    => 'verified',
-                'desc'      => 'Major flooding on the highway. Market stalls submerged. Flash flood warning issued for the area.',
-                'hours_ago' => 1,
-                'team_idx'  => 3,
-            ],
-            [
-                'address'   => 'Coastal Barangay near Pier, Nasugbu, Batangas',
-                'lat'       => 14.07650, 'lng' => 120.62460,
-                'severity'  => 'critical',
-                'status'    => 'assigned',
-                'desc'      => 'Tidal flooding during high tide combined with heavy rainfall. Boat rescue operations underway.',
-                'hours_ago' => 5,
-                'team_idx'  => 4,
-            ],
+            // ═══════════════════════════════════════════════════════════════════
+            // EVENT 1: Tropical Depression "Butchoy" — June 18-19, 2026
+            // Moderate rainfall, localized flooding in low-lying barangays
+            // ═══════════════════════════════════════════════════════════════════
+            ['address' => 'Brgy. Bilaran, Nasugbu, Batangas',                'lat' => 14.06810, 'lng' => 120.63520, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Ankle-deep flooding along the main road after 4 hours of continuous rain. Some households moved belongings to upper floors.',           'date' => '2026-06-18 08:30:00', 'team_idx' => 2],
+            ['address' => 'Brgy. Lumbangan, Nasugbu, Batangas',              'lat' => 14.06120, 'lng' => 120.64050, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Road from Lumbangan to poblacion impassable due to flooding. Residents using alternate route through Brgy. Kaylaway.',                   'date' => '2026-06-18 09:15:00', 'team_idx' => 3],
+            ['address' => 'Brgy. Kaylaway, Nasugbu, Batangas',               'lat' => 14.05840, 'lng' => 120.64060, 'severity' => 'low',      'status' => 'resolved',  'desc' => 'Runoff from surrounding hills pooling near the elementary school. Water level about 15cm, slowly draining.',                              'date' => '2026-06-18 10:00:00', 'team_idx' => null],
+            ['address' => 'National Highway, Brgy. III, Nasugbu, Batangas',  'lat' => 14.07080, 'lng' => 120.63170, 'severity' => 'low',      'status' => 'resolved',  'desc' => 'Minor puddles forming on the highway near the civic center. Traffic slowing down but road still passable.',                               'date' => '2026-06-18 11:20:00', 'team_idx' => null],
+            ['address' => 'Concepcion St., Poblacion, Nasugbu, Batangas',    'lat' => 14.07380, 'lng' => 120.63510, 'severity' => 'low',      'status' => 'resolved',  'desc' => 'Drainage overflow near West Central School. Water receded within 2 hours after rain stopped.',                                           'date' => '2026-06-19 06:45:00', 'team_idx' => null],
+            ['address' => 'Brgy. Wawa, Nasugbu, Batangas',                   'lat' => 14.07290, 'lng' => 120.62820, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Creek water level rose but did not overflow. Barangay tanods monitoring since 5 AM. Situation stabilized by noon.',                       'date' => '2026-06-19 07:30:00', 'team_idx' => 3],
 
-            // --- HIGH (active, some assigned) ---
-            [
-                'address'   => 'Brgy. Pantalan, Near Elementary School, Nasugbu',
-                'lat'       => 14.08450, 'lng' => 120.62860,
-                'severity'  => 'high',
-                'status'    => 'assigned',
-                'desc'      => 'Floodwater entering school grounds. Knee-deep on residential streets. Evacuation of nearby families ongoing.',
-                'hours_ago' => 6,
-                'team_idx'  => 0,
-            ],
-            [
-                'address'   => 'Pantalan Bridge Approach, Nasugbu, Batangas',
-                'lat'       => 14.08700, 'lng' => 120.63050,
-                'severity'  => 'high',
-                'status'    => 'verified',
-                'desc'      => 'Debris accumulating under the bridge causing backflow. Water rising upstream. Bridge approach flooded.',
-                'hours_ago' => 7,
-                'team_idx'  => 1,
-            ],
-            [
-                'address'   => 'Brgy. Bilaran, Low-Lying Area, Nasugbu',
-                'lat'       => 14.06810, 'lng' => 120.63520,
-                'severity'  => 'high',
-                'status'    => 'assigned',
-                'desc'      => 'Heavy flooding in residential area. Several households require evacuation. Drainage completely overwhelmed.',
-                'hours_ago' => 8,
-                'team_idx'  => 2,
-            ],
-            [
-                'address'   => 'Brgy. Wawa, Riverside Settlement, Nasugbu',
-                'lat'       => 14.07210, 'lng' => 120.62760,
-                'severity'  => 'high',
-                'status'    => 'assigned',
-                'desc'      => 'Floodwaters rising rapidly. Three families trapped. Rescue team requested.',
-                'hours_ago' => 9,
-                'team_idx'  => 3,
-            ],
-            [
-                'address'   => 'Near District Hospital, National Highway, Nasugbu',
-                'lat'       => 14.06960, 'lng' => 120.63710,
-                'severity'  => 'high',
-                'status'    => 'verified',
-                'desc'      => 'Flooding near hospital main entrance. Access road partially blocked. Patient transport affected.',
-                'hours_ago' => 10,
-                'team_idx'  => 4,
-            ],
-            [
-                'address'   => 'Brgy. Lumbangan, Sitio Malapad, Nasugbu',
-                'lat'       => 14.06120, 'lng' => 120.64050,
-                'severity'  => 'high',
-                'status'    => 'verified',
-                'desc'      => 'Low-lying barangay flooded. Road connecting to town cut off. Residents relying on bancas for transport.',
-                'hours_ago' => 12,
-                'team_idx'  => 0,
-            ],
-            [
-                'address'   => 'Sitio Malapad, Brgy. Bucana, Nasugbu, Batangas',
-                'lat'       => 14.06490, 'lng' => 120.63820,
-                'severity'  => 'high',
-                'status'    => 'assigned',
-                'desc'      => 'Flash flooding in creek-adjacent settlement. Three homes partially submerged. Residents evacuating voluntarily.',
-                'hours_ago' => 14,
-                'team_idx'  => 1,
-            ],
+            // ═══════════════════════════════════════════════════════════════════
+            // EVENT 2: Southwest Monsoon intensified — July 8-10, 2026
+            // Heavy rainfall, moderate flooding in several barangays
+            // ═══════════════════════════════════════════════════════════════════
+            ['address' => 'Brgy. Pantalan, Nasugbu, Batangas',               'lat' => 14.08530, 'lng' => 120.62910, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Pantalan River rising rapidly. Knee-deep flooding on residential streets near the riverbank. 8 families voluntarily evacuated.',           'date' => '2026-07-08 14:00:00', 'team_idx' => 0],
+            ['address' => 'Brgy. Bucana, Nasugbu, Batangas',                 'lat' => 14.08050, 'lng' => 120.62300, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Floodwater from the river spreading into the coastal barangay. Several homes have 30cm of standing water inside.',                        'date' => '2026-07-08 14:45:00', 'team_idx' => 1],
+            ['address' => 'Wawa Creek, Brgy. Wawa, Nasugbu, Batangas',       'lat' => 14.07140, 'lng' => 120.62640, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Wawa Creek overflowed after 6 hours of nonstop rain. Floodwater reached the barangay hall. Evacuations assisted by BRT.',                 'date' => '2026-07-08 16:30:00', 'team_idx' => 3],
+            ['address' => 'Pantalan Bridge, Nasugbu, Batangas',              'lat' => 14.08700, 'lng' => 120.63050, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Debris accumulating under Pantalan Bridge causing backflow. DPWH clearing crew dispatched. Bridge approach has 20cm of water.',           'date' => '2026-07-08 17:00:00', 'team_idx' => 0],
+            ['address' => 'Brgy. Bilaran, Nasugbu, Batangas',                'lat' => 14.06870, 'lng' => 120.63560, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Low-lying area flooded again. Water entered 5 houses. Covered court opened as temporary shelter for affected families.',                   'date' => '2026-07-09 05:20:00', 'team_idx' => 2],
+            ['address' => 'J.P. Laurel St., Poblacion, Nasugbu, Batangas',   'lat' => 14.07760, 'lng' => 120.63810, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Clogged drainage causing street flooding near the municipal gymnasium. Ankle to knee-deep. Cleanup crew working on the drainage.',        'date' => '2026-07-09 07:10:00', 'team_idx' => 4],
+            ['address' => 'Near District Hospital, Nasugbu, Batangas',       'lat' => 14.06960, 'lng' => 120.63710, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Flooding near hospital main entrance. Sandbags deployed at doorways. Ambulance access rerouted through the back entrance.',               'date' => '2026-07-09 08:40:00', 'team_idx' => 1],
+            ['address' => 'Brgy. Lumbangan Road, Nasugbu, Batangas',         'lat' => 14.06200, 'lng' => 120.64020, 'severity' => 'low',      'status' => 'resolved',  'desc' => 'Road eroded and puddles formed. Passable with caution for motorcycles. Barangay requested DPWH road repair.',                             'date' => '2026-07-10 09:00:00', 'team_idx' => null],
+            ['address' => 'Side Street near Town Plaza, Nasugbu',            'lat' => 14.07490, 'lng' => 120.63390, 'severity' => 'low',      'status' => 'rejected',  'desc' => 'Reported as flooding but upon verification, it was just accumulated rainwater from a broken pipe. Referred to municipal water utility.',  'date' => '2026-07-10 10:30:00', 'team_idx' => null],
 
-            // --- MODERATE (mix of verified and pending) ---
-            [
-                'address'   => 'J.P. Laurel St., Poblacion, Nasugbu, Batangas',
-                'lat'       => 14.07760, 'lng' => 120.63810,
-                'severity'  => 'moderate',
-                'status'    => 'verified',
-                'desc'      => 'Clogged drainage causing street flooding near the municipal gymnasium. Ankle to knee-deep water.',
-                'hours_ago' => 15,
-                'team_idx'  => 2,
-            ],
-            [
-                'address'   => 'Concepcion St., Brgy. IV, Poblacion, Nasugbu',
-                'lat'       => 14.07380, 'lng' => 120.63510,
-                'severity'  => 'moderate',
-                'status'    => 'verified',
-                'desc'      => 'Moderate flooding on main street near school. Drainage system overwhelmed after 3 hours of continuous rain.',
-                'hours_ago' => 16,
-                'team_idx'  => 3,
-            ],
-            [
-                'address'   => 'Near Nasugbu West Central School, Nasugbu',
-                'lat'       => 14.07340, 'lng' => 120.63310,
-                'severity'  => 'moderate',
-                'status'    => 'pending',
-                'desc'      => 'Flooding near school entrance. Students dismissed early. Water level approximately 30cm on road.',
-                'hours_ago' => 18,
-                'team_idx'  => null,
-            ],
-            [
-                'address'   => 'San Antonio de Padua Parish, Poblacion, Nasugbu',
-                'lat'       => 14.07440, 'lng' => 120.63440,
-                'severity'  => 'moderate',
-                'status'    => 'pending',
-                'desc'      => 'Shallow flooding on streets surrounding the church. Drainage outlets blocked by debris from typhoon.',
-                'hours_ago' => 20,
-                'team_idx'  => null,
-            ],
-            [
-                'address'   => 'Brgy. Bilaran Covered Court Area, Nasugbu',
-                'lat'       => 14.06870, 'lng' => 120.63560,
-                'severity'  => 'moderate',
-                'status'    => 'verified',
-                'desc'      => 'Floodwater receding but standing water still significant around covered court. Community shelter activated.',
-                'hours_ago' => 22,
-                'team_idx'  => 4,
-            ],
-            [
-                'address'   => 'National Highway, Brgy. III, Nasugbu, Batangas',
-                'lat'       => 14.07080, 'lng' => 120.63170,
-                'severity'  => 'moderate',
-                'status'    => 'verified',
-                'desc'      => 'Highway partially flooded causing traffic slowdown. DPWH notified. One lane passable with caution.',
-                'hours_ago' => 24,
-                'team_idx'  => 0,
-            ],
-            [
-                'address'   => 'Brgy. Kaylaway, Near Elementary School, Nasugbu',
-                'lat'       => 14.05840, 'lng' => 120.64060,
-                'severity'  => 'moderate',
-                'status'    => 'pending',
-                'desc'      => 'Moderate flooding near school grounds. Low-lying area collecting runoff from surrounding hills.',
-                'hours_ago' => 26,
-                'team_idx'  => null,
-            ],
-            [
-                'address'   => 'Brgy. Lumbangan Road, Nasugbu, Batangas',
-                'lat'       => 14.06200, 'lng' => 120.64020,
-                'severity'  => 'moderate',
-                'status'    => 'verified',
-                'desc'      => 'Road surface eroded and flooded. Multiple potholes formed. Motorists advised to use alternate route.',
-                'hours_ago' => 28,
-                'team_idx'  => 1,
-            ],
-            [
-                'address'   => 'Nasugbu Civic Center, Brgy. III, Nasugbu',
-                'lat'       => 14.07090, 'lng' => 120.63120,
-                'severity'  => 'moderate',
-                'status'    => 'pending',
-                'desc'      => 'Parking area and ground floor of civic center flooded. Event cancelled. Sump pumps deployed.',
-                'hours_ago' => 30,
-                'team_idx'  => null,
-            ],
+            // ═══════════════════════════════════════════════════════════════════
+            // EVENT 3: Typhoon "Carina" — July 22-25, 2026
+            // Strongest event — widespread critical flooding
+            // ═══════════════════════════════════════════════════════════════════
+            ['address' => 'Pantalan Riverside, Brgy. Pantalan, Nasugbu',     'lat' => 14.08610, 'lng' => 120.62980, 'severity' => 'critical', 'status' => 'resolved',  'desc' => 'Severe flooding near the river mouth. Water rose over 1.5 meters in 2 hours. Families stranded on rooftops rescued by MDRRMO boat.',      'date' => '2026-07-22 22:00:00', 'team_idx' => 0],
+            ['address' => 'Brgy. Bucana Coastal Road, Nasugbu, Batangas',    'lat' => 14.08100, 'lng' => 120.62350, 'severity' => 'critical', 'status' => 'resolved',  'desc' => 'Storm surge combined with river overflow. Chest-level floodwater inside homes. Road completely impassable. 34 families evacuated.',        'date' => '2026-07-22 23:15:00', 'team_idx' => 1],
+            ['address' => 'Wawa Creek, Brgy. Wawa, Nasugbu, Batangas',       'lat' => 14.07200, 'lng' => 120.62750, 'severity' => 'critical', 'status' => 'resolved',  'desc' => 'Creek overflowed massively. Floodwater spreading into Brgy. Bilaran. Elderly residents unable to evacuate on their own.',                  'date' => '2026-07-23 01:40:00', 'team_idx' => 3],
+            ['address' => 'National Highway near Market, Nasugbu, Batangas', 'lat' => 14.07830, 'lng' => 120.63120, 'severity' => 'critical', 'status' => 'resolved',  'desc' => 'Major highway flooding. Market stalls submerged. Vendors lost merchandise. Flash flood swept away two parked tricycles.',                   'date' => '2026-07-23 02:20:00', 'team_idx' => 2],
+            ['address' => 'Coastal Area near Pier, Nasugbu, Batangas',       'lat' => 14.07650, 'lng' => 120.62460, 'severity' => 'critical', 'status' => 'resolved',  'desc' => 'Tidal flooding during high tide combined with typhoon rainfall. Fishing boats damaged. MDRRMO boat rescue operations underway.',            'date' => '2026-07-23 04:00:00', 'team_idx' => 0],
+            ['address' => 'Brgy. Pantalan Elementary School, Nasugbu',       'lat' => 14.08450, 'lng' => 120.62860, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Floodwater entering school grounds. Classes suspended. School furniture moved to second floor. Nearby families evacuated to gymnasium.',   'date' => '2026-07-23 05:30:00', 'team_idx' => 0],
+            ['address' => 'Brgy. Bilaran, Low-Lying Area, Nasugbu',          'lat' => 14.06810, 'lng' => 120.63480, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Entire lower portion of barangay submerged. 15 families evacuated to Bilaran Covered Court. Drainage completely overwhelmed.',             'date' => '2026-07-23 06:00:00', 'team_idx' => 2],
+            ['address' => 'Brgy. Lumbangan, Sitio Malapad, Nasugbu',         'lat' => 14.06120, 'lng' => 120.64080, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Road to town completely cut off by floodwater. Residents relied on boats for 2 days. Relief goods delivered by rubber boat.',               'date' => '2026-07-23 07:15:00', 'team_idx' => 3],
+            ['address' => 'Sitio Malapad, Brgy. Bucana, Nasugbu',            'lat' => 14.06490, 'lng' => 120.63820, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Flash flooding in creek-adjacent settlement. Three homes partially submerged. One wall collapsed. No casualties reported.',                'date' => '2026-07-23 08:00:00', 'team_idx' => 1],
+            ['address' => 'Near West Central School, Nasugbu',               'lat' => 14.07340, 'lng' => 120.63310, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Street flooding near school. Parents unable to fetch children. Students sheltered inside until water subsided around 2 PM.',               'date' => '2026-07-23 09:45:00', 'team_idx' => 4],
+            ['address' => 'San Antonio de Padua Parish, Nasugbu',            'lat' => 14.07440, 'lng' => 120.63440, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Streets surrounding the church flooded with debris from typhoon. Drainage outlets blocked. Parishioners helped with cleanup.',             'date' => '2026-07-24 06:30:00', 'team_idx' => null],
+            ['address' => 'Brgy. Kaylaway Interior, Nasugbu',                'lat' => 14.05740, 'lng' => 120.64160, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Landslide debris blocked drainage canal causing localized flooding in 3 households. Barangay crew cleared debris within 5 hours.',          'date' => '2026-07-24 08:00:00', 'team_idx' => null],
+            ['address' => 'Brgy. Poblacion IV, Nasugbu, Batangas',           'lat' => 14.07590, 'lng' => 120.63660, 'severity' => 'low',      'status' => 'resolved',  'desc' => 'Minor post-typhoon flooding from clogged canal. Barangay crew cleared within the hour. No household impact.',                              'date' => '2026-07-25 07:00:00', 'team_idx' => null],
+            ['address' => 'Nasugbu Civic Center, Brgy. III, Nasugbu',        'lat' => 14.07090, 'lng' => 120.63120, 'severity' => 'low',      'status' => 'rejected',  'desc' => 'Reported flooding at civic center parking area. Upon checking, water was from a burst fire hydrant, not flood-related.',                    'date' => '2026-07-25 09:00:00', 'team_idx' => null],
 
-            // --- LOW (older reports, mostly resolved) ---
-            [
-                'address'   => 'Brgy. Poblacion IV, Nasugbu, Batangas',
-                'lat'       => 14.07590, 'lng' => 120.63660,
-                'severity'  => 'low',
-                'status'    => 'resolved',
-                'desc'      => 'Minor flooding from clogged canal, cleared within the hour. Drainage cleaned by barangay crew.',
-                'hours_ago' => 48,
-                'team_idx'  => 2,
-            ],
-            [
-                'address'   => 'Side Street near Town Plaza, Nasugbu',
-                'lat'       => 14.07490, 'lng' => 120.63390,
-                'severity'  => 'low',
-                'status'    => 'resolved',
-                'desc'      => 'Shallow drainage overflow after afternoon downpour. Water cleared naturally within 2 hours.',
-                'hours_ago' => 50,
-                'team_idx'  => 3,
-            ],
-            [
-                'address'   => 'Brgy. Kaylaway Interior, Nasugbu, Batangas',
-                'lat'       => 14.05740, 'lng' => 120.64160,
-                'severity'  => 'low',
-                'status'    => 'resolved',
-                'desc'      => 'Minor puddle formation on unpaved road. No household impact. Barangay crew alerted.',
-                'hours_ago' => 52,
-                'team_idx'  => 4,
-            ],
-            [
-                'address'   => 'Brgy. Poblacion, Elevated Area, Nasugbu',
-                'lat'       => 14.08140, 'lng' => 120.63960,
-                'severity'  => 'low',
-                'status'    => 'resolved',
-                'desc'      => 'Light flooding in naturally elevated area. Draining slowly via roadside canal. No evacuation needed.',
-                'hours_ago' => 54,
-                'team_idx'  => 0,
-            ],
-            [
-                'address'   => 'Pantalan Senior High School Area, Nasugbu',
-                'lat'       => 14.08730, 'lng' => 120.63110,
-                'severity'  => 'low',
-                'status'    => 'resolved',
-                'desc'      => 'Temporary flooding in school grounds after heavy rain. Cleared before classes resumed.',
-                'hours_ago' => 60,
-                'team_idx'  => 1,
-            ],
-            [
-                'address'   => 'Brgy. Wawa, Upper Area, Nasugbu, Batangas',
-                'lat'       => 14.07290, 'lng' => 120.62820,
-                'severity'  => 'low',
-                'status'    => 'resolved',
-                'desc'      => 'Fallen tree partially blocking creek flow. Barangay crew removed debris. No flooding occurred.',
-                'hours_ago' => 66,
-                'team_idx'  => 2,
-            ],
-            [
-                'address'   => 'Near Nasugbu East Central School, Poblacion',
-                'lat'       => 14.07610, 'lng' => 120.63690,
-                'severity'  => 'low',
-                'status'    => 'resolved',
-                'desc'      => 'Drainage overflow on school perimeter. Maintenance crew dispatched. Water subsided within 45 minutes.',
-                'hours_ago' => 72,
-                'team_idx'  => 3,
-            ],
-            [
-                'address'   => 'Brgy. Bucana Interior, Nasugbu, Batangas',
-                'lat'       => 14.07960, 'lng' => 120.62460,
-                'severity'  => 'low',
-                'status'    => 'resolved',
-                'desc'      => 'Post-storm residual flooding. Residents reported water receding steadily. No assistance required.',
-                'hours_ago' => 78,
-                'team_idx'  => 4,
-            ],
-            [
-                'address'   => 'Lumbangan National Road Junction, Nasugbu',
-                'lat'       => 14.06050, 'lng' => 120.64110,
-                'severity'  => 'low',
-                'status'    => 'resolved',
-                'desc'      => 'Shallow flooding at road junction after runoff from nearby hill. Cleared after rain stopped.',
-                'hours_ago' => 84,
-                'team_idx'  => 0,
-            ],
-            [
-                'address'   => 'Brgy. Bilaran, Upper Sitio, Nasugbu, Batangas',
-                'lat'       => 14.06940, 'lng' => 120.63600,
-                'severity'  => 'low',
-                'status'    => 'resolved',
-                'desc'      => 'Light water accumulation on unpaved path. Residents managed independently. No response needed.',
-                'hours_ago' => 90,
-                'team_idx'  => 1,
-            ],
+            // ═══════════════════════════════════════════════════════════════════
+            // EVENT 4: Monsoon rains — August 5-7, 2026
+            // Moderate event, habagat-driven continuous rainfall
+            // ═══════════════════════════════════════════════════════════════════
+            ['address' => 'Brgy. Pantalan, Nasugbu, Batangas',               'lat' => 14.08380, 'lng' => 120.62780, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'River bank overflowing again after 3 days of continuous monsoon rain. 12 families preemptively evacuated based on last month experience.',  'date' => '2026-08-05 15:30:00', 'team_idx' => 0],
+            ['address' => 'Brgy. Wawa, Riverside Settlement, Nasugbu',       'lat' => 14.07210, 'lng' => 120.62760, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Floodwaters entering homes along the creek. Residents more prepared this time — furniture already elevated. 5 families evacuated.',          'date' => '2026-08-05 17:00:00', 'team_idx' => 3],
+            ['address' => 'Brgy. Bucana Interior, Nasugbu, Batangas',        'lat' => 14.07960, 'lng' => 120.62460, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Moderate flooding in low-lying streets. Water entered some homes up to ankle level. Residents used sandbags from last distribution.',       'date' => '2026-08-06 06:20:00', 'team_idx' => 1],
+            ['address' => 'Brgy. Bilaran, Nasugbu, Batangas',                'lat' => 14.06940, 'lng' => 120.63600, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Repeat flooding in the same low-lying portion. 3 families evacuated to covered court. Water level lower than July event.',                  'date' => '2026-08-06 08:45:00', 'team_idx' => 2],
+            ['address' => 'Poblacion, near Municipal Hall, Nasugbu',         'lat' => 14.07500, 'lng' => 120.63700, 'severity' => 'low',      'status' => 'resolved',  'desc' => 'Drainage backup near municipal hall. Shallow flooding on sidewalk only. Municipal maintenance crew deployed pumps.',                        'date' => '2026-08-07 07:30:00', 'team_idx' => null],
+            ['address' => 'Brgy. Lumbangan, Nasugbu, Batangas',              'lat' => 14.06050, 'lng' => 120.64110, 'severity' => 'low',      'status' => 'resolved',  'desc' => 'Light flooding at road junction. Cleared naturally after rain stopped. No assistance required.',                                           'date' => '2026-08-07 10:00:00', 'team_idx' => null],
+
+            // ═══════════════════════════════════════════════════════════════════
+            // EVENT 5: Typhoon "Dindo" — August 20-23, 2026
+            // Severe typhoon, second worst event after "Carina"
+            // ═══════════════════════════════════════════════════════════════════
+            ['address' => 'Brgy. Pantalan, Nasugbu, Batangas',               'lat' => 14.08550, 'lng' => 120.63020, 'severity' => 'critical', 'status' => 'resolved',  'desc' => 'Pantalan River at critical level. Entire riverside settlement flooded. Rescue boats deployed for 27 stranded families.',                   'date' => '2026-08-20 20:00:00', 'team_idx' => 0],
+            ['address' => 'Brgy. Bucana, Nasugbu, Batangas',                 'lat' => 14.08000, 'lng' => 120.62250, 'severity' => 'critical', 'status' => 'resolved',  'desc' => 'Coastal flooding combined with storm surge. Waist-deep water inside homes. Fish pens destroyed. 45 families at evacuation center.',        'date' => '2026-08-20 21:30:00', 'team_idx' => 1],
+            ['address' => 'Brgy. Wawa, Nasugbu, Batangas',                   'lat' => 14.07150, 'lng' => 120.62650, 'severity' => 'critical', 'status' => 'resolved',  'desc' => 'Creek walls breached. Floodwater rushing through residential area. Emergency siren activated. Mass evacuation to Wawa Covered Court.',      'date' => '2026-08-21 00:30:00', 'team_idx' => 3],
+            ['address' => 'National Highway, Nasugbu Public Market',         'lat' => 14.07850, 'lng' => 120.63100, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Market and highway flooded. Vendors lost goods for second time in a month. DPWH heavy equipment deployed to clear road.',                    'date' => '2026-08-21 04:15:00', 'team_idx' => 2],
+            ['address' => 'Brgy. Bilaran, Nasugbu, Batangas',                'lat' => 14.06800, 'lng' => 120.63500, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Third flooding event in 2 months. Entire lower barangay evacuated preemptively. Covered court at capacity. Overflow sent to gymnasium.',    'date' => '2026-08-21 05:00:00', 'team_idx' => 2],
+            ['address' => 'Brgy. Lumbangan, Nasugbu, Batangas',              'lat' => 14.06150, 'lng' => 120.64000, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Road to town cut off again. Barangay isolated for 18 hours. Relief goods airlifted by provincial government helicopter.',                   'date' => '2026-08-21 06:30:00', 'team_idx' => 3],
+            ['address' => 'Pantalan Senior High School Area, Nasugbu',       'lat' => 14.08730, 'lng' => 120.63110, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'School grounds flooded. Used as temporary parking for rescued vehicles from lower Pantalan. Water receded after 8 hours.',                 'date' => '2026-08-22 07:00:00', 'team_idx' => 0],
+            ['address' => 'Brgy. Kaylaway, Nasugbu, Batangas',               'lat' => 14.05800, 'lng' => 120.64100, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Hill runoff flooding near elementary school worse than June. Temporary diversion canal dug by barangay volunteers.',                        'date' => '2026-08-22 08:30:00', 'team_idx' => null],
+            ['address' => 'Brgy. Poblacion, Nasugbu, Batangas',              'lat' => 14.08140, 'lng' => 120.63960, 'severity' => 'low',      'status' => 'resolved',  'desc' => 'Light flooding in elevated area. Draining slowly via roadside canal. No evacuation needed. Cleanup completed same day.',                    'date' => '2026-08-23 06:00:00', 'team_idx' => null],
+            ['address' => 'Near East Central School, Poblacion, Nasugbu',    'lat' => 14.07610, 'lng' => 120.63690, 'severity' => 'low',      'status' => 'rejected',  'desc' => 'Report submitted with photo from July typhoon. Duplicate/outdated submission. Reporter advised to submit current photos only.',             'date' => '2026-08-23 09:15:00', 'team_idx' => null],
+
+            // ═══════════════════════════════════════════════════════════════════
+            // EVENT 6: Current event — September 6-9, 2026 (ongoing)
+            // Active flooding — mix of statuses
+            // ═══════════════════════════════════════════════════════════════════
+            ['address' => 'Pantalan Riverside, Brgy. Pantalan, Nasugbu',     'lat' => 14.08530, 'lng' => 120.62910, 'severity' => 'critical', 'status' => 'assigned',  'desc' => 'Severe flooding at the same riverside area. Water level 1.2 meters and rising. 6 families on rooftops awaiting rescue.',                    'date' => '2026-09-06 21:00:00', 'team_idx' => 0],
+            ['address' => 'Brgy. Bucana Coastal Road, Nasugbu, Batangas',    'lat' => 14.08050, 'lng' => 120.62300, 'severity' => 'critical', 'status' => 'assigned',  'desc' => 'Storm surge and river overflow — same pattern as July. Floodwater chest-level in some homes. Boats from LGU deployed.',                     'date' => '2026-09-06 22:30:00', 'team_idx' => 1],
+            ['address' => 'Wawa Creek, Brgy. Wawa, Nasugbu',                 'lat' => 14.07140, 'lng' => 120.62640, 'severity' => 'critical', 'status' => 'verified',  'desc' => 'Creek overflowing for the third time this season. Breach in same wall section from August. MDRRMO deploying sandbag reinforcement.',       'date' => '2026-09-07 00:15:00', 'team_idx' => 3],
+            ['address' => 'National Highway near Market, Nasugbu',           'lat' => 14.07830, 'lng' => 120.63120, 'severity' => 'high',     'status' => 'verified',  'desc' => 'Highway flooded near public market. Vendors proactively moved goods to higher stalls this time. Road impassable to small vehicles.',       'date' => '2026-09-07 03:00:00', 'team_idx' => 2],
+            ['address' => 'Brgy. Bilaran, Nasugbu, Batangas',                'lat' => 14.06870, 'lng' => 120.63560, 'severity' => 'high',     'status' => 'assigned',  'desc' => 'Fourth flooding this wet season. Families already at covered court since yesterday. Water level rising faster than previous events.',       'date' => '2026-09-07 05:30:00', 'team_idx' => 2],
+            ['address' => 'Brgy. Pantalan, Near Elementary School, Nasugbu', 'lat' => 14.08450, 'lng' => 120.62860, 'severity' => 'high',     'status' => 'assigned',  'desc' => 'School grounds flooded again. Preemptive class suspension issued. Rescue team evacuating elderly residents from nearby houses.',             'date' => '2026-09-07 06:45:00', 'team_idx' => 0],
+            ['address' => 'Near District Hospital, Nasugbu, Batangas',       'lat' => 14.06960, 'lng' => 120.63710, 'severity' => 'moderate', 'status' => 'verified',  'desc' => 'Flooding near hospital entrance. Sandbag wall from August still partially intact. Emergency entrance rerouted.',                           'date' => '2026-09-07 08:20:00', 'team_idx' => 1],
+            ['address' => 'Brgy. Lumbangan, Nasugbu, Batangas',              'lat' => 14.06200, 'lng' => 120.64020, 'severity' => 'moderate', 'status' => 'verified',  'desc' => 'Road flooding at the usual low point. Barangay volunteers posted warning signs. Vehicle access from the east side still open.',             'date' => '2026-09-08 06:00:00', 'team_idx' => null],
+            ['address' => 'J.P. Laurel St., Poblacion, Nasugbu',             'lat' => 14.07760, 'lng' => 120.63810, 'severity' => 'moderate', 'status' => 'pending',   'desc' => 'Drainage flooding near gymnasium. Water about 20cm on the road. Residents requesting barangay pump deployment.',                            'date' => '2026-09-08 07:30:00', 'team_idx' => null],
+            ['address' => 'Brgy. Kaylaway, Nasugbu, Batangas',               'lat' => 14.05840, 'lng' => 120.64060, 'severity' => 'moderate', 'status' => 'pending',   'desc' => 'Hill runoff flooding near school, same as previous events. Temporary canal from August partially collapsed and needs repair.',              'date' => '2026-09-08 09:00:00', 'team_idx' => null],
+            ['address' => 'Concepcion St., Poblacion, Nasugbu',              'lat' => 14.07380, 'lng' => 120.63510, 'severity' => 'low',      'status' => 'pending',   'desc' => 'Light flooding near West Central School. Drainage clogged with leaves and plastic waste. Requesting barangay cleanup crew.',                'date' => '2026-09-08 10:15:00', 'team_idx' => null],
+            ['address' => 'Brgy. Wawa, Upper Area, Nasugbu',                 'lat' => 14.07290, 'lng' => 120.62820, 'severity' => 'low',      'status' => 'pending',   'desc' => 'Fallen tree partially blocking creek flow in upper portion. No flooding yet but could worsen if not cleared before next heavy rain.',        'date' => '2026-09-09 06:30:00', 'team_idx' => null],
         ];
 
         $residentCount = count($residents);
 
         foreach ($reports as $i => $r) {
-            $resident = $residents[$i % $residentCount];
-            $team     = $r['team_idx'] !== null ? $teams[$r['team_idx']] : null;
-            $responder = $team ? $team->responders[0] ?? null : null;
+            $resident  = $residents[$i % $residentCount];
+            $team      = $r['team_idx'] !== null ? $teams[$r['team_idx']] : null;
+            $responder = $team ? ($team->responders[0] ?? null) : null;
 
-            $createdAt  = now()->subHours($r['hours_ago']);
-            $verifiedAt = in_array($r['status'], ['verified', 'assigned', 'resolved'])
-                ? $createdAt->copy()->addMinutes(rand(15, 60))
+            $createdAt  = Carbon::parse($r['date']);
+            $verifiedAt = in_array($r['status'], ['verified', 'assigned', 'resolved', 'rejected'])
+                ? $createdAt->copy()->addMinutes(rand(10, 45))
+                : null;
+            $assignedAt = in_array($r['status'], ['assigned', 'resolved']) && $team
+                ? ($verifiedAt ?? $createdAt)->copy()->addMinutes(rand(15, 60))
                 : null;
             $resolvedAt = $r['status'] === 'resolved'
-                ? $createdAt->copy()->addHours(rand(2, 6))
+                ? ($assignedAt ?? $createdAt)->copy()->addHours(rand(2, 8))
                 : null;
 
-            Report::firstOrCreate(
-                ['latitude' => $r['lat'], 'longitude' => $r['lng']],
+            $report = Report::firstOrCreate(
+                ['latitude' => $r['lat'], 'longitude' => $r['lng'], 'created_at' => $createdAt],
                 [
                     'user_id'          => $resident->id,
                     'severity'         => $r['severity'],
@@ -484,16 +302,62 @@ class MainSeeder extends Seeder
                     'address'          => $r['address'],
                     'assigned_to'      => $responder?->id,
                     'assigned_team_id' => $team?->id,
-                    'verified_by'      => $verifiedAt ? 1 : null,
+                    'verified_by'      => $verifiedAt ? $admin->id : null,
                     'verified_at'      => $verifiedAt,
+                    'assigned_at'      => $assignedAt,
                     'resolved_at'      => $resolvedAt,
                     'created_at'       => $createdAt,
-                    'updated_at'       => $createdAt,
+                    'updated_at'       => $resolvedAt ?? $assignedAt ?? $verifiedAt ?? $createdAt,
                 ]
             );
+
+            // Seed status update history for activity feed
+            if ($report->wasRecentlyCreated) {
+                $this->seedStatusUpdates($report, $r['status'], $admin, $responder, $createdAt, $verifiedAt, $assignedAt, $resolvedAt);
+            }
         }
 
-        $this->command->info('✓ Seeded 30 flood reports.');
+        $this->command->info('✓ Seeded ' . count($reports) . ' flood reports across 6 events (June–September 2026).');
+    }
+
+    private function seedStatusUpdates(
+        Report $report, string $finalStatus, User $admin,
+        ?User $responder, Carbon $createdAt,
+        ?Carbon $verifiedAt, ?Carbon $assignedAt, ?Carbon $resolvedAt
+    ): void {
+        if ($verifiedAt && in_array($finalStatus, ['verified', 'assigned', 'resolved', 'rejected'])) {
+            $status = $finalStatus === 'rejected' ? 'rejected' : 'verified';
+            ReportStatusUpdate::create([
+                'report_id'  => $report->id,
+                'user_id'    => $admin->id,
+                'status'     => $status,
+                'notes'      => $status === 'rejected' ? 'Report does not meet verification criteria.' : 'Report verified and confirmed.',
+                'created_at' => $verifiedAt,
+                'updated_at' => $verifiedAt,
+            ]);
+        }
+
+        if ($assignedAt && in_array($finalStatus, ['assigned', 'resolved'])) {
+            ReportStatusUpdate::create([
+                'report_id'  => $report->id,
+                'user_id'    => $admin->id,
+                'status'     => 'assigned',
+                'notes'      => 'Response team dispatched to the area.',
+                'created_at' => $assignedAt,
+                'updated_at' => $assignedAt,
+            ]);
+        }
+
+        if ($resolvedAt && $finalStatus === 'resolved') {
+            ReportStatusUpdate::create([
+                'report_id'  => $report->id,
+                'user_id'    => $responder?->id ?? $admin->id,
+                'status'     => 'resolved',
+                'notes'      => 'Situation resolved. Floodwater receded and affected residents assisted.',
+                'created_at' => $resolvedAt,
+                'updated_at' => $resolvedAt,
+            ]);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -504,84 +368,68 @@ class MainSeeder extends Seeder
     {
         $hazards = [
             [
-                'category' => 'flood',
-                'type'     => 'flash_flood',
-                'severity' => 'critical',
-                'title'    => 'Flash Flood — Pantalan River Mouth',
-                'description' => 'Rapid water level rise at river mouth due to upstream rainfall. Do not cross.',
-                'lat'      => 14.08520, 'lng' => 120.62890,
-                'address'  => 'Pantalan River Mouth, Nasugbu, Batangas',
-                'active'   => true,
+                'category' => 'flood', 'type' => 'flash_flood', 'severity' => 'critical',
+                'title'       => 'Flash Flood Zone — Pantalan River Mouth',
+                'description' => 'Recurring flash flood area at river mouth. Water rises rapidly during heavy rainfall. Do not cross when river is above knee level.',
+                'lat' => 14.08520, 'lng' => 120.62890,
+                'address' => 'Pantalan River Mouth, Nasugbu, Batangas',
+                'active' => true,
             ],
             [
-                'category' => 'flood',
-                'type'     => 'flash_flood',
-                'severity' => 'high',
-                'title'    => 'Flood Zone — Brgy. Bucana',
-                'description' => 'Coastal flooding combined with river overflow. Residents advised to evacuate.',
-                'lat'      => 14.08020, 'lng' => 120.62280,
-                'address'  => 'Brgy. Bucana, Nasugbu, Batangas',
-                'active'   => true,
+                'category' => 'flood', 'type' => 'flash_flood', 'severity' => 'high',
+                'title'       => 'Flood-Prone Area — Brgy. Bucana Coastal',
+                'description' => 'Coastal flooding during high tide combined with heavy rain. Historically floods 3-4 times per wet season.',
+                'lat' => 14.08020, 'lng' => 120.62280,
+                'address' => 'Brgy. Bucana, Nasugbu, Batangas',
+                'active' => true,
             ],
             [
-                'category' => 'flood',
-                'type'     => 'flash_flood',
-                'severity' => 'high',
-                'title'    => 'Overflowing Creek — Brgy. Wawa',
-                'description' => 'Wawa creek overflowing banks. Surrounding streets submerged.',
-                'lat'      => 14.07130, 'lng' => 120.62630,
-                'address'  => 'Wawa Creek, Nasugbu, Batangas',
-                'active'   => true,
+                'category' => 'flood', 'type' => 'flash_flood', 'severity' => 'high',
+                'title'       => 'Creek Overflow Zone — Brgy. Wawa',
+                'description' => 'Wawa Creek prone to overflow during sustained rainfall. Creek walls damaged and require reinforcement.',
+                'lat' => 14.07130, 'lng' => 120.62630,
+                'address' => 'Wawa Creek, Nasugbu, Batangas',
+                'active' => true,
             ],
             [
-                'category' => 'road',
-                'type'     => 'closed_road',
-                'severity' => 'high',
-                'title'    => 'Road Closure — Pantalan Bridge',
-                'description' => 'Pantalan bridge approach flooded and structurally unsafe. Road closed to all vehicles.',
-                'lat'      => 14.08680, 'lng' => 120.63060,
-                'address'  => 'Pantalan Bridge, Nasugbu, Batangas',
-                'active'   => true,
+                'category' => 'road', 'type' => 'closed_road', 'severity' => 'high',
+                'title'       => 'Flood Road Closure — Pantalan Bridge Approach',
+                'description' => 'Bridge approach frequently flooded. DPWH monitoring structural integrity. Closed during flood events.',
+                'lat' => 14.08680, 'lng' => 120.63060,
+                'address' => 'Pantalan Bridge, Nasugbu, Batangas',
+                'active' => true,
             ],
             [
-                'category' => 'road',
-                'type'     => 'closed_road',
-                'severity' => 'moderate',
-                'title'    => 'Partial Road Block — National Highway',
-                'description' => 'One lane of national highway flooded near public market. Slow traffic. Use alternate routes.',
-                'lat'      => 14.07820, 'lng' => 120.63130,
-                'address'  => 'National Highway, Nasugbu, Batangas',
-                'active'   => true,
+                'category' => 'road', 'type' => 'closed_road', 'severity' => 'moderate',
+                'title'       => 'Road Flooding — National Highway near Market',
+                'description' => 'Highway section near public market floods during moderate to heavy rainfall. One lane usually remains passable.',
+                'lat' => 14.07820, 'lng' => 120.63130,
+                'address' => 'National Highway, Nasugbu, Batangas',
+                'active' => true,
             ],
             [
-                'category' => 'flood',
-                'type'     => 'flash_flood',
-                'severity' => 'moderate',
-                'title'    => 'Flood Warning — Brgy. Bilaran',
-                'description' => 'Low-lying barangay at risk. Residents in flood-prone zones advised to move belongings to higher floors.',
-                'lat'      => 14.06820, 'lng' => 120.63540,
-                'address'  => 'Brgy. Bilaran, Nasugbu, Batangas',
-                'active'   => true,
+                'category' => 'flood', 'type' => 'flash_flood', 'severity' => 'moderate',
+                'title'       => 'Low-Lying Flood Zone — Brgy. Bilaran',
+                'description' => 'Chronically flooded barangay. Residents advised to elevate furniture and prepare go-bags during rainy season.',
+                'lat' => 14.06820, 'lng' => 120.63540,
+                'address' => 'Brgy. Bilaran, Nasugbu, Batangas',
+                'active' => true,
             ],
             [
-                'category' => 'road',
-                'type'     => 'debris',
-                'severity' => 'moderate',
-                'title'    => 'Debris on Road — Brgy. Lumbangan',
-                'description' => 'Fallen trees and debris blocking provincial road to Brgy. Lumbangan. Clearance in progress.',
-                'lat'      => 14.06180, 'lng' => 120.64030,
-                'address'  => 'Brgy. Lumbangan Road, Nasugbu, Batangas',
-                'active'   => true,
+                'category' => 'road', 'type' => 'debris', 'severity' => 'moderate',
+                'title'       => 'Road Erosion — Brgy. Lumbangan',
+                'description' => 'Provincial road repeatedly damaged by flooding. Multiple potholes and eroded sections. Drive with extreme caution.',
+                'lat' => 14.06180, 'lng' => 120.64030,
+                'address' => 'Brgy. Lumbangan Road, Nasugbu, Batangas',
+                'active' => true,
             ],
             [
-                'category' => 'flood',
-                'type'     => 'flash_flood',
-                'severity' => 'low',
-                'title'    => 'Standing Water — Poblacion Streets',
-                'description' => 'Minor flooding on Poblacion side streets. Passable on foot with caution. Draining gradually.',
-                'lat'      => 14.07500, 'lng' => 120.63450,
-                'address'  => 'Poblacion, Nasugbu, Batangas',
-                'active'   => true,
+                'category' => 'flood', 'type' => 'flash_flood', 'severity' => 'low',
+                'title'       => 'Drainage Issues — Poblacion Streets',
+                'description' => 'Recurring drainage overflow on Poblacion side streets during heavy rain. Usually clears within 2 hours.',
+                'lat' => 14.07500, 'lng' => 120.63450,
+                'address' => 'Poblacion, Nasugbu, Batangas',
+                'active' => true,
             ],
         ];
 
@@ -607,86 +455,71 @@ class MainSeeder extends Seeder
     }
 
     // -------------------------------------------------------------------------
-    // Alerts & Advisories
+    // Alerts & Advisories (for the current September event)
     // -------------------------------------------------------------------------
 
     private function seedAlerts(User $admin): void
     {
         $alerts = [
-            // CRITICAL alerts
             [
-                'title'       => 'CRITICAL: Flash Flood Warning — Nasugbu Coastal Areas',
-                'body'        => 'PAGASA has issued a Flash Flood Warning for coastal barangays of Nasugbu, Batangas. Residents of Brgy. Pantalan, Bucana, and Wawa are advised to EVACUATE IMMEDIATELY to designated evacuation centers. Bring essential documents, medicines, and 3-day food supply. Do not attempt to cross flooded roads.',
-                'type'        => 'critical',
-                'is_critical' => true,
-                'hours_ago'   => 1,
+                'title'     => 'CRITICAL: Flash Flood Warning — Nasugbu Coastal Barangays',
+                'body'      => 'PAGASA has issued a Flash Flood Warning for coastal barangays of Nasugbu, Batangas effective September 6, 2026. Residents of Brgy. Pantalan, Bucana, and Wawa are advised to EVACUATE IMMEDIATELY to designated evacuation centers. Bring essential documents, medicines, and 3-day food supply. Do not attempt to cross flooded roads or rivers.',
+                'type'      => 'critical',
+                'hours_ago' => 60,
             ],
             [
-                'title'       => 'CRITICAL: River Level Alert — Pantalan River',
-                'body'        => 'Pantalan River has exceeded critical water level threshold. All residents within 500 meters of the riverbank must evacuate immediately. NDRRMC rescue teams are on standby. Call the MDRRMO hotline for assistance: 0917-XXX-XXXX.',
-                'type'        => 'critical',
-                'is_critical' => true,
-                'hours_ago'   => 2,
-            ],
-
-            // UPDATE alerts
-            [
-                'title'       => 'UPDATE: Rescue Operations Ongoing in Brgy. Pantalan',
-                'body'        => 'Rescue teams Alpha and Bravo are currently conducting rescue operations in Brgy. Pantalan. 47 families have been successfully evacuated to the Nasugbu Municipal Gymnasium. Operations are still ongoing. Expect road closures around Pantalan Bridge until further notice.',
-                'type'        => 'update',
-                'is_critical' => false,
-                'hours_ago'   => 3,
+                'title'     => 'CRITICAL: Pantalan River at Critical Level',
+                'body'      => 'Pantalan River has exceeded the critical water level threshold of 8.5 meters as of 9:00 PM, September 6. All residents within 500 meters of the riverbank must evacuate immediately. MDRRMO rescue boats are deployed. Call the hotline 0917-XXX-XXXX for emergency assistance.',
+                'type'      => 'critical',
+                'hours_ago' => 58,
             ],
             [
-                'title'       => 'UPDATE: Evacuation Centers Now Open',
-                'body'        => 'The following evacuation centers are now open and accepting evacuees: Nasugbu Municipal Gymnasium (capacity: 1,200), Nasugbu National High School (capacity: 1,500), and Nasugbu West Central School (capacity: 2,000). Transportation assistance is available at Brgy. Hall. Bring valid ID.',
-                'type'        => 'update',
-                'is_critical' => false,
-                'hours_ago'   => 4,
+                'title'     => 'UPDATE: Rescue Operations in Brgy. Pantalan and Bucana',
+                'body'      => 'MDRRMO Rescue Units 1 and 2 are conducting rescue operations in Brgy. Pantalan and Bucana since last night. 52 families (213 individuals) have been successfully evacuated to the Nasugbu Municipal Gymnasium and National High School. Operations are ongoing. Road closures remain around Pantalan Bridge.',
+                'type'      => 'update',
+                'hours_ago' => 50,
             ],
             [
-                'title'       => 'UPDATE: Road Closure — Pantalan Bridge',
-                'body'        => 'Pantalan Bridge is officially closed to all motorists effective immediately due to flood damage. DPWH engineers are assessing structural integrity. Alternate route: use the bypass road via Brgy. Bilaran. Expected duration of closure: 48–72 hours.',
-                'type'        => 'update',
-                'is_critical' => false,
-                'hours_ago'   => 5,
+                'title'     => 'UPDATE: Evacuation Centers Status — September 7',
+                'body'      => 'Current evacuation center status: Nasugbu Municipal Gymnasium — 156 evacuees (13% capacity), Nasugbu National High School — 89 evacuees (6% capacity), Bilaran Covered Court — 47 evacuees (13% capacity), Wawa Covered Court — 38 evacuees (13% capacity). All centers have sufficient food and water supply for 48 hours.',
+                'type'      => 'update',
+                'hours_ago' => 40,
             ],
             [
-                'title'       => 'UPDATE: Water Level Receding in Poblacion',
-                'body'        => 'Water levels in Poblacion area have started receding. Residents may return to inspect their homes but should exercise caution. Do not consume tap water without boiling. Leptospirosis risk is high — wear rubber boots and avoid wading in floodwater.',
-                'type'        => 'update',
-                'is_critical' => false,
-                'hours_ago'   => 20,
-            ],
-
-            // ADVISORY alerts
-            [
-                'title'       => 'ADVISORY: Heavy Rainfall Expected — 24-Hour Warning',
-                'body'        => 'PAGASA forecasts continuous moderate to heavy rainfall over Nasugbu and neighboring municipalities for the next 24 hours due to LPA (Low Pressure Area) southeast of Batangas. Residents in flood-prone barangays are advised to prepare go-bags, monitor water levels, and stay updated via FloodTrack.',
-                'type'        => 'advisory',
-                'is_critical' => false,
-                'hours_ago'   => 6,
+                'title'     => 'UPDATE: Pantalan Bridge Closed to All Traffic',
+                'body'      => 'Pantalan Bridge is closed to all motorists effective September 7 due to flood damage and debris accumulation. DPWH engineers will assess structural integrity once water levels recede. Alternate route: use the bypass road via Brgy. Bilaran to the national highway. Expected closure duration: 48-72 hours.',
+                'type'      => 'update',
+                'hours_ago' => 36,
             ],
             [
-                'title'       => 'ADVISORY: Health Warning — Post-Flood Leptospirosis Risk',
-                'body'        => 'The Municipal Health Office warns residents of elevated leptospirosis risk following the flooding. Symptoms include fever, headache, muscle pain, and red eyes. Avoid contact with floodwater or mud. If symptoms appear, seek medical attention immediately at the Lian-Nasugbu District Hospital.',
-                'type'        => 'advisory',
-                'is_critical' => false,
-                'hours_ago'   => 24,
+                'title'     => 'ADVISORY: Continuous Rainfall Expected — 48-Hour Forecast',
+                'body'      => 'PAGASA forecasts continuous moderate to heavy rainfall over Nasugbu and neighboring towns for the next 48 hours due to the enhanced southwest monsoon (habagat). Residents in flood-prone barangays should remain in evacuation centers. Do not return to flooded homes until official clearance from the MDRRMO.',
+                'type'      => 'advisory',
+                'hours_ago' => 30,
             ],
             [
-                'title'       => 'ADVISORY: Relief Operations Schedule',
-                'body'        => 'The MDRRMO will distribute relief goods at the following locations starting tomorrow at 8:00 AM: (1) Nasugbu Municipal Gymnasium — Pantalan and Bucana evacuees, (2) Nasugbu National High School — Wawa and Bilaran evacuees. Bring your barangay certificate. One pack per household.',
-                'type'        => 'advisory',
-                'is_critical' => false,
-                'hours_ago'   => 30,
+                'title'     => 'ADVISORY: Post-Flood Health Warning — Leptospirosis',
+                'body'      => 'The Municipal Health Office warns residents of elevated leptospirosis risk following the September flooding. Symptoms include high fever, headache, muscle pain, and jaundice. Avoid walking barefoot in floodwater or mud. If symptoms appear within 2 weeks of flood exposure, seek medical attention immediately at the Lian-Nasugbu District Hospital.',
+                'type'      => 'advisory',
+                'hours_ago' => 24,
             ],
             [
-                'title'       => 'ADVISORY: Preparation Tips Before the Storm Season',
-                'body'        => 'As typhoon season approaches, Nasugbu MDRRMO reminds all residents to: (1) Identify your nearest evacuation center, (2) Prepare a 3-day emergency kit including food, water, medicines, and documents, (3) Know your family emergency plan, (4) Report flooding incidents through the FloodTrack app. Stay safe.',
-                'type'        => 'advisory',
-                'is_critical' => false,
-                'hours_ago'   => 72,
+                'title'     => 'ADVISORY: Relief Distribution Schedule — September 9',
+                'body'      => 'The MDRRMO and DSWD will distribute relief goods on September 9 at 8:00 AM at the following locations: (1) Nasugbu Municipal Gymnasium — Pantalan, Bucana, and Wawa evacuees, (2) Bilaran Covered Court — Bilaran and Lumbangan evacuees. Bring your barangay certificate and valid ID. One relief pack per household.',
+                'type'      => 'advisory',
+                'hours_ago' => 12,
+            ],
+            [
+                'title'     => 'UPDATE: Water Levels Stabilizing — September 9 Morning',
+                'body'      => 'As of 6:00 AM today, Pantalan River water level has dropped to 6.2 meters (below alarm level). Floodwater in most barangays is receding. However, residents should NOT return to their homes until the MDRRMO issues a formal clearance. Structural damage assessments are ongoing.',
+                'type'      => 'update',
+                'hours_ago' => 3,
+            ],
+            [
+                'title'     => 'ADVISORY: Wet Season Preparedness Reminder',
+                'body'      => 'With 3 major flood events since June, the MDRRMO reminds all Nasugbu residents to: (1) Know your nearest evacuation center and route, (2) Keep a 3-day emergency kit ready at all times, (3) Monitor FloodTrack for real-time flood reports, (4) Report flooding immediately through the app to help the MDRRMO respond faster. Your reports save lives.',
+                'type'      => 'advisory',
+                'hours_ago' => 1,
             ],
         ];
 
@@ -694,16 +527,38 @@ class MainSeeder extends Seeder
             Alert::firstOrCreate(
                 ['title' => $a['title']],
                 [
-                    'created_by'  => $admin->id,
-                    'title'       => $a['title'],
-                    'body'        => $a['body'],
-                    'type'        => $a['type'],
-                    'created_at'  => now()->subHours($a['hours_ago']),
-                    'updated_at'  => now()->subHours($a['hours_ago']),
+                    'created_by' => $admin->id,
+                    'title'      => $a['title'],
+                    'body'       => $a['body'],
+                    'type'       => $a['type'],
+                    'created_at' => now()->subHours($a['hours_ago']),
+                    'updated_at' => now()->subHours($a['hours_ago']),
                 ]
             );
         }
 
         $this->command->info('✓ Seeded 10 alerts & advisories.');
+    }
+
+    // -------------------------------------------------------------------------
+    // Evacuation Center Occupancy (reflecting current September event)
+    // -------------------------------------------------------------------------
+
+    private function seedEvacuationOccupancy(): void
+    {
+        $occupancy = [
+            'Nasugbu Municipal Gymnasium'    => 156,
+            'Nasugbu National High School'   => 89,
+            'Brgy. Bilaran Covered Court'    => 47,
+            'Brgy. Wawa Covered Court'       => 38,
+            'Brgy. Bucana Evacuation Center' => 62,
+            'Brgy. Lumbangan Barangay Hall'  => 23,
+        ];
+
+        foreach ($occupancy as $name => $count) {
+            EvacuationCenter::where('name', $name)->update(['current_occupancy' => $count]);
+        }
+
+        $this->command->info('✓ Updated evacuation center occupancy.');
     }
 }
