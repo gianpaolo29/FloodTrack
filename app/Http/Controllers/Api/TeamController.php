@@ -90,14 +90,12 @@ class TeamController extends Controller
 
         $pivot->update(['status' => $request->status]);
 
-        if ($request->notes || $request->hasFile('media')) {
-            ReportStatusUpdate::create([
-                'report_id' => $report->id,
-                'user_id'   => $user->id,
-                'status'    => $request->status,
-                'notes'     => $request->notes,
-            ]);
-        }
+        ReportStatusUpdate::create([
+            'report_id' => $report->id,
+            'user_id'   => $user->id,
+            'status'    => $request->status,
+            'notes'     => $request->notes,
+        ]);
 
         if ($request->hasFile('media')) {
             foreach ($request->file('media') as $file) {

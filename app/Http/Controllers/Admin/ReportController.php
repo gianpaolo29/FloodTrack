@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Traits\HasPeriodStats;
 use App\Jobs\GenerateAdvisoryJob;
-use App\Models\FieldReport;
 use App\Models\Report;
 use App\Models\ReportResponder;
 use App\Models\ReportStatusUpdate;
@@ -147,10 +146,6 @@ class ReportController extends Controller
             'is_leader'  => $report->assignedTeam && $report->assignedTeam->leader_id === $u->id,
         ]);
 
-        $fieldReport = FieldReport::where('report_id', $report->id)
-            ->with('user:id,name,role')
-            ->first();
-
         return Inertia::render('admin/reports/show', [
             'report' => array_merge($report->toArray(), [
                 'team_members'    => $teamMembers,
@@ -160,7 +155,6 @@ class ReportController extends Controller
                 ->where('is_active', true)
                 ->withCount(['reports as active_assignments' => fn ($q) => $q->where('status', 'assigned')])
                 ->get(['id', 'name', 'leader_id']),
-            'field_report' => $fieldReport,
         ]);
     }
 

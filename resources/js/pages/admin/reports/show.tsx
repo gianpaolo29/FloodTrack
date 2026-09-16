@@ -7,7 +7,6 @@ import {
     Camera,
     CameraOff,
     CheckCircle2,
-    ClipboardList,
     Clock,
     Copy,
     ExternalLink,
@@ -35,13 +34,12 @@ import { useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
-import type { FieldReport, MemberStatus, Report, ReportStatus, ResponderStatus, Severity, SlaStage, SlaStatus, SlaTracking, Team } from '@/types/admin';
+import type { MemberStatus, Report, ReportStatus, ResponderStatus, Severity, SlaStage, SlaStatus, SlaTracking, Team } from '@/types/admin';
 import { RESPONDER_STATUS_COLORS, RESPONDER_STATUS_LABELS, SEVERITY_COLORS, SLA_STAGE_LABELS, SLA_STATUS_COLORS, SLA_STATUS_LABELS, STATUS_COLORS } from '@/types/admin';
 
 interface Props {
     report: Report;
     teams: Team[];
-    field_report: FieldReport | null;
 }
 
 const SEVERITY_OPTIONS = ['low', 'moderate', 'high', 'critical'] as const;
@@ -62,7 +60,7 @@ const ADVISORY_STATUS_FLOW: { status: ReportStatus; label: string; color: string
     { status: 'acknowledged', label: 'Advisory Issued', color: 'teal' },
 ];
 
-export default function AdminReportShow({ report, teams, field_report }: Props) {
+export default function AdminReportShow({ report, teams }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Admin', href: '/admin' },
         { title: 'Reports', href: '/admin/reports' },
@@ -455,63 +453,6 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
                                             ),
                                         )}
                                     </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Field Report */}
-                        {field_report && (
-                            <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                                <div className="flex items-center gap-2 border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
-                                    <div className="flex size-7 items-center justify-center rounded-lg bg-neutral-900 dark:bg-white shadow-sm">
-                                        <ClipboardList className="size-3.5 text-white dark:text-neutral-900" />
-                                    </div>
-                                    <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Field Report</h3>
-                                    {field_report.user && (
-                                        <span className="ml-auto text-xs text-neutral-500 dark:text-neutral-400">
-                                            by <span className="font-medium text-neutral-700 dark:text-neutral-300">{field_report.user.name}</span>
-                                            {' · '}
-                                            {new Date(field_report.updated_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                    )}
-                                </div>
-                                <div className="flex flex-col gap-5 p-6">
-                                    <FieldReportSection label="Actions Taken">
-                                        <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">{field_report.actions_taken}</p>
-                                    </FieldReportSection>
-
-                                    {field_report.resources_used && (
-                                        <FieldReportSection label="Resources Used">
-                                            <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">{field_report.resources_used}</p>
-                                        </FieldReportSection>
-                                    )}
-
-                                    {field_report.damage_assessment && (
-                                        <FieldReportSection label="Damage Assessment">
-                                            <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">{field_report.damage_assessment}</p>
-                                        </FieldReportSection>
-                                    )}
-
-                                    {field_report.people_assisted != null && (
-                                        <FieldReportSection label="People Assisted">
-                                            <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-sm font-bold text-emerald-700 ring-1 ring-emerald-600/10 dark:bg-emerald-950/30 dark:text-emerald-300">
-                                                {field_report.people_assisted}
-                                            </span>
-                                        </FieldReportSection>
-                                    )}
-
-                                    {(field_report.checklist?.length ?? 0) > 0 && (
-                                        <FieldReportSection label="Checklist">
-                                            <ul className="flex flex-col gap-1.5">
-                                                {field_report.checklist!.map((item, i) => (
-                                                    <li key={i} className="flex items-start gap-2 text-sm text-neutral-700 dark:text-neutral-300">
-                                                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-                                                        {item}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </FieldReportSection>
-                                    )}
                                 </div>
                             </div>
                         )}
@@ -951,17 +892,6 @@ function TeamReadinessSummary({ members, memberStatuses }: { members: import('@/
                 ))}
                 <span className="text-[10px] text-neutral-400 ml-1">{members.length} total</span>
             </div>
-        </div>
-    );
-}
-
-/* ─── Field Report Section ─── */
-
-function FieldReportSection({ label, children }: { label: string; children: React.ReactNode }) {
-    return (
-        <div>
-            <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{label}</p>
-            {children}
         </div>
     );
 }

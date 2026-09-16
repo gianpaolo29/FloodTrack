@@ -21,7 +21,7 @@ class ReportController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Report::with(['user:id,name,contact_number', 'media', 'statusUpdates.user:id,name,role'])
+        $query = Report::with(['user:id,name,contact_number', 'media', 'statusUpdates.user:id,name,role', 'responderUsers', 'assignedTeam:id,name'])
             ->when($request->my, fn ($q) => $q->where('user_id', $request->user()->id))
             ->when($request->assigned === 'me', function ($q) use ($request) {
                 $user = $request->user();

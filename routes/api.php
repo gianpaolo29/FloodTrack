@@ -8,7 +8,6 @@ use App\Http\Controllers\Api\AlertController;
 use App\Http\Controllers\Api\UserController;
 use App\Http\Controllers\Api\ResponderStatsController;
 use App\Http\Controllers\Api\IncidentMessageController;
-use App\Http\Controllers\Api\FieldReportController;
 use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\WeatherController;
 use App\Http\Controllers\Api\FamilyController;
@@ -115,9 +114,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/assigned-reports', [ReportController::class, 'index']);  // with ?assigned=me
         Route::patch('/reports/{report}/status', [ReportController::class, 'updateStatus']);
         Route::get('/stats', [ResponderStatsController::class, 'index']);
-        Route::get('/reports/{report}/field-report', [FieldReportController::class, 'show']);
-        Route::post('/reports/{report}/field-report', [FieldReportController::class, 'store']);
-
         // Team
         Route::get('/team',                                   [TeamController::class, 'myTeam']);
         Route::get('/team/stats',                             [ResponderStatsController::class, 'teamStats']);

@@ -37,7 +37,7 @@ class Report extends Model
         'advisory',
     ];
 
-    protected $appends = ['sla_status'];
+    protected $appends = ['sla_status', 'member_statuses'];
 
     protected function casts(): array
     {
@@ -58,6 +58,21 @@ class Report extends Model
         static::creating(function (Report $report) {
             $report->reference_number ??= 'FT-' . strtoupper(Str::random(8));
         });
+    }
+
+    public function getMemberStatusesAttribute(): array
+    {
+        if (!$this->relationLoaded('responderUsers')) {
+            return [];
+        }
+
+        return $this->responderUsers->map(fn ($u) => [
+            'user_id'    => $u->id,
+            'user_name'  => $u->name,
+            'avatar_url' => $u->avatar_url ?? null,
+            'status'     => $u->pivot->status,
+            'updated_at' => $u->pivot->updated_at?->toIso8601String(),
+        ])->toArray();
     }
 
     public function requiresAssignment(): bool
