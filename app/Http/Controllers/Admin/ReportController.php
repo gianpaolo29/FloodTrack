@@ -4,14 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Traits\HasPeriodStats;
+use App\Jobs\GenerateAdvisoryJob;
 use App\Models\FieldReport;
 use App\Models\Report;
 use App\Models\ReportResponder;
 use App\Models\ReportStatusUpdate;
-use App\Models\Setting;
 use App\Models\Team;
 use App\Notifications\ReportStatusChanged;
-use App\Services\AdvisoryService;
 use App\Services\ExpoPushService;
 use App\Services\SlaService;
 use App\Services\SocketService;
@@ -336,35 +335,12 @@ class ReportController extends Controller
 
         app(SlaService::class)->advanceStage($report, 'verified');
 
-        // Low/moderate: generate advisory and transition to acknowledged
+        // Low/moderate: dispatch advisory generation in background
+        // Skip "verified" notification here — the job will send the "acknowledged" one with advisory
         if (! $report->requiresAssignment()) {
-            $aiEnabled = Setting::getValue('ai_report_analysis', true);
+            GenerateAdvisoryJob::dispatch($report->id, $request->user()->id);
 
-            $advisory = $aiEnabled
-                ? AdvisoryService::generate($report)
-                : AdvisoryService::generateWithoutAI($report);
-
-            $report->update([
-                'status'   => 'acknowledged',
-                'advisory' => $advisory,
-            ]);
-
-            $advisoryNote = $aiEnabled
-                ? 'AI advisory generated with nearby evacuation centers and safety guidance.'
-                : 'Advisory generated with nearby evacuation centers and safety protocols (AI disabled).';
-
-            ReportStatusUpdate::create([
-                'report_id' => $report->id,
-                'user_id'   => $request->user()->id,
-                'status'    => 'acknowledged',
-                'notes'     => $advisoryNote,
-            ]);
-
-            app(SlaService::class)->advanceStage($report, 'acknowledged');
-
-            $this->notifyStatusChange($report, 'verified', 'acknowledged', $request->user()->name);
-
-            Inertia::flash('toast', ['type' => 'success', 'message' => 'Report verified and advisory sent to resident.']);
+            Inertia::flash('toast', ['type' => 'success', 'message' => 'Report verified. Advisory is being generated.']);
 
             return back();
         }

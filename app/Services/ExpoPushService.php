@@ -28,7 +28,7 @@ class ExpoPushService
             $userIds = User::whereIn('id', $userIds)
                 ->where(function ($q) use ($prefKey) {
                     $q->whereNull('notification_prefs')
-                      ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(notification_prefs, '$.{$prefKey}')) != 'false'");
+                      ->orWhereRaw("json_extract(notification_prefs, '$.{$prefKey}') != 'false'");
                 })
                 ->pluck('id')
                 ->toArray();
@@ -63,7 +63,7 @@ class ExpoPushService
             $tokens = DeviceToken::join('users', 'users.id', '=', 'device_tokens.user_id')
                 ->where(function ($q) use ($prefKey) {
                     $q->whereNull('users.notification_prefs')
-                      ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(users.notification_prefs, '$.{$prefKey}')) != 'false'");
+                      ->orWhereRaw("json_extract(users.notification_prefs, '$.{$prefKey}') != 'false'");
                 })
                 ->pluck('device_tokens.token')
                 ->toArray();
@@ -100,7 +100,7 @@ class ExpoPushService
         if ($prefKey !== null) {
             $query->where(function ($q) use ($prefKey) {
                 $q->whereNull('users.notification_prefs')
-                  ->orWhereRaw("JSON_UNQUOTE(JSON_EXTRACT(users.notification_prefs, '$.{$prefKey}')) != 'false'");
+                  ->orWhereRaw("json_extract(users.notification_prefs, '$.{$prefKey}') != 'false'");
             });
         }
 
