@@ -27,6 +27,7 @@ class ReportStatusChanged extends Notification
         $ref = $this->report->reference_number;
 
         $messages = [
+            'pending'  => "Your report {$ref} has been submitted and is awaiting review.",
             'verified' => "Your report {$ref} has been verified. Responders will be dispatched shortly.",
             'rejected' => "Your report {$ref} could not be verified. No flooding was detected in the submitted photo.",
             'assigned' => "A responder has been assigned to your report {$ref}.",
@@ -37,6 +38,7 @@ class ReportStatusChanged extends Notification
         ];
 
         $titles = [
+            'pending'      => 'Report Received',
             'verified'     => 'Report Verified',
             'rejected'     => 'Report Not Verified',
             'assigned'     => 'Responder Assigned',

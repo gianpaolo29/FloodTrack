@@ -73,6 +73,8 @@ class AnalyzeReportJob implements ShouldQueue
             }
 
             // Notify resident that report was received
+            $report->user->notify(new \App\Notifications\ReportStatusChanged($report, 'pending', 'pending'));
+
             ExpoPushService::sendToUsers(
                 $report->user_id,
                 "Report {$report->reference_number} Received",

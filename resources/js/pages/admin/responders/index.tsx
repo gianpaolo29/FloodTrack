@@ -164,13 +164,6 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                     </div>
                     <div className="flex items-center gap-2">
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/responders" />
-                        <Link
-                            href="/admin/teams"
-                            className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition-all hover:bg-neutral-50 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
-                        >
-                            <Users className="size-4" />
-                            Manage Teams
-                        </Link>
                         <button
                             onClick={() => setShowCreate(true)}
                             className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
