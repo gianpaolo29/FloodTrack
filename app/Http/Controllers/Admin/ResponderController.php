@@ -23,6 +23,7 @@ class ResponderController extends Controller
 
     public function index(Request $request): Response
     {
+        $request->mergeIfMissing(['period' => 'all']);
         [$from, $to, $period] = $this->parsePeriod($request);
         [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);
 

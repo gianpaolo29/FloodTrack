@@ -31,7 +31,7 @@ import {
     X,
     XCircle,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
@@ -87,6 +87,16 @@ export default function AdminReportShow({ report, teams, field_report }: Props) 
     const canAssign = ['pending', 'verified', 'acknowledged'].includes(report.status);
     const canReject = ['pending', 'verified'].includes(report.status);
     const canReopen = ['resolved', 'rejected', 'acknowledged'].includes(report.status);
+
+    // Auto-reload when advisory is being generated in background
+    const awaitingAdvisory = isLowModerate && report.status === 'verified';
+    useEffect(() => {
+        if (!awaitingAdvisory) return;
+        const interval = setInterval(() => {
+            router.reload({ only: ['report'], preserveState: true, preserveScroll: true });
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [awaitingAdvisory]);
 
     const handleDelete = async () => {
         const confirmed = await swalDelete('this report');

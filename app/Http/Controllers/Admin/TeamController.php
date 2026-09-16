@@ -19,6 +19,7 @@ class TeamController extends Controller
 
     public function index(Request $request): Response
     {
+        $request->mergeIfMissing(['period' => 'all']);
         [$from, $to, $period] = $this->parsePeriod($request);
 
         $avgExpr = DB::getDriverName() === 'sqlite'

@@ -3,7 +3,6 @@ import {
     Bell,
     Bot,
     Globe,
-    Info,
     Save,
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
@@ -125,12 +124,6 @@ export default function AdminSettings({ settings }: Props) {
                             sub="Alert behaviour and push notification settings"
                         >
                             <SettingToggle
-                                title="Email Notifications"
-                                description="Send email on critical reports"
-                                enabled={getBool('email_notifications')}
-                                onToggle={() => toggleBool('email_notifications')}
-                            />
-                            <SettingToggle
                                 title="Notify on Critical"
                                 description="Push notification for critical reports"
                                 enabled={getBool('notify_on_critical')}
@@ -172,18 +165,6 @@ export default function AdminSettings({ settings }: Props) {
                             />
                         </SettingsCard>
 
-                        {/* About */}
-                        <SettingsCard
-                            icon={Info}
-                            grad="from-neutral-800 to-neutral-900"
-                            title="About"
-                            sub="Platform build information"
-                        >
-                            <AboutRow label="Version"   value="1.0.0" />
-                            <AboutRow label="Framework" value="Laravel 13" />
-                            <AboutRow label="Frontend"  value="React 19 + Inertia.js" />
-                            <AboutRow label="Database"  value="MySQL / SQLite" />
-                        </SettingsCard>
                     </div>
 
                     {/* ─── Sticky save bar ─── */}
@@ -301,15 +282,6 @@ function SettingToggle({
                     }`}
                 />
             </button>
-        </div>
-    );
-}
-
-function AboutRow({ label, value }: { label: string; value: string }) {
-    return (
-        <div className="flex items-center justify-between px-6 py-3.5">
-            <span className="text-sm text-neutral-500 dark:text-neutral-400">{label}</span>
-            <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{value}</span>
         </div>
     );
 }

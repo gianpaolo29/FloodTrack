@@ -45,6 +45,49 @@ class AnalyzeReportJob implements ShouldQueue
         if (!Setting::getValue('ai_report_analysis', true)) {
             $admins = User::where('role', 'admin')->get();
             Notification::send($admins, new NewReportSubmitted($report));
+
+            // Push notification to admins
+            ExpoPushService::sendToUsers(
+                $admins->pluck('id')->toArray(),
+                "New Report — {$report->reference_number}",
+                "A {$report->severity} flood report needs manual review" . ($report->address ? " at {$report->address}" : '') . '.',
+                [
+                    'type'     => 'new_report',
+                    'reportId' => $report->id,
+                    'severity' => $report->severity,
+                ]
+            );
+
+            // Real-time socket to admins
+            foreach ($admins as $admin) {
+                SocketService::toUser($admin->id, 'new-report', [
+                    'reportId'  => $report->id,
+                    'reference' => $report->reference_number,
+                    'severity'  => $report->severity,
+                    'address'   => $report->address,
+                ]);
+                SocketService::toUser($admin->id, 'new-notification', [
+                    'type'     => 'new_report',
+                    'reportId' => $report->id,
+                ]);
+            }
+
+            // Notify resident that report was received
+            ExpoPushService::sendToUsers(
+                $report->user_id,
+                "Report {$report->reference_number} Received",
+                'Your flood report has been submitted and is awaiting review.',
+                [
+                    'type'     => 'status_update',
+                    'reportId' => $report->id,
+                    'status'   => 'pending',
+                ],
+                'my_reports'
+            );
+
+            SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'pending']);
+            SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'pending']);
+
             app(SlaService::class)->initializeTracking($report);
             return;
         }

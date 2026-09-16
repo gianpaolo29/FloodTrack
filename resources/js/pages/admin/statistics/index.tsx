@@ -7,7 +7,6 @@ import {
     Bell,
     Building2,
     Calendar,
-    ChartScatter,
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
@@ -19,12 +18,9 @@ import {
     MapPin,
     PieChart,
     RefreshCw,
-    Shield,
     ShieldCheck,
     Sparkles,
-    Timer,
     TrendingUp,
-    Trophy,
     Users,
     X,
     Zap,
@@ -47,21 +43,14 @@ interface AiInsight {
 }
 
 interface MonthlyPoint { month: string; total: number; critical: number; high: number; }
-interface TopResponder { id: number; name: string; resolved_count: number; total_assigned: number; efficiency: number; avg_response: number; }
-interface TeamPerformance { id: number; name: string; is_active: boolean; total_assigned: number; resolved_count: number; efficiency: number; avg_response: number; }
-interface ResponseTimeTrendItem { date: string; avg_minutes: number }
 interface EvacOccupancySeries { name: string; data: { date: string; occupancy: number }[] }
 interface AlertFrequencyItem { date: string; critical: number; advisory: number; info: number }
-interface SeverityVsResponseItem { severity: string; minutes: number }
 interface BarangayReport { area: string; count: number }
 interface MonthComparisonSide { label: string; critical: number; high: number; moderate: number; low: number }
 interface Props {
     daily_reports: Record<string, number>;
-    avg_response_time: number;
     severity_breakdown: Record<string, number>;
     status_breakdown: Record<string, number>;
-    top_responders: TopResponder[];
-    team_performance: TeamPerformance[];
     monthly_trend: MonthlyPoint[];
     peak_hours: Record<number, number>;
     total_reports: number;
@@ -72,7 +61,6 @@ interface Props {
     trends: {
         reports: number;
         resolved: number;
-        avg_response: number;
         critical: number;
         label: string;
         period_label: string;
@@ -80,15 +68,11 @@ interface Props {
     period: string;
     custom_from?: string | null;
     custom_to?: string | null;
-    response_time_trend: ResponseTimeTrendItem[];
     evac_occupancy_timeline: EvacOccupancySeries[];
     alert_frequency: AlertFrequencyItem[];
-    severity_vs_response: SeverityVsResponseItem[];
     barangay_reports: BarangayReport[];
     month_comparison: { this_month: MonthComparisonSide; last_month: MonthComparisonSide };
     source_breakdown: Record<string, number>;
-    evac_by_type: Record<string, number>;
-    user_roles: Record<string, number>;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -148,15 +132,6 @@ function CardHeader({ icon: Icon, gradient, title, subtitle, children }: {
 }
 
 /* ─── Helpers ─── */
-function formatResponseTime(minutes: number): string {
-    if (minutes <= 0) return '—';
-    if (minutes < 1) return `${Math.round(minutes * 60)}s`;
-    if (minutes < 60) return `${Math.round(minutes)}m`;
-    const h = Math.floor(minutes / 60);
-    const m = Math.round(minutes % 60);
-    return m > 0 ? `${h}h ${m}m` : `${h}h`;
-}
-
 const RISK_STYLES: Record<string, string> = {
     critical: 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
     high:     'bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
@@ -493,11 +468,8 @@ function SecStatCard({ icon: Icon, label, value, subtitle, grad, shadow, desc, i
 
 export default function StatisticsPage({
     daily_reports,
-    avg_response_time,
     severity_breakdown,
     status_breakdown,
-    top_responders,
-    team_performance,
     monthly_trend,
     peak_hours,
     total_reports,
@@ -509,15 +481,11 @@ export default function StatisticsPage({
     period,
     custom_from,
     custom_to,
-    response_time_trend,
     evac_occupancy_timeline,
     alert_frequency,
-    severity_vs_response,
     barangay_reports,
     month_comparison,
     source_breakdown,
-    evac_by_type,
-    user_roles,
 }: Props) {
     const [aiState, setAiState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
     const [aiData, setAiData] = useState<AiInsight | null>(null);
@@ -634,13 +602,6 @@ export default function StatisticsPage({
                 if (resolution_rate >= 70) return `Good progress — ${resolvedCount} resolved, but ${pendingCount + activeCount} still open.`;
                 if (resolution_rate >= 40) return `Needs improvement — ${pendingCount} pending and ${activeCount} active reports need attention.`;
                 return `Only ${resolution_rate}% resolved — most reports remain open. Consider allocating more resources.`;
-            }
-            case 'avg_response': {
-                if (avg_response_time <= 0) return 'No resolved reports to measure response time.';
-                if (avg_response_time < 30) return 'Excellent response time — under 30 minutes. Team is reacting quickly.';
-                if (avg_response_time < 60) return 'Good response time — under an hour. Reports are being handled promptly.';
-                if (avg_response_time < 180) return `Response time of ${formatResponseTime(avg_response_time)} — consider prioritizing critical reports to bring this down.`;
-                return `Response time of ${formatResponseTime(avg_response_time)} is slow — backlog or staffing may need review.`;
             }
             case 'critical': {
                 if (critical_count === 0) return 'No critical reports — all severity levels are manageable.';
@@ -818,28 +779,6 @@ export default function StatisticsPage({
         },
     };
 
-    /* ── TREND: Response Time Trend ── */
-    const responseTimeOptions: ApexOptions = {
-        chart: { type: 'line', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
-        dataLabels: { enabled: false },
-        stroke: { curve: 'smooth', width: 2.5 },
-        colors: ['#f97316'],
-        grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } }, padding: { left: 0, right: 4 } },
-        xaxis: { categories: response_time_trend.map(d => d.date), tickAmount: 8, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, rotate: 0 } },
-        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, formatter: v => `${Math.round(v)}m` } },
-        legend: { show: false },
-        markers: { size: 0, hover: { size: 5 } },
-        tooltip: {
-            custom: ({ series, dataPointIndex, w }) => {
-                const label = w.globals.categoryLabels[dataPointIndex] ?? w.globals.labels[dataPointIndex];
-                const mins = series[0][dataPointIndex];
-                const display = mins >= 60 ? `${Math.floor(mins / 60)}h ${Math.round(mins % 60)}m` : `${Math.round(mins)}m`;
-                return tooltipHtml(label, [{ color: '#f97316', name: 'Avg Response', value: display }]);
-            },
-        },
-    };
-    const responseTimeSeries = [{ name: 'Avg Response (min)', data: response_time_trend.map(d => d.avg_minutes) }];
-
     /* ── TREND: Evacuation Occupancy Over Time ── */
     const EVAC_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6'];
     const allEvacDates = [...new Set(evac_occupancy_timeline.flatMap(s => s.data.map(d => d.date)))].sort();
@@ -888,49 +827,25 @@ export default function StatisticsPage({
         { name: 'Info', data: alert_frequency.map(d => d.info) },
     ];
 
-    /* ── RELATIONSHIP: Severity vs Response Time (scatter) ── */
-    const SEVERITY_MAP: Record<string, { x: number; color: string }> = {
-        low: { x: 1, color: '#10b981' }, moderate: { x: 2, color: '#f59e0b' },
-        high: { x: 3, color: '#f97316' }, critical: { x: 4, color: '#ef4444' },
-    };
-    const scatterGroups = ['critical', 'high', 'moderate', 'low'];
-    const severityScatterOptions: ApexOptions = {
-        chart: { type: 'scatter', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 }, zoom: { enabled: false } },
-        colors: ['#ef4444', '#f97316', '#f59e0b', '#10b981'],
-        xaxis: { type: 'numeric', min: 0.5, max: 4.5, tickAmount: 4, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, formatter: (v: number) => ['', 'Low', 'Moderate', 'High', 'Critical'][Math.round(v)] || '' }, axisBorder: { show: false }, axisTicks: { show: false } },
-        yaxis: { title: { text: 'Response Time (min)', style: { fontSize: '10px', color: '#94a3b8', fontWeight: 500 } }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, formatter: (v: number) => v >= 60 ? `${Math.floor(v / 60)}h` : `${Math.round(v)}m` }, axisBorder: { show: false }, axisTicks: { show: false } },
-        grid: { borderColor: '#f1f5f9', strokeDashArray: 4 },
-        legend: { position: 'top', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
-        markers: { size: 6, strokeWidth: 0, hover: { size: 8 } },
-        tooltip: {
-            custom: ({ seriesIndex, dataPointIndex, w }) => {
-                const point = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
-                const mins = point[1];
-                const display = mins >= 60 ? `${Math.floor(mins / 60)}h ${Math.round(mins % 60)}m` : `${Math.round(mins)}m`;
-                return tooltipHtml(w.globals.seriesNames[seriesIndex], [{ color: w.globals.colors[seriesIndex], name: 'Response', value: display }]);
-            },
-        },
-    };
-    const severityScatterSeries = scatterGroups.map(sev => ({
-        name: sev.charAt(0).toUpperCase() + sev.slice(1),
-        data: severity_vs_response.filter(d => d.severity === sev).map(d => [SEVERITY_MAP[sev]?.x ?? 0, d.minutes]),
-    }));
-
-    /* ── COMPARISON: Barangay Report Treemap ── */
-    const treemapOptions: ApexOptions = {
-        chart: { type: 'treemap', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
+    /* ── COMPARISON: Barangay Reports Horizontal Bar ── */
+    const sortedBarangays = [...barangay_reports].sort((a, b) => b.count - a.count);
+    const barangayBarOptions: ApexOptions = {
+        chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
+        plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '60%', distributed: true } },
         colors: ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#818cf8', '#6d28d9', '#4f46e5', '#4338ca', '#7c3aed', '#5b21b6'],
-        dataLabels: { enabled: true, style: { fontSize: '12px', fontWeight: 700 }, formatter: (_: any, opt: any) => { const d = opt.w.globals.initialSeries[0].data[opt.dataPointIndex]; return d ? `${d.x}` : ''; } },
-        plotOptions: { treemap: { distributed: true, enableShades: false } },
+        dataLabels: { enabled: true, style: { fontSize: '11px', fontWeight: 700, colors: ['#fff'] }, offsetX: -4 },
+        xaxis: { categories: sortedBarangays.map(b => b.area), axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
+        yaxis: { labels: { style: { fontSize: '11px', colors: '#94a3b8', fontWeight: 500 }, maxWidth: 160 } },
+        grid: { borderColor: '#f1f5f9', xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
         legend: { show: false },
         tooltip: {
-            custom: ({ seriesIndex, dataPointIndex, w }) => {
-                const d = w.globals.initialSeries[seriesIndex].data[dataPointIndex];
-                return tooltipHtml(d.x, [{ color: '#6366f1', name: 'Reports', value: d.y }]);
+            custom: ({ dataPointIndex }) => {
+                const b = sortedBarangays[dataPointIndex];
+                return tooltipHtml(b.area, [{ color: '#6366f1', name: 'Reports', value: b.count }]);
             },
         },
     };
-    const treemapSeries = [{ data: barangay_reports.map(b => ({ x: b.area, y: b.count })) }];
+    const barangayBarSeries = [{ name: 'Reports', data: sortedBarangays.map(b => b.count) }];
 
     /* ── COMPARISON: This Month vs Last Month ── */
     const sevKeys = ['critical', 'high', 'moderate', 'low'] as const;
@@ -975,51 +890,6 @@ export default function StatisticsPage({
             custom: ({ series, seriesIndex, w }) => {
                 const label = w.globals.labels[seriesIndex];
                 const color = SOURCE_COLORS[seriesIndex % SOURCE_COLORS.length];
-                const total = series.reduce((a: number, b: number) => a + b, 0);
-                const pct = total > 0 ? Math.round((series[seriesIndex] / total) * 100) : 0;
-                return tooltipHtml(label, [{ color, name: 'Count', value: series[seriesIndex] }, { color, name: 'Share', value: `${pct}%` }]);
-            },
-        },
-    };
-
-    /* ── COMPOSITION: Evacuation Centers by Type (pie) ── */
-    const evacTypeLabels = Object.keys(evac_by_type).map(t => t.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase()));
-    const evacTypeValues = Object.values(evac_by_type);
-    const EVAC_TYPE_PIE_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
-    const evacTypeOptions: ApexOptions = {
-        chart: { type: 'pie', fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
-        labels: evacTypeLabels,
-        colors: EVAC_TYPE_PIE_COLORS.slice(0, evacTypeLabels.length),
-        dataLabels: { enabled: true, style: { fontSize: '11px', fontWeight: 600 }, dropShadow: { enabled: false } },
-        legend: { position: 'bottom', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
-        stroke: { width: 2, colors: ['#ffffff'] },
-        tooltip: {
-            custom: ({ series, seriesIndex, w }) => {
-                const label = w.globals.labels[seriesIndex];
-                const color = EVAC_TYPE_PIE_COLORS[seriesIndex % EVAC_TYPE_PIE_COLORS.length];
-                const total = series.reduce((a: number, b: number) => a + b, 0);
-                const pct = total > 0 ? Math.round((series[seriesIndex] / total) * 100) : 0;
-                return tooltipHtml(label, [{ color, name: 'Count', value: series[seriesIndex] }, { color, name: 'Share', value: `${pct}%` }]);
-            },
-        },
-    };
-
-    /* ── COMPOSITION: User Role Distribution (donut) ── */
-    const roleLabels = Object.keys(user_roles).map(r => r.charAt(0).toUpperCase() + r.slice(1));
-    const roleValues = Object.values(user_roles);
-    const ROLE_COLORS = ['#ef4444', '#6366f1', '#10b981', '#f59e0b'];
-    const roleDonutOptions: ApexOptions = {
-        chart: { type: 'donut', fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
-        labels: roleLabels,
-        colors: ROLE_COLORS.slice(0, roleLabels.length),
-        dataLabels: { enabled: false },
-        legend: { position: 'bottom', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
-        stroke: { width: 2, colors: ['#ffffff'] },
-        plotOptions: { pie: { donut: { size: '68%', labels: { show: true, name: { show: true, fontSize: '10px', fontWeight: '500', color: '#94a3b8', offsetY: 8 }, value: { show: true, fontSize: '24px', fontWeight: '800', color: '#111827', offsetY: -10, formatter: v => v }, total: { show: true, showAlways: true, label: 'users', fontSize: '10px', fontWeight: '500', color: '#94a3b8', formatter: () => String(roleValues.reduce((a, b) => a + b, 0)) } } } } },
-        tooltip: {
-            custom: ({ series, seriesIndex, w }) => {
-                const label = w.globals.labels[seriesIndex];
-                const color = ROLE_COLORS[seriesIndex % ROLE_COLORS.length];
                 const total = series.reduce((a: number, b: number) => a + b, 0);
                 const pct = total > 0 ? Math.round((series[seriesIndex] / total) * 100) : 0;
                 return tooltipHtml(label, [{ color, name: 'Count', value: series[seriesIndex] }, { color, name: 'Share', value: `${pct}%` }]);
@@ -1101,7 +971,7 @@ export default function StatisticsPage({
                 </div>
 
                 {/* Summary Stat Cards */}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
                     <StatKpiCard label="Total Reports" value={total_reports.toLocaleString()} subtitle="All time" icon={FileText} grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" trend={trends.reports} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('total_reports')} insights={[
                         { label: 'Resolved', value: resolvedCount, color: '#10b981' },
                         { label: 'Active', value: activeCount, color: '#3b82f6' },
@@ -1112,11 +982,6 @@ export default function StatisticsPage({
                         { label: 'Resolved', value: resolvedCount, color: '#10b981' },
                         { label: 'Total reports', value: total_reports, color: '#6366f1' },
                         { label: 'Still open', value: pendingCount + activeCount, color: '#f59e0b' },
-                    ]} />
-                    <StatKpiCard label="Avg Response Time" value={formatResponseTime(avg_response_time)} subtitle="Time to resolve" icon={Clock} grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" trend={trends.avg_response} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('avg_response')} insights={[
-                        { label: 'Pending queue', value: pendingCount, color: '#f59e0b' },
-                        { label: 'Active reports', value: activeCount, color: '#3b82f6' },
-                        { label: 'Resolution rate', value: `${resolution_rate}%`, color: '#10b981' },
                     ]} />
                     <StatKpiCard label="Critical Reports" value={critical_count.toLocaleString()} subtitle="Highest severity" icon={AlertTriangle} grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" alert={critical_count > 0} trend={trends.critical} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('critical')} insights={[
                         { label: 'Critical', value: critical_count, color: '#ef4444' },
@@ -1234,53 +1099,8 @@ export default function StatisticsPage({
                     </div>
                 </Card>
 
-                {/* Bottom: Top Responders + AI Insights */}
-                <div className="grid gap-5 lg:grid-cols-2">
-                    {/* Top Responders */}
-                    <Card>
-                        <CardHeader icon={Trophy} gradient="from-amber-400 to-orange-500" title="Top Responders" subtitle="By resolved reports" />
-                        <div className="flex flex-col divide-y divide-neutral-100 dark:divide-neutral-800">
-                            {top_responders.length > 0 ? top_responders.map((r, i) => (
-                                <div key={r.id} className="flex items-center gap-3 px-5 py-3.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
-                                    <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold shadow-sm ${
-                                        i === 0 ? 'bg-neutral-900 text-white' :
-                                        i === 1 ? 'bg-neutral-600 text-white' :
-                                        i === 2 ? 'bg-neutral-400 text-white' :
-                                                  'bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500'
-                                    }`}>
-                                        {i + 1}
-                                    </span>
-                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-neutral-500 text-xs font-bold text-white shadow-sm">
-                                        {r.name.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{r.name}</p>
-                                        <p className="text-[10px] text-neutral-400">{r.total_assigned} assigned</p>
-                                    </div>
-                                    <span className={`shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold tabular-nums ${
-                                        r.efficiency >= 70
-                                            ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                            : r.efficiency >= 40
-                                                ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
-                                                : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'
-                                    }`}>
-                                        {r.efficiency}% eff.
-                                    </span>
-                                    <span className="shrink-0 rounded-lg bg-neutral-100 px-2 py-1 text-[10px] font-medium tabular-nums text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                                        {formatResponseTime(r.avg_response)}
-                                    </span>
-                                    <div className="shrink-0 rounded-lg bg-neutral-100 px-2.5 py-1 dark:bg-neutral-800">
-                                        <span className="text-xs font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{r.resolved_count} done</span>
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className="px-5 py-10"><EmptyState text="No responders yet" /></div>
-                            )}
-                        </div>
-                    </Card>
-
-                    {/* AI Insights */}
-                    <Card>
+                {/* AI Insights */}
+                <Card>
                         <CardHeader icon={Sparkles} gradient="from-violet-500 to-fuchsia-600" title="AI Situation Analysis" subtitle={`Analyzing: ${PERIODS.find(p => p.key === period)?.label ?? 'All'} · GPT-4o mini`} />
                         <div className="p-5">
                             {aiState === 'idle' && (
@@ -1402,8 +1222,7 @@ export default function StatisticsPage({
                                 </div>
                             )}
                         </div>
-                    </Card>
-                </div>
+                </Card>
 
                 {/* Evacuation Centers List */}
                 <Card>
@@ -1504,93 +1323,22 @@ export default function StatisticsPage({
                     )}
                 </Card>
 
-                {/* Team Performance */}
-                <Card>
-                    <CardHeader icon={Shield} gradient="from-teal-500 to-cyan-600" title="Team Performance" subtitle="All-time by resolved reports" />
-                    {team_performance.length === 0 ? (
-                        <div className="px-5 py-10"><EmptyState text="No teams yet" /></div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[600px] border-collapse text-sm">
-                                <thead>
-                                    <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                        {['Team', 'Status', 'Assigned', 'Resolved', 'Rate', 'Avg Time'].map((h) => (
-                                            <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{h}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/60">
-                                    {team_performance.map((t) => (
-                                        <tr key={t.id} className="transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
-                                            <td className="px-5 py-3.5">
-                                                <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{t.name}</span>
-                                            </td>
-                                            <td className="px-5 py-3.5">
-                                                {t.is_active ? (
-                                                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-800/40">
-                                                        <span className="size-1.5 rounded-full bg-emerald-500" />
-                                                        Active
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                                                        Inactive
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-5 py-3.5 text-xs font-medium tabular-nums text-neutral-600 dark:text-neutral-300">{t.total_assigned}</td>
-                                            <td className="px-5 py-3.5 text-xs font-medium tabular-nums text-emerald-600 dark:text-emerald-400">{t.resolved_count}</td>
-                                            <td className="px-5 py-3.5">
-                                                <span className={`rounded-lg px-2 py-1 text-[11px] font-bold tabular-nums ${
-                                                    t.efficiency >= 70
-                                                        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400'
-                                                        : t.efficiency >= 40
-                                                            ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400'
-                                                            : t.total_assigned === 0
-                                                                ? 'bg-neutral-100 text-neutral-400 dark:bg-neutral-800'
-                                                                : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'
-                                                }`}>
-                                                    {t.total_assigned === 0 ? '—' : `${t.efficiency}%`}
-                                                </span>
-                                            </td>
-                                            <td className="px-5 py-3.5 text-[11px] tabular-nums text-neutral-400 dark:text-neutral-500">
-                                                {t.total_assigned === 0 ? '—' : formatResponseTime(t.avg_response)}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </Card>
-
                 {/* ═══ ADVANCED TRENDS ═══ */}
-                <SectionDivider title="Trends" subtitle="How metrics change over time" />
 
-                <div className="grid gap-5 lg:grid-cols-2">
-                    <Card>
-                        <CardHeader icon={Timer} gradient="from-orange-400 to-amber-500" title="Response Time Trend" subtitle="Avg resolution time — last 30 days" />
-                        <div className="px-2 pb-2 pt-1 sm:px-3">
-                            {response_time_trend.length > 0
-                                ? <ReactApexChart type="line" series={responseTimeSeries} options={responseTimeOptions} height={250} />
-                                : <EmptyState text="No resolved reports data" />}
+                <Card>
+                    <CardHeader icon={Bell} gradient="from-red-500 to-rose-600" title="Alert Frequency" subtitle="Alerts issued — last 30 days">
+                        <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
+                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-red-500" />Critical</span>
+                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-orange-400" />Advisory</span>
+                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-blue-500" />Info</span>
                         </div>
-                    </Card>
-
-                    <Card>
-                        <CardHeader icon={Bell} gradient="from-red-500 to-rose-600" title="Alert Frequency" subtitle="Alerts issued — last 30 days">
-                            <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
-                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-red-500" />Critical</span>
-                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-orange-400" />Advisory</span>
-                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-blue-500" />Info</span>
-                            </div>
-                        </CardHeader>
-                        <div className="px-2 pb-2 pt-1 sm:px-3">
-                            {alert_frequency.length > 0
-                                ? <ReactApexChart type="bar" series={alertFreqSeries} options={alertFreqOptions} height={250} />
-                                : <EmptyState text="No alert data" />}
-                        </div>
-                    </Card>
-                </div>
+                    </CardHeader>
+                    <div className="px-2 pb-2 pt-1 sm:px-3">
+                        {alert_frequency.length > 0
+                            ? <ReactApexChart type="bar" series={alertFreqSeries} options={alertFreqOptions} height={250} />
+                            : <EmptyState text="No alert data" />}
+                    </div>
+                </Card>
 
                 <Card>
                     <CardHeader icon={Building2} gradient="from-teal-500 to-cyan-600" title="Evacuation Occupancy" subtitle="Center occupancy — last 30 days" />
@@ -1602,77 +1350,38 @@ export default function StatisticsPage({
                 </Card>
 
                 {/* ═══ ANALYSIS ═══ */}
-                <SectionDivider title="Analysis" subtitle="Patterns and comparisons" />
 
-                <div className="grid gap-5 lg:grid-cols-2">
-                    <Card>
-                        <CardHeader icon={ChartScatter} gradient="from-rose-500 to-red-600" title="Severity vs Response Time" subtitle="Are critical reports resolved faster?">
-                            <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
-                                {[['Critical', '#ef4444'], ['High', '#f97316'], ['Moderate', '#f59e0b'], ['Low', '#10b981']].map(([n, c]) => (
-                                    <span key={n} className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full" style={{ background: c }} />{n}</span>
-                                ))}
-                            </div>
-                        </CardHeader>
-                        <div className="px-2 pb-2 pt-1 sm:px-3">
-                            {severity_vs_response.length > 0
-                                ? <ReactApexChart type="scatter" series={severityScatterSeries} options={severityScatterOptions} height={280} />
-                                : <EmptyState text="No resolved reports data" />}
+                <Card>
+                    <CardHeader icon={BarChart3} gradient="from-indigo-500 to-blue-600" title="Month-over-Month" subtitle={`${month_comparison.this_month.label} vs ${month_comparison.last_month.label}`}>
+                        <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
+                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-indigo-500" />{month_comparison.this_month.label}</span>
+                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-violet-400" />{month_comparison.last_month.label}</span>
                         </div>
-                    </Card>
-
-                    <Card>
-                        <CardHeader icon={BarChart3} gradient="from-indigo-500 to-blue-600" title="Month-over-Month" subtitle={`${month_comparison.this_month.label} vs ${month_comparison.last_month.label}`}>
-                            <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
-                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-indigo-500" />{month_comparison.this_month.label}</span>
-                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-violet-400" />{month_comparison.last_month.label}</span>
-                            </div>
-                        </CardHeader>
-                        <div className="px-2 pb-2 pt-1 sm:px-3">
-                            <ReactApexChart type="bar" series={monthCompSeries} options={monthCompOptions} height={280} />
-                        </div>
-                    </Card>
-                </div>
+                    </CardHeader>
+                    <div className="px-2 pb-2 pt-1 sm:px-3">
+                        <ReactApexChart type="bar" series={monthCompSeries} options={monthCompOptions} height={280} />
+                    </div>
+                </Card>
 
                 {barangay_reports.length > 0 && (
                     <Card>
                         <CardHeader icon={MapPin} gradient="from-violet-500 to-purple-600" title="Reports by Barangay" subtitle="Top areas by report volume" />
                         <div className="px-2 pb-2 pt-1 sm:px-3">
-                            <ReactApexChart type="treemap" series={treemapSeries} options={treemapOptions} height={320} />
+                            <ReactApexChart type="bar" series={barangayBarSeries} options={barangayBarOptions} height={Math.max(250, sortedBarangays.length * 40)} />
                         </div>
                     </Card>
                 )}
 
                 {/* ═══ COMPOSITION ═══ */}
-                <SectionDivider title="Composition" subtitle="Parts of the whole" />
 
-                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-                    <Card>
-                        <CardHeader icon={PieChart} gradient="from-indigo-500 to-violet-600" title="Report Sources" subtitle="Where reports come from" />
-                        <div className="flex items-center justify-center px-4 pb-6 pt-4">
-                            {sourceValues.length > 0
-                                ? <ReactApexChart type="donut" series={sourceValues} options={sourceDonutOptions} height={220} width={220} />
-                                : <EmptyState text="No data" />}
-                        </div>
-                    </Card>
-
-                    <Card>
-                        <CardHeader icon={Building2} gradient="from-amber-400 to-orange-500" title="Center Types" subtitle="Evacuation facilities" />
-                        <div className="flex items-center justify-center px-4 pb-6 pt-4">
-                            {evacTypeValues.length > 0
-                                ? <ReactApexChart type="pie" series={evacTypeValues} options={evacTypeOptions} height={220} width={220} />
-                                : <EmptyState text="No data" />}
-                        </div>
-                    </Card>
-
-                    <Card>
-                        <CardHeader icon={Users} gradient="from-sky-500 to-blue-600" title="User Roles" subtitle="Role distribution" />
-                        <div className="flex items-center justify-center px-4 pb-6 pt-4">
-                            {roleValues.length > 0
-                                ? <ReactApexChart type="donut" series={roleValues} options={roleDonutOptions} height={220} width={220} />
-                                : <EmptyState text="No users" />}
-                        </div>
-                    </Card>
-                </div>
+                <Card>
+                    <CardHeader icon={PieChart} gradient="from-indigo-500 to-violet-600" title="Report Sources" subtitle="Where reports come from" />
+                    <div className="flex items-center justify-center px-4 pb-6 pt-4">
+                        {sourceValues.length > 0
+                            ? <ReactApexChart type="donut" series={sourceValues} options={sourceDonutOptions} height={220} width={220} />
+                            : <EmptyState text="No data" />}
+                    </div>
+                </Card>
 
             </div>
             </div>
@@ -1680,15 +1389,3 @@ export default function StatisticsPage({
     );
 }
 
-function SectionDivider({ title, subtitle }: { title: string; subtitle: string }) {
-    return (
-        <div className="flex items-center gap-4 pt-2">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-neutral-700" />
-            <div className="text-center">
-                <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{title}</p>
-                <p className="text-[10px] text-neutral-300 dark:text-neutral-600">{subtitle}</p>
-            </div>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-neutral-700" />
-        </div>
-    );
-}
