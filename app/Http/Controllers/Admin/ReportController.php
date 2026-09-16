@@ -8,6 +8,7 @@ use App\Models\FieldReport;
 use App\Models\Report;
 use App\Models\ReportResponder;
 use App\Models\ReportStatusUpdate;
+use App\Models\Setting;
 use App\Models\Team;
 use App\Notifications\ReportStatusChanged;
 use App\Services\AdvisoryService;
@@ -335,19 +336,28 @@ class ReportController extends Controller
 
         app(SlaService::class)->advanceStage($report, 'verified');
 
-        // Low/moderate: generate AI advisory and transition to acknowledged
+        // Low/moderate: generate advisory and transition to acknowledged
         if (! $report->requiresAssignment()) {
-            $advisory = AdvisoryService::generate($report);
+            $aiEnabled = Setting::getValue('ai_report_analysis', true);
+
+            $advisory = $aiEnabled
+                ? AdvisoryService::generate($report)
+                : AdvisoryService::generateWithoutAI($report);
+
             $report->update([
                 'status'   => 'acknowledged',
                 'advisory' => $advisory,
             ]);
 
+            $advisoryNote = $aiEnabled
+                ? 'AI advisory generated with nearby evacuation centers and safety guidance.'
+                : 'Advisory generated with nearby evacuation centers and safety protocols (AI disabled).';
+
             ReportStatusUpdate::create([
                 'report_id' => $report->id,
                 'user_id'   => $request->user()->id,
                 'status'    => 'acknowledged',
-                'notes'     => 'AI advisory generated with nearby evacuation centers and safety guidance.',
+                'notes'     => $advisoryNote,
             ]);
 
             app(SlaService::class)->advanceStage($report, 'acknowledged');

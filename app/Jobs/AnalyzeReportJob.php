@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Report;
 use App\Models\ReportStatusUpdate;
+use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\NewReportSubmitted;
 use App\Services\AdvisoryService;
@@ -37,6 +38,14 @@ class AnalyzeReportJob implements ShouldQueue
         $report = Report::with('media')->find($this->reportId);
 
         if (!$report || $report->status !== 'pending') {
+            return;
+        }
+
+        // If AI analysis is disabled, send straight to admin for manual review
+        if (!Setting::getValue('ai_report_analysis', true)) {
+            $admins = User::where('role', 'admin')->get();
+            Notification::send($admins, new NewReportSubmitted($report));
+            app(SlaService::class)->initializeTracking($report);
             return;
         }
 

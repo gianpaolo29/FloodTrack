@@ -39,6 +39,26 @@ class AdvisoryService
     }
 
     /**
+     * Generate advisory without AI — uses nearby centers and protocol-based safety tips only.
+     */
+    public static function generateWithoutAI(Report $report): array
+    {
+        $nearbyCenters = static::findNearbyCenters($report);
+        $safetyTips    = static::fetchSafetyTips();
+
+        return [
+            'nearby_centers'    => $nearbyCenters,
+            'safety_tips'       => $safetyTips,
+            'suggested_actions' => [
+                'Monitor water levels in your area and stay alert for any changes.',
+                'Prepare an emergency go-bag with important documents, water, and food.',
+                'Stay updated through official channels and local government advisories.',
+            ],
+            'generated_at'      => now()->toIso8601String(),
+        ];
+    }
+
+    /**
      * Find active evacuation centers within 10km, sorted by distance (top 5).
      */
     private static function findNearbyCenters(Report $report): array

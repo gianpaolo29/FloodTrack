@@ -1,6 +1,7 @@
 import { Head, useForm } from '@inertiajs/react';
 import {
     Bell,
+    Bot,
     Globe,
     Info,
     Save,
@@ -153,6 +154,21 @@ export default function AdminSettings({ settings }: Props) {
                                 value={get('occupancy_alert_threshold')}
                                 onChange={(v) => set('occupancy_alert_threshold', v)}
                                 type="number"
+                            />
+                        </SettingsCard>
+
+                        {/* AI & Automation */}
+                        <SettingsCard
+                            icon={Bot}
+                            grad="from-neutral-800 to-neutral-900"
+                            title="AI & Automation"
+                            sub="Control AI-powered report analysis"
+                        >
+                            <SettingToggle
+                                title="AI Report Analysis"
+                                description="Automatically verify reports using AI. When off, all reports go to admin for manual review."
+                                enabled={getBool('ai_report_analysis')}
+                                onToggle={() => toggleBool('ai_report_analysis')}
                             />
                         </SettingsCard>
 
