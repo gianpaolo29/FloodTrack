@@ -1,13 +1,13 @@
 'use no memo';
 import { Head, Link, router } from '@inertiajs/react';
-import { GoogleMap, InfoWindowF, MarkerF, OverlayViewF, useJsApiLoader } from '@react-google-maps/api';
-import { Building2, CalendarDays, ChevronDown, Clock, Flame, List, MapPin, Radio, SlidersHorizontal, Users, X } from 'lucide-react';
+import { GoogleMap, InfoWindowF, MarkerF, OverlayViewF, PolylineF, useJsApiLoader } from '@react-google-maps/api';
+import { AlertTriangle, Building2, CalendarDays, ChevronDown, Clock, Flame, List, MapPin, Radio, SlidersHorizontal, Users, X } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import type { EvacuationCenter, MapResponder, Report, ReportStatus, Severity } from '@/types/admin';
-import { EVACUATION_CENTER_TYPE_LABELS, SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
+import type { EvacuationCenter, Hazard, MapResponder, Report, ReportStatus, Severity } from '@/types/admin';
+import { EVACUATION_CENTER_TYPE_LABELS, HAZARD_TYPE_OPTIONS, SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
 
 interface Filters {
     status?: string;
@@ -21,6 +21,7 @@ interface Props {
     filters: Filters;
     evacuation_centers: EvacuationCenter[];
     responders: MapResponder[];
+    hazards: Hazard[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -78,6 +79,20 @@ function createResponderMarker(): string {
 }
 
 const RESPONDER_MARKER_URL = createResponderMarker();
+
+/** Diamond marker for hazards */
+function createHazardMarker(severity: Severity, category: 'flood' | 'road'): string {
+    const hex = SEVERITY_META[severity].hex;
+    const icon = category === 'flood'
+        ? '<path d="M15 8c0 0-5 6-5 9a5 5 0 0 0 10 0c0-3-5-9-5-9z" fill="white" opacity="0.9"/>'
+        : '<path d="M9 19h12M15 5l6 14H9z" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
+        <filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.25"/></filter>
+        <rect filter="url(#s)" x="2" y="2" width="26" height="26" rx="6" fill="${hex}" transform="rotate(0 15 15)"/>
+        ${icon}
+    </svg>`;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
 
 const mapContainerStyle = { width: '100%', height: '100%' };
 
@@ -210,7 +225,7 @@ interface LiveResponder {
     location_updated_at: string;
 }
 
-function useResponderTracking(initial: MapResponder[]): LiveResponder[] {
+function useMapSocket(initial: MapResponder[], onNewReport: () => void) {
     const [responders, setResponders] = useState<Map<number, LiveResponder>>(() => {
         const map = new Map<number, LiveResponder>();
         for (const r of initial) {
@@ -228,11 +243,10 @@ function useResponderTracking(initial: MapResponder[]): LiveResponder[] {
     });
 
     useEffect(() => {
-        const socketUrl = (import.meta.env.VITE_SOCKET_URL ?? 'http://localhost:3001').replace(/\/$/, '');
+        const socketUrl = (import.meta.env.VITE_SOCKET_URL || window.location.origin).replace(/\/$/, '');
 
         let socket: Socket | null = null;
 
-        // Fetch a Sanctum token for Socket.IO auth
         fetch('/admin/socket-token', {
             headers: {
                 'Accept': 'application/json',
@@ -253,6 +267,7 @@ function useResponderTracking(initial: MapResponder[]): LiveResponder[] {
                     reconnectionDelay: 3000,
                 });
 
+                // Live responder locations
                 socket.on('responder-location', (payload: { user_id: number; name: string; latitude: number; longitude: number; timestamp: string }) => {
                     setResponders((prev) => {
                         const next = new Map(prev);
@@ -269,10 +284,12 @@ function useResponderTracking(initial: MapResponder[]): LiveResponder[] {
                         return next;
                     });
                 });
+
+                // Auto-refresh: new reports and status changes
+                socket.on('new-report', onNewReport);
+                socket.on('report-status', onNewReport);
             })
-            .catch(() => {
-                // Socket connection is optional — map still shows initial positions
-            });
+            .catch(() => {});
 
         return () => {
             socket?.disconnect();
@@ -282,21 +299,38 @@ function useResponderTracking(initial: MapResponder[]): LiveResponder[] {
     return useMemo(() => Array.from(responders.values()), [responders]);
 }
 
+/* ─── Hazard type label helper ─── */
+function hazardTypeLabel(category: 'flood' | 'road', type: string): string {
+    return HAZARD_TYPE_OPTIONS[category]?.find(o => o.value === type)?.label ?? type;
+}
+
 /* ─── Main page ─── */
-export default function AdminReportsMap({ reports, filters, evacuation_centers, responders: initialResponders }: Props) {
+export default function AdminReportsMap({ reports, filters, evacuation_centers, responders: initialResponders, hazards }: Props) {
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY ?? '',
         libraries: ['places'] as ('places')[],
     });
 
-    const liveResponders = useResponderTracking(initialResponders);
+    // Auto-refresh: silently reload Inertia page data when socket fires new-report/report-status
+    const refreshDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const handleReportEvent = useCallback(() => {
+        if (refreshDebounce.current) clearTimeout(refreshDebounce.current);
+        refreshDebounce.current = setTimeout(() => {
+            router.reload({ only: ['reports'], preserveState: true });
+        }, 1500);
+    }, []);
+
+    const liveResponders = useMapSocket(initialResponders, handleReportEvent);
 
     const [selectedReport, setSelectedReport]           = useState<Report | null>(null);
     const [selectedEvacCenter, setSelectedEvacCenter]   = useState<EvacuationCenter | null>(null);
     const [selectedResponder, setSelectedResponder]     = useState<LiveResponder | null>(null);
+    const [selectedHazard, setSelectedHazard]           = useState<Hazard | null>(null);
     const [viewMode, setViewMode]                       = useState<ViewMode>('heatmap');
     const [showEvacCenters, setShowEvacCenters]         = useState(false);
     const [showResponders, setShowResponders]           = useState(true);
+    const [showHazards, setShowHazards]                 = useState(true);
+    const [showAssignmentLines, setShowAssignmentLines] = useState(true);
     const [zoom, setZoom]                               = useState(12);
 
     // Keep "last seen" text live
@@ -330,7 +364,27 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
         setSelectedReport(null);
         setSelectedEvacCenter(null);
         setSelectedResponder(null);
+        setSelectedHazard(null);
     }, []);
+
+    // Compute assignment lines: assigned reports → their responder's live location
+    const assignmentLines = useMemo(() => {
+        if (!showAssignmentLines || !showResponders) return [];
+        return reports
+            .filter(r => r.status === 'assigned' && r.assigned_to)
+            .map(r => {
+                const resp = liveResponders.find(lr => lr.id === r.assigned_to);
+                if (!resp) return null;
+                return {
+                    reportId: r.id,
+                    path: [
+                        { lat: resp.latitude, lng: resp.longitude },
+                        { lat: r.latitude, lng: r.longitude },
+                    ],
+                };
+            })
+            .filter(Boolean) as { reportId: number; path: google.maps.LatLngLiteral[] }[];
+    }, [reports, liveResponders, showAssignmentLines, showResponders]);
 
     const onMapLoad = useCallback((map: google.maps.Map) => {
         mapRef.current = map;
@@ -372,10 +426,10 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Map View" />
 
-            <div className="flex h-[calc(100vh-57px)] flex-col lg:flex-row">
+            <div className="flex h-[calc(100vh-57px)] flex-col lg:flex-row-reverse">
 
                 {/* ── Side panel ── */}
-                <div className="flex w-full flex-col border-b border-neutral-200/70 bg-white lg:w-[340px] lg:border-b-0 lg:border-r dark:border-neutral-800 dark:bg-neutral-900">
+                <div className="flex w-full flex-col border-b border-neutral-200/70 bg-white lg:w-[340px] lg:border-b-0 lg:border-l dark:border-neutral-800 dark:bg-neutral-900">
 
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-neutral-100 px-3 sm:px-5 py-4 dark:border-neutral-800">
@@ -465,6 +519,31 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                         </span>
                                     )}
                                 </span>
+                            </label>
+                            <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+                                <input
+                                    type="checkbox"
+                                    checked={showHazards}
+                                    onChange={(e) => setShowHazards(e.target.checked)}
+                                    className="size-3.5 rounded border-neutral-300 text-amber-600 focus:ring-amber-500 dark:border-neutral-600"
+                                />
+                                <span className="flex items-center gap-1">
+                                    Hazard Zones
+                                    {hazards.length > 0 && (
+                                        <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                                            {hazards.length}
+                                        </span>
+                                    )}
+                                </span>
+                            </label>
+                            <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+                                <input
+                                    type="checkbox"
+                                    checked={showAssignmentLines}
+                                    onChange={(e) => setShowAssignmentLines(e.target.checked)}
+                                    className="size-3.5 rounded border-neutral-300 text-violet-600 focus:ring-violet-500 dark:border-neutral-600"
+                                />
+                                Assignment Lines
                             </label>
                         </div>
                     </div>
@@ -556,6 +635,22 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                     <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
                                         <span className="h-2.5 w-2.5 rounded-full bg-blue-600 opacity-40" />
                                         Stale ({'>'}10m)
+                                    </span>
+                                </div>
+                            )}
+                            {showHazards && (
+                                <div className={`flex flex-wrap gap-3 ${showMarkers || showHeatmap || showEvacCenters || showResponders ? 'mt-2' : ''}`}>
+                                    <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                                        <span className="h-2.5 w-2.5 rounded-sm bg-amber-500" />
+                                        Hazard
+                                    </span>
+                                </div>
+                            )}
+                            {showAssignmentLines && assignmentLines.length > 0 && (
+                                <div className={`flex flex-wrap gap-3 mt-2`}>
+                                    <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                                        <span className="h-0.5 w-4 bg-violet-500" style={{ borderTop: '2px dashed #8b5cf6' }} />
+                                        Assignment link
                                     </span>
                                 </div>
                             )}
@@ -700,21 +795,21 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                 <InfoWindowF
                                     position={{ lat: selectedReport.latitude, lng: selectedReport.longitude }}
                                     onCloseClick={() => setSelectedReport(null)}
-                                    options={{ maxWidth: 280, minWidth: 240, pixelOffset: new google.maps.Size(0, -36) }}
+                                    options={{ maxWidth: 300, minWidth: 220, pixelOffset: new google.maps.Size(0, -36) }}
                                 >
-                                    <div className="flex flex-col gap-2 p-3 pt-3">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="font-mono text-xs font-bold text-neutral-900">
-                                                {selectedReport.reference_number}
-                                            </span>
-                                            <div className="flex items-center gap-1">
-                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${SEVERITY_COLORS[selectedReport.severity]}`}>
+                                    <div className="flex flex-col gap-2 p-3 pr-8" style={{ minWidth: 200 }}>
+                                        <div>
+                                            <div className="flex items-center gap-1.5 mb-1">
+                                                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${SEVERITY_COLORS[selectedReport.severity]}`}>
                                                     {selectedReport.severity}
                                                 </span>
-                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[selectedReport.status]}`}>
+                                                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[selectedReport.status]}`}>
                                                     {selectedReport.status}
                                                 </span>
                                             </div>
+                                            <span className="font-mono text-xs font-bold text-neutral-900">
+                                                {selectedReport.reference_number}
+                                            </span>
                                         </div>
 
                                         {selectedReport.address && (
@@ -872,6 +967,68 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                     </div>
                                 </InfoWindowF>
                             )}
+
+                            {/* Hazard markers */}
+                            {showHazards && hazards.map((h) => (
+                                <MarkerF
+                                    key={`haz-${h.id}`}
+                                    position={{ lat: h.latitude, lng: h.longitude }}
+                                    icon={{
+                                        url: createHazardMarker(h.severity, h.category),
+                                        scaledSize: new google.maps.Size(30, 30),
+                                        anchor: new google.maps.Point(15, 15),
+                                    }}
+                                    zIndex={5}
+                                    onClick={() => {
+                                        clearSelection();
+                                        setSelectedHazard(selectedHazard?.id === h.id ? null : h);
+                                        if (selectedHazard?.id !== h.id) focusOnLocation(h.latitude, h.longitude);
+                                    }}
+                                />
+                            ))}
+
+                            {/* Hazard info window */}
+                            {showHazards && selectedHazard && (
+                                <InfoWindowF
+                                    position={{ lat: selectedHazard.latitude, lng: selectedHazard.longitude }}
+                                    onCloseClick={() => setSelectedHazard(null)}
+                                    options={{ maxWidth: 260, minWidth: 200, pixelOffset: new google.maps.Size(0, -18) }}
+                                >
+                                    <div className="flex flex-col gap-2 p-3 pt-3" style={{ minWidth: 180 }}>
+                                        <div className="flex items-center gap-1.5 mb-0.5">
+                                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${SEVERITY_COLORS[selectedHazard.severity]}`}>
+                                                {selectedHazard.severity}
+                                            </span>
+                                            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">
+                                                {selectedHazard.category === 'flood' ? 'Flood' : 'Road'}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs font-bold text-neutral-900">{selectedHazard.title}</p>
+                                        <p className="text-[11px] text-gray-500">
+                                            {hazardTypeLabel(selectedHazard.category, selectedHazard.type)}
+                                        </p>
+                                    </div>
+                                </InfoWindowF>
+                            )}
+
+                            {/* Assignment lines: responder → report */}
+                            {showAssignmentLines && assignmentLines.map((line) => (
+                                <PolylineF
+                                    key={`line-${line.reportId}`}
+                                    path={line.path}
+                                    options={{
+                                        strokeColor: '#8b5cf6',
+                                        strokeOpacity: 0,
+                                        strokeWeight: 2,
+                                        icons: [{
+                                            icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.7, strokeWeight: 2, scale: 3 },
+                                            offset: '0',
+                                            repeat: '14px',
+                                        }],
+                                        zIndex: 2,
+                                    }}
+                                />
+                            ))}
 
                             <HeatmapOverlay points={heatPoints} visible={showHeatmap} zoom={zoom} />
                         </GoogleMap>

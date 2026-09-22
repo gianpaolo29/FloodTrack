@@ -248,13 +248,6 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                     </div>
                     <div className="flex items-center gap-3">
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/reports" />
-                        <Link
-                            href="/admin/reports/map"
-                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold transition-all active:scale-[0.97]"
-                        >
-                            <Globe className="size-4" />
-                            Map View
-                        </Link>
                     </div>
                 </div>
 

@@ -32,7 +32,7 @@ class GenerateAdvisoryJob implements ShouldQueue
     {
         $report = Report::find($this->reportId);
 
-        if (!$report || $report->status !== 'verified') {
+        if (!$report || !in_array($report->status, ['verified', 'acknowledged'])) {
             return;
         }
 
@@ -42,43 +42,48 @@ class GenerateAdvisoryJob implements ShouldQueue
             ? AdvisoryService::generate($report)
             : AdvisoryService::generateWithoutAI($report);
 
-        $report->update([
-            'status'   => 'acknowledged',
-            'advisory' => $advisory,
-        ]);
+        // Status may already be 'acknowledged' (set by controller), just attach the advisory
+        $update = ['advisory' => $advisory];
+        if ($report->status === 'verified') {
+            $update['status'] = 'acknowledged';
+        }
+        $report->update($update);
 
-        $advisoryNote = $aiEnabled
-            ? 'AI advisory generated with nearby evacuation centers and safety guidance.'
-            : 'Advisory generated with nearby evacuation centers and safety protocols (AI disabled).';
+        // Only create status update + notifications if we changed the status
+        if ($report->status === 'verified') {
+            $advisoryNote = $aiEnabled
+                ? 'AI advisory generated with nearby evacuation centers and safety guidance.'
+                : 'Advisory generated with nearby evacuation centers and safety protocols (AI disabled).';
 
-        ReportStatusUpdate::create([
-            'report_id' => $report->id,
-            'user_id'   => $this->verifiedByUserId,
-            'status'    => 'acknowledged',
-            'notes'     => $advisoryNote,
-        ]);
+            ReportStatusUpdate::create([
+                'report_id' => $report->id,
+                'user_id'   => $this->verifiedByUserId,
+                'status'    => 'acknowledged',
+                'notes'     => $advisoryNote,
+            ]);
 
-        app(SlaService::class)->advanceStage($report, 'acknowledged');
+            app(SlaService::class)->advanceStage($report, 'acknowledged');
 
-        // Notify resident
-        $report->loadMissing('user');
-        if ($report->user) {
-            $report->user->notify(new \App\Notifications\ReportStatusChanged($report, 'verified', 'acknowledged'));
+            // Notify resident
+            $report->loadMissing('user');
+            if ($report->user) {
+                $report->user->notify(new \App\Notifications\ReportStatusChanged($report, 'verified', 'acknowledged'));
 
-            ExpoPushService::sendToUsers(
-                $report->user_id,
-                "Report {$report->reference_number} — Safety Advisory",
-                'We\'ve reviewed your report and prepared safety guidance for you. Open the app for details.',
-                [
-                    'type'     => 'advisory',
-                    'reportId' => $report->id,
-                    'status'   => 'acknowledged',
-                ],
-                'my_reports'
-            );
+                ExpoPushService::sendToUsers(
+                    $report->user_id,
+                    "Report {$report->reference_number} — Safety Advisory",
+                    'We\'ve reviewed your report and prepared safety guidance for you. Open the app for details.',
+                    [
+                        'type'     => 'advisory',
+                        'reportId' => $report->id,
+                        'status'   => 'acknowledged',
+                    ],
+                    'my_reports'
+                );
 
-            SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'acknowledged']);
-            SocketService::toUser($report->user_id, 'new-notification', ['type' => 'advisory', 'reportId' => $report->id, 'status' => 'acknowledged']);
+                SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'acknowledged']);
+                SocketService::toUser($report->user_id, 'new-notification', ['type' => 'advisory', 'reportId' => $report->id, 'status' => 'acknowledged']);
+            }
         }
     }
 

@@ -82,7 +82,7 @@ export default function AdminReportShow({ report, teams }: Props) {
 
     const isLowModerate = ['low', 'moderate'].includes(report.severity);
     const canVerify = report.status === 'pending';
-    const canAssign = ['pending', 'verified', 'acknowledged'].includes(report.status);
+    const canAssign = report.status === 'verified';
     const canReject = ['pending', 'verified'].includes(report.status);
     const canReopen = ['resolved', 'rejected', 'acknowledged'].includes(report.status);
 
@@ -644,24 +644,46 @@ export default function AdminReportShow({ report, teams }: Props) {
                                         <label className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                                             {report.assigned_team ? 'Reassign team' : report.status === 'acknowledged' ? 'Escalate — Assign team' : 'Assign team'}
                                         </label>
-                                        <select
-                                            value={assignForm.data.team_id}
-                                            onChange={(e) => assignForm.setData('team_id', e.target.value)}
-                                            className={inputClass}
-                                            required
-                                        >
-                                            <option value="">Select team...</option>
-                                            {teams.map((t) => (
-                                                <option key={t.id} value={t.id}>
-                                                    {t.name} — {t.members.length} member{t.members.length !== 1 ? 's' : ''}
-                                                    {t.distance_km != null ? ` · ${t.distance_km} km` : ''}
-                                                    {(t.active_assignments ?? 0) > 0 ? ` · ${t.active_assignments} active` : ''}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        <p className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                                            Only active teams are shown.
-                                        </p>
+                                        <div className="max-h-[220px] space-y-1.5 overflow-y-auto rounded-xl border border-neutral-200 bg-neutral-50/50 p-1.5 dark:border-neutral-700 dark:bg-neutral-800/50">
+                                            {teams.map((t) => {
+                                                const selected = assignForm.data.team_id === String(t.id);
+                                                const active = (t.active_assignments ?? 0) > 0;
+                                                return (
+                                                    <button
+                                                        key={t.id}
+                                                        type="button"
+                                                        onClick={() => assignForm.setData('team_id', String(t.id))}
+                                                        className={`w-full rounded-lg border p-2.5 text-left transition-all ${
+                                                            selected
+                                                                ? 'border-blue-400 bg-blue-50 ring-1 ring-blue-200 dark:border-blue-500 dark:bg-blue-950/30 dark:ring-blue-800'
+                                                                : 'border-transparent bg-white hover:border-neutral-200 hover:bg-neutral-50 dark:bg-neutral-800 dark:hover:border-neutral-600 dark:hover:bg-neutral-700/50'
+                                                        }`}
+                                                    >
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="truncate text-xs font-semibold text-neutral-800 dark:text-neutral-200">{t.name}</span>
+                                                            {selected && <div className="size-2 shrink-0 rounded-full bg-blue-500" />}
+                                                        </div>
+                                                        <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">
+                                                            <span className="flex items-center gap-1">
+                                                                <Users className="size-2.5" />
+                                                                {t.members.length} member{t.members.length !== 1 ? 's' : ''}
+                                                            </span>
+                                                            {t.distance_km != null && (
+                                                                <span className="flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400">
+                                                                    <Navigation className="size-2.5" />
+                                                                    {t.distance_km} km
+                                                                </span>
+                                                            )}
+                                                            {active && (
+                                                                <span className="font-medium text-amber-600 dark:text-amber-400">
+                                                                    {t.active_assignments} active
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
                                         {report.assigned_team && (t => t && (t.active_assignments ?? 0) > 1)(teams.find(t => t.id === report.assigned_team!.id)) && (
                                             <p className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
                                                 <span>⚠</span> This team is currently deployed on another report.

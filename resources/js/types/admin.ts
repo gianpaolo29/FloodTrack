@@ -86,6 +86,7 @@ export interface Report {
     longitude: number;
     address: string | null;
     user?: { id: number; name: string; email: string; contact_number: string | null };
+    assigned_to?: number | null;
     assigned_responder?: { id: number; name: string; contact_number: string | null } | null;
     assigned_team?: { id: number; name: string } | null;
     team_members?: TeamMember[];

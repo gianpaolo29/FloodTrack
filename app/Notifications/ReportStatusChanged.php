@@ -15,6 +15,7 @@ class ReportStatusChanged extends Notification
         public string $oldStatus,
         public string $newStatus,
         public ?string $changedBy = null,
+        public ?string $reason = null,
     ) {}
 
     public function via(object $notifiable): array
@@ -29,7 +30,9 @@ class ReportStatusChanged extends Notification
         $messages = [
             'pending'  => "Your report {$ref} has been submitted and is awaiting review.",
             'verified' => "Your report {$ref} has been verified. Responders will be dispatched shortly.",
-            'rejected' => "Your report {$ref} could not be verified. No flooding was detected in the submitted photo.",
+            'rejected' => $this->reason
+                ? "Your report {$ref} could not be verified. Reason: {$this->reason}"
+                : "Your report {$ref} could not be verified.",
             'assigned' => "A responder has been assigned to your report {$ref}.",
             'en_route' => "A responder is on the way to your location (Report {$ref}).",
             'on_scene' => "A responder has arrived at your location (Report {$ref}).",
@@ -64,6 +67,7 @@ class ReportStatusChanged extends Notification
             'old_status'       => $this->oldStatus,
             'new_status'       => $this->newStatus,
             'severity'         => $this->report->severity,
+            'reason'           => $this->reason,
         ];
     }
 }

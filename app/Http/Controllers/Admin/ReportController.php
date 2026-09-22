@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Traits\HasPeriodStats;
 use App\Jobs\GenerateAdvisoryJob;
+use App\Models\Hazard;
 use App\Models\Report;
 use App\Models\ReportResponder;
 use App\Models\User;
@@ -34,7 +35,7 @@ class ReportController extends Controller
 
         $reports = Report::select([
                 'id', 'reference_number', 'severity', 'status',
-                'latitude', 'longitude', 'address', 'user_id', 'created_at',
+                'latitude', 'longitude', 'address', 'user_id', 'assigned_to', 'created_at',
                 'verified_at', 'resolved_at',
             ])
             ->with(['user:id,name'])
@@ -62,11 +63,18 @@ class ReportController extends Controller
             ->with('team:id,name')
             ->get();
 
+        $hazards = Hazard::where('active', true)
+            ->select(['id', 'category', 'type', 'severity', 'title', 'latitude', 'longitude'])
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->get();
+
         return Inertia::render('admin/reports/map', [
             'reports'            => $reports,
             'filters'            => $request->only(['status', 'severity', 'date_from', 'date_to']),
             'evacuation_centers' => $evacuationCenters,
             'responders'         => $responders,
+            'hazards'            => $hazards,
         ]);
     }
 
@@ -357,12 +365,25 @@ class ReportController extends Controller
 
         app(SlaService::class)->advanceStage($report, 'verified');
 
-        // Low/moderate: dispatch advisory generation in background
-        // Skip "verified" notification here — the job will send the "acknowledged" one with advisory
+        // Low/moderate: go straight to acknowledged in one click.
+        // Advisory is generated in the background.
         if (! $report->requiresAssignment()) {
+            $report->update(['status' => 'acknowledged']);
+
+            ReportStatusUpdate::create([
+                'report_id' => $report->id,
+                'user_id'   => $request->user()->id,
+                'status'    => 'acknowledged',
+                'notes'     => 'Report verified and acknowledged.',
+            ]);
+
+            app(SlaService::class)->advanceStage($report, 'acknowledged');
+            $this->notifyStatusChange($report, $oldStatus, 'acknowledged', $request->user()->name);
+
+            // Generate advisory in background
             GenerateAdvisoryJob::dispatch($report->id, $request->user()->id);
 
-            Inertia::flash('toast', ['type' => 'success', 'message' => 'Report verified. Advisory is being generated.']);
+            Inertia::flash('toast', ['type' => 'success', 'message' => 'Report verified & acknowledged.']);
 
             return back();
         }
@@ -458,7 +479,7 @@ class ReportController extends Controller
 
         app(SlaService::class)->advanceStage($report, 'rejected');
 
-        $this->notifyStatusChange($report, $oldStatus, 'rejected', $request->user()->name);
+        $this->notifyStatusChange($report, $oldStatus, 'rejected', $request->user()->name, $request->notes);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Report rejected.']);
 
@@ -468,7 +489,7 @@ class ReportController extends Controller
     /**
      * Notify the report owner about a status change.
      */
-    private function notifyStatusChange(Report $report, string $oldStatus, string $newStatus, string $changedBy): void
+    private function notifyStatusChange(Report $report, string $oldStatus, string $newStatus, string $changedBy, ?string $reason = null): void
     {
         $report->loadMissing('user');
 
@@ -477,7 +498,7 @@ class ReportController extends Controller
         }
 
         // Database notification
-        $report->user->notify(new ReportStatusChanged($report, $oldStatus, $newStatus, $changedBy));
+        $report->user->notify(new ReportStatusChanged($report, $oldStatus, $newStatus, $changedBy, $reason));
 
         // Push notification
         $titles = [
@@ -489,7 +510,9 @@ class ReportController extends Controller
 
         $bodies = [
             'verified'     => 'Your flood report has been verified. Responders will be dispatched shortly.',
-            'rejected'     => 'Your report could not be verified.',
+            'rejected'     => $reason
+                ? "Your report could not be verified. Reason: {$reason}"
+                : 'Your report could not be verified.',
             'assigned'     => 'A responder has been assigned to your report. Help is on the way.',
             'acknowledged' => 'We\'ve reviewed your report and prepared safety guidance for you. Open the app for details.',
         ];
