@@ -26,11 +26,11 @@ import {
     PhoneCall,
     Home,
     Truck,
-    Globe,
     Moon,
     Sun,
 } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { animate, createTimeline, stagger, utils, cubicBezier } from 'animejs';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { dashboard, login } from '@/routes';
 import { useAppearance } from '@/hooks/use-appearance';
@@ -94,6 +94,36 @@ function useInView(opts?: IntersectionObserverInit): [RefObject<HTMLDivElement |
         o.observe(el);
         return () => o.disconnect();
     }, []);
+    return [ref, inView];
+}
+
+/**
+ * Custom hook: when the observed element enters the viewport,
+ * run an anime.js animation on selected children.
+ */
+function useAnimeInView(
+    animationFactory: (container: HTMLElement) => ReturnType<typeof animate> | ReturnType<typeof animate>[] | void,
+    opts?: IntersectionObserverInit,
+): [RefObject<HTMLDivElement | null>, boolean] {
+    const ref = useRef<HTMLDivElement>(null);
+    const [inView, setInView] = useState(false);
+    const animRan = useRef(false);
+
+    useEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const o = new IntersectionObserver(([e]) => {
+            if (e.isIntersecting && !animRan.current) {
+                animRan.current = true;
+                setInView(true);
+                animationFactory(el);
+                o.disconnect();
+            }
+        }, { threshold: 0.12, ...opts });
+        o.observe(el);
+        return () => o.disconnect();
+    }, []);
+
     return [ref, inView];
 }
 
@@ -284,10 +314,94 @@ function CursorSpotlight({ isDark }: { isDark: boolean }) {
     );
 }
 
-/* ─── Floating Hero Cards ────────────────────────────────────────────────── */
+/* ─── Floating Hero Cards (anime.js powered) ─────────────────────────────── */
 
 function FloatingHeroCards({ isDark, heroVis }: { isDark: boolean; heroVis: boolean }) {
-    const base = `absolute hidden xl:flex items-center gap-3 rounded-2xl border px-4 py-3 backdrop-blur-xl transition-all duration-1000`;
+    const card1Ref = useRef<HTMLDivElement>(null);
+    const card2Ref = useRef<HTMLDivElement>(null);
+    const card3Ref = useRef<HTMLDivElement>(null);
+
+    // Entrance animations
+    useEffect(() => {
+        if (!heroVis) return;
+
+        // Card 1 - slide from left
+        if (card1Ref.current) {
+            animate(card1Ref.current, {
+                translateX: [-40, 0],
+                opacity: [0, 1],
+                duration: 1000,
+                delay: 700,
+                ease: 'outExpo',
+            });
+        }
+        // Card 2 - slide from right
+        if (card2Ref.current) {
+            animate(card2Ref.current, {
+                translateX: [40, 0],
+                opacity: [0, 1],
+                duration: 1000,
+                delay: 1000,
+                ease: 'outExpo',
+            });
+        }
+        // Card 3 - slide from right
+        if (card3Ref.current) {
+            animate(card3Ref.current, {
+                translateX: [40, 0],
+                opacity: [0, 1],
+                duration: 1000,
+                delay: 1300,
+                ease: 'outExpo',
+            });
+        }
+    }, [heroVis]);
+
+    // Floating loop animations
+    useEffect(() => {
+        if (!heroVis) return;
+        const timeout = setTimeout(() => {
+            if (card1Ref.current) {
+                animate(card1Ref.current, {
+                    translateY: [-12, 0],
+                    rotate: [-1, 0.5],
+                    duration: 8000,
+                    ease: 'inOutSine',
+                    alternate: true,
+                    loop: true,
+                });
+            }
+            if (card2Ref.current) {
+                animate(card2Ref.current, {
+                    translateY: [-16, 0],
+                    rotate: [1, -0.5],
+                    duration: 10000,
+                    ease: 'inOutSine',
+                    alternate: true,
+                    loop: true,
+                });
+            }
+            if (card3Ref.current) {
+                animate(card3Ref.current, {
+                    translateY: [-10, 0],
+                    rotate: [-0.5, 1],
+                    duration: 9000,
+                    ease: 'inOutSine',
+                    alternate: true,
+                    loop: true,
+                });
+            }
+        }, 1800);
+
+        return () => {
+            clearTimeout(timeout);
+            if (card1Ref.current) utils.remove(card1Ref.current);
+            if (card2Ref.current) utils.remove(card2Ref.current);
+            if (card3Ref.current) utils.remove(card3Ref.current);
+        };
+    }, [heroVis]);
+
+    const base = `absolute hidden xl:flex items-center gap-3 rounded-2xl border px-4 py-3 backdrop-blur-xl`;
     const glass = isDark
         ? 'border-white/[0.07] bg-[#0c1019]/85'
         : 'border-neutral-200/90 bg-white/90';
@@ -296,10 +410,11 @@ function FloatingHeroCards({ isDark, heroVis }: { isDark: boolean; heroVis: bool
         : { boxShadow: '0 12px 40px rgba(0,0,0,0.07), 0 0 0 1px rgba(0,0,0,0.04)' };
     return (
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
-            {/* Card 1 — Report Verified (left) */}
+            {/* Card 1 -- Report Verified (left) */}
             <div
-                className={`${base} left-[3%] top-[34%] delay-700 ${heroVis ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-10'} ${glass}`}
-                style={{ ...shadow, animation: heroVis ? 'floatCard1 8s ease-in-out infinite' : 'none' }}
+                ref={card1Ref}
+                className={`${base} left-[3%] top-[34%] ${glass}`}
+                style={{ ...shadow, opacity: 0 }}
             >
                 <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/15">
                     <CheckCircle2 className="size-4 text-emerald-400" />
@@ -314,10 +429,11 @@ function FloatingHeroCards({ isDark, heroVis }: { isDark: boolean; heroVis: bool
                 </div>
             </div>
 
-            {/* Card 2 — Responder Dispatched (right top) */}
+            {/* Card 2 -- Responder Dispatched (right top) */}
             <div
-                className={`${base} right-[3%] top-[28%] delay-1000 ${heroVis ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'} ${glass}`}
-                style={{ ...shadow, animation: heroVis ? 'floatCard2 10s ease-in-out infinite 1.5s' : 'none' }}
+                ref={card2Ref}
+                className={`${base} right-[3%] top-[28%] ${glass}`}
+                style={{ ...shadow, opacity: 0 }}
             >
                 <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 ring-1 ring-blue-500/15">
                     <Truck className="size-4 text-blue-400" />
@@ -328,10 +444,11 @@ function FloatingHeroCards({ isDark, heroVis }: { isDark: boolean; heroVis: bool
                 </div>
             </div>
 
-            {/* Card 3 — Active Incidents (right bottom) */}
+            {/* Card 3 -- Active Incidents (right bottom) */}
             <div
-                className={`${base} right-[5%] bottom-[26%] delay-[1300ms] ${heroVis ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-10'} ${glass}`}
-                style={{ ...shadow, animation: heroVis ? 'floatCard3 9s ease-in-out infinite 3s' : 'none' }}
+                ref={card3Ref}
+                className={`${base} right-[5%] bottom-[26%] ${glass}`}
+                style={{ ...shadow, opacity: 0 }}
             >
                 <div className="relative flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 ring-1 ring-amber-500/15">
                     <Activity className="size-4 text-amber-400" />
@@ -384,14 +501,12 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
     const { resolvedAppearance, updateAppearance } = useAppearance();
     const isDark = resolvedAppearance === 'dark';
 
-    const [featRef, featIn]     = useInView();
     const [stepsRef, stepsIn]   = useInView();
     const [sevRef, sevIn]       = useInView();
     const [rolesRef, rolesIn]   = useInView();
     const [ctaRef, ctaIn]       = useInView();
     const [bentoRef, bentoIn]   = useInView();
     const [evacRef, evacIn]     = useInView();
-
     const [demoRef, demoIn]     = useInView();
 
     const [heroVis, setHeroVis] = useState(false);
@@ -399,6 +514,25 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
     const [themeFlash, setThemeFlash] = useState<{ key: number; toLight: boolean; x: number; y: number } | null>(null);
     const themeBtnRef = useRef<HTMLButtonElement>(null);
     const flashKeyRef = useRef(0);
+
+    // Hero refs for anime.js entrance
+    const heroBadgeRef = useRef<HTMLDivElement>(null);
+    const heroHeadingRef = useRef<HTMLHeadingElement>(null);
+    const heroSubRef = useRef<HTMLDivElement>(null);
+    const heroCtaRef = useRef<HTMLDivElement>(null);
+    const heroScrollCueRef = useRef<HTMLDivElement>(null);
+    const scrollCueBounceRef = useRef<HTMLDivElement>(null);
+
+    // Feature cards ref for anime.js stagger
+    const featSectionRef = useRef<HTMLDivElement>(null);
+    const [featIn, setFeatIn] = useState(false);
+
+    // CTA logo ref
+    const ctaLogoRef = useRef<HTMLDivElement>(null);
+    const ctaButtonsRef = useRef<HTMLDivElement>(null);
+
+    // Stats section refs for anime.js entrance
+    const statsIconRefs = useRef<(HTMLDivElement | null)[]>([]);
 
     function handleThemeToggle() {
         const toLight = isDark;
@@ -410,12 +544,175 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
         }
         flashKeyRef.current++;
         setThemeFlash({ key: flashKeyRef.current, toLight, x, y });
-        // Change theme once the overlay fully covers the screen (~45% into 1.1s = ~500ms)
         setTimeout(() => updateAppearance(toLight ? 'light' : 'dark'), 500);
         setTimeout(() => setThemeFlash(null), 1150);
     }
 
-    useEffect(() => { setTimeout(() => setHeroVis(true), 120); }, []);
+    // Hero entrance timeline with anime.js
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            setHeroVis(true);
+
+            const tl = createTimeline({
+                defaults: { ease: 'outExpo' },
+            });
+
+            // Badge slides in from above
+            if (heroBadgeRef.current) {
+                tl.add(heroBadgeRef.current, {
+                    translateY: [-30, 0],
+                    opacity: [0, 1],
+                    duration: 800,
+                });
+            }
+
+            // Heading animates with a stagger-like spring
+            if (heroHeadingRef.current) {
+                tl.add(heroHeadingRef.current, {
+                    translateY: [50, 0],
+                    opacity: [0, 1],
+                    duration: 1000,
+                    ease: 'outExpo',
+                }, '-=500');
+            }
+
+            // Sub text fades in
+            if (heroSubRef.current) {
+                tl.add(heroSubRef.current, {
+                    translateY: [30, 0],
+                    opacity: [0, 1],
+                    duration: 800,
+                }, '-=600');
+            }
+
+            // CTA buttons slide up with spring easing
+            if (heroCtaRef.current) {
+                tl.add(heroCtaRef.current, {
+                    translateY: [40, 0],
+                    opacity: [0, 1],
+                    duration: 900,
+                    ease: 'outElastic(1, .8)',
+                }, '-=500');
+            }
+
+            // Scroll cue fades in last
+            if (heroScrollCueRef.current) {
+                tl.add(heroScrollCueRef.current, {
+                    opacity: [0, 0.3],
+                    duration: 600,
+                }, '-=300');
+            }
+        }, 120);
+
+        return () => clearTimeout(timeout);
+    }, []);
+
+    // Scroll cue bounce with anime.js
+    useEffect(() => {
+        if (!scrollCueBounceRef.current) return;
+        const anim = animate(scrollCueBounceRef.current, {
+            translateY: [0, 5],
+            duration: 1250,
+            ease: 'inOutSine',
+            alternate: true,
+            loop: true,
+        });
+        return () => { if (scrollCueBounceRef.current) utils.remove(scrollCueBounceRef.current); };
+    }, []);
+
+    // Feature cards anime.js stagger on view
+    useEffect(() => {
+        if (!featSectionRef.current) return;
+        const el = featSectionRef.current;
+        const o = new IntersectionObserver(([e]) => {
+            if (e.isIntersecting) {
+                setFeatIn(true);
+                const cards = el.querySelectorAll('.feat-card');
+                animate(cards, {
+                    translateY: [40, 0],
+                    opacity: [0, 1],
+                    delay: stagger(100),
+                    duration: 800,
+                    ease: 'outExpo',
+                });
+                o.disconnect();
+            }
+        }, { threshold: 0.12 });
+        o.observe(el);
+        return () => o.disconnect();
+    }, []);
+
+    // Stats section: scale up icons on view
+    useEffect(() => {
+        if (!bentoIn) return;
+        const icons = statsIconRefs.current.filter(Boolean);
+        if (icons.length > 0) {
+            animate(icons, {
+                scale: [0, 1],
+                rotate: [45, 0],
+                opacity: [0, 1],
+                delay: stagger(120),
+                duration: 700,
+                ease: 'outBack',
+            });
+        }
+    }, [bentoIn]);
+
+    // CTA logo floating + glow pulse with anime.js
+    useEffect(() => {
+        if (!ctaIn || !ctaLogoRef.current) return;
+
+        // Floating
+        animate(ctaLogoRef.current, {
+            translateY: [-6, 3, -6],
+            rotate: [0, 2, -1, 0],
+            duration: 6000,
+            ease: 'inOutSine',
+            loop: true,
+        });
+
+        return () => {
+            if (ctaLogoRef.current) utils.remove(ctaLogoRef.current);
+        };
+    }, [ctaIn]);
+
+    // CTA glow pulse on the logo wrapper
+    useEffect(() => {
+        if (!ctaIn || !ctaLogoRef.current) return;
+        const el = ctaLogoRef.current;
+        // Glow pulse via boxShadow
+        const glowObj = { glow: 0 };
+        const anim = animate(glowObj, {
+            glow: [0, 1],
+            duration: 3000,
+            ease: 'inOutSine',
+            alternate: true,
+            loop: true,
+            update: () => {
+                const v = glowObj.glow;
+                const s1 = 20 + v * 10;
+                const s2 = 60 + v * 20;
+                const a1 = 0.15 + v * 0.1;
+                const a2 = 0.08 + v * 0.07;
+                el.style.boxShadow = `0 0 ${s1}px rgba(56,189,248,${a1}), 0 0 ${s2}px rgba(99,102,241,${a2})`;
+            },
+        });
+
+        return () => { utils.remove(glowObj); };
+    }, [ctaIn]);
+
+    // CTA buttons entrance
+    useEffect(() => {
+        if (!ctaIn || !ctaButtonsRef.current) return;
+        const buttons = ctaButtonsRef.current.children;
+        animate(buttons, {
+            translateY: [30, 0],
+            opacity: [0, 1],
+            delay: stagger(120, { start: 300 }),
+            duration: 800,
+            ease: 'outExpo',
+        });
+    }, [ctaIn]);
 
     // Mouse-tracking glow on feature cards
     useEffect(() => {
@@ -429,6 +726,21 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
         window.addEventListener('mousemove', handler, { passive: true });
         return () => window.removeEventListener('mousemove', handler);
     }, []);
+
+    // Particle pulse effect triggered by section views
+    const triggerParticlePulse = useCallback(() => {
+        const canvas = document.querySelector('canvas');
+        if (!canvas) return;
+        animate(canvas, {
+            opacity: [{ value: 0.7, duration: 300 }, { value: 0.4, duration: 600 }],
+            ease: 'outQuad',
+        });
+    }, []);
+
+    // Trigger pulse on various section in-views
+    useEffect(() => {
+        if (bentoIn || featIn || ctaIn) triggerParticlePulse();
+    }, [bentoIn, featIn, ctaIn, triggerParticlePulse]);
 
     return (
         <>
@@ -455,7 +767,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             : 'bg-white/85 shadow-lg shadow-neutral-200/40 backdrop-blur-2xl backdrop-saturate-150'
                         : 'bg-transparent'
                 }`}>
-                    {/* Animated gradient border bottom — visible when scrolled */}
+                    {/* Animated gradient border bottom -- visible when scrolled */}
                     <div className={`absolute inset-x-0 bottom-0 h-px transition-opacity duration-500 ${scrolled ? 'opacity-100' : 'opacity-0'}`}>
                         <div className="h-full w-full animated-border" />
                     </div>
@@ -535,7 +847,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             </div>
                         )}
 
-                        {/* Aurora background — primary hero visual */}
+                        {/* Aurora background -- primary hero visual */}
                         <div className={`pointer-events-none absolute inset-0 ${isDark ? 'opacity-50' : 'opacity-25'}`}>
                             <Aurora
                                 colorStops={isDark ? ['#06b6d4', '#3b82f6', '#8b5cf6'] : ['#0891b2', '#2563eb', '#7c3aed']}
@@ -545,12 +857,12 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             />
                         </div>
 
-                        {/* Canvas particles — subtle depth layer */}
+                        {/* Canvas particles -- subtle depth layer */}
                         <div className={`pointer-events-none absolute inset-0 ${isDark ? 'opacity-40' : 'opacity-15'}`}>
                             <ParticleField />
                         </div>
 
-                        {/* Gradient orb — parallax accent */}
+                        {/* Gradient orb -- parallax accent */}
                         <div className="pointer-events-none absolute inset-0 overflow-hidden">
                             <div className={`absolute -left-40 -top-40 size-[800px] rounded-full blur-[160px] ${isDark ? 'opacity-[0.07]' : 'opacity-[0.05]'}`}
                                 style={{ background: 'conic-gradient(from 200deg, #06b6d4, #3b82f6, #8b5cf6, #06b6d4)', transform: `translate(${mouse.x * 3}px, ${mouse.y * 3}px)`, transition: 'transform 0.8s cubic-bezier(.22,1,.36,1)' }}
@@ -562,14 +874,14 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             style={{ backgroundImage: isDark ? 'linear-gradient(rgba(255,255,255,.15) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.15) 1px, transparent 1px)' : 'linear-gradient(rgba(99,102,241,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(99,102,241,.07) 1px, transparent 1px)', backgroundSize: '72px 72px', transform: `translate(${mouse.x * 0.5}px, ${mouse.y * 0.5}px)`, transition: 'transform 1s ease-out' }}
                         />
 
-                        {/* Radial vignette — less aggressive to let Aurora shine */}
+                        {/* Radial vignette -- less aggressive to let Aurora shine */}
                         <div className="pointer-events-none absolute inset-0" style={{ background: isDark ? 'radial-gradient(ellipse 85% 75% at 50% 40%, transparent 0%, #06090f 100%)' : 'radial-gradient(ellipse 90% 80% at 50% 40%, transparent 0%, rgba(250,251,252,0.88) 100%)' }} />
 
                         {/* Content */}
                         <div className="relative z-10 mx-auto max-w-5xl text-center">
 
                             {/* Badge */}
-                            <div className={`mb-6 sm:mb-10 inline-flex items-center gap-2 sm:gap-3 rounded-full border px-3.5 sm:px-5 py-1.5 sm:py-2 backdrop-blur-md transition-all duration-1000 ${isDark ? 'border-white/[0.06] bg-white/[0.03]' : 'border-blue-100/80 bg-white/70 shadow-lg shadow-blue-500/[0.04]'} ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}>
+                            <div ref={heroBadgeRef} className={`mb-6 sm:mb-10 inline-flex items-center gap-2 sm:gap-3 rounded-full border px-3.5 sm:px-5 py-1.5 sm:py-2 backdrop-blur-md ${isDark ? 'border-white/[0.06] bg-white/[0.03]' : 'border-blue-100/80 bg-white/70 shadow-lg shadow-blue-500/[0.04]'}`} style={{ opacity: 0 }}>
                                 <span className="relative flex size-[6px]">
                                     <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
                                     <span className="relative inline-flex size-[6px] rounded-full bg-emerald-400 shadow-lg shadow-emerald-400/50" />
@@ -594,7 +906,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             </div>
 
                             {/* Heading */}
-                            <h1 className={`mb-5 sm:mb-8 text-[clamp(1.85rem,5.5vw,5rem)] font-extrabold leading-[1.1] tracking-[-0.035em] transition-all duration-1000 delay-150 ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
+                            <h1 ref={heroHeadingRef} className="mb-5 sm:mb-8 text-[clamp(1.85rem,5.5vw,5rem)] font-extrabold leading-[1.1] tracking-[-0.035em]" style={{ opacity: 0 }}>
                                 <span className={`block bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white via-white to-white/60' : 'bg-gradient-to-b from-slate-900 via-slate-800 to-slate-500'}`}>
                                     Report floods & hazards
                                 </span>
@@ -611,10 +923,10 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             </h1>
 
                             {/* Sub */}
-                            <div className={`mx-auto mb-8 sm:mb-14 max-w-[38rem] transition-all duration-1000 delay-300 ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
+                            <div ref={heroSubRef} className="mx-auto mb-8 sm:mb-14 max-w-[38rem]" style={{ opacity: 0 }}>
                                 {heroVis && (
                                     <BlurText
-                                        text="Connect directly with MDRRMO. Submit a hazard report from your phone in seconds — with GPS location, photo evidence, and severity level. Responders are dispatched faster."
+                                        text="Connect directly with MDRRMO. Submit a hazard report from your phone in seconds — with GPS location, photo evidence, and flood depth. Responders are dispatched faster."
                                         delay={30}
                                         animateBy="words"
                                         direction="bottom"
@@ -624,7 +936,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             </div>
 
                             {/* CTA */}
-                            <div className={`flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto transition-all duration-1000 delay-500 ${heroVis ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-14'}`}>
+                            <div ref={heroCtaRef} className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto" style={{ opacity: 0 }}>
                                 {canRegister && !auth.user && (
                                     <div className="w-full sm:w-auto">
                                         <Magnet padding={60} magnetStrength={3}>
@@ -653,13 +965,15 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             </div>
                         </div>
 
-                        {/* Floating accent cards — xl only */}
+                        {/* Floating accent cards -- xl only */}
                         <FloatingHeroCards isDark={isDark} heroVis={heroVis} />
 
                         {/* Scroll cue */}
-                        <div className={`absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2.5 transition-all duration-1000 delay-[900ms] ${heroVis ? 'opacity-30' : 'opacity-0'}`}>
+                        <div ref={heroScrollCueRef} className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2.5" style={{ opacity: 0 }}>
                             <span className={`text-[10px] font-semibold tracking-[0.2em] uppercase ${isDark ? 'text-white/30' : 'text-neutral-300'}`}>Scroll</span>
-                            <ChevronDown className={`size-4 animate-[bounce-soft_2.5s_ease-in-out_infinite] ${isDark ? 'text-white/20' : 'text-neutral-300'}`} />
+                            <div ref={scrollCueBounceRef}>
+                                <ChevronDown className={`size-4 ${isDark ? 'text-white/20' : 'text-neutral-300'}`} />
+                            </div>
                         </div>
                     </section>
 
@@ -702,7 +1016,11 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                 <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-700 group-hover:opacity-100"
                                                     style={{ background: `radial-gradient(ellipse at 50% 0%, ${s.accentColor}0a, transparent 70%)` }}
                                                 />
-                                                <div className={`relative mb-4 inline-flex rounded-2xl bg-gradient-to-br ${s.gradient} p-3 shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:shadow-xl`}>
+                                                <div
+                                                    ref={(el) => { statsIconRefs.current[i] = el; }}
+                                                    className={`relative mb-4 inline-flex rounded-2xl bg-gradient-to-br ${s.gradient} p-3 shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:shadow-xl`}
+                                                    style={{ opacity: bentoIn ? undefined : 0 }}
+                                                >
                                                     <Icon className="size-5 text-white" />
                                                     <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/25 to-transparent" />
                                                 </div>
@@ -744,7 +1062,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     </section>
 
                     {/* ── FEATURES ───────────────────────────────────────── */}
-                    <section className={`relative px-4 py-10 sm:px-6 sm:py-32 ${!isDark ? 'bg-gradient-to-b from-white via-slate-50/50 to-white' : ''}`} ref={featRef}>
+                    <section className={`relative px-4 py-10 sm:px-6 sm:py-32 ${!isDark ? 'bg-gradient-to-b from-white via-slate-50/50 to-white' : ''}`} ref={featSectionRef}>
                         <GlowDivider />
 
                         <div className="mx-auto max-w-7xl">
@@ -761,7 +1079,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 {([
                                     { icon: MapPin,    grad: 'from-sky-500 to-blue-600',    title: 'Location-pinned reports',  body: 'Auto-detects GPS position. Drag the pin to adjust. Accurate to meters.' },
                                     { icon: Map,       grad: 'from-cyan-500 to-teal-600',   title: 'Live GIS map & heatmap',   body: 'All active hazards on a real-time map. Density heatmap reveals hotspots.' },
-                                    { icon: AlertTriangle, grad: 'from-amber-500 to-orange-600', title: 'Severity classification', body: 'Four levels — Low to Critical. Color + icon + label for accessibility.' },
+                                    { icon: AlertTriangle, grad: 'from-amber-500 to-orange-600', title: 'Depth-based severity', body: 'Pick flood depth — severity is auto-classified. Four levels from Low to Critical.' },
                                     { icon: Camera,    grad: 'from-violet-500 to-indigo-600', title: 'Photo & video evidence', body: 'Attach multiple photos or videos from camera or gallery with every report.' },
                                     { icon: Zap,       grad: 'from-emerald-500 to-green-600', title: 'Instant dispatch',       body: 'MDRRMO verifies and assigns responders directly from the admin dashboard.' },
                                     { icon: Bell,      grad: 'from-rose-500 to-pink-600',    title: 'Alerts & advisories',     body: 'Official MDRRMO advisories and real-time status updates on your reports.' },
@@ -770,13 +1088,13 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     return (
                                         <SpotlightCard
                                             key={f.title}
-                                            className={`feat-card group rounded-2xl sm:rounded-[20px] border p-5 transition-all duration-500 sm:p-8 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'} ${featIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+                                            className={`feat-card group rounded-2xl sm:rounded-[20px] border p-5 transition-all duration-500 sm:p-8 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'}`}
                                             spotlightColor={isDark ? 'rgba(56, 189, 248, 0.08)' : 'rgba(59, 130, 246, 0.06)'}
                                         >
                                             {/* Shimmer sweep on hover */}
                                             <div className={`pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent to-transparent skew-x-[-20deg] ${isDark ? 'via-white/[0.03]' : 'via-blue-500/[0.03]'}`} />
 
-                                            <div className={`relative mb-6 inline-flex rounded-2xl bg-gradient-to-br ${f.grad} p-3.5 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-2xl`}>
+                                            <div className={`feat-icon relative mb-6 inline-flex rounded-2xl bg-gradient-to-br ${f.grad} p-3.5 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-2xl`}>
                                                 <Icon className="size-[22px] text-white transition-transform duration-500 group-hover:scale-110" />
                                                 <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
                                             </div>
@@ -818,13 +1136,11 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 {/* Connector */}
                                 <div className="absolute left-[16.6%] right-[16.6%] top-[72px] hidden h-px sm:block">
                                     <div className={`h-full bg-gradient-to-r ${isDark ? 'from-white/[0.03] via-white/[0.06] to-white/[0.03]' : 'from-neutral-200/30 via-neutral-200/60 to-neutral-200/30'}`} />
-                                    <div className="absolute inset-0 h-full bg-gradient-to-r from-cyan-500 via-blue-500 to-emerald-500 rounded-full transition-all ease-out"
-                                        style={{ width: stepsIn ? '100%' : '0%', transition: 'width 2s cubic-bezier(.22,1,.36,1) 0.3s', opacity: 0.6 }}
-                                    />
+                                    <AnimatedConnectorLine active={stepsIn} />
                                 </div>
 
                                 {([
-                                    { n: '01', icon: Smartphone, grad: 'from-sky-400 to-blue-600', ring: 'shadow-sky-500/10', title: 'Resident reports', body: 'Open the app, choose hazard type & severity, attach photos, submit. Under 60 seconds.' },
+                                    { n: '01', icon: Smartphone, grad: 'from-sky-400 to-blue-600', ring: 'shadow-sky-500/10', title: 'Resident reports', body: 'Open the app, select flood depth, attach photos, submit. Severity is auto-determined. Under 60 seconds.' },
                                     { n: '02', icon: ShieldCheck, grad: 'from-cyan-400 to-teal-600', ring: 'shadow-cyan-500/10', title: 'MDRRMO verifies', body: 'Admin reviews photo evidence on the dashboard, verifies the report, assigns a responder.' },
                                     { n: '03', icon: Navigation, grad: 'from-emerald-400 to-green-600', ring: 'shadow-emerald-500/10', title: 'Responder acts', body: 'Responder navigates to the site, updates status live — the reporter sees every change.' },
                                 ] as const).map((s, i) => {
@@ -833,18 +1149,11 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                         <div key={s.n} className={`relative flex flex-col items-center text-center transition-all duration-[800ms] ease-out ${stepsIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
                                             style={{ transitionDelay: `${i * 200 + 200}ms` }}
                                         >
-                                            <div className={`group/step relative z-10 mb-6 sm:mb-8 flex size-24 sm:size-36 flex-col items-center justify-center rounded-[22px] sm:rounded-[28px] border shadow-2xl ${s.ring} transition-all duration-500 hover:scale-110 cursor-pointer ${isDark ? 'border-white/[0.05] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-3xl' : 'border-neutral-200/70 bg-white hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'}`}>
-                                                {/* Pulse ring on hover */}
-                                                <div className="absolute inset-0 rounded-[28px] opacity-0 group-hover/step:opacity-100 transition-opacity duration-500 group-hover/step:animate-[ringPulse_1.5s_ease-out_infinite]"
-                                                    style={{ boxShadow: `0 0 0 0 ${s.grad.includes('sky') ? 'rgba(56,189,248,0.3)' : s.grad.includes('cyan') ? 'rgba(6,182,212,0.3)' : 'rgba(52,211,153,0.3)'}` }}
-                                                />
-                                                <div className={`rounded-xl sm:rounded-2xl bg-gradient-to-br ${s.grad} p-3 sm:p-4 shadow-xl transition-all duration-500 group-hover/step:-translate-y-1 group-hover/step:shadow-2xl`}>
-                                                    <Icon className="size-6 sm:size-7 text-white transition-transform duration-500 group-hover/step:scale-125 group-hover/step:rotate-6" />
-                                                    <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
-                                                </div>
-                                                <span className={`mt-3 text-[11px] font-bold tracking-[0.15em] uppercase transition-colors duration-300 ${isDark ? 'text-white/15 group-hover/step:text-white/30' : 'text-neutral-400 group-hover/step:text-neutral-500'}`}>{s.n}</span>
-                                            </div>
-                                            <h3 className={`mb-2 text-base sm:text-[1.15rem] font-bold ${isDark ? 'text-white/90' : 'text-neutral-800'}`}>{s.title}</h3>
+                                            <StepCard isDark={isDark} grad={s.grad} ring={s.ring} stepsIn={stepsIn} index={i}>
+                                                <Icon className="size-6 sm:size-7 text-white transition-transform duration-500 group-hover/step:scale-125 group-hover/step:rotate-6" />
+                                            </StepCard>
+                                            <span className={`mt-3 text-[11px] font-bold tracking-[0.15em] uppercase transition-colors duration-300 ${isDark ? 'text-white/15' : 'text-neutral-400'}`}>{s.n}</span>
+                                            <h3 className={`mb-2 mt-4 text-base sm:text-[1.15rem] font-bold ${isDark ? 'text-white/90' : 'text-neutral-800'}`}>{s.title}</h3>
                                             <p className={`max-w-[260px] text-[13px] sm:text-[14px] leading-relaxed font-[350] ${isDark ? 'text-white/35' : 'text-neutral-500'}`}>{s.body}</p>
                                         </div>
                                     );
@@ -902,51 +1211,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 sub="Every report is tagged with color + icon + label. Never color alone."
                             />
 
-                            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-                                {([
-                                    { level: 'Low', color: '#22c55e', icon: CheckCircle2, meaning: 'Passable. Monitor only.', detail: 'Accessible area. Continuous monitoring recommended. No immediate action.' },
-                                    { level: 'Moderate', color: '#eab308', icon: AlertTriangle, meaning: 'Caution — may worsen.', detail: 'Exercise caution. May deteriorate. Prepare for possible response.' },
-                                    { level: 'High', color: '#f97316', icon: AlertTriangle, meaning: 'Unsafe. Prompt action.', detail: 'Area is unsafe. Prompt dispatch required. Avoid unless responding.' },
-                                    { level: 'Critical', color: '#ef4444', icon: Siren, meaning: 'Life-threatening.', detail: 'Immediate threat to life. Emergency dispatch now. All units respond.' },
-                                ] as const).map((s, i) => {
-                                    const Icon = s.icon;
-                                    const open = activeSev === i;
-                                    return (
-                                        <SpotlightCard
-                                            key={s.level}
-                                            className={`group cursor-pointer rounded-2xl sm:rounded-[20px] border p-4 transition-all duration-500 sm:p-7 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'} ${sevIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'} ${open ? isDark ? 'scale-[1.03] border-white/[0.12] shadow-2xl' : 'scale-[1.03] border-blue-200/80 shadow-2xl shadow-blue-500/[0.06] ring-1 ring-blue-100/50' : ''}`}
-                                            spotlightColor={`${s.color}15`}
-                                        >
-                                            <div onClick={() => setActiveSev(open ? null : i)} className="relative"
-                                            >
-
-                                            {/* Shimmer sweep */}
-                                            <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1200ms] ease-in-out bg-gradient-to-r from-transparent via-white/[0.02] to-transparent skew-x-[-20deg]" />
-
-                                            <div className="relative mb-3 sm:mb-5 inline-flex items-center gap-2 sm:gap-2.5 rounded-xl sm:rounded-[14px] px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold transition-all duration-500 group-hover:scale-105"
-                                                style={{ backgroundColor: s.color + '12', color: s.color, boxShadow: open ? `0 0 24px ${s.color}20` : `0 0 0 ${s.color}00` }}
-                                            >
-                                                <Icon className="size-4 sm:size-[18px] transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" />
-                                                {s.level}
-                                            </div>
-                                            <p className={`relative text-[14px] font-medium transition-colors duration-300 ${isDark ? 'text-white/70 group-hover:text-white/85' : 'text-neutral-600 group-hover:text-neutral-800'}`}>{s.meaning}</p>
-                                            <div className="overflow-hidden transition-all duration-500"
-                                                style={{ maxHeight: open ? '80px' : '0', opacity: open ? 1 : 0 }}
-                                            >
-                                                <p className={`mt-3 text-[13px] leading-relaxed ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>{s.detail}</p>
-                                            </div>
-                                            <div className="relative mt-4 h-[2px] rounded-full overflow-hidden transition-all duration-700"
-                                                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)', width: '100%' }}
-                                            >
-                                                <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-700"
-                                                    style={{ backgroundColor: s.color + '50', width: open ? '100%' : '0%' }}
-                                                />
-                                            </div>
-                                            </div>
-                                        </SpotlightCard>
-                                    );
-                                })}
-                            </div>
+                            <SeverityGrid isDark={isDark} sevIn={sevIn} activeSev={activeSev} setActiveSev={setActiveSev} />
                         </div>
                     </section>
 
@@ -964,43 +1229,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 sub="Every stakeholder has a purpose-built experience."
                             />
 
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                                {([
-                                    { role: 'Residents',     icon: Home, grad: 'from-sky-500 to-blue-600', accent: 'bg-sky-500', accentColor: '#38bdf8', points: ['Report hazards with GPS + photos', 'Track your report status live', 'Receive official MDRRMO alerts', 'View all hazards on the map'] },
-                                    { role: 'Responders',    icon: Truck, grad: 'from-cyan-500 to-teal-600', accent: 'bg-cyan-500', accentColor: '#06b6d4', points: ['Receive assigned incident queue', 'Navigate directly to hazard', 'Update status en route / on scene', 'Upload field evidence'] },
-                                    { role: 'MDRRMO Admin',  icon: Shield, grad: 'from-violet-500 to-indigo-600', accent: 'bg-violet-500', accentColor: '#a78bfa', points: ['Verify & triage incoming reports', 'Assign responders from dashboard', 'Publish official public advisories', 'Monitor all active incidents'] },
-                                ] as const).map((r, i) => {
-                                    const Icon = r.icon;
-                                    return (
-                                    <SpotlightCard
-                                        key={r.role}
-                                        className={`group rounded-2xl sm:rounded-[20px] border p-5 transition-all duration-500 sm:p-9 hover:-translate-y-3 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'} ${rolesIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-                                        spotlightColor={isDark ? `rgba(${r.role === 'Residents' ? '56,189,248' : r.role === 'Responders' ? '6,182,212' : '167,139,250'}, 0.1)` : `rgba(${r.role === 'Residents' ? '56,189,248' : r.role === 'Responders' ? '6,182,212' : '167,139,250'}, 0.08)`}
-                                    >
-                                        {/* Shimmer sweep */}
-                                        <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1200ms] ease-in-out bg-gradient-to-r from-transparent via-white/[0.03] to-transparent skew-x-[-20deg]" />
-
-                                        <div className={`relative mb-4 sm:mb-6 inline-flex rounded-[18px] sm:rounded-[22px] bg-gradient-to-br ${r.grad} p-3 sm:p-4 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-2xl`}>
-                                            <Icon className="size-6 sm:size-7 text-white transition-transform duration-500 group-hover:scale-110" />
-                                            <div className="absolute inset-[1px] rounded-[17px] sm:rounded-[21px] bg-gradient-to-b from-white/20 to-transparent" />
-                                        </div>
-                                        <h3 className={`mb-1.5 text-xl font-bold transition-colors duration-300 ${isDark ? 'text-white/90 group-hover:text-white' : 'text-neutral-800 group-hover:text-neutral-900'}`}>{r.role}</h3>
-                                        <div className={`mb-6 h-[3px] w-10 rounded-full ${r.accent} opacity-50 transition-all duration-700 group-hover:w-24 group-hover:opacity-100`} />
-                                        <ul className="space-y-3.5">
-                                            {r.points.map((p, pi) => (
-                                                <li key={p} className={`flex items-start gap-3 text-[14px] font-[350] transition-all duration-500 ${isDark ? 'text-white/40 group-hover:text-white/55' : 'text-neutral-500 group-hover:text-neutral-600'}`}
-                                                    style={{ transitionDelay: `${pi * 50}ms` }}
-                                                >
-                                                    <CheckCircle2 className="mt-[3px] size-4 shrink-0 text-emerald-500/50 transition-all duration-500 group-hover:text-emerald-400/80 group-hover:scale-110" />
-                                                    <span>{p}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-
-                                    </SpotlightCard>
-                                    );
-                                })}
-                            </div>
+                            <RolesGrid isDark={isDark} rolesIn={rolesIn} />
                         </div>
                     </section>
 
@@ -1026,7 +1255,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 />
 
                                 <div className={`transition-all duration-[800ms] ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                                    {/* Map — glass frame */}
+                                    {/* Map -- glass frame */}
                                     <div className="relative group/map">
                                         <div className={`absolute -inset-px rounded-2xl sm:rounded-[24px] bg-gradient-to-b to-transparent opacity-0 transition-opacity duration-700 group-hover/map:opacity-100 ${isDark ? 'from-white/[0.08] via-white/[0.02]' : 'from-neutral-200/40 via-neutral-100/20'}`} />
                                         <div className={`relative overflow-hidden rounded-2xl sm:rounded-[24px] border shadow-2xl ${isDark ? 'border-white/[0.06] bg-[#080c14] shadow-black/40' : 'border-neutral-200/70 bg-white ring-1 ring-neutral-100 shadow-blue-500/[0.04]'}`}>
@@ -1048,7 +1277,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     </div>
                                 </div>
 
-                                {/* Emergency contact strip — glass */}
+                                {/* Emergency contact strip -- glass */}
                                 <div className={`mt-10 relative overflow-hidden rounded-2xl border backdrop-blur-md transition-all duration-[800ms] delay-300 ${isDark ? 'border-white/[0.05] bg-white/[0.02]' : 'border-neutral-200/70 bg-white/60 ring-1 ring-neutral-100'} ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
                                     <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 px-4 sm:px-6 py-4 sm:py-5">
@@ -1090,8 +1319,10 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             </div>
 
                             <div className={`relative mx-auto max-w-3xl text-center transition-all duration-[800ms] ${ctaIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-                                <div className="water-ripple logo-float glow-pulse mb-6 sm:mb-8 inline-flex">
+                                <div ref={ctaLogoRef} className="mb-6 sm:mb-8 inline-flex relative rounded-[20px] sm:rounded-[28px]">
                                     <AppLogoIcon className="size-16 sm:size-24 rounded-[20px] sm:rounded-[28px] shadow-2xl shadow-blue-900/20" />
+                                    {/* Ripple rings via anime.js-driven pseudo replacement */}
+                                    <CtaRippleRings active={ctaIn} />
                                 </div>
                                 <h2 className="mb-4 sm:mb-5 text-3xl font-bold tracking-tight sm:text-5xl">
                                     <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white to-white/70' : 'bg-gradient-to-b from-slate-900 to-slate-500'}`}>Ready to help keep </span>
@@ -1101,8 +1332,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     Join residents and responders already using FloodTrack. Free to use, forever.
                                 </p>
                                 <ClickSpark sparkColor={isDark ? '#38bdf8' : '#3b82f6'} sparkSize={12} sparkRadius={25} sparkCount={10} duration={500}>
-                                    <div className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
-                                        <div className="w-full sm:w-auto"><Magnet padding={60} magnetStrength={3}>
+                                    <div ref={ctaButtonsRef} className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
+                                        <div className="w-full sm:w-auto" style={{ opacity: 0 }}><Magnet padding={60} magnetStrength={3}>
                                             <StarBorder color={isDark ? 'rgba(56,189,248,0.6)' : 'rgba(59,130,246,0.5)'} speed="5s" thickness={1} className="rounded-2xl">
                                                 <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-2xl transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:shadow-cyan-500/25 active:scale-[0.97]">
                                                     <span className="relative z-10 flex items-center gap-2.5">
@@ -1112,7 +1343,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                 </Link>
                                             </StarBorder>
                                         </Magnet></div>
-                                        <div className="w-full sm:w-auto"><Magnet padding={50} magnetStrength={4}>
+                                        <div className="w-full sm:w-auto" style={{ opacity: 0 }}><Magnet padding={50} magnetStrength={4}>
                                             <Link href={login()} className={`group flex items-center justify-center gap-2 rounded-2xl border px-8 py-3.5 text-sm font-bold backdrop-blur-md transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/80' : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 shadow-sm'}`}>
                                                 Sign in
                                             </Link>
@@ -1259,51 +1490,10 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     50% { background-position: 100% center; }
                 }
 
-                /* Bounce */
-                @keyframes bounce-soft {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(5px); }
-                }
-
                 /* Feature card mouse glow */
                 .feat-card {
                     --mouse-x: 50%;
                     --mouse-y: 50%;
-                }
-
-                /* Step card ring pulse */
-                @keyframes ringPulse {
-                    0% { box-shadow: 0 0 0 0 rgba(56,189,248,0.25); }
-                    70% { box-shadow: 0 0 0 12px rgba(56,189,248,0); }
-                    100% { box-shadow: 0 0 0 0 rgba(56,189,248,0); }
-                }
-
-                /* Floating logo animation */
-                .logo-float {
-                    animation: logoFloat 6s ease-in-out infinite;
-                }
-                @keyframes logoFloat {
-                    0%, 100% { transform: translateY(0) rotate(0deg); }
-                    33% { transform: translateY(-6px) rotate(2deg); }
-                    66% { transform: translateY(3px) rotate(-1deg); }
-                }
-
-                /* Glow pulse for CTA icon */
-                .glow-pulse {
-                    animation: glowPulse 3s ease-in-out infinite;
-                }
-                @keyframes glowPulse {
-                    0%, 100% { box-shadow: 0 0 20px rgba(56,189,248,0.15), 0 0 60px rgba(99,102,241,0.08); }
-                    50% { box-shadow: 0 0 30px rgba(56,189,248,0.25), 0 0 80px rgba(99,102,241,0.15); }
-                }
-
-                /* Stagger reveal for lists */
-                .stagger-item {
-                    animation: staggerIn 0.6s ease-out both;
-                }
-                @keyframes staggerIn {
-                    from { opacity: 0; transform: translateY(12px); }
-                    to { opacity: 1; transform: translateY(0); }
                 }
 
                 /* Animated border gradient */
@@ -1315,24 +1505,6 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                 @keyframes borderSlide {
                     0% { background-position: -200% 0; }
                     100% { background-position: 200% 0; }
-                }
-
-                /* Phone float */
-                .phone-float {
-                    animation: phoneFloat 8s ease-in-out infinite;
-                }
-                @keyframes phoneFloat {
-                    0%, 100% { transform: rotateY(-4deg) rotateX(2deg) translateY(0); }
-                    50% { transform: rotateY(-4deg) rotateX(2deg) translateY(-10px); }
-                }
-
-                /* Pin bounce */
-                .phone-pin-bounce {
-                    animation: pinBounce 2s ease-in-out infinite;
-                }
-                @keyframes pinBounce {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-8px); }
                 }
 
                 /* Ping ring for map */
@@ -1362,46 +1534,10 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                 /* Evacuation marker */
                 .custom-evac-marker { background: none !important; border: none !important; }
 
-                /* Floating hero cards */
-                @keyframes floatCard1 {
-                    0%, 100% { transform: translateY(0px) rotate(-1deg); }
-                    50% { transform: translateY(-12px) rotate(0.5deg); }
-                }
-                @keyframes floatCard2 {
-                    0%, 100% { transform: translateY(0px) rotate(1deg); }
-                    50% { transform: translateY(-16px) rotate(-0.5deg); }
-                }
-                @keyframes floatCard3 {
-                    0%, 100% { transform: translateY(0px) rotate(-0.5deg); }
-                    50% { transform: translateY(-10px) rotate(1deg); }
-                }
-
                 /* Marquee ticker */
                 @keyframes marquee {
                     0% { transform: translateX(0); }
                     100% { transform: translateX(-50%); }
-                }
-
-                /* Water ripple effect */
-                .water-ripple::before {
-                    content: '';
-                    position: absolute;
-                    inset: -4px;
-                    border-radius: inherit;
-                    border: 2px solid rgba(56,189,248,0.1);
-                    animation: waterRipple 3s ease-out infinite;
-                }
-                .water-ripple::after {
-                    content: '';
-                    position: absolute;
-                    inset: -4px;
-                    border-radius: inherit;
-                    border: 2px solid rgba(56,189,248,0.1);
-                    animation: waterRipple 3s ease-out infinite 1.5s;
-                }
-                @keyframes waterRipple {
-                    0% { transform: scale(1); opacity: 0.6; }
-                    100% { transform: scale(1.15); opacity: 0; }
                 }
 
                 /* Star border animations */
@@ -1442,12 +1578,277 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
     );
 }
 
+/* ─── Animated Connector Line (How It Works) ─────────────────────────────── */
+
+function AnimatedConnectorLine({ active }: { active: boolean }) {
+    const lineRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!active || !lineRef.current) return;
+        animate(lineRef.current, {
+            width: ['0%', '100%'],
+            duration: 2000,
+            delay: 300,
+            ease: cubicBezier(.22, 1, .36, 1),
+        });
+    }, [active]);
+
+    return (
+        <div
+            ref={lineRef}
+            className="absolute inset-0 h-full bg-gradient-to-r from-cyan-500 via-blue-500 to-emerald-500 rounded-full"
+            style={{ width: '0%', opacity: 0.6 }}
+        />
+    );
+}
+
+/* ─── Step Card with anime.js ring pulse ─────────────────────────────────── */
+
+function StepCard({ isDark, grad, ring, stepsIn, index, children }: {
+    isDark: boolean; grad: string; ring: string; stepsIn: boolean; index: number; children: ReactNode;
+}) {
+    const cardRef = useRef<HTMLDivElement>(null);
+    const ringRef = useRef<HTMLDivElement>(null);
+
+    // Ring pulse animation on hover via anime.js
+    useEffect(() => {
+        const el = cardRef.current;
+        if (!el) return;
+
+        const onEnter = () => {
+            if (ringRef.current) {
+                utils.remove(ringRef.current);
+                animate(ringRef.current, {
+                    boxShadow: [
+                        '0 0 0 0px rgba(56,189,248,0.25)',
+                        '0 0 0 12px rgba(56,189,248,0)',
+                    ],
+                    opacity: [1, 0],
+                    duration: 1500,
+                    ease: 'outExpo',
+                    loop: true,
+                });
+            }
+        };
+        const onLeave = () => {
+            if (ringRef.current) {
+                utils.remove(ringRef.current);
+                ringRef.current.style.opacity = '0';
+            }
+        };
+
+        el.addEventListener('mouseenter', onEnter);
+        el.addEventListener('mouseleave', onLeave);
+        return () => {
+            el.removeEventListener('mouseenter', onEnter);
+            el.removeEventListener('mouseleave', onLeave);
+            if (ringRef.current) utils.remove(ringRef.current);
+        };
+    }, []);
+
+    return (
+        <div
+            ref={cardRef}
+            className={`group/step relative z-10 mb-6 sm:mb-8 flex size-24 sm:size-36 flex-col items-center justify-center rounded-[22px] sm:rounded-[28px] border shadow-2xl ${ring} transition-all duration-500 hover:scale-110 cursor-pointer ${isDark ? 'border-white/[0.05] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-3xl' : 'border-neutral-200/70 bg-white hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'}`}
+        >
+            <div ref={ringRef} className="absolute inset-0 rounded-[28px]" style={{ opacity: 0 }} />
+            <div className={`rounded-xl sm:rounded-2xl bg-gradient-to-br ${grad} p-3 sm:p-4 shadow-xl transition-all duration-500 group-hover/step:-translate-y-1 group-hover/step:shadow-2xl`}>
+                {children}
+                <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
+            </div>
+        </div>
+    );
+}
+
+/* ─── Severity Grid with anime.js stagger ─────────────────────────────────── */
+
+function SeverityGrid({ isDark, sevIn, activeSev, setActiveSev }: {
+    isDark: boolean; sevIn: boolean; activeSev: number | null; setActiveSev: (v: number | null) => void;
+}) {
+    const gridRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!sevIn || !gridRef.current) return;
+        const cards = gridRef.current.querySelectorAll('.sev-card');
+        animate(cards, {
+            translateY: [50, 0],
+            opacity: [0, 1],
+            rotate: [3, 0],
+            delay: stagger(120),
+            duration: 800,
+            ease: 'outExpo',
+        });
+    }, [sevIn]);
+
+    const levels = [
+        { level: 'Low', color: '#22c55e', icon: CheckCircle2, meaning: 'Passable. Monitor only.', detail: 'Accessible area. Continuous monitoring recommended. No immediate action.' },
+        { level: 'Moderate', color: '#eab308', icon: AlertTriangle, meaning: 'Caution — may worsen.', detail: 'Exercise caution. May deteriorate. Prepare for possible response.' },
+        { level: 'High', color: '#f97316', icon: AlertTriangle, meaning: 'Unsafe. Prompt action.', detail: 'Area is unsafe. Prompt dispatch required. Avoid unless responding.' },
+        { level: 'Critical', color: '#ef4444', icon: Siren, meaning: 'Life-threatening.', detail: 'Immediate threat to life. Emergency dispatch now. All units respond.' },
+    ] as const;
+
+    return (
+        <div ref={gridRef} className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            {levels.map((s, i) => {
+                const Icon = s.icon;
+                const open = activeSev === i;
+                return (
+                    <SpotlightCard
+                        key={s.level}
+                        className={`sev-card group cursor-pointer rounded-2xl sm:rounded-[20px] border p-4 transition-all duration-500 sm:p-7 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'} ${open ? isDark ? 'scale-[1.03] border-white/[0.12] shadow-2xl' : 'scale-[1.03] border-blue-200/80 shadow-2xl shadow-blue-500/[0.06] ring-1 ring-blue-100/50' : ''}`}
+                        spotlightColor={`${s.color}15`}
+                    >
+                        <div onClick={() => setActiveSev(open ? null : i)} className="relative">
+                            {/* Shimmer sweep */}
+                            <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1200ms] ease-in-out bg-gradient-to-r from-transparent via-white/[0.02] to-transparent skew-x-[-20deg]" />
+
+                            <div className="relative mb-3 sm:mb-5 inline-flex items-center gap-2 sm:gap-2.5 rounded-xl sm:rounded-[14px] px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold transition-all duration-500 group-hover:scale-105"
+                                style={{ backgroundColor: s.color + '12', color: s.color, boxShadow: open ? `0 0 24px ${s.color}20` : `0 0 0 ${s.color}00` }}
+                            >
+                                <Icon className="size-4 sm:size-[18px] transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" />
+                                {s.level}
+                            </div>
+                            <p className={`relative text-[14px] font-medium transition-colors duration-300 ${isDark ? 'text-white/70 group-hover:text-white/85' : 'text-neutral-600 group-hover:text-neutral-800'}`}>{s.meaning}</p>
+                            <div className="overflow-hidden transition-all duration-500"
+                                style={{ maxHeight: open ? '80px' : '0', opacity: open ? 1 : 0 }}
+                            >
+                                <p className={`mt-3 text-[13px] leading-relaxed ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>{s.detail}</p>
+                            </div>
+                            <div className="relative mt-4 h-[2px] rounded-full overflow-hidden transition-all duration-700"
+                                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)', width: '100%' }}
+                            >
+                                <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-700"
+                                    style={{ backgroundColor: s.color + '50', width: open ? '100%' : '0%' }}
+                                />
+                            </div>
+                        </div>
+                    </SpotlightCard>
+                );
+            })}
+        </div>
+    );
+}
+
+/* ─── Roles Grid with anime.js stagger ────────────────────────────────────── */
+
+function RolesGrid({ isDark, rolesIn }: { isDark: boolean; rolesIn: boolean }) {
+    const gridRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!rolesIn || !gridRef.current) return;
+        const cards = gridRef.current.querySelectorAll('.role-card');
+        animate(cards, {
+            translateX: ((_el: any, i: number) => [i === 0 ? -60 : i === 2 ? 60 : 0, 0]) as any,
+            translateY: [30, 0],
+            opacity: [0, 1],
+            delay: stagger(150),
+            duration: 900,
+            ease: 'outExpo',
+        });
+
+        // Animate icons inside cards
+        const icons = gridRef.current.querySelectorAll('.role-icon');
+        animate(icons, {
+            scale: [0.3, 1],
+            rotate: [-15, 0],
+            opacity: [0, 1],
+            delay: stagger(150, { start: 200 }),
+            duration: 700,
+            ease: 'outBack',
+        });
+    }, [rolesIn]);
+
+    const roles = [
+        { role: 'Residents',     icon: Home, grad: 'from-sky-500 to-blue-600', accent: 'bg-sky-500', accentColor: '#38bdf8', points: ['Report hazards with GPS + photos', 'Track your report status live', 'Receive official MDRRMO alerts', 'View all hazards on the map'] },
+        { role: 'Responders',    icon: Truck, grad: 'from-cyan-500 to-teal-600', accent: 'bg-cyan-500', accentColor: '#06b6d4', points: ['Receive assigned incident queue', 'Navigate directly to hazard', 'Update status en route / on scene', 'Upload field evidence'] },
+        { role: 'MDRRMO Admin',  icon: Shield, grad: 'from-violet-500 to-indigo-600', accent: 'bg-violet-500', accentColor: '#a78bfa', points: ['Verify & triage incoming reports', 'Assign responders from dashboard', 'Publish official public advisories', 'Monitor all active incidents'] },
+    ] as const;
+
+    return (
+        <div ref={gridRef} className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {roles.map((r, i) => {
+                const Icon = r.icon;
+                return (
+                    <SpotlightCard
+                        key={r.role}
+                        className={`role-card group rounded-2xl sm:rounded-[20px] border p-5 transition-all duration-500 sm:p-9 hover:-translate-y-3 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'}`}
+                        spotlightColor={isDark ? `rgba(${r.role === 'Residents' ? '56,189,248' : r.role === 'Responders' ? '6,182,212' : '167,139,250'}, 0.1)` : `rgba(${r.role === 'Residents' ? '56,189,248' : r.role === 'Responders' ? '6,182,212' : '167,139,250'}, 0.08)`}
+                    >
+                        {/* Shimmer sweep */}
+                        <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1200ms] ease-in-out bg-gradient-to-r from-transparent via-white/[0.03] to-transparent skew-x-[-20deg]" />
+
+                        <div className={`role-icon relative mb-4 sm:mb-6 inline-flex rounded-[18px] sm:rounded-[22px] bg-gradient-to-br ${r.grad} p-3 sm:p-4 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-2xl`}>
+                            <Icon className="size-6 sm:size-7 text-white transition-transform duration-500 group-hover:scale-110" />
+                            <div className="absolute inset-[1px] rounded-[17px] sm:rounded-[21px] bg-gradient-to-b from-white/20 to-transparent" />
+                        </div>
+                        <h3 className={`mb-1.5 text-xl font-bold transition-colors duration-300 ${isDark ? 'text-white/90 group-hover:text-white' : 'text-neutral-800 group-hover:text-neutral-900'}`}>{r.role}</h3>
+                        <div className={`mb-6 h-[3px] w-10 rounded-full ${r.accent} opacity-50 transition-all duration-700 group-hover:w-24 group-hover:opacity-100`} />
+                        <ul className="space-y-3.5">
+                            {r.points.map((p, pi) => (
+                                <li key={p} className={`flex items-start gap-3 text-[14px] font-[350] transition-all duration-500 ${isDark ? 'text-white/40 group-hover:text-white/55' : 'text-neutral-500 group-hover:text-neutral-600'}`}
+                                    style={{ transitionDelay: `${pi * 50}ms` }}
+                                >
+                                    <CheckCircle2 className="mt-[3px] size-4 shrink-0 text-emerald-500/50 transition-all duration-500 group-hover:text-emerald-400/80 group-hover:scale-110" />
+                                    <span>{p}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </SpotlightCard>
+                );
+            })}
+        </div>
+    );
+}
+
+/* ─── CTA Ripple Rings (anime.js replacement for water-ripple CSS) ────────── */
+
+function CtaRippleRings({ active }: { active: boolean }) {
+    const ring1Ref = useRef<HTMLDivElement>(null);
+    const ring2Ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!active) return;
+
+        if (ring1Ref.current) {
+            animate(ring1Ref.current, {
+                scale: [1, 1.15],
+                opacity: [0.6, 0],
+                duration: 3000,
+                ease: 'outExpo',
+                loop: true,
+            });
+        }
+
+        if (ring2Ref.current) {
+            animate(ring2Ref.current, {
+                scale: [1, 1.15],
+                opacity: [0.6, 0],
+                duration: 3000,
+                delay: 1500,
+                ease: 'outExpo',
+                loop: true,
+            });
+        }
+
+        return () => {
+            if (ring1Ref.current) utils.remove(ring1Ref.current);
+            if (ring2Ref.current) utils.remove(ring2Ref.current);
+        };
+    }, [active]);
+
+    return (
+        <>
+            <div ref={ring1Ref} className="pointer-events-none absolute -inset-1 rounded-inherit border-2 border-cyan-400/10 rounded-[20px] sm:rounded-[28px]" style={{ opacity: 0 }} />
+            <div ref={ring2Ref} className="pointer-events-none absolute -inset-1 rounded-inherit border-2 border-cyan-400/10 rounded-[20px] sm:rounded-[28px]" style={{ opacity: 0 }} />
+        </>
+    );
+}
+
 /* ─── Phone Demo (synced phone + timeline) ─────────────────────────────── */
 
 const DEMO_STEPS = [
-    { icon: MapPin, gradient: 'from-sky-500 to-blue-600', color: '#38bdf8', title: 'Pin your location', desc: 'GPS auto-detects where you are. Drag the marker to fine-tune the exact position.' },
+    { icon: MapPin, gradient: 'from-sky-500 to-blue-600', color: '#38bdf8', title: 'Set flood depth', desc: 'GPS auto-detects your location. Select how deep the flood is — severity is determined automatically.' },
     { icon: Camera, gradient: 'from-violet-500 to-indigo-600', color: '#a78bfa', title: 'Snap photo evidence', desc: 'Take a photo or pick from gallery. AI verifies it matches a real hazard scene.' },
-    { icon: AlertTriangle, gradient: 'from-amber-500 to-orange-600', color: '#fbbf24', title: 'Set severity level', desc: 'Choose from Low to Critical. Each level triggers different response priorities.' },
     { icon: Zap, gradient: 'from-emerald-500 to-green-600', color: '#34d399', title: 'Submit & track', desc: 'Your report goes live instantly. Track verification and resolution in real time.' },
 ] as const;
 
@@ -1455,23 +1856,72 @@ function PhoneDemo({ visible }: { visible: boolean }) {
     const { resolvedAppearance } = useAppearance();
     const isDark = resolvedAppearance === 'dark';
     const [active, setActive] = useState(0);
+    const phoneRef = useRef<HTMLDivElement>(null);
+    const pinBounceRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!visible) return;
-        const t = setInterval(() => setActive(p => (p + 1) % 4), 3500);
+        const t = setInterval(() => setActive(p => (p + 1) % 3), 3500);
         return () => clearInterval(t);
     }, [visible]);
 
+    // Phone float animation with anime.js
+    useEffect(() => {
+        if (!visible || !phoneRef.current) return;
+
+        // Entrance
+        animate(phoneRef.current, {
+            translateY: [40, 0],
+            opacity: [0, 1],
+            duration: 1200,
+            delay: 300,
+            ease: 'outExpo',
+        });
+
+        // Floating loop (delayed after entrance)
+        const floatTimeout = setTimeout(() => {
+            if (phoneRef.current) {
+                animate(phoneRef.current, {
+                    translateY: [0, -10],
+                    duration: 4000,
+                    ease: 'inOutSine',
+                    alternate: true,
+                    loop: true,
+                });
+            }
+        }, 1500);
+
+        return () => {
+            clearTimeout(floatTimeout);
+            if (phoneRef.current) utils.remove(phoneRef.current);
+        };
+    }, [visible]);
+
+    // Pin bounce animation with anime.js
+    useEffect(() => {
+        if (!pinBounceRef.current) return;
+        animate(pinBounceRef.current, {
+            translateY: [0, -8],
+            duration: 1000,
+            ease: 'inOutSine',
+            alternate: true,
+            loop: true,
+        });
+        return () => {
+            if (pinBounceRef.current) utils.remove(pinBounceRef.current);
+        };
+    }, []);
+
     return (
         <div className={`grid items-center gap-8 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_380px] transition-all duration-[800ms] ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            {/* Left — Timeline steps */}
+            {/* Left -- Timeline steps */}
             <div className="relative order-2 lg:order-1">
                 {/* Vertical connector line */}
                 <div className="absolute left-[23px] top-8 bottom-8 hidden lg:block">
                     <div className={`h-full w-px bg-gradient-to-b ${isDark ? 'from-white/[0.04] via-white/[0.06] to-white/[0.04]' : 'from-neutral-200/30 via-neutral-200/60 to-neutral-200/30'}`} />
                     {/* Animated fill */}
                     <div className="absolute top-0 left-0 w-px transition-all duration-700 ease-out rounded-full"
-                        style={{ height: `${(active / 3) * 100}%`, background: `linear-gradient(to bottom, ${DEMO_STEPS[0].color}60, ${DEMO_STEPS[active].color}80)` }}
+                        style={{ height: `${(active / 2) * 100}%`, background: `linear-gradient(to bottom, ${DEMO_STEPS[0].color}60, ${DEMO_STEPS[active].color}80)` }}
                     />
                 </div>
 
@@ -1534,11 +1984,9 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                 </div>
             </div>
 
-            {/* Right — Phone */}
+            {/* Right -- Phone */}
             <div className="relative order-1 lg:order-2 flex justify-center lg:justify-end" style={{ perspective: '1200px' }}>
-                <div className={`phone-float relative transition-all duration-[1200ms] ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-16'}`}
-                    style={{ transform: visible ? 'rotateY(-4deg) rotateX(2deg)' : 'rotateY(-4deg) rotateX(2deg) translateY(40px)', transitionDelay: '300ms' }}
-                >
+                <div ref={phoneRef} className="relative" style={{ opacity: 0, transform: 'rotateY(-4deg) rotateX(2deg)' }}>
                     {/* Ambient glow */}
                     <div className="absolute -inset-12 rounded-[60px] opacity-50 blur-[80px] transition-colors duration-700"
                         style={{ background: `radial-gradient(circle, ${DEMO_STEPS[active].color}12, transparent 70%)` }}
@@ -1587,12 +2035,12 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                     <AppLogoIcon className="size-8 rounded-xl shadow-md" />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-[12px] font-bold text-white/80 transition-all duration-300">{DEMO_STEPS[active].title}</p>
-                                        <p className="text-[9px] text-white/25 font-medium">Step {active + 1} of 4</p>
+                                        <p className="text-[9px] text-white/25 font-medium">Step {active + 1} of 3</p>
                                     </div>
                                     <div className="flex items-center gap-1">
-                                        {[0, 1, 2, 3].map(i => (
+                                        {[0, 1, 2].map(i => (
                                             <div key={i} className={`h-[4px] rounded-full transition-all duration-500 ${i <= active ? 'w-3' : 'w-[4px]'}`}
-                                                style={{ backgroundColor: i <= active ? DEMO_STEPS[Math.min(i, 3)].color : 'rgba(255,255,255,0.06)' }}
+                                                style={{ backgroundColor: i <= active ? DEMO_STEPS[Math.min(i, 2)].color : 'rgba(255,255,255,0.06)' }}
                                             />
                                         ))}
                                     </div>
@@ -1600,30 +2048,42 @@ function PhoneDemo({ visible }: { visible: boolean }) {
 
                                 {/* Screen content */}
                                 <div className="relative h-[380px] sm:h-[410px]">
-                                    {/* Screen 0: Location */}
+                                    {/* Screen 0: Flood Depth */}
                                     <div className={`absolute inset-0 transition-all duration-500 ${active === 0 ? 'opacity-100 translate-y-0' : active > 0 ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
-                                        <div className="relative h-full bg-[#070b12] overflow-hidden">
-                                            {/* Map grid */}
-                                            <div className="absolute inset-0 opacity-40" style={{ backgroundImage: 'linear-gradient(rgba(56,189,248,.06) 1px, transparent 1px), linear-gradient(90deg, rgba(56,189,248,.06) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
-                                            {/* Roads */}
-                                            <div className="absolute left-0 right-0 top-[45%] h-px bg-white/[0.06]" />
-                                            <div className="absolute top-0 bottom-0 left-[35%] w-px bg-white/[0.06]" />
-                                            <div className="absolute top-0 bottom-0 left-[70%] w-px bg-white/[0.04]" />
-                                            {/* Gradient fade */}
-                                            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#070b12]/90" />
-                                            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_30%,#070b12_100%)]" />
-                                            {/* Pin */}
-                                            <div className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-                                                <div className="phone-pin-bounce">
-                                                    <MapPin className="size-9 text-red-500 fill-red-500 drop-shadow-[0_4px_12px_rgba(239,68,68,0.4)]" />
+                                        <div className="flex flex-col h-full p-3.5 gap-2">
+                                            <p className="text-[11px] font-semibold text-white/30 px-1 mb-1">How deep is the flood?</p>
+                                            {([
+                                                { level: 'Ankle-deep', color: '#22c55e', sub: '~ 1 ft — passable with caution', selected: false },
+                                                { level: 'Knee-deep', color: '#eab308', sub: '~ 1.5-2 ft — difficult for vehicles', selected: true },
+                                                { level: 'Waist-deep', color: '#f97316', sub: '~ 3 ft — unsafe for pedestrians', selected: false },
+                                                { level: 'Chest & above', color: '#ef4444', sub: '> 4 ft — life-threatening', selected: false },
+                                            ] as const).map((s) => (
+                                                <div
+                                                    key={s.level}
+                                                    className={`flex items-center gap-3 rounded-2xl px-4 py-3 border transition-all duration-300 ${
+                                                        s.selected
+                                                            ? 'border-white/[0.1] bg-white/[0.04] shadow-lg'
+                                                            : 'border-white/[0.03] bg-white/[0.01]'
+                                                    }`}
+                                                >
+                                                    <div className={`relative size-4 rounded-full border-2 transition-all duration-300 ${s.selected ? 'border-transparent' : 'border-white/10'}`}
+                                                        style={s.selected ? { backgroundColor: s.color, boxShadow: `0 0 12px ${s.color}50` } : {}}
+                                                    >
+                                                        {!s.selected && <div className="absolute inset-1 rounded-full bg-white/[0.04]" />}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <span className={`text-[12px] font-semibold transition-colors ${s.selected ? 'text-white/85' : 'text-white/30'}`}>{s.level}</span>
+                                                        <p className={`text-[9px] ${s.selected ? 'text-white/30' : 'text-white/15'}`}>{s.sub}</p>
+                                                    </div>
+                                                    {s.selected && (
+                                                        <div className="flex size-5 items-center justify-center rounded-full" style={{ backgroundColor: s.color + '20' }}>
+                                                            <CheckCircle2 className="size-3" style={{ color: s.color }} />
+                                                        </div>
+                                                    )}
                                                 </div>
-                                                <div className="mt-0.5 h-[6px] w-5 rounded-full bg-red-500/15 blur-[3px]" />
-                                            </div>
-                                            {/* Ripple rings around pin */}
-                                            <div className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 size-20 rounded-full border border-sky-400/10 animate-[pingRing_3s_ease-out_infinite]" />
-                                            <div className="absolute left-1/2 top-[38%] -translate-x-1/2 -translate-y-1/2 size-20 rounded-full border border-sky-400/10 animate-[pingRing_3s_ease-out_infinite_1s]" />
+                                            ))}
                                             {/* GPS bar */}
-                                            <div className="absolute bottom-4 left-3 right-3 flex items-center gap-2.5 rounded-2xl bg-[#0c1019]/90 px-4 py-3 backdrop-blur-xl border border-white/[0.06] shadow-xl">
+                                            <div className="mt-auto flex items-center gap-2.5 rounded-2xl bg-[#0c1019]/90 px-4 py-3 border border-white/[0.06]">
                                                 <div className="flex size-7 items-center justify-center rounded-lg bg-sky-500/15">
                                                     <Navigation className="size-3.5 text-sky-400" />
                                                 </div>
@@ -1681,50 +2141,8 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                         </div>
                                     </div>
 
-                                    {/* Screen 2: Severity */}
-                                    <div className={`absolute inset-0 transition-all duration-500 ${active === 2 ? 'opacity-100 translate-y-0' : active > 2 ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
-                                        <div className="flex flex-col h-full p-3.5 gap-2">
-                                            <p className="text-[11px] font-semibold text-white/30 px-1 mb-1">Select severity level</p>
-                                            {([
-                                                { level: 'Low', color: '#22c55e', sub: 'Passable, monitor only', selected: false },
-                                                { level: 'Moderate', color: '#eab308', sub: 'Caution, may worsen', selected: false },
-                                                { level: 'High', color: '#f97316', sub: 'Unsafe, prompt action', selected: true },
-                                                { level: 'Critical', color: '#ef4444', sub: 'Life-threatening', selected: false },
-                                            ] as const).map((s) => (
-                                                <div
-                                                    key={s.level}
-                                                    className={`flex items-center gap-3 rounded-2xl px-4 py-3 border transition-all duration-300 ${
-                                                        s.selected
-                                                            ? 'border-white/[0.1] bg-white/[0.04] shadow-lg'
-                                                            : 'border-white/[0.03] bg-white/[0.01]'
-                                                    }`}
-                                                >
-                                                    <div className={`relative size-4 rounded-full border-2 transition-all duration-300 ${s.selected ? 'border-transparent' : 'border-white/10'}`}
-                                                        style={s.selected ? { backgroundColor: s.color, boxShadow: `0 0 12px ${s.color}50` } : {}}
-                                                    >
-                                                        {!s.selected && <div className="absolute inset-1 rounded-full bg-white/[0.04]" />}
-                                                    </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <span className={`text-[12px] font-semibold transition-colors ${s.selected ? 'text-white/85' : 'text-white/30'}`}>{s.level}</span>
-                                                        <p className={`text-[9px] ${s.selected ? 'text-white/30' : 'text-white/15'}`}>{s.sub}</p>
-                                                    </div>
-                                                    {s.selected && (
-                                                        <div className="flex size-5 items-center justify-center rounded-full" style={{ backgroundColor: s.color + '20' }}>
-                                                            <CheckCircle2 className="size-3" style={{ color: s.color }} />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                            {/* Description field */}
-                                            <div className="mt-1 flex-1 rounded-2xl bg-white/[0.02] border border-white/[0.04] p-3">
-                                                <p className="text-[10px] text-white/15 leading-relaxed">Road flooding near barangay hall. Water level approximately knee-deep...</p>
-                                                <div className="mt-2 h-px bg-white/[0.03] w-8 animate-pulse" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Screen 3: Success */}
-                                    <div className={`absolute inset-0 transition-all duration-500 ${active === 3 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                                    {/* Screen 2: Success */}
+                                    <div className={`absolute inset-0 transition-all duration-500 ${active === 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
                                         <div className="flex flex-col h-full items-center justify-center p-5 text-center">
                                             {/* Success icon */}
                                             <div className="relative mb-5">
@@ -1812,7 +2230,7 @@ function EvacuationMap({ centers }: { centers: EvacuationCenterData[] }) {
 
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-            // Map tiles — dark or light
+            // Map tiles -- dark or light
             const tileUrl = isDark
                 ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
                 : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';

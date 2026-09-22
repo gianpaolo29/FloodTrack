@@ -53,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/user/profile', [UserController::class, 'update']);
     Route::post('/user/password', [UserController::class, 'changePassword']);
     Route::patch('/user/duty-status', [UserController::class, 'updateDutyStatus']);
+    Route::post('/user/location', [UserController::class, 'updateLocation']);
     Route::patch('/user/notification-preferences', [UserController::class, 'updateNotificationPrefs']);
 
     // Reports (read access for all authenticated users)

@@ -654,6 +654,7 @@ export default function AdminReportShow({ report, teams }: Props) {
                                             {teams.map((t) => (
                                                 <option key={t.id} value={t.id}>
                                                     {t.name} — {t.members.length} member{t.members.length !== 1 ? 's' : ''}
+                                                    {t.distance_km != null ? ` · ${t.distance_km} km` : ''}
                                                     {(t.active_assignments ?? 0) > 0 ? ` · ${t.active_assignments} active` : ''}
                                                 </option>
                                             ))}

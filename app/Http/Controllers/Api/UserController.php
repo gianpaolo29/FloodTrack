@@ -35,9 +35,35 @@ class UserController extends Controller
             'is_on_duty' => 'required|boolean',
         ]);
 
-        $request->user()->update($data);
+        $user = $request->user();
+        $user->update($data);
 
-        return response()->json($request->user()->fresh());
+        // Clear location when going off duty
+        if (! $data['is_on_duty']) {
+            $user->update([
+                'current_latitude'  => null,
+                'current_longitude' => null,
+                'location_updated_at' => null,
+            ]);
+        }
+
+        return response()->json($user->fresh());
+    }
+
+    public function updateLocation(Request $request)
+    {
+        $data = $request->validate([
+            'latitude'  => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
+        ]);
+
+        $request->user()->update([
+            'current_latitude'    => $data['latitude'],
+            'current_longitude'   => $data['longitude'],
+            'location_updated_at' => now(),
+        ]);
+
+        return response()->json(['message' => 'Location updated.']);
     }
 
     public function changePassword(Request $request)

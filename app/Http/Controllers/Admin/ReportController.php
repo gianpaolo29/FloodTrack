@@ -7,6 +7,7 @@ use App\Http\Traits\HasPeriodStats;
 use App\Jobs\GenerateAdvisoryJob;
 use App\Models\Report;
 use App\Models\ReportResponder;
+use App\Models\User;
 use App\Models\ReportStatusUpdate;
 use App\Models\Team;
 use App\Notifications\ReportStatusChanged;
@@ -53,10 +54,19 @@ class ReportController extends Controller
             ->whereNotNull('longitude')
             ->get();
 
+        $responders = User::where('role', 'responder')
+            ->where('is_on_duty', true)
+            ->whereNotNull('current_latitude')
+            ->whereNotNull('current_longitude')
+            ->select(['id', 'name', 'avatar', 'team_id', 'current_latitude', 'current_longitude', 'location_updated_at'])
+            ->with('team:id,name')
+            ->get();
+
         return Inertia::render('admin/reports/map', [
             'reports'            => $reports,
             'filters'            => $request->only(['status', 'severity', 'date_from', 'date_to']),
             'evacuation_centers' => $evacuationCenters,
+            'responders'         => $responders,
         ]);
     }
 
@@ -151,10 +161,28 @@ class ReportController extends Controller
                 'team_members'    => $teamMembers,
                 'member_statuses' => $memberStatuses,
             ]),
-            'teams'       => Team::with('members:id,name,team_id')
+            'teams'       => Team::with([
+                    'members:id,name,team_id',
+                    'leader:id,current_latitude,current_longitude,home_latitude,home_longitude',
+                ])
                 ->where('is_active', true)
                 ->withCount(['reports as active_assignments' => fn ($q) => $q->where('status', 'assigned')])
-                ->get(['id', 'name', 'leader_id']),
+                ->get(['id', 'name', 'leader_id'])
+                ->map(function ($team) use ($report) {
+                    $leader = $team->leader;
+                    $lat = $leader->current_latitude ?? $leader->home_latitude ?? null;
+                    $lng = $leader->current_longitude ?? $leader->home_longitude ?? null;
+
+                    $team->distance_km = ($lat && $lng && $report->latitude && $report->longitude)
+                        ? round($this->haversine($report->latitude, $report->longitude, $lat, $lng), 1)
+                        : null;
+
+                    unset($team->leader); // don't leak leader location to frontend
+
+                    return $team;
+                })
+                ->sortBy('distance_km')
+                ->values(),
         ]);
     }
 
@@ -483,5 +511,16 @@ class ReportController extends Controller
         // Real-time socket
         SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => $newStatus]);
         SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => $newStatus]);
+    }
+
+    /** Haversine distance between two points in kilometres. */
+    private function haversine(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $r = 6371; // Earth radius in km
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) ** 2;
+
+        return $r * 2 * atan2(sqrt($a), sqrt(1 - $a));
     }
 }

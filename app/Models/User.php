@@ -27,6 +27,9 @@ class User extends Authenticatable
         'home_address',
         'home_latitude',
         'home_longitude',
+        'current_latitude',
+        'current_longitude',
+        'location_updated_at',
         'notification_prefs',
         'email_verified_at',
     ];
@@ -56,6 +59,7 @@ class User extends Authenticatable
             'is_on_duty'           => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
             'notification_prefs'   => 'array',
+            'location_updated_at'  => 'datetime',
         ];
     }
 

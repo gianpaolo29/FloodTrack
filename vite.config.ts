@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
 
-export default defineConfig({
+export default defineConfig(({ isSsrBuild, command }) => ({
     server: {
         host: 'localhost',
         https: false,
@@ -20,7 +20,9 @@ export default defineConfig({
             refresh: true,
             detectTls: false,
         }),
-        inertia(),
+        inertia({
+            ssr: command === 'build',
+        }),
         react({
             babel: {
                 plugins: ['babel-plugin-react-compiler'],
@@ -31,4 +33,4 @@ export default defineConfig({
             formVariants: true,
         }),
     ],
-});
+}));

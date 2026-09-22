@@ -20,6 +20,7 @@ export interface Team {
     leader_id: number;
     members: TeamMember[];
     active_assignments?: number;
+    distance_km?: number | null;
 }
 
 export interface MemberStatus {
@@ -138,6 +139,17 @@ export interface Alert {
     target_barangays: string[] | null;
     creator?: { id: number; name: string };
     created_at: string;
+}
+
+export interface MapResponder {
+    id: number;
+    name: string;
+    avatar_url: string | null;
+    team_id: number | null;
+    team?: { id: number; name: string } | null;
+    current_latitude: number;
+    current_longitude: number;
+    location_updated_at: string | null;
 }
 
 export interface Responder {

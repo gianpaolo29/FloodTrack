@@ -1,11 +1,12 @@
 'use no memo';
 import { Head, Link, router } from '@inertiajs/react';
 import { GoogleMap, InfoWindowF, MarkerF, OverlayViewF, useJsApiLoader } from '@react-google-maps/api';
-import { Building2, CalendarDays, ChevronDown, Flame, List, MapPin, SlidersHorizontal, X } from 'lucide-react';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Building2, CalendarDays, ChevronDown, Clock, Flame, List, MapPin, Radio, SlidersHorizontal, Users, X } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { io, type Socket } from 'socket.io-client';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import type { EvacuationCenter, Report, ReportStatus, Severity } from '@/types/admin';
+import type { EvacuationCenter, MapResponder, Report, ReportStatus, Severity } from '@/types/admin';
 import { EVACUATION_CENTER_TYPE_LABELS, SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
 
 interface Filters {
@@ -19,6 +20,7 @@ interface Props {
     reports: Report[];
     filters: Filters;
     evacuation_centers: EvacuationCenter[];
+    responders: MapResponder[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -39,7 +41,7 @@ const SEVERITY_META: Record<Severity, { color: string; hex: string; rgb: string;
 
 const SEVERITY_WEIGHT: Record<Severity, number> = { critical: 4, high: 3, moderate: 2, low: 1 };
 const STATUS_MULTIPLIER: Record<ReportStatus, number> = {
-    verified: 1.5, assigned: 1.5, resolved: 1.2, pending: 0.8, rejected: 0.0,
+    verified: 1.5, acknowledged: 1.5, assigned: 1.5, resolved: 1.2, pending: 0.8, rejected: 0.0,
 };
 
 /** Custom teardrop SVG pin per severity */
@@ -63,6 +65,19 @@ function createEvacMarker(isFull: boolean): string {
     </svg>`;
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
+
+/** Blue circle marker for responders */
+function createResponderMarker(): string {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.25"/></filter>
+        <circle filter="url(#s)" cx="16" cy="16" r="13" fill="#2563eb" stroke="white" stroke-width="2.5"/>
+        <circle cx="16" cy="12" r="4" fill="white" opacity="0.9"/>
+        <path d="M9 22.5c0-3.5 3.1-5.5 7-5.5s7 2 7 5.5" fill="white" opacity="0.9"/>
+    </svg>`;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+const RESPONDER_MARKER_URL = createResponderMarker();
 
 const mapContainerStyle = { width: '100%', height: '100%' };
 
@@ -165,18 +180,132 @@ function FilterSelect({ value, onChange, options, placeholder }: {
     );
 }
 
+/* ─── Last-seen helper ─── */
+function formatLastSeen(iso: string | null): string {
+    if (!iso) return 'Unknown';
+    const diff = Date.now() - new Date(iso).getTime();
+    const secs = Math.floor(diff / 1000);
+    if (secs < 30) return 'Just now';
+    if (secs < 60) return `${secs}s ago`;
+    const mins = Math.floor(secs / 60);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function isStale(iso: string | null): boolean {
+    if (!iso) return true;
+    return Date.now() - new Date(iso).getTime() > 10 * 60 * 1000; // >10 min
+}
+
+/* ─── Live responder state from Socket.IO ─── */
+interface LiveResponder {
+    id: number;
+    name: string;
+    latitude: number;
+    longitude: number;
+    avatar_url: string | null;
+    team_name: string | null;
+    location_updated_at: string;
+}
+
+function useResponderTracking(initial: MapResponder[]): LiveResponder[] {
+    const [responders, setResponders] = useState<Map<number, LiveResponder>>(() => {
+        const map = new Map<number, LiveResponder>();
+        for (const r of initial) {
+            map.set(r.id, {
+                id: r.id,
+                name: r.name,
+                latitude: r.current_latitude,
+                longitude: r.current_longitude,
+                avatar_url: r.avatar_url,
+                team_name: r.team?.name ?? null,
+                location_updated_at: r.location_updated_at ?? new Date().toISOString(),
+            });
+        }
+        return map;
+    });
+
+    useEffect(() => {
+        const socketUrl = (import.meta.env.VITE_SOCKET_URL ?? 'http://localhost:3001').replace(/\/$/, '');
+
+        let socket: Socket | null = null;
+
+        // Fetch a Sanctum token for Socket.IO auth
+        fetch('/admin/socket-token', {
+            headers: {
+                'Accept': 'application/json',
+                'X-XSRF-TOKEN': decodeURIComponent(
+                    document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? ''
+                ),
+            },
+        })
+            .then((res) => res.ok ? res.json() : null)
+            .then((data) => {
+                if (!data?.token) return;
+
+                socket = io(socketUrl, {
+                    auth: { token: data.token },
+                    transports: ['websocket'],
+                    reconnection: true,
+                    reconnectionAttempts: 5,
+                    reconnectionDelay: 3000,
+                });
+
+                socket.on('responder-location', (payload: { user_id: number; name: string; latitude: number; longitude: number; timestamp: string }) => {
+                    setResponders((prev) => {
+                        const next = new Map(prev);
+                        const existing = next.get(payload.user_id);
+                        next.set(payload.user_id, {
+                            id: payload.user_id,
+                            name: payload.name,
+                            latitude: payload.latitude,
+                            longitude: payload.longitude,
+                            avatar_url: existing?.avatar_url ?? null,
+                            team_name: existing?.team_name ?? null,
+                            location_updated_at: payload.timestamp,
+                        });
+                        return next;
+                    });
+                });
+            })
+            .catch(() => {
+                // Socket connection is optional — map still shows initial positions
+            });
+
+        return () => {
+            socket?.disconnect();
+        };
+    }, []);
+
+    return useMemo(() => Array.from(responders.values()), [responders]);
+}
+
 /* ─── Main page ─── */
-export default function AdminReportsMap({ reports, filters, evacuation_centers }: Props) {
+export default function AdminReportsMap({ reports, filters, evacuation_centers, responders: initialResponders }: Props) {
     const { isLoaded } = useJsApiLoader({
         googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY ?? '',
         libraries: ['places'] as ('places')[],
     });
 
-    const [selectedReport, setSelectedReport]       = useState<Report | null>(null);
-    const [selectedEvacCenter, setSelectedEvacCenter] = useState<EvacuationCenter | null>(null);
-    const [viewMode, setViewMode]                   = useState<ViewMode>('heatmap');
-    const [showEvacCenters, setShowEvacCenters]     = useState(false);
-    const [zoom, setZoom]                           = useState(12);
+    const liveResponders = useResponderTracking(initialResponders);
+
+    const [selectedReport, setSelectedReport]           = useState<Report | null>(null);
+    const [selectedEvacCenter, setSelectedEvacCenter]   = useState<EvacuationCenter | null>(null);
+    const [selectedResponder, setSelectedResponder]     = useState<LiveResponder | null>(null);
+    const [viewMode, setViewMode]                       = useState<ViewMode>('heatmap');
+    const [showEvacCenters, setShowEvacCenters]         = useState(false);
+    const [showResponders, setShowResponders]           = useState(true);
+    const [zoom, setZoom]                               = useState(12);
+
+    // Keep "last seen" text live
+    const [, setTick] = useState(0);
+    useEffect(() => {
+        if (!showResponders || liveResponders.length === 0) return;
+        const id = setInterval(() => setTick((t) => t + 1), 15_000);
+        return () => clearInterval(id);
+    }, [showResponders, liveResponders.length]);
 
     const showMarkers = viewMode === 'markers' || viewMode === 'both';
     const showHeatmap = viewMode === 'heatmap' || viewMode === 'both';
@@ -195,6 +324,12 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
     const focusOnLocation = useCallback((lat: number, lng: number) => {
         if (!mapRef.current) return;
         mapRef.current.panTo({ lat, lng });
+    }, []);
+
+    const clearSelection = useCallback(() => {
+        setSelectedReport(null);
+        setSelectedEvacCenter(null);
+        setSelectedResponder(null);
     }, []);
 
     const onMapLoad = useCallback((map: google.maps.Map) => {
@@ -305,15 +440,33 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                     {/* Layers */}
                     <div className="border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
                         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Layers</p>
-                        <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                            <input
-                                type="checkbox"
-                                checked={showEvacCenters}
-                                onChange={(e) => setShowEvacCenters(e.target.checked)}
-                                className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500 dark:border-neutral-600 dark:text-white"
-                            />
-                            Evacuation Centers
-                        </label>
+                        <div className="space-y-2">
+                            <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+                                <input
+                                    type="checkbox"
+                                    checked={showEvacCenters}
+                                    onChange={(e) => setShowEvacCenters(e.target.checked)}
+                                    className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500 dark:border-neutral-600 dark:text-white"
+                                />
+                                Evacuation Centers
+                            </label>
+                            <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
+                                <input
+                                    type="checkbox"
+                                    checked={showResponders}
+                                    onChange={(e) => setShowResponders(e.target.checked)}
+                                    className="size-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 dark:border-neutral-600"
+                                />
+                                <span className="flex items-center gap-1">
+                                    Duty Responders
+                                    {liveResponders.length > 0 && (
+                                        <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                                            {liveResponders.length}
+                                        </span>
+                                    )}
+                                </span>
+                            </label>
+                        </div>
                     </div>
 
                     {/* Filters */}
@@ -347,7 +500,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                         </div>
                     </div>
 
-                    {/* Legend + Report list */}
+                    {/* Legend + Report list + Responder list */}
                     <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-3">
                         {/* Legend */}
                         <div className="mb-3">
@@ -394,7 +547,73 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                                     </span>
                                 </div>
                             )}
+                            {showResponders && (
+                                <div className={`flex flex-wrap gap-3 ${showMarkers || showHeatmap || showEvacCenters ? 'mt-2' : ''}`}>
+                                    <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                                        <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
+                                        Responder
+                                    </span>
+                                    <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
+                                        <span className="h-2.5 w-2.5 rounded-full bg-blue-600 opacity-40" />
+                                        Stale ({'>'}10m)
+                                    </span>
+                                </div>
+                            )}
                         </div>
+
+                        {/* Responder list */}
+                        {showResponders && liveResponders.length > 0 && (
+                            <>
+                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
+                                    <span className="flex items-center gap-1">
+                                        <Users className="size-3" />
+                                        On-duty responders
+                                        <span className="normal-case font-normal text-neutral-300">— click to focus</span>
+                                    </span>
+                                </p>
+                                <div className="mb-4 space-y-1.5">
+                                    {liveResponders.map((r) => {
+                                        const stale = isStale(r.location_updated_at);
+                                        return (
+                                            <button
+                                                key={`resp-${r.id}`}
+                                                onClick={() => {
+                                                    clearSelection();
+                                                    setSelectedResponder(selectedResponder?.id === r.id ? null : r);
+                                                    if (selectedResponder?.id !== r.id) focusOnLocation(r.latitude, r.longitude);
+                                                }}
+                                                className={`w-full rounded-xl border p-2.5 text-left transition-all ${
+                                                    selectedResponder?.id === r.id
+                                                        ? 'border-blue-400 bg-blue-50 ring-1 ring-blue-200 dark:border-blue-600 dark:bg-blue-900/20'
+                                                        : 'border-neutral-100 bg-neutral-50/50 hover:border-neutral-200 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-800/40 dark:hover:border-neutral-700'
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <span className={`h-2.5 w-2.5 shrink-0 rounded-full bg-blue-600 ${stale ? 'opacity-40' : ''}`} />
+                                                        <span className="truncate text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
+                                                            {r.name}
+                                                        </span>
+                                                    </div>
+                                                    {stale && (
+                                                        <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold text-amber-600 ring-1 ring-amber-200">
+                                                            Stale
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="mt-1 flex items-center justify-between text-[10px] text-neutral-400">
+                                                    <span>{r.team_name ?? 'No team'}</span>
+                                                    <span className="flex items-center gap-1">
+                                                        <Clock className="size-2.5" />
+                                                        {formatLastSeen(r.location_updated_at)}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </>
+                        )}
 
                         {/* Report list */}
                         <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
@@ -405,7 +624,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                                 <button
                                     key={r.id}
                                     onClick={() => {
-                                        setSelectedEvacCenter(null);
+                                        clearSelection();
                                         const isDeselecting = selectedReport?.id === r.id;
                                         setSelectedReport(isDeselecting ? null : r);
                                         if (!isDeselecting) focusOnLocation(r.latitude, r.longitude);
@@ -461,7 +680,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                             options={mapOptions}
                             onLoad={onMapLoad}
                             onZoomChanged={function (this: google.maps.Map) { setZoom(this.getZoom() ?? 12); }}
-                            onClick={() => { setSelectedReport(null); setSelectedEvacCenter(null); }}
+                            onClick={clearSelection}
                         >
                             {showMarkers && reports.map((report) => (
                                 <MarkerF
@@ -473,7 +692,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                                         anchor: new google.maps.Point(14, 36),
                                     }}
                                     zIndex={SEVERITY_WEIGHT[report.severity]}
-                                    onClick={() => { setSelectedEvacCenter(null); setSelectedReport(report); focusOnLocation(report.latitude, report.longitude); }}
+                                    onClick={() => { clearSelection(); setSelectedReport(report); focusOnLocation(report.latitude, report.longitude); }}
                                 />
                             ))}
 
@@ -531,7 +750,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                                         }}
                                         zIndex={10}
                                         onClick={() => {
-                                            setSelectedReport(null);
+                                            clearSelection();
                                             setSelectedEvacCenter(selectedEvacCenter?.id === ec.id ? null : ec);
                                             if (selectedEvacCenter?.id !== ec.id) focusOnLocation(ec.latitude, ec.longitude);
                                         }}
@@ -594,6 +813,62 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers }
                                         >
                                             Manage centers →
                                         </Link>
+                                    </div>
+                                </InfoWindowF>
+                            )}
+
+                            {/* Responder markers */}
+                            {showResponders && liveResponders.map((r) => (
+                                <MarkerF
+                                    key={`resp-${r.id}`}
+                                    position={{ lat: r.latitude, lng: r.longitude }}
+                                    icon={{
+                                        url: RESPONDER_MARKER_URL,
+                                        scaledSize: new google.maps.Size(32, 32),
+                                        anchor: new google.maps.Point(16, 16),
+                                    }}
+                                    opacity={isStale(r.location_updated_at) ? 0.45 : 1}
+                                    zIndex={20}
+                                    onClick={() => {
+                                        clearSelection();
+                                        setSelectedResponder(selectedResponder?.id === r.id ? null : r);
+                                        if (selectedResponder?.id !== r.id) focusOnLocation(r.latitude, r.longitude);
+                                    }}
+                                />
+                            ))}
+
+                            {/* Responder info window */}
+                            {showResponders && selectedResponder && (
+                                <InfoWindowF
+                                    position={{ lat: selectedResponder.latitude, lng: selectedResponder.longitude }}
+                                    onCloseClick={() => setSelectedResponder(null)}
+                                    options={{ maxWidth: 260, minWidth: 200, pixelOffset: new google.maps.Size(0, -18) }}
+                                >
+                                    <div className="flex flex-col gap-2 p-3 pt-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className="flex size-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                                                {selectedResponder.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-bold text-neutral-900">{selectedResponder.name}</p>
+                                                {selectedResponder.team_name && (
+                                                    <p className="text-[10px] text-gray-500">{selectedResponder.team_name}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 rounded-lg bg-gray-50 px-2.5 py-1.5">
+                                            <Clock className="size-3 text-gray-400" />
+                                            <span className="text-[11px] text-gray-500">Last seen:</span>
+                                            <span className={`text-[11px] font-semibold ${isStale(selectedResponder.location_updated_at) ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                {formatLastSeen(selectedResponder.location_updated_at)}
+                                            </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5">
+                                            <Radio className={`size-3 ${isStale(selectedResponder.location_updated_at) ? 'text-amber-500' : 'text-emerald-500'}`} />
+                                            <span className={`text-[11px] font-semibold ${isStale(selectedResponder.location_updated_at) ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                {isStale(selectedResponder.location_updated_at) ? 'Signal lost' : 'Active'}
+                                            </span>
+                                        </div>
                                     </div>
                                 </InfoWindowF>
                             )}
