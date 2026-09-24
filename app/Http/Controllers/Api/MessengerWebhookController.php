@@ -93,10 +93,9 @@ class MessengerWebhookController extends Controller
                     if (! empty($message['attachments'])) {
                         $handled = false;
                         foreach ($message['attachments'] as $att) {
-                            if ($att['type'] === 'image' && ! empty($att['payload']['url'])) {
-                                $this->handleImage($fb, $senderId, $att['payload']['url']);
+                            if (in_array($att['type'], ['image', 'video']) && ! empty($att['payload']['url'])) {
+                                $this->handleMedia($fb, $senderId, $att['payload']['url'], $att['type']);
                                 $handled = true;
-                                break;
                             }
                             if ($att['type'] === 'location' && ! empty($att['payload']['coordinates'])) {
                                 $coords = $att['payload']['coordinates'];
@@ -105,13 +104,12 @@ class MessengerWebhookController extends Controller
                                 break;
                             }
                         }
-                        // If attachment was not image/location (sticker, gif, video, etc.)
                         if (! $handled) {
                             $session = $this->getSession($senderId);
-                            if ($session['step'] === 'awaiting_photo') {
+                            if ($session['step'] === 'awaiting_media') {
                                 $fb->sendQuickReplies($senderId,
-                                    "Please send a photo (image), not a sticker or video.\n\nOr tap Skip.",
-                                    ['Skip']
+                                    "Please send a photo or video, not a sticker or GIF.\n\nOr tap Done/Skip.",
+                                    ['Done', 'Skip']
                                 );
                             }
                         }
@@ -195,7 +193,7 @@ class MessengerWebhookController extends Controller
             'idle'                 => $this->stepIdle($fb, $senderId, $lower),
             'awaiting_location'    => $this->stepLocation($fb, $senderId, $text, $session),
             'awaiting_severity'    => $this->stepSeverity($fb, $senderId, $lower, $session),
-            'awaiting_photo'       => $this->stepPhoto($fb, $senderId, $lower, $session),
+            'awaiting_media'       => $this->stepMedia($fb, $senderId, $lower, $session),
             'awaiting_description' => $this->stepDescription($fb, $senderId, $text, $session),
             'awaiting_confirm'     => $this->stepConfirm($fb, $senderId, $lower, $session),
             default                => $this->stepIdle($fb, $senderId, $lower),
@@ -474,64 +472,88 @@ class MessengerWebhookController extends Controller
             return;
         }
 
-        $session['step']     = 'awaiting_photo';
+        $session['step']     = 'awaiting_media';
         $session['severity'] = $severity;
         $this->setSession($senderId, $session);
 
         $fb->sendQuickReplies(
             $senderId,
-            "Step 3/4 — Photo\n\n"
-            . "Mag-send ng photo ng baha para ma-verify ng AI.\n\n"
-            . "Mas mabilis ma-process ang report na may photo.\n"
+            "Step 3/4 — Photo / Video\n\n"
+            . "Mag-send ng photo o video ng baha para ma-verify ng AI.\n\n"
+            . "Pwede kang mag-send ng hanggang 5 files (photo o video, max 15 min).\n"
             . "Pwede ring i-skip.",
-            ['Skip Photo']
+            ['Skip']
         );
     }
 
-    // ── Step 3: Photo ───────────────────────────────────────────────────────
+    // ── Step 3: Media (photo/video, up to 5) ────────────────────────────────
 
-    private function handleImage(FacebookService $fb, string $senderId, string $imageUrl): void
+    private const MAX_MEDIA = 5;
+
+    private function handleMedia(FacebookService $fb, string $senderId, string $url, string $type): void
     {
         $session = $this->getSession($senderId);
+        $media = $session['media'] ?? [];
+
+        if (count($media) >= self::MAX_MEDIA) {
+            $fb->sendQuickReplies($senderId,
+                "Maximum 5 files na. Tap \"Done\" to continue.",
+                ['Done']
+            );
+            return;
+        }
+
+        $media[] = ['url' => $url, 'type' => $type];
+        $session['media'] = $media;
 
         if ($session['step'] === 'idle') {
-            $session['step']      = 'awaiting_location';
-            $session['image_url'] = $imageUrl;
-            $session['retries']   = [];
+            $session['step']    = 'awaiting_location';
+            $session['retries'] = [];
             $this->setSession($senderId, $session);
 
+            $label = $type === 'video' ? 'Video' : 'Photo';
             $fb->sendMessage($senderId,
-                "Photo received! Let's create a flood report.\n\n"
+                "{$label} received! Let's create a flood report.\n\n"
                 . "Step 1/4 — Saan ang baha?\n\n"
-                . "Type the address, barangay name, or paste coordinates."
+                . "Type the address or paste coordinates."
             );
             return;
         }
 
-        if ($session['step'] === 'awaiting_photo') {
-            $session['step']      = 'awaiting_description';
-            $session['image_url'] = $imageUrl;
+        if ($session['step'] === 'awaiting_media') {
             $this->setSession($senderId, $session);
+            $count = count($media);
+            $remaining = self::MAX_MEDIA - $count;
+            $label = $type === 'video' ? 'Video' : 'Photo';
 
-            $fb->sendQuickReplies(
-                $senderId,
-                "Photo saved!\n\n"
-                . "Step 4/4 — Description (optional)\n\n"
-                . "Describe the situation, o i-skip para i-submit agad.",
-                ['Skip', 'Submit na']
-            );
+            if ($remaining > 0) {
+                $fb->sendQuickReplies($senderId,
+                    "{$label} saved! ({$count}/" . self::MAX_MEDIA . ")\n\n"
+                    . "Send more photos/videos, or tap \"Done\" to continue.",
+                    ['Done']
+                );
+            } else {
+                $session['step'] = 'awaiting_description';
+                $this->setSession($senderId, $session);
+                $fb->sendQuickReplies($senderId,
+                    "All {$count} files received!\n\n"
+                    . "Step 4/4 — Description (optional)\n\n"
+                    . "Describe the situation, o i-skip para i-submit agad.",
+                    ['Skip', 'Submit na']
+                );
+            }
             return;
         }
 
-        // At any other step, save the image
-        $session['image_url'] = $imageUrl;
+        // At any other step, save it
         $this->setSession($senderId, $session);
-        $fb->sendMessage($senderId, "Photo updated. Continuing...");
+        $label = $type === 'video' ? 'Video' : 'Photo';
+        $fb->sendMessage($senderId, "{$label} saved. ({$count}/" . self::MAX_MEDIA . ") Continuing...");
     }
 
-    private function stepPhoto(FacebookService $fb, string $senderId, string $text, array $session): void
+    private function stepMedia(FacebookService $fb, string $senderId, string $text, array $session): void
     {
-        if (in_array($text, ['skip', 'skip photo', 'wala', 'no', 'none', 'walang photo', 'next'])) {
+        if (in_array($text, ['skip', 'skip photo', 'wala', 'no', 'none', 'walang photo', 'next', 'done'])) {
             $session['step'] = 'awaiting_description';
             $this->setSession($senderId, $session);
 
@@ -548,15 +570,14 @@ class MessengerWebhookController extends Controller
             return;
         }
 
-        $retries = $this->incrementRetry($session, 'photo');
+        $retries = $this->incrementRetry($session, 'media');
         $this->setSession($senderId, $session);
 
         if ($retries >= self::MAX_RETRIES) {
-            // Auto-skip after too many wrong inputs
             $session['step'] = 'awaiting_description';
             $this->setSession($senderId, $session);
             $fb->sendQuickReplies($senderId,
-                "Skipping photo.\n\nStep 4/4 — Description (optional)\n\nDescribe the situation or skip to submit.",
+                "Skipping media.\n\nStep 4/4 — Description (optional)\n\nDescribe the situation or skip to submit.",
                 ['Skip', 'Submit na']
             );
             return;
@@ -564,8 +585,8 @@ class MessengerWebhookController extends Controller
 
         $fb->sendQuickReplies(
             $senderId,
-            "Please send a photo (image file), or tap \"Skip Photo\" to continue without one.",
-            ['Skip Photo']
+            "Please send a photo or video file, or tap \"Skip\" to continue.",
+            ['Skip']
         );
     }
 
@@ -604,7 +625,7 @@ class MessengerWebhookController extends Controller
             . "Location: " . ($session['address'] ?? "{$session['latitude']}, {$session['longitude']}") . "\n"
             . "Coordinates: {$session['latitude']}, {$session['longitude']}\n"
             . "Severity: " . ucfirst($session['severity'] ?? 'moderate') . "\n"
-            . "Photo: " . (! empty($session['image_url']) ? 'Yes' : 'None') . "\n"
+            . "Media: " . (! empty($session['media']) ? count($session['media']) . ' file(s)' : 'None') . "\n"
             . "Description: " . ($session['description'] ?? 'None') . "\n\n"
             . "Submit this report?";
 
@@ -774,22 +795,24 @@ PROMPT;
             'notes'     => "Submitted via Messenger" . ($senderName ? " by {$senderName}" : '') . ".",
         ]);
 
-        // Download and attach photo
+        // Download and attach media (up to 5 photos/videos)
         $mediaFiles = [];
-        if (! empty($session['image_url'])) {
+        foreach ($session['media'] ?? [] as $item) {
             try {
-                $path = $fb->downloadMessengerAttachment($session['image_url'], $report->id);
-                if ($path) {
+                $result = $fb->downloadMessengerAttachment($item['url'], $report->id, $item['type']);
+                if ($result) {
                     $report->media()->create([
-                        'file_path' => $path,
-                        'file_type' => 'image',
-                        'file_size' => Storage::disk('public')->size($path),
+                        'file_path' => $result['path'],
+                        'file_type' => $result['file_type'],
+                        'file_size' => Storage::disk('public')->size($result['path']),
                     ]);
-                    $fullPath = Storage::disk('public')->path($path);
-                    $mediaFiles[] = new \Illuminate\Http\UploadedFile($fullPath, basename($path), 'image/jpeg', null, true);
+                    if ($result['file_type'] === 'image') {
+                        $fullPath = Storage::disk('public')->path($result['path']);
+                        $mediaFiles[] = new \Illuminate\Http\UploadedFile($fullPath, basename($result['path']), 'image/jpeg', null, true);
+                    }
                 }
             } catch (\Throwable $e) {
-                Log::warning('[Messenger] Image download failed', ['error' => $e->getMessage()]);
+                Log::warning('[Messenger] Media download failed', ['error' => $e->getMessage()]);
             }
         }
 

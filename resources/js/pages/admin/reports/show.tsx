@@ -30,7 +30,7 @@ import {
     X,
     XCircle,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
@@ -178,13 +178,14 @@ export default function AdminReportShow({ report, teams }: Props) {
                 {/* Status progress bar (non-rejected reports) */}
                 {report.status !== 'rejected' && (
                     <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                        <div className="flex items-center justify-between">
+                        <div className="flex w-full items-center">
                             {statusFlow.map((step, i) => {
                                 const isActive = i <= currentStep;
                                 const isCurrent = step.status === report.status;
+                                const isLast = i === statusFlow.length - 1;
                                 return (
-                                    <div key={step.status} className="flex flex-1 items-center">
-                                        <div className="flex flex-col items-center gap-1.5">
+                                    <Fragment key={step.status}>
+                                        <div className="flex shrink-0 flex-col items-center gap-1.5">
                                             <div className={`flex size-8 items-center justify-center rounded-full border-2 transition-colors ${
                                                 isCurrent
                                                     ? 'border-neutral-900 bg-neutral-900 text-white shadow-sm dark:border-white dark:bg-white dark:text-neutral-900'
@@ -204,12 +205,12 @@ export default function AdminReportShow({ report, teams }: Props) {
                                                 {step.label}
                                             </span>
                                         </div>
-                                        {i < statusFlow.length - 1 && (
-                                            <div className={`mx-2 h-0.5 flex-1 rounded-full transition-colors ${
+                                        {!isLast && (
+                                            <div className={`mx-3 h-0.5 flex-1 rounded-full transition-colors ${
                                                 i < currentStep ? 'bg-neutral-700 dark:bg-neutral-300' : 'bg-neutral-200 dark:bg-neutral-700'
                                             }`} />
                                         )}
-                                    </div>
+                                    </Fragment>
                                 );
                             })}
                         </div>
@@ -667,6 +668,9 @@ export default function AdminReportShow({ report, teams }: Props) {
                                                             <span className="flex items-center gap-1">
                                                                 <Users className="size-2.5" />
                                                                 {t.members.length} member{t.members.length !== 1 ? 's' : ''}
+                                                            </span>
+                                                            <span className={`font-medium ${(t.on_duty_count ?? 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-400'}`}>
+                                                                {t.on_duty_count ?? 0} on duty
                                                             </span>
                                                             {t.distance_km != null && (
                                                                 <span className="flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400">

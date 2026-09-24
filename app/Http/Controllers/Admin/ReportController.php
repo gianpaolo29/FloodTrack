@@ -171,11 +171,14 @@ class ReportController extends Controller
                 'member_statuses' => $memberStatuses,
             ]),
             'teams'       => Team::with([
-                    'members:id,name,team_id',
+                    'members:id,name,team_id,is_on_duty',
                     'leader:id,current_latitude,current_longitude,home_latitude,home_longitude',
                 ])
                 ->where('is_active', true)
-                ->withCount(['reports as active_assignments' => fn ($q) => $q->where('status', 'assigned')])
+                ->withCount([
+                    'reports as active_assignments' => fn ($q) => $q->where('status', 'assigned'),
+                    'members as on_duty_count' => fn ($q) => $q->where('is_on_duty', true),
+                ])
                 ->get(['id', 'name', 'leader_id'])
                 ->map(function ($team) use ($report) {
                     $leader = $team->leader;

@@ -203,18 +203,18 @@ class FacebookService
     /**
      * Download a Messenger attachment (image) by URL with the page token.
      */
-    public function downloadMessengerAttachment(string $url, int $reportId): ?string
+    public function downloadMessengerAttachment(string $url, int $reportId, string $type = 'image'): ?array
     {
         try {
-            // Messenger image URLs often don't need a token — try direct first
-            $response = Http::timeout(30)->withOptions([
+            $timeout = $type === 'video' ? 120 : 30;
+
+            $response = Http::timeout($timeout)->withOptions([
                 'allow_redirects' => true,
                 'verify' => false,
             ])->get($url);
 
-            // If direct fails, try with token
             if ($response->failed()) {
-                $response = Http::timeout(30)->withOptions([
+                $response = Http::timeout($timeout)->withOptions([
                     'allow_redirects' => true,
                     'verify' => false,
                 ])->get($url, ['access_token' => $this->pageAccessToken]);
@@ -228,13 +228,21 @@ class FacebookService
                 return null;
             }
 
-            $contentType = $response->header('Content-Type') ?? 'image/jpeg';
-            $ext = str_contains($contentType, 'png') ? 'png' : 'jpg';
+            $contentType = $response->header('Content-Type') ?? '';
+
+            if ($type === 'video') {
+                $ext = 'mp4';
+                $fileType = 'video';
+            } else {
+                $ext = str_contains($contentType, 'png') ? 'png' : 'jpg';
+                $fileType = 'image';
+            }
+
             $filename = 'messenger_' . uniqid() . '.' . $ext;
             $path     = "reports/{$reportId}/{$filename}";
             Storage::disk('public')->put($path, $response->body());
 
-            return $path;
+            return ['path' => $path, 'file_type' => $fileType];
         } catch (\Throwable $e) {
             Log::warning('[FacebookService] Messenger attachment download failed', [
                 'url'   => $url,

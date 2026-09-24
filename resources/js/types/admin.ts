@@ -20,6 +20,7 @@ export interface Team {
     leader_id: number;
     members: TeamMember[];
     active_assignments?: number;
+    on_duty_count?: number;
     distance_km?: number | null;
 }
 
