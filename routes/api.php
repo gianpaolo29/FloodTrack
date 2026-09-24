@@ -33,6 +33,14 @@ Route::post('/webhooks/facebook', [FacebookWebhookController::class, 'handle']);
 Route::get('/webhooks/messenger',  [MessengerWebhookController::class, 'verify']);
 Route::post('/webhooks/messenger', [MessengerWebhookController::class, 'handle']);
 
+// Temporary: check recent logs (REMOVE after debugging)
+Route::get('/debug/messenger-logs', function () {
+    $logFile = storage_path('logs/laravel.log');
+    if (!file_exists($logFile)) return response('No log file', 404);
+    $lines = array_filter(explode("\n", file_get_contents($logFile)), fn($l) => str_contains(strtolower($l), 'messenger'));
+    return response()->json(array_values(array_slice($lines, -20)));
+});
+
 // ── Public ──────────────────────────────────────────────────────────────
 Route::post('/register',       [AuthController::class, 'register']);
 Route::post('/login',          [AuthController::class, 'login']);

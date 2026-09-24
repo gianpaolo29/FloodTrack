@@ -206,23 +206,57 @@ class FacebookService
     public function downloadMessengerAttachment(string $url, int $reportId): ?string
     {
         try {
-            $response = Http::timeout(30)->get($url, [
-                'access_token' => $this->pageAccessToken,
-            ]);
+            // Messenger image URLs often don't need a token — try direct first
+            $response = Http::timeout(30)->withOptions([
+                'allow_redirects' => true,
+                'verify' => false,
+            ])->get($url);
+
+            // If direct fails, try with token
+            if ($response->failed()) {
+                $response = Http::timeout(30)->withOptions([
+                    'allow_redirects' => true,
+                    'verify' => false,
+                ])->get($url, ['access_token' => $this->pageAccessToken]);
+            }
 
             if ($response->failed()) {
+                Log::warning('[FacebookService] Messenger attachment download failed', [
+                    'url'    => $url,
+                    'status' => $response->status(),
+                ]);
                 return null;
             }
 
-            $filename = 'messenger_' . uniqid() . '.jpg';
+            $contentType = $response->header('Content-Type') ?? 'image/jpeg';
+            $ext = str_contains($contentType, 'png') ? 'png' : 'jpg';
+            $filename = 'messenger_' . uniqid() . '.' . $ext;
             $path     = "reports/{$reportId}/{$filename}";
             Storage::disk('public')->put($path, $response->body());
 
             return $path;
         } catch (\Throwable $e) {
             Log::warning('[FacebookService] Messenger attachment download failed', [
+                'url'   => $url,
                 'error' => $e->getMessage(),
             ]);
+            return null;
+        }
+    }
+
+    /**
+     * Get a Messenger user's profile (name, etc.) by PSID.
+     */
+    public function getUserProfile(string $psid): ?array
+    {
+        try {
+            $response = Http::get("{$this->baseUrl}/{$psid}", [
+                'access_token' => $this->pageAccessToken,
+                'fields'       => 'first_name,last_name,name',
+            ]);
+
+            return $response->successful() ? $response->json() : null;
+        } catch (\Throwable) {
             return null;
         }
     }

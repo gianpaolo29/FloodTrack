@@ -55,6 +55,10 @@ return [
         'ffprobe'  => env('FFPROBE_PATH', '/usr/bin/ffprobe'),
     ],
 
+    'google' => [
+        'maps_key' => env('GOOGLE_MAPS_SERVER_KEY', env('VITE_GOOGLE_MAPS_KEY', '')),
+    ],
+
     'facebook' => [
         'app_id'               => env('FACEBOOK_APP_ID', ''),
         'app_secret'           => env('FACEBOOK_APP_SECRET', ''),

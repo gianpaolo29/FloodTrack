@@ -8,16 +8,27 @@ use App\Models\ReportStatusUpdate;
 use App\Models\User;
 use App\Notifications\NewReportSubmitted;
 use App\Services\FacebookService;
+use App\Services\ReportAnalysisService;
 use App\Services\SlaService;
 use App\Services\SocketService;
+use App\Services\WeatherService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 
 class MessengerWebhookController extends Controller
 {
+    private const MAX_RETRIES = 3;
+
+    // Nasugbu, Batangas bounding box — reject coordinates outside this region
+    private const MIN_LAT = 13.85;
+    private const MAX_LAT = 14.25;
+    private const MIN_LNG = 120.45;
+    private const MAX_LNG = 120.80;
+
     /**
      * Webhook verification (GET).
      */
@@ -40,6 +51,8 @@ class MessengerWebhookController extends Controller
     public function handle(Request $request)
     {
         $payload = $request->all();
+
+        Log::info('[Messenger] Webhook received', ['payload' => $payload]);
 
         if (($payload['object'] ?? null) !== 'page') {
             return response()->json(['status' => 'ignored']);
@@ -64,29 +77,45 @@ class MessengerWebhookController extends Controller
                     continue;
                 }
 
-                // Handle postbacks (button clicks)
                 if (isset($event['postback'])) {
                     $this->handleMessage($fb, $senderId, $event['postback']['payload'] ?? '');
                     continue;
                 }
 
-                // Handle messages
                 if (isset($event['message'])) {
                     $message = $event['message'];
 
-                    // Check for image attachments
+                    // Ignore echo messages (sent by the page itself)
+                    if (! empty($message['is_echo'])) {
+                        continue;
+                    }
+
                     if (! empty($message['attachments'])) {
+                        $handled = false;
                         foreach ($message['attachments'] as $att) {
                             if ($att['type'] === 'image' && ! empty($att['payload']['url'])) {
                                 $this->handleImage($fb, $senderId, $att['payload']['url']);
-                                return;
+                                $handled = true;
+                                break;
                             }
                             if ($att['type'] === 'location' && ! empty($att['payload']['coordinates'])) {
                                 $coords = $att['payload']['coordinates'];
                                 $this->handleLocation($fb, $senderId, $coords['lat'], $coords['long']);
-                                return;
+                                $handled = true;
+                                break;
                             }
                         }
+                        // If attachment was not image/location (sticker, gif, video, etc.)
+                        if (! $handled) {
+                            $session = $this->getSession($senderId);
+                            if ($session['step'] === 'awaiting_photo') {
+                                $fb->sendQuickReplies($senderId,
+                                    "Please send a photo (image), not a sticker or video.\n\nOr tap Skip.",
+                                    ['Skip']
+                                );
+                            }
+                        }
+                        continue;
                     }
 
                     $text = $message['text'] ?? '';
@@ -98,7 +127,7 @@ class MessengerWebhookController extends Controller
         }
     }
 
-    // ── Conversation state ──────────────────────────────────────────────────
+    // ── Session helpers ──────────────────────────────────────────────────────
 
     private function cacheKey(string $senderId): string
     {
@@ -107,7 +136,7 @@ class MessengerWebhookController extends Controller
 
     private function getSession(string $senderId): array
     {
-        return Cache::get($this->cacheKey($senderId), ['step' => 'idle']);
+        return Cache::get($this->cacheKey($senderId), ['step' => 'idle', 'retries' => []]);
     }
 
     private function setSession(string $senderId, array $data): void
@@ -120,7 +149,18 @@ class MessengerWebhookController extends Controller
         Cache::forget($this->cacheKey($senderId));
     }
 
-    // ── Message handlers ────────────────────────────────────────────────────
+    private function getRetries(array $session, string $step): int
+    {
+        return $session['retries'][$step] ?? 0;
+    }
+
+    private function incrementRetry(array &$session, string $step): int
+    {
+        $session['retries'][$step] = ($session['retries'][$step] ?? 0) + 1;
+        return $session['retries'][$step];
+    }
+
+    // ── Message router ──────────────────────────────────────────────────────
 
     private function handleMessage(FacebookService $fb, string $senderId, string $text): void
     {
@@ -129,27 +169,45 @@ class MessengerWebhookController extends Controller
         $lower   = mb_strtolower(trim($text));
 
         // Cancel at any time
-        if (in_array($lower, ['cancel', 'stop', 'exit', 'quit'])) {
+        if (in_array($lower, ['cancel', 'stop', 'exit', 'quit', 'icancel'])) {
             $this->clearSession($senderId);
-            $fb->sendMessage($senderId, "Report cancelled. Send \"report\" anytime to start a new flood report.");
+            $fb->sendQuickReplies($senderId,
+                "Report cancelled.\n\nSend \"Report\" anytime to start a new one.",
+                ['Report Flood']
+            );
             return;
         }
 
-        // Handle by step
+        // Allow restarting mid-flow
+        if ($step !== 'idle' && in_array($lower, ['report', 'restart', 'start over', 'ulit'])) {
+            $this->clearSession($senderId);
+            $this->startReport($fb, $senderId);
+            return;
+        }
+
+        // Status check
+        if (str_contains($lower, 'status') || str_contains($lower, 'check')) {
+            $this->handleStatusCheck($fb, $senderId, $text);
+            return;
+        }
+
         match ($step) {
-            'idle'              => $this->stepIdle($fb, $senderId, $lower),
-            'awaiting_location' => $this->stepLocation($fb, $senderId, $text),
-            'awaiting_severity' => $this->stepSeverity($fb, $senderId, $lower, $session),
-            'awaiting_photo'    => $this->stepPhoto($fb, $senderId, $lower, $session),
+            'idle'                 => $this->stepIdle($fb, $senderId, $lower),
+            'awaiting_location'    => $this->stepLocation($fb, $senderId, $text, $session),
+            'awaiting_severity'    => $this->stepSeverity($fb, $senderId, $lower, $session),
+            'awaiting_photo'       => $this->stepPhoto($fb, $senderId, $lower, $session),
             'awaiting_description' => $this->stepDescription($fb, $senderId, $text, $session),
-            default             => $this->stepIdle($fb, $senderId, $lower),
+            'awaiting_confirm'     => $this->stepConfirm($fb, $senderId, $lower, $session),
+            default                => $this->stepIdle($fb, $senderId, $lower),
         };
     }
 
+    // ── Idle / greeting ─────────────────────────────────────────────────────
+
     private function stepIdle(FacebookService $fb, string $senderId, string $text): void
     {
-        $greetings = ['hi', 'hello', 'hey', 'kumusta', 'magandang araw', 'good morning', 'good afternoon', 'good evening'];
-        $reportTriggers = ['report', 'flood', 'baha', 'mag-report', 'ireport', 'i-report'];
+        $greetings = ['hi', 'hello', 'hey', 'kumusta', 'magandang araw', 'good morning', 'good afternoon', 'good evening', 'musta', 'oi', 'hoy'];
+        $reportTriggers = ['report', 'flood', 'baha', 'mag-report', 'ireport', 'i-report', 'report flood'];
 
         if (collect($reportTriggers)->contains(fn ($k) => str_contains($text, $k))) {
             $this->startReport($fb, $senderId);
@@ -157,61 +215,183 @@ class MessengerWebhookController extends Controller
         }
 
         if (collect($greetings)->contains(fn ($k) => str_contains($text, $k))) {
+            $profile = app(FacebookService::class)->getUserProfile($senderId);
+            $name = $profile['first_name'] ?? 'po';
+
             $fb->sendQuickReplies(
                 $senderId,
-                "Kumusta! Ako ang FloodTrack Bot. 🌊\n\nPwede kitang tulungan mag-report ng baha sa inyong lugar.",
-                ['Report Flood', 'Help']
+                "Kumusta, {$name}! Ako ang FloodTrack Bot.\n\n"
+                . "Pwede kitang tulungan:\n"
+                . "- Mag-report ng baha\n"
+                . "- I-check ang status ng report\n\n"
+                . "Ano ang kailangan mo?",
+                ['Report Flood', 'Check Status', 'Help']
             );
             return;
         }
 
-        if (in_array($text, ['help', 'tulong', 'commands'])) {
+        if (in_array($text, ['help', 'tulong', 'commands', 'ano'])) {
             $fb->sendMessage($senderId,
-                "FloodTrack Bot Commands:\n\n"
-                . "📝 \"Report\" — Submit a flood report\n"
-                . "❌ \"Cancel\" — Cancel current report\n"
-                . "❓ \"Help\" — Show this message\n\n"
-                . "You can also send a photo of flooding anytime to start a report."
+                "FloodTrack Bot — Help\n\n"
+                . "\"Report\" — Mag-submit ng flood report\n"
+                . "\"Status FT-XXXXXXXX\" — Check report status\n"
+                . "Send a photo — Auto-start a flood report\n"
+                . "\"Cancel\" — I-cancel ang current report\n"
+                . "\"Restart\" — Ulitin mula sa simula\n\n"
+                . "Available 24/7. Mag-ingat po!"
             );
             return;
         }
 
         $fb->sendQuickReplies(
             $senderId,
-            "Send \"Report\" to submit a flood report, or \"Help\" for commands.",
-            ['Report Flood', 'Help']
+            "Hindi ko po naintindihan.\n\nPiliin po sa options below o type \"Help\" para sa commands.",
+            ['Report Flood', 'Check Status', 'Help']
         );
     }
 
-    private function startReport(FacebookService $fb, string $senderId): void
-    {
-        $this->setSession($senderId, ['step' => 'awaiting_location']);
+    // ── Status check ────────────────────────────────────────────────────────
 
-        $fb->sendMessage($senderId,
-            "📍 Step 1/4 — Location\n\n"
-            . "Saan ang baha? You can:\n"
-            . "• Send your 📍 location pin\n"
-            . "• Type the address (e.g. \"Brgy. Wawa, Nasugbu\")\n\n"
-            . "Send \"cancel\" to stop."
-        );
-    }
-
-    private function stepLocation(FacebookService $fb, string $senderId, string $text): void
+    private function handleStatusCheck(FacebookService $fb, string $senderId, string $text): void
     {
-        // Try to parse coordinates from text like "14.0681, 120.6236"
-        if (preg_match('/(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)/', $text, $m)) {
-            $this->handleLocation($fb, $senderId, (float) $m[1], (float) $m[2]);
+        // Try to find reference number in the text
+        if (preg_match('/FT-[A-Z0-9]{6,}/i', $text, $m)) {
+            $ref = strtoupper($m[0]);
+            $report = Report::where('reference_number', $ref)->first();
+
+            if ($report) {
+                $fb->sendMessage($senderId,
+                    "Report Status\n\n"
+                    . "Reference: {$report->reference_number}\n"
+                    . "Status: " . ucfirst($report->status) . "\n"
+                    . "📅 Submitted: " . $report->created_at->format('M d, Y g:i A') . "\n"
+                    . ($report->address ? "Location: {$report->address}\n" : '')
+                );
+            } else {
+                $fb->sendMessage($senderId, "Hindi mahanap ang report na \"{$ref}\".\n\nPlease check the reference number and try again.");
+            }
             return;
         }
 
-        // Treat as address text
-        $session = $this->getSession($senderId);
-        $session['step']    = 'awaiting_severity';
-        $session['address'] = mb_substr($text, 0, 255);
-        // Default coordinates (Nasugbu center) — address text only
-        $session['latitude']  = (float) config('services.openweather.lat', 14.0656);
-        $session['longitude'] = (float) config('services.openweather.lon', 120.6278);
-        $this->setSession($senderId, $session);
+        // Check for reports from this sender
+        $recentReports = Report::where('messenger_sender_id', $senderId)
+            ->latest()
+            ->take(3)
+            ->get();
+
+        if ($recentReports->isNotEmpty()) {
+            $lines = $recentReports->map(function ($r) {
+                return "- {$r->reference_number} — " . ucfirst($r->status);
+            })->join("\n");
+
+            $fb->sendMessage($senderId,
+                "Your recent reports:\n\n{$lines}\n\n"
+                . "To check a specific report, send:\n\"Status FT-XXXXXXXX\""
+            );
+        } else {
+            $fb->sendMessage($senderId,
+                "Wala kang recent reports.\n\n"
+                . "To check a specific report, send:\n\"Status FT-XXXXXXXX\""
+            );
+        }
+    }
+
+    // ── Step 1: Location ────────────────────────────────────────────────────
+
+    private function startReport(FacebookService $fb, string $senderId): void
+    {
+        $this->setSession($senderId, ['step' => 'awaiting_location', 'retries' => []]);
+
+        $fb->sendMessage($senderId,
+            "New Flood Report\n\n"
+            . "Step 1/4 — Location\n\n"
+            . "Saan ang baha?\n\n"
+            . "- I-type ang address o barangay name\n"
+            . "   (e.g. \"Wawa\", \"near the bridge sa Pantalan\")\n\n"
+            . "- O i-paste ang coordinates\n"
+            . "   (e.g. \"14.0681, 120.6236\")\n\n"
+            . "Send \"cancel\" anytime to stop."
+        );
+    }
+
+    private function stepLocation(FacebookService $fb, string $senderId, string $text, array $session): void
+    {
+        $trimmed = trim($text);
+
+        // Validate not too short
+        if (mb_strlen($trimmed) < 3) {
+            $retries = $this->incrementRetry($session, 'location');
+            $this->setSession($senderId, $session);
+
+            if ($retries >= self::MAX_RETRIES) {
+                $this->clearSession($senderId);
+                $fb->sendQuickReplies($senderId,
+                    "Too many invalid attempts. Report cancelled.\n\nSend \"Report\" to try again.",
+                    ['Report Flood']
+                );
+                return;
+            }
+
+            $fb->sendMessage($senderId,
+                "Location is too short. Please provide a more specific address.\n\n"
+                . "Examples:\n"
+                . "- \"Wawa\" or \"Pantalan\"\n"
+                . "- \"near the bridge sa Bucana\"\n"
+                . "- \"14.0681, 120.6236\""
+            );
+            return;
+        }
+
+        // Try to parse coordinates
+        if (preg_match('/(-?\d+\.?\d*)\s*[,\s]\s*(-?\d+\.?\d*)/', $trimmed, $m)) {
+            $lat = (float) $m[1];
+            $lng = (float) $m[2];
+
+            if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+                $retries = $this->incrementRetry($session, 'location');
+                $this->setSession($senderId, $session);
+                $fb->sendMessage($senderId, "Invalid coordinates. Latitude must be -90 to 90, longitude -180 to 180.\n\nPlease try again.");
+                return;
+            }
+
+            if ($lat < self::MIN_LAT || $lat > self::MAX_LAT || $lng < self::MIN_LNG || $lng > self::MAX_LNG) {
+                $retries = $this->incrementRetry($session, 'location');
+                $this->setSession($senderId, $session);
+                $fb->sendMessage($senderId,
+                    "Ang coordinates na \"{$lat}, {$lng}\" ay nasa labas ng service area (Nasugbu, Batangas).\n\n"
+                    . "Please provide coordinates within Nasugbu, or type the barangay name instead."
+                );
+                return;
+            }
+
+            $this->handleLocation($fb, $senderId, $lat, $lng);
+            return;
+        }
+
+        // AI-powered geocoding
+        $geocoded = $this->geocodeAddress($trimmed);
+
+        $session['step'] = 'awaiting_severity';
+
+        if ($geocoded) {
+            $session['address']   = $geocoded['address'] ?? mb_substr($trimmed, 0, 255);
+            $session['latitude']  = $geocoded['lat'];
+            $session['longitude'] = $geocoded['lng'];
+            $this->setSession($senderId, $session);
+
+            $fb->sendMessage($senderId, "Location found: {$session['address']}\nCoordinates: {$geocoded['lat']}, {$geocoded['lng']}");
+        } else {
+            $session['address']   = mb_substr($trimmed, 0, 255);
+            $session['latitude']  = (float) config('services.openweather.lat', 14.0656);
+            $session['longitude'] = (float) config('services.openweather.lon', 120.6278);
+            $this->setSession($senderId, $session);
+
+            $fb->sendMessage($senderId,
+                "Address saved: {$trimmed}\n"
+                . "Note: Hindi ma-pinpoint ang exact coordinates. Default Nasugbu coordinates ang gagamitin.\n"
+                . "Para mas accurate, i-type ang barangay name (e.g. \"Wawa\") o paste ang Google Maps coordinates."
+            );
+        }
 
         $this->askSeverity($fb, $senderId);
     }
@@ -221,33 +401,37 @@ class MessengerWebhookController extends Controller
         $session = $this->getSession($senderId);
 
         if (! in_array($session['step'], ['awaiting_location', 'idle'])) {
-            // If they send location at another step, update it
             $session['latitude']  = $lat;
             $session['longitude'] = $lng;
             $this->setSession($senderId, $session);
-            $fb->sendMessage($senderId, "📍 Location updated. Continuing...");
+            $fb->sendMessage($senderId, "Location updated to {$lat}, {$lng}.");
             return;
         }
 
         $session['step']      = 'awaiting_severity';
         $session['latitude']  = $lat;
         $session['longitude'] = $lng;
-        $session['address']   = $session['address'] ?? null;
+        $session['address']   = $session['address'] ?? $this->reverseGeocode($lat, $lng);
         $this->setSession($senderId, $session);
+
+        $addressNote = $session['address'] ? " ({$session['address']})" : '';
+        $fb->sendMessage($senderId, "Location set: {$lat}, {$lng}{$addressNote}");
 
         $this->askSeverity($fb, $senderId);
     }
+
+    // ── Step 2: Severity ────────────────────────────────────────────────────
 
     private function askSeverity(FacebookService $fb, string $senderId): void
     {
         $fb->sendQuickReplies(
             $senderId,
-            "⚠️ Step 2/4 — Severity\n\n"
+            "Step 2/4 — Severity\n\n"
             . "Gaano kalala ang baha?\n\n"
-            . "🟢 Low — Ankle level\n"
-            . "🟡 Moderate — Knee level\n"
-            . "🟠 High — Waist level or higher\n"
-            . "🔴 Critical — Life-threatening",
+            . "Low — Bukong-bukong / Ankle level\n"
+            . "Moderate — Tuhod / Knee level\n"
+            . "High — Baywang / Waist level or higher\n"
+            . "Critical — Banta sa buhay / Life-threatening",
             ['Low', 'Moderate', 'High', 'Critical']
         );
     }
@@ -255,18 +439,36 @@ class MessengerWebhookController extends Controller
     private function stepSeverity(FacebookService $fb, string $senderId, string $text, array $session): void
     {
         $severityMap = [
-            'low' => 'low', 'green' => 'low', 'mababa' => 'low',
-            'moderate' => 'moderate', 'yellow' => 'moderate', 'katamtaman' => 'moderate',
-            'high' => 'high', 'orange' => 'high', 'mataas' => 'high',
-            'critical' => 'critical', 'red' => 'critical', 'malala' => 'critical', 'delikado' => 'critical',
+            // English
+            'low' => 'low', '1' => 'low', 'ankle' => 'low', 'light' => 'low', 'minor' => 'low',
+            'moderate' => 'moderate', '2' => 'moderate', 'knee' => 'moderate', 'medium' => 'moderate',
+            'high' => 'high', '3' => 'high', 'waist' => 'high', 'severe' => 'high', 'major' => 'high',
+            'critical' => 'critical', '4' => 'critical', 'extreme' => 'critical', 'emergency' => 'critical', 'danger' => 'critical',
+            // Tagalog
+            'mababa' => 'low', 'konti' => 'low', 'kaunti' => 'low',
+            'katamtaman' => 'moderate', 'medium' => 'moderate',
+            'mataas' => 'high', 'malakas' => 'high',
+            'malala' => 'critical', 'delikado' => 'critical', 'grabe' => 'critical', 'sobra' => 'critical',
         ];
 
         $severity = $severityMap[$text] ?? null;
 
         if (! $severity) {
+            $retries = $this->incrementRetry($session, 'severity');
+            $this->setSession($senderId, $session);
+
+            if ($retries >= self::MAX_RETRIES) {
+                $this->clearSession($senderId);
+                $fb->sendQuickReplies($senderId,
+                    "Too many invalid attempts. Report cancelled.\n\nSend \"Report\" to try again.",
+                    ['Report Flood']
+                );
+                return;
+            }
+
             $fb->sendQuickReplies(
                 $senderId,
-                "Please choose a severity level:",
+                "Hindi valid ang \"{$text}\".\n\nPiliin ang severity level, or type: Low, Moderate, High, or Critical.",
                 ['Low', 'Moderate', 'High', 'Critical']
             );
             return;
@@ -278,27 +480,30 @@ class MessengerWebhookController extends Controller
 
         $fb->sendQuickReplies(
             $senderId,
-            "📸 Step 3/4 — Photo\n\n"
-            . "Send a photo of the flooding para ma-verify ang report.\n\n"
-            . "You can also skip this step.",
-            ['Skip']
+            "Step 3/4 — Photo\n\n"
+            . "Mag-send ng photo ng baha para ma-verify ng AI.\n\n"
+            . "Mas mabilis ma-process ang report na may photo.\n"
+            . "Pwede ring i-skip.",
+            ['Skip Photo']
         );
     }
+
+    // ── Step 3: Photo ───────────────────────────────────────────────────────
 
     private function handleImage(FacebookService $fb, string $senderId, string $imageUrl): void
     {
         $session = $this->getSession($senderId);
 
         if ($session['step'] === 'idle') {
-            // Photo sent without starting a report — auto-start
-            $session['step']     = 'awaiting_location';
+            $session['step']      = 'awaiting_location';
             $session['image_url'] = $imageUrl;
+            $session['retries']   = [];
             $this->setSession($senderId, $session);
 
             $fb->sendMessage($senderId,
-                "📸 Photo received! Let's create a flood report.\n\n"
-                . "📍 Step 1/4 — Where is the flooding?\n"
-                . "Send your location pin or type the address."
+                "Photo received! Let's create a flood report.\n\n"
+                . "Step 1/4 — Saan ang baha?\n\n"
+                . "Type the address, barangay name, or paste coordinates."
             );
             return;
         }
@@ -310,10 +515,10 @@ class MessengerWebhookController extends Controller
 
             $fb->sendQuickReplies(
                 $senderId,
-                "📸 Photo received!\n\n"
-                . "📝 Step 4/4 — Description (optional)\n\n"
-                . "Describe the situation or skip to submit.",
-                ['Skip']
+                "Photo saved!\n\n"
+                . "Step 4/4 — Description (optional)\n\n"
+                . "Describe the situation, o i-skip para i-submit agad.",
+                ['Skip', 'Submit na']
             );
             return;
         }
@@ -321,40 +526,208 @@ class MessengerWebhookController extends Controller
         // At any other step, save the image
         $session['image_url'] = $imageUrl;
         $this->setSession($senderId, $session);
-        $fb->sendMessage($senderId, "📸 Photo saved. Continuing with your report...");
+        $fb->sendMessage($senderId, "Photo updated. Continuing...");
     }
 
     private function stepPhoto(FacebookService $fb, string $senderId, string $text, array $session): void
     {
-        if (in_array($text, ['skip', 'wala', 'no', 'none'])) {
+        if (in_array($text, ['skip', 'skip photo', 'wala', 'no', 'none', 'walang photo', 'next'])) {
             $session['step'] = 'awaiting_description';
             $this->setSession($senderId, $session);
 
             $fb->sendQuickReplies(
                 $senderId,
-                "📝 Step 4/4 — Description (optional)\n\n"
-                . "Describe the flooding situation, or skip to submit.",
-                ['Skip']
+                "Step 4/4 — Description (optional)\n\n"
+                . "I-describe ang sitwasyon:\n"
+                . "- Gaano kataas ang tubig?\n"
+                . "- May mga stranded ba?\n"
+                . "- Anong kalsada ang apektado?\n\n"
+                . "O i-skip para i-submit agad.",
+                ['Skip', 'Submit na']
+            );
+            return;
+        }
+
+        $retries = $this->incrementRetry($session, 'photo');
+        $this->setSession($senderId, $session);
+
+        if ($retries >= self::MAX_RETRIES) {
+            // Auto-skip after too many wrong inputs
+            $session['step'] = 'awaiting_description';
+            $this->setSession($senderId, $session);
+            $fb->sendQuickReplies($senderId,
+                "Skipping photo.\n\nStep 4/4 — Description (optional)\n\nDescribe the situation or skip to submit.",
+                ['Skip', 'Submit na']
             );
             return;
         }
 
         $fb->sendQuickReplies(
             $senderId,
-            "Please send a photo of the flooding, or skip this step.",
-            ['Skip']
+            "Please send a photo (image file), or tap \"Skip Photo\" to continue without one.",
+            ['Skip Photo']
         );
     }
+
+    // ── Step 4: Description ─────────────────────────────────────────────────
 
     private function stepDescription(FacebookService $fb, string $senderId, string $text, array $session): void
     {
         $lower = mb_strtolower(trim($text));
 
-        if (! in_array($lower, ['skip', 'wala', 'no', 'none'])) {
-            $session['description'] = mb_substr($text, 0, 1000);
+        if (in_array($lower, ['skip', 'wala', 'no', 'none', 'next', 'submit', 'submit na', 'send', 'send na'])) {
+            $session['description'] = null;
+        } else {
+            // Validate description length
+            if (mb_strlen(trim($text)) < 3) {
+                $fb->sendQuickReplies($senderId,
+                    "Description is too short. Please write at least a few words, or tap Skip.",
+                    ['Skip']
+                );
+                return;
+            }
+            $session['description'] = mb_substr(trim($text), 0, 1000);
         }
 
-        $this->submitReport($fb, $senderId, $session);
+        // Show confirmation before submitting
+        $this->showConfirmation($fb, $senderId, $session);
+    }
+
+    // ── Confirmation ────────────────────────────────────────────────────────
+
+    private function showConfirmation(FacebookService $fb, string $senderId, array $session): void
+    {
+        $session['step'] = 'awaiting_confirm';
+        $this->setSession($senderId, $session);
+
+        $summary = "Report Summary — Please confirm\n\n"
+            . "Location: " . ($session['address'] ?? "{$session['latitude']}, {$session['longitude']}") . "\n"
+            . "Coordinates: {$session['latitude']}, {$session['longitude']}\n"
+            . "Severity: " . ucfirst($session['severity'] ?? 'moderate') . "\n"
+            . "Photo: " . (! empty($session['image_url']) ? 'Yes' : 'None') . "\n"
+            . "Description: " . ($session['description'] ?? 'None') . "\n\n"
+            . "Submit this report?";
+
+        $fb->sendQuickReplies($senderId, $summary, ['Submit', 'Cancel', 'Restart']);
+    }
+
+    private function stepConfirm(FacebookService $fb, string $senderId, string $text, array $session): void
+    {
+        $confirmWords = ['submit', 'yes', 'oo', 'sige', 'confirm', 'go', 'send', 'ok', 'okay'];
+        $cancelWords  = ['cancel', 'no', 'hindi'];
+        $restartWords = ['restart', 'ulit', 'start over'];
+
+        if (collect($cancelWords)->contains(fn ($w) => str_contains($text, $w))) {
+            $this->clearSession($senderId);
+            $fb->sendQuickReplies($senderId, "Report cancelled.", ['Report Flood']);
+            return;
+        }
+
+        if (collect($restartWords)->contains(fn ($w) => str_contains($text, $w))) {
+            $this->clearSession($senderId);
+            $this->startReport($fb, $senderId);
+            return;
+        }
+
+        if (collect($confirmWords)->contains(fn ($w) => str_contains($text, $w))) {
+            $this->submitReport($fb, $senderId, $session);
+            return;
+        }
+
+        $fb->sendQuickReplies($senderId,
+            "Please confirm: Submit this report?",
+            ['Submit', 'Cancel', 'Restart']
+        );
+    }
+
+    // ── AI-powered geocoding ────────────────────────────────────────────────
+
+    private function geocodeAddress(string $address): ?array
+    {
+        // Build barangay context for the AI
+        $barangays = config('barangays', []);
+        $brgyList = collect($barangays)->map(fn ($b) => "{$b['name']}: {$b['latitude']}, {$b['longitude']}")->join("\n");
+
+        $prompt = <<<PROMPT
+You are a geocoding assistant for Nasugbu, Batangas, Philippines.
+
+Given the user's location description, return the most accurate latitude and longitude coordinates.
+
+Known barangays and their coordinates:
+{$brgyList}
+
+Rules:
+- If the description matches or is near a known barangay, use those coordinates (adjust slightly if the description specifies a sub-area like "near the bridge" or "sa may palengke").
+- If it's a well-known landmark, road, or establishment in Nasugbu, use your knowledge to provide accurate coordinates.
+- Coordinates MUST be within Nasugbu, Batangas (lat: 13.85-14.25, lng: 120.45-120.80).
+- Also provide a cleaned-up address string.
+
+Respond ONLY with valid JSON, no other text:
+{"lat": 14.xxxx, "lng": 120.xxxx, "address": "Cleaned address, Nasugbu, Batangas"}
+
+If you cannot determine the location, respond: {"lat": null, "lng": null, "address": null}
+
+User's location description: "{$address}"
+PROMPT;
+
+        try {
+            $client = \OpenAI::factory()
+                ->withApiKey(config('services.openai.key'))
+                ->withHttpClient(new \GuzzleHttp\Client(['verify' => false]))
+                ->make();
+
+            $response = $client->chat()->create([
+                'model'       => 'gpt-4o-mini',
+                'messages'    => [['role' => 'user', 'content' => $prompt]],
+                'temperature' => 0,
+                'max_tokens'  => 100,
+            ]);
+
+            $content = trim($response->choices[0]->message->content ?? '');
+
+            // Strip markdown code fences if present
+            $content = preg_replace('/^```json\s*|\s*```$/s', '', $content);
+
+            $result = json_decode($content, true);
+
+            if (! $result || empty($result['lat']) || empty($result['lng'])) {
+                return null;
+            }
+
+            $lat = round((float) $result['lat'], 7);
+            $lng = round((float) $result['lng'], 7);
+
+            // Validate within service area
+            if ($lat < self::MIN_LAT || $lat > self::MAX_LAT || $lng < self::MIN_LNG || $lng > self::MAX_LNG) {
+                return null;
+            }
+
+            return [
+                'lat'     => $lat,
+                'lng'     => $lng,
+                'address' => $result['address'] ?? $address,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('[Messenger] AI geocoding failed', ['address' => $address, 'error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    private function reverseGeocode(float $lat, float $lng): ?string
+    {
+        $barangays = config('barangays', []);
+        $nearest = null;
+        $minDist = PHP_FLOAT_MAX;
+
+        foreach ($barangays as $brgy) {
+            $dist = sqrt(pow($lat - $brgy['latitude'], 2) + pow($lng - $brgy['longitude'], 2));
+            if ($dist < $minDist) {
+                $minDist = $dist;
+                $nearest = $brgy['name'];
+            }
+        }
+
+        return $nearest ? "{$nearest}, Nasugbu, Batangas" : null;
     }
 
     // ── Submit report ───────────────────────────────────────────────────────
@@ -363,27 +736,46 @@ class MessengerWebhookController extends Controller
     {
         $fb->sendTypingOn($senderId);
 
+        $profile = $fb->getUserProfile($senderId);
+        $senderName = $profile['name'] ?? $profile['first_name'] ?? null;
+
         $adminUser = User::where('role', 'admin')->first();
 
+        $description = $session['description'] ?? 'Flood report via Messenger';
+        if ($senderName) {
+            $description = "[{$senderName} — Messenger] " . $description;
+        }
+
+        $lat = (float) ($session['latitude'] ?? config('services.openweather.lat', 14.0656));
+        $lng = (float) ($session['longitude'] ?? config('services.openweather.lon', 120.6278));
+
+        // Final coordinate validation
+        if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+            $lat = (float) config('services.openweather.lat', 14.0656);
+            $lng = (float) config('services.openweather.lon', 120.6278);
+        }
+
         $report = Report::create([
-            'user_id'     => $adminUser?->id ?? 1,
-            'severity'    => $session['severity'] ?? 'moderate',
-            'status'      => 'pending',
-            'description' => $session['description'] ?? "Flood report via Messenger (sender: {$senderId})",
-            'latitude'    => $session['latitude'] ?? (float) config('services.openweather.lat', 14.0656),
-            'longitude'   => $session['longitude'] ?? (float) config('services.openweather.lon', 120.6278),
-            'address'     => $session['address'] ?? null,
-            'source'      => 'messenger',
+            'user_id'              => $adminUser?->id ?? 1,
+            'severity'             => $session['severity'] ?? 'moderate',
+            'status'               => 'pending',
+            'description'          => mb_substr($description, 0, 1000),
+            'latitude'             => $lat,
+            'longitude'            => $lng,
+            'address'              => $session['address'] ?? null,
+            'source'               => 'messenger',
+            'messenger_sender_id'  => $senderId,
         ]);
 
         ReportStatusUpdate::create([
             'report_id' => $report->id,
             'user_id'   => null,
             'status'    => 'pending',
-            'notes'     => "Submitted via Facebook Messenger (PSID: {$senderId}).",
+            'notes'     => "Submitted via Messenger" . ($senderName ? " by {$senderName}" : '') . ".",
         ]);
 
-        // Download and attach photo if provided
+        // Download and attach photo
+        $mediaFiles = [];
         if (! empty($session['image_url'])) {
             try {
                 $path = $fb->downloadMessengerAttachment($session['image_url'], $report->id);
@@ -393,10 +785,52 @@ class MessengerWebhookController extends Controller
                         'file_type' => 'image',
                         'file_size' => Storage::disk('public')->size($path),
                     ]);
+                    $fullPath = Storage::disk('public')->path($path);
+                    $mediaFiles[] = new \Illuminate\Http\UploadedFile($fullPath, basename($path), 'image/jpeg', null, true);
                 }
             } catch (\Throwable $e) {
-                Log::warning('[Messenger] Failed to download image', ['error' => $e->getMessage()]);
+                Log::warning('[Messenger] Image download failed', ['error' => $e->getMessage()]);
             }
+        }
+
+        // AI analysis
+        try {
+            $aiFlags = ReportAnalysisService::analyze($report, $mediaFiles);
+            $report->update($aiFlags);
+
+            $hasThunderstorm = false;
+            try {
+                $weather = app(WeatherService::class)->current($report->latitude, $report->longitude);
+                $hasThunderstorm = str_contains(strtolower($weather['main'] ?? ''), 'thunderstorm');
+            } catch (\Throwable) {}
+
+            $exifFailed = ($aiFlags['ai_exif_status'] ?? null) === 'fail';
+            $autoVerified = ($aiFlags['ai_image_verified'] ?? false) === true
+                && ! $exifFailed
+                && ($hasThunderstorm || ($aiFlags['ai_flagged'] === false && $aiFlags['potential_duplicate_of'] === null));
+            $autoRejected = ($aiFlags['ai_image_verified'] ?? null) === false || $exifFailed;
+
+            if ($autoVerified) {
+                $report->update(['status' => 'verified', 'verified_at' => now()]);
+                ReportStatusUpdate::create([
+                    'report_id' => $report->id,
+                    'user_id'   => null,
+                    'status'    => 'verified',
+                    'notes'     => 'Auto-verified: AI confirmed flood in Messenger photo.',
+                ]);
+                $fb->sendMessage($senderId, "AI Verification: Photo confirmed as flood-related. Your report is now being processed.");
+            } elseif ($autoRejected) {
+                $report->update(['status' => 'rejected']);
+                ReportStatusUpdate::create([
+                    'report_id' => $report->id,
+                    'user_id'   => null,
+                    'status'    => 'rejected',
+                    'notes'     => 'Auto-rejected: Messenger photo did not pass AI verification.',
+                ]);
+                $fb->sendMessage($senderId, "AI Verification: Photo could not be confirmed as flood-related. An admin will review manually.");
+            }
+        } catch (\Throwable $e) {
+            Log::error('[Messenger] AI analysis failed', ['report_id' => $report->id, 'error' => $e->getMessage()]);
         }
 
         app(SlaService::class)->initializeTracking($report);
@@ -415,26 +849,23 @@ class MessengerWebhookController extends Controller
 
         $this->clearSession($senderId);
 
-        $severityEmoji = match ($report->severity) {
-            'critical' => '🔴',
-            'high'     => '🟠',
-            'moderate' => '🟡',
-            default    => '🟢',
-        };
-
-        $fb->sendMessage($senderId,
-            "✅ Report submitted!\n\n"
-            . "📋 Reference: {$report->reference_number}\n"
-            . "{$severityEmoji} Severity: " . ucfirst($report->severity) . "\n"
-            . ($report->address ? "📍 Location: {$report->address}\n" : '')
-            . "\nYour report is now pending review. Mag-ingat po!\n\n"
-            . "Send \"report\" to submit another."
+        $fb->sendQuickReplies($senderId,
+            "Report Submitted!\n\n"
+            . "Reference: {$report->reference_number}\n"
+            . "Severity: " . ucfirst($report->severity) . "\n"
+            . ($report->address ? "Location: {$report->address}\n" : '')
+            . "Coordinates: {$report->latitude}, {$report->longitude}\n"
+            . "\nMa-uupdate ka rito sa Messenger kapag may changes sa report mo. Mag-ingat po!",
+            ['Report Another', 'Check Status']
         );
 
         Log::info('[Messenger] Report created', [
             'sender'    => $senderId,
+            'name'      => $senderName,
             'report_id' => $report->id,
             'reference' => $report->reference_number,
+            'lat'       => $report->latitude,
+            'lng'       => $report->longitude,
         ]);
     }
 }

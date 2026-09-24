@@ -34,6 +34,7 @@ class Report extends Model
         'potential_duplicate_of',
         'source',
         'facebook_post_id',
+        'messenger_sender_id',
         'advisory',
     ];
 

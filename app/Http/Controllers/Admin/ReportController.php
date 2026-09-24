@@ -13,6 +13,7 @@ use App\Models\ReportStatusUpdate;
 use App\Models\Team;
 use App\Notifications\ReportStatusChanged;
 use App\Services\ExpoPushService;
+use App\Services\FacebookService;
 use App\Services\SlaService;
 use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
@@ -534,6 +535,34 @@ class ReportController extends Controller
         // Real-time socket
         SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => $newStatus]);
         SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => $newStatus]);
+
+        // Messenger notification — send status update back to the Messenger user
+        if ($report->source === 'messenger' && $report->messenger_sender_id) {
+            $ref = $report->reference_number;
+            $messengerMessages = [
+                'verified'     => "✅ Your flood report {$ref} has been verified. Responders will be dispatched shortly.",
+                'rejected'     => $reason
+                    ? "❌ Your report {$ref} could not be verified.\nReason: {$reason}"
+                    : "❌ Your report {$ref} could not be verified.",
+                'assigned'     => "🚑 A responder has been assigned to your report {$ref}. Help is on the way!",
+                'acknowledged' => "📋 Your report {$ref} has been reviewed. Stay safe and follow local advisories.",
+                'resolved'     => "✅ Your report {$ref} has been resolved. Thank you for helping keep your community safe!",
+            ];
+
+            if (isset($messengerMessages[$newStatus])) {
+                try {
+                    app(FacebookService::class)->sendMessage(
+                        $report->messenger_sender_id,
+                        $messengerMessages[$newStatus]
+                    );
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('[Messenger] Failed to send status update', [
+                        'report_id' => $report->id,
+                        'error'     => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
     }
 
     /** Haversine distance between two points in kilometres. */
