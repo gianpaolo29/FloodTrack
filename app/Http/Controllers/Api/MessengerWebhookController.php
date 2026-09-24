@@ -817,6 +817,7 @@ PROMPT;
         }
 
         // AI analysis
+        $aiNote = '';
         try {
             $aiFlags = ReportAnalysisService::analyze($report, $mediaFiles);
             $report->update($aiFlags);
@@ -833,6 +834,8 @@ PROMPT;
                 && ($hasThunderstorm || ($aiFlags['ai_flagged'] === false && $aiFlags['potential_duplicate_of'] === null));
             $autoRejected = ($aiFlags['ai_image_verified'] ?? null) === false || $exifFailed;
 
+            $aiReason = $aiFlags['ai_image_notes'] ?? $aiFlags['ai_flag_reason'] ?? null;
+
             if ($autoVerified) {
                 $report->update(['status' => 'verified', 'verified_at' => now()]);
                 ReportStatusUpdate::create([
@@ -841,16 +844,18 @@ PROMPT;
                     'status'    => 'verified',
                     'notes'     => 'Auto-verified: AI confirmed flood in Messenger photo.',
                 ]);
-                $fb->sendMessage($senderId, "AI Verification: Photo confirmed as flood-related. Your report is now being processed.");
+                $aiNote = "\nAI: Photo verified as flood-related. Report is now being processed.";
             } elseif ($autoRejected) {
                 $report->update(['status' => 'rejected']);
                 ReportStatusUpdate::create([
                     'report_id' => $report->id,
                     'user_id'   => null,
                     'status'    => 'rejected',
-                    'notes'     => 'Auto-rejected: Messenger photo did not pass AI verification.',
+                    'notes'     => 'Auto-rejected: ' . ($aiReason ?? 'Photo did not pass AI verification.'),
                 ]);
-                $fb->sendMessage($senderId, "AI Verification: Photo could not be confirmed as flood-related. An admin will review manually.");
+                $aiNote = "\nAI: " . ($aiReason ?? 'Photo could not be confirmed as flood-related.');
+            } elseif ($aiReason) {
+                $aiNote = "\nAI Note: {$aiReason}";
             }
         } catch (\Throwable $e) {
             Log::error('[Messenger] AI analysis failed', ['report_id' => $report->id, 'error' => $e->getMessage()]);
@@ -872,13 +877,18 @@ PROMPT;
 
         $this->clearSession($senderId);
 
+        $report->refresh();
+        $statusLabel = ucfirst($report->status);
+
         $fb->sendQuickReplies($senderId,
             "Report Submitted!\n\n"
             . "Reference: {$report->reference_number}\n"
+            . "Status: {$statusLabel}\n"
             . "Severity: " . ucfirst($report->severity) . "\n"
             . ($report->address ? "Location: {$report->address}\n" : '')
-            . "Coordinates: {$report->latitude}, {$report->longitude}\n"
-            . "\nMa-uupdate ka rito sa Messenger kapag may changes sa report mo. Mag-ingat po!",
+            . "Coordinates: {$report->latitude}, {$report->longitude}"
+            . $aiNote
+            . "\n\nMa-uupdate ka rito sa Messenger kapag may changes sa report mo. Mag-ingat po!",
             ['Report Another', 'Check Status']
         );
 
