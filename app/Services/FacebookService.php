@@ -160,4 +160,90 @@ class FacebookService
 
         return $response->successful();
     }
+
+    // ── Messenger Send API ──────────────────────────────────────────────────
+
+    /**
+     * Send a text message to a Messenger user.
+     */
+    public function sendMessage(string $recipientId, string $text): bool
+    {
+        return $this->sendRaw($recipientId, ['text' => $text]);
+    }
+
+    /**
+     * Send a message with quick-reply buttons.
+     */
+    public function sendQuickReplies(string $recipientId, string $text, array $options): bool
+    {
+        $quickReplies = array_map(fn (string $label) => [
+            'content_type' => 'text',
+            'title'        => $label,
+            'payload'      => $label,
+        ], $options);
+
+        return $this->sendRaw($recipientId, [
+            'text'          => $text,
+            'quick_replies' => $quickReplies,
+        ]);
+    }
+
+    /**
+     * Send a typing indicator.
+     */
+    public function sendTypingOn(string $recipientId): void
+    {
+        Http::post("{$this->baseUrl}/me/messages", [
+            'access_token'   => $this->pageAccessToken,
+            'recipient'      => ['id' => $recipientId],
+            'sender_action'  => 'typing_on',
+        ]);
+    }
+
+    /**
+     * Download a Messenger attachment (image) by URL with the page token.
+     */
+    public function downloadMessengerAttachment(string $url, int $reportId): ?string
+    {
+        try {
+            $response = Http::timeout(30)->get($url, [
+                'access_token' => $this->pageAccessToken,
+            ]);
+
+            if ($response->failed()) {
+                return null;
+            }
+
+            $filename = 'messenger_' . uniqid() . '.jpg';
+            $path     = "reports/{$reportId}/{$filename}";
+            Storage::disk('public')->put($path, $response->body());
+
+            return $path;
+        } catch (\Throwable $e) {
+            Log::warning('[FacebookService] Messenger attachment download failed', [
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    private function sendRaw(string $recipientId, array $message): bool
+    {
+        $response = Http::post("{$this->baseUrl}/me/messages", [
+            'access_token' => $this->pageAccessToken,
+            'recipient'    => ['id' => $recipientId],
+            'message'      => $message,
+        ]);
+
+        if ($response->failed()) {
+            Log::error('[FacebookService] Messenger send failed', [
+                'recipient' => $recipientId,
+                'status'    => $response->status(),
+                'body'      => $response->body(),
+            ]);
+            return false;
+        }
+
+        return true;
+    }
 }

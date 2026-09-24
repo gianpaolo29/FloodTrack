@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\FacebookWebhookController;
+use App\Http\Controllers\Api\MessengerWebhookController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\ReportController;
 use App\Http\Controllers\Api\AlertController;
@@ -27,6 +28,10 @@ use Illuminate\Support\Facades\Route;
 // ── Facebook Webhook (no auth required) ────────────────────────────────
 Route::get('/webhooks/facebook',  [FacebookWebhookController::class, 'verify']);
 Route::post('/webhooks/facebook', [FacebookWebhookController::class, 'handle']);
+
+// ── Messenger Chatbot Webhook (no auth required) ──────────────────────
+Route::get('/webhooks/messenger',  [MessengerWebhookController::class, 'verify']);
+Route::post('/webhooks/messenger', [MessengerWebhookController::class, 'handle']);
 
 // ── Public ──────────────────────────────────────────────────────────────
 Route::post('/register',       [AuthController::class, 'register']);
