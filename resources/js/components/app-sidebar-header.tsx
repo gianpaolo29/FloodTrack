@@ -62,6 +62,50 @@ interface AppNotification {
     created_at: string;
 }
 
+function LanguageDropdown() {
+    const { locale, setLocale } = useLocale();
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [open]);
+
+    return (
+        <div ref={ref} className="relative">
+            <button
+                onClick={() => setOpen(!open)}
+                className="flex size-9 items-center justify-center rounded-xl text-[11px] font-bold text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
+            >
+                {locale === 'en' ? 'EN' : 'FIL'}
+            </button>
+            {open && (
+                <div className="absolute right-0 top-full z-50 mt-1.5 w-36 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
+                    <button
+                        onClick={() => { setLocale('en'); setOpen(false); }}
+                        className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-xs font-medium transition-colors ${locale === 'en' ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-700 dark:text-white' : 'text-neutral-500 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-700/50'}`}
+                    >
+                        English
+                        {locale === 'en' && <CheckCheck className="ml-auto size-3.5 text-emerald-500" />}
+                    </button>
+                    <button
+                        onClick={() => { setLocale('fil'); setOpen(false); }}
+                        className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-xs font-medium transition-colors ${locale === 'fil' ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-700 dark:text-white' : 'text-neutral-500 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-700/50'}`}
+                    >
+                        Filipino
+                        {locale === 'fil' && <CheckCheck className="ml-auto size-3.5 text-emerald-500" />}
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
 export function AppSidebarHeader({
     breadcrumbs = [],
 }: {
@@ -393,14 +437,8 @@ export function AppSidebarHeader({
                     )}
                 </div>
 
-                {/* Language toggle */}
-                <button
-                    onClick={() => setLocale(locale === 'en' ? 'fil' : 'en')}
-                    className="flex size-9 items-center justify-center rounded-xl text-[11px] font-bold text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
-                    title={t('nav.language')}
-                >
-                    {locale === 'en' ? 'FIL' : 'EN'}
-                </button>
+                {/* Language dropdown */}
+                <LanguageDropdown />
 
                 {/* Dark mode toggle */}
                 <button

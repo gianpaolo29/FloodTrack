@@ -445,7 +445,20 @@ export default function AdminDashboard({
     const SERIES_COLORS: Record<string, string> = { Reports: '#6366f1', Resolved: '#10b981' };
 
     const { filteredDays, reportsData, resolvedData, pendingData, peakIndex, peakValue, peakDate, avgValue, alertDates } = useMemo(() => {
-        const fd = daily_reports.slice(-chartRange);
+        // Build a complete date range with zeros for missing days
+        const dataMap = new Map(daily_reports.map(d => [d.date, d]));
+        const allDays: typeof daily_reports = [];
+        const today = new Date();
+        for (let i = chartRange - 1; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            const mon = d.toLocaleDateString('en-US', { month: 'short' });
+            const day = String(d.getDate()).padStart(2, '0');
+            const label = `${mon} ${day}`;
+            const existing = dataMap.get(label);
+            allDays.push(existing ?? { date: label, total: 0, resolved: 0 });
+        }
+        const fd = allDays;
         let rp = fd.map(d => d.total);
         let rv = fd.map(d => d.resolved);
         let pd = fd.map(d => Math.max(0, d.total - d.resolved));

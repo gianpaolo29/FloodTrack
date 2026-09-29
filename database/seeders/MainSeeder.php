@@ -6,6 +6,8 @@ use App\Models\Alert;
 use App\Models\EvacuationCenter;
 use App\Models\Hazard;
 use App\Models\Report;
+use App\Models\ReportSlaConfig;
+use App\Models\ReportSlaTracking;
 use App\Models\ReportStatusUpdate;
 use App\Models\Team;
 use App\Models\User;
@@ -301,42 +303,49 @@ class MainSeeder extends Seeder
 
             $createdAt  = Carbon::parse($r['date']);
             $verifiedAt = in_array($r['status'], ['verified', 'assigned', 'resolved', 'rejected'])
-                ? $createdAt->copy()->addMinutes(rand(10, 45))
+                ? $createdAt->copy()->addMinutes(rand(3, 8))
                 : null;
             $assignedAt = in_array($r['status'], ['assigned', 'resolved']) && $team
-                ? ($verifiedAt ?? $createdAt)->copy()->addMinutes(rand(15, 60))
+                ? ($verifiedAt ?? $createdAt)->copy()->addMinutes(rand(2, 5))
                 : null;
             $resolvedAt = $r['status'] === 'resolved'
-                ? ($assignedAt ?? $createdAt)->copy()->addHours(rand(2, 8))
+                ? ($assignedAt ?? $createdAt)->copy()->addMinutes(rand(8, 20))
                 : null;
 
             // Normalize address to nearest barangay
             $normalizedAddress = $this->resolveBarangay($r['address'], $r['lat'], $r['lng']);
 
+            // First 30 from mobile app, rest from messenger
+            $source = $i < 30 ? 'mobile' : 'messenger';
+            $messengerName = $source === 'messenger' ? $resident->name : null;
+
             $report = Report::firstOrCreate(
                 ['latitude' => $r['lat'], 'longitude' => $r['lng'], 'created_at' => $createdAt],
                 [
-                    'user_id'          => $resident->id,
-                    'severity'         => $r['severity'],
-                    'status'           => $r['status'],
-                    'description'      => $r['desc'],
-                    'latitude'         => $r['lat'],
-                    'longitude'        => $r['lng'],
-                    'address'          => $normalizedAddress,
-                    'assigned_to'      => $responder?->id,
-                    'assigned_team_id' => $team?->id,
-                    'verified_by'      => $verifiedAt ? $admin->id : null,
-                    'verified_at'      => $verifiedAt,
-                    'assigned_at'      => $assignedAt,
-                    'resolved_at'      => $resolvedAt,
-                    'created_at'       => $createdAt,
-                    'updated_at'       => $resolvedAt ?? $assignedAt ?? $verifiedAt ?? $createdAt,
+                    'user_id'              => $resident->id,
+                    'severity'             => $r['severity'],
+                    'status'               => $r['status'],
+                    'description'          => $r['desc'],
+                    'latitude'             => $r['lat'],
+                    'longitude'            => $r['lng'],
+                    'address'              => $normalizedAddress,
+                    'source'               => $source,
+                    'messenger_sender_name'=> $messengerName,
+                    'assigned_to'          => $responder?->id,
+                    'assigned_team_id'     => $team?->id,
+                    'verified_by'          => $verifiedAt ? $admin->id : null,
+                    'verified_at'          => $verifiedAt,
+                    'assigned_at'          => $assignedAt,
+                    'resolved_at'          => $resolvedAt,
+                    'created_at'           => $createdAt,
+                    'updated_at'           => $resolvedAt ?? $assignedAt ?? $verifiedAt ?? $createdAt,
                 ]
             );
 
             // Seed status update history for activity feed
             if ($report->wasRecentlyCreated) {
                 $this->seedStatusUpdates($report, $r['status'], $admin, $responder, $createdAt, $verifiedAt, $assignedAt, $resolvedAt);
+                $this->seedSlaTracking($report, $r['severity'], $createdAt, $verifiedAt, $assignedAt, $resolvedAt);
             }
         }
 
@@ -379,6 +388,53 @@ class MainSeeder extends Seeder
                 'notes'      => 'Situation resolved. Floodwater receded and affected residents assisted.',
                 'created_at' => $resolvedAt,
                 'updated_at' => $resolvedAt,
+            ]);
+        }
+    }
+
+    private function seedSlaTracking(
+        Report $report, string $severity, Carbon $createdAt,
+        ?Carbon $verifiedAt, ?Carbon $assignedAt, ?Carbon $resolvedAt
+    ): void {
+        $stages = [
+            ['stage' => 'pending_to_verified',  'start' => $createdAt,   'end' => $verifiedAt],
+            ['stage' => 'verified_to_assigned',  'start' => $verifiedAt,  'end' => $assignedAt],
+            ['stage' => 'assigned_to_resolved',  'start' => $assignedAt,  'end' => $resolvedAt],
+        ];
+
+        foreach ($stages as $s) {
+            if (!$s['start']) continue;
+
+            $config = ReportSlaConfig::where('severity', $severity)
+                ->where('stage', $s['stage'])
+                ->first();
+
+            if (!$config) continue;
+
+            $elapsed = $s['end'] ? $s['start']->diffInMinutes($s['end']) : null;
+            $slaStatus = 'on_track';
+            if ($elapsed !== null) {
+                if ($elapsed > $config->threshold_minutes * ($config->critical_pct / 100)) {
+                    $slaStatus = 'breached';
+                } elseif ($elapsed > $config->threshold_minutes * ($config->warning_pct / 100)) {
+                    $slaStatus = 'at_risk';
+                } else {
+                    $slaStatus = 'met';
+                }
+            }
+
+            ReportSlaTracking::create([
+                'report_id'          => $report->id,
+                'stage'              => $s['stage'],
+                'started_at'         => $s['start'],
+                'threshold_minutes'  => $config->threshold_minutes,
+                'completed_at'       => $s['end'],
+                'elapsed_minutes'    => $elapsed,
+                'sla_status'         => $slaStatus,
+                'escalation_level'   => 0,
+                'escalated_at'       => null,
+                'created_at'         => $s['start'],
+                'updated_at'         => $s['end'] ?? $s['start'],
             ]);
         }
     }
