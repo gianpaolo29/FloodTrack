@@ -12,7 +12,7 @@ trait HasPeriodStats
 {
     protected function parsePeriod(Request $request): array
     {
-        $period = $request->get('period', 'today');
+        $period = $request->get('period', 'all');
         $customFrom = $request->get('from');
         $customTo = $request->get('to');
 

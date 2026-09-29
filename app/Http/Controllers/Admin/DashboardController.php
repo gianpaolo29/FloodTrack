@@ -133,13 +133,13 @@ class DashboardController extends Controller
         $prevAlerts = Alert::whereBetween('created_at', [$prevFrom, $prevTo])->count();
         $alertsTrend = $this->calcTrend($curAlerts, $prevAlerts);
 
-        // Daily reports for the last 30 days
+        // Daily reports for the last 90 days (frontend slices to 7/14/30/90)
         $dailyReports = Report::select(
                 DB::raw("DATE(created_at) as date"),
                 DB::raw("COUNT(*) as total"),
                 DB::raw("SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved")
             )
-            ->where('created_at', '>=', now()->subDays(30))
+            ->where('created_at', '>=', now()->subDays(90))
             ->groupBy(DB::raw("DATE(created_at)"))
             ->orderBy('date')
             ->get()

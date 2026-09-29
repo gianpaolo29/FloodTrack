@@ -635,7 +635,7 @@ export default function StatisticsPage({
         severity_breakdown['low']      ?? 0,
     ];
     const totalSeverity = severityValues.reduce((a, b) => a + b, 0);
-    const statusValues  = ['pending', 'verified', 'acknowledged', 'assigned', 'resolved', 'rejected'].map(s => status_breakdown[s] ?? 0);
+    const statusValues  = ['pending', 'verified', 'assigned', 'resolved', 'rejected'].map(s => status_breakdown[s] ?? 0);
 
     const monthlyLabels = monthly_trend.map(m => m.month);
     const monthlySeries = [
@@ -731,8 +731,8 @@ export default function StatisticsPage({
                     size: '70%',
                     labels: {
                         show: true,
-                        name: { show: true, fontSize: '10px', fontWeight: '500', color: '#94a3b8', offsetY: 8 },
-                        value: { show: true, fontSize: '30px', fontWeight: '800', color: '#111827', offsetY: -14, formatter: v => v },
+                        name: { show: true, fontSize: '10px', fontWeight: '500', color: '#94a3b8', offsetY: -4 },
+                        value: { show: true, fontSize: '30px', fontWeight: '800', color: '#111827', offsetY: 4, formatter: v => v },
                         total: { show: true, showAlways: true, label: 'total', fontSize: '11px', fontWeight: '500', color: '#94a3b8', formatter: () => String(totalSeverity) },
                     },
                 },
@@ -879,7 +879,7 @@ export default function StatisticsPage({
         dataLabels: { enabled: false },
         legend: { position: 'bottom', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
         stroke: { width: 2, colors: ['#ffffff'] },
-        plotOptions: { pie: { donut: { size: '68%', labels: { show: true, name: { show: true, fontSize: '10px', fontWeight: '500', color: '#94a3b8', offsetY: 8 }, value: { show: true, fontSize: '24px', fontWeight: '800', color: '#111827', offsetY: -10, formatter: v => v }, total: { show: true, showAlways: true, label: 'total', fontSize: '10px', fontWeight: '500', color: '#94a3b8', formatter: () => String(sourceValues.reduce((a, b) => a + b, 0)) } } } } },
+        plotOptions: { pie: { donut: { size: '68%', labels: { show: true, name: { show: true, fontSize: '10px', fontWeight: '500', color: '#94a3b8', offsetY: -4 }, value: { show: true, fontSize: '24px', fontWeight: '800', color: '#111827', offsetY: 4, formatter: v => v }, total: { show: true, showAlways: true, label: 'total', fontSize: '10px', fontWeight: '500', color: '#94a3b8', formatter: () => String(sourceValues.reduce((a, b) => a + b, 0)) } } } } },
         tooltip: {
             custom: ({ series, seriesIndex, w }) => {
                 const label = w.globals.labels[seriesIndex];
