@@ -8,6 +8,8 @@ use App\Models\Alert;
 use App\Models\EvacuationCenter;
 use App\Models\OccupancyLog;
 use App\Models\Report;
+use App\Models\ReportSlaTracking;
+use App\Models\Setting;
 use App\Models\Team;
 use App\Models\User;
 use Carbon\Carbon;
@@ -20,6 +22,37 @@ use OpenAI;
 class StatisticsController extends Controller
 {
     use HasPeriodStats;
+
+    private function resolveBarangay(?string $address, ?float $lat = null, ?float $lng = null): string
+    {
+        $barangays = config('barangays', []);
+
+        if ($lat && $lng) {
+            $nearest = null;
+            $minDist = PHP_FLOAT_MAX;
+            foreach ($barangays as $brgy) {
+                $dist = sqrt(pow($lat - $brgy['latitude'], 2) + pow($lng - $brgy['longitude'], 2));
+                if ($dist < $minDist) { $minDist = $dist; $nearest = $brgy['name']; }
+            }
+            if ($nearest) return $nearest;
+        }
+
+        if ($address) {
+            $sorted = collect($barangays)->sortByDesc(fn ($b) => mb_strlen($b['name']))->values();
+            foreach ($sorted as $brgy) {
+                $name = $brgy['name'];
+                if (preg_match('/^Barangay\s+(\d+)/i', $name, $m)) {
+                    if (preg_match('/\b(?:Brgy\.?|Barangay)\s*' . $m[1] . '\b/i', $address)) return $name;
+                    continue;
+                }
+                if (preg_match('/\b(?:Brgy\.?\s*|Barangay\s*)?' . preg_quote($name, '/') . '\b/i', $address)) return $name;
+            }
+            if (preg_match('/\bPoblacion\b/i', $address)) return 'Barangay 1 (Pob.)';
+        }
+
+        return 'Other / Unclassified';
+    }
+
     public function index(Request $request): Response
     {
         [$from, $to, $period] = $this->parsePeriod($request);
@@ -272,18 +305,17 @@ class StatisticsController extends Controller
                 'minutes' => round((float) $r->response_minutes, 1),
             ]);
 
-        // Barangay Report Heatmap — report counts per area (top 20)
-        $barangayReports = Report::select('address', DB::raw('COUNT(*) as count'))
-            ->whereNotNull('address')
-            ->where('address', '!=', '')
-            ->groupBy('address')
-            ->orderByDesc('count')
-            ->limit(20)
-            ->get()
-            ->map(fn ($r) => [
-                'area' => $r->address,
-                'count' => (int) $r->count,
-            ]);
+        // Barangay Report Heatmap — report counts per area (top 20, normalized)
+        $rawBarangayData = Report::select('address', 'latitude', 'longitude')->get();
+        $barangayCounts = [];
+        foreach ($rawBarangayData as $row) {
+            $brgy = $this->resolveBarangay($row->address, $row->latitude ? (float) $row->latitude : null, $row->longitude ? (float) $row->longitude : null);
+            $barangayCounts[$brgy] = ($barangayCounts[$brgy] ?? 0) + 1;
+        }
+        arsort($barangayCounts);
+        $barangayReports = collect(array_slice($barangayCounts, 0, 20, true))
+            ->map(fn ($count, $area) => ['area' => $area, 'count' => $count])
+            ->values();
 
         // This Month vs Last Month — comparative bar by severity
         $curMonthStart = now()->startOfMonth();
@@ -315,6 +347,62 @@ class StatisticsController extends Controller
                 'moderate' => (int) ($lastMonthBySeverity['moderate'] ?? 0),
                 'low' => (int) ($lastMonthBySeverity['low'] ?? 0),
             ],
+        ];
+
+        // ── Response Time Breakdown (per stage) ──────────────────────
+        $stageDiffExprs = DB::getDriverName() === 'sqlite'
+            ? [
+                'report_to_verified'  => "(julianday(verified_at) - julianday(created_at)) * 1440",
+                'verified_to_assigned'=> "(julianday(assigned_at) - julianday(verified_at)) * 1440",
+                'assigned_to_resolved'=> "(julianday(resolved_at) - julianday(assigned_at)) * 1440",
+            ]
+            : [
+                'report_to_verified'  => "TIMESTAMPDIFF(MINUTE, created_at, verified_at)",
+                'verified_to_assigned'=> "TIMESTAMPDIFF(MINUTE, verified_at, assigned_at)",
+                'assigned_to_resolved'=> "TIMESTAMPDIFF(MINUTE, assigned_at, resolved_at)",
+            ];
+
+        // Overall averages per stage
+        $responseBreakdown = DB::table('reports')
+            ->where('status', 'resolved')
+            ->whereNotNull('resolved_at')
+            ->selectRaw("
+                ROUND(AVG(CASE WHEN verified_at IS NOT NULL THEN {$stageDiffExprs['report_to_verified']} END), 1) as avg_report_to_verified,
+                ROUND(AVG(CASE WHEN verified_at IS NOT NULL AND assigned_at IS NOT NULL THEN {$stageDiffExprs['verified_to_assigned']} END), 1) as avg_verified_to_assigned,
+                ROUND(AVG(CASE WHEN assigned_at IS NOT NULL THEN {$stageDiffExprs['assigned_to_resolved']} END), 1) as avg_assigned_to_resolved,
+                COUNT(*) as total_resolved
+            ")
+            ->first();
+
+        // Per-severity breakdown
+        $responseBreakdownBySeverity = DB::table('reports')
+            ->where('status', 'resolved')
+            ->whereNotNull('resolved_at')
+            ->groupBy('severity')
+            ->selectRaw("
+                severity,
+                ROUND(AVG(CASE WHEN verified_at IS NOT NULL THEN {$stageDiffExprs['report_to_verified']} END), 1) as avg_report_to_verified,
+                ROUND(AVG(CASE WHEN verified_at IS NOT NULL AND assigned_at IS NOT NULL THEN {$stageDiffExprs['verified_to_assigned']} END), 1) as avg_verified_to_assigned,
+                ROUND(AVG(CASE WHEN assigned_at IS NOT NULL THEN {$stageDiffExprs['assigned_to_resolved']} END), 1) as avg_assigned_to_resolved,
+                COUNT(*) as count
+            ")
+            ->get()
+            ->map(fn ($r) => [
+                'severity' => $r->severity,
+                'avg_report_to_verified'   => (float) ($r->avg_report_to_verified ?? 0),
+                'avg_verified_to_assigned'  => (float) ($r->avg_verified_to_assigned ?? 0),
+                'avg_assigned_to_resolved'  => (float) ($r->avg_assigned_to_resolved ?? 0),
+                'count' => (int) $r->count,
+            ]);
+
+        $responseBreakdownData = [
+            'overall' => [
+                'avg_report_to_verified'   => (float) ($responseBreakdown->avg_report_to_verified ?? 0),
+                'avg_verified_to_assigned'  => (float) ($responseBreakdown->avg_verified_to_assigned ?? 0),
+                'avg_assigned_to_resolved'  => (float) ($responseBreakdown->avg_assigned_to_resolved ?? 0),
+                'total_resolved' => (int) ($responseBreakdown->total_resolved ?? 0),
+            ],
+            'by_severity' => $responseBreakdownBySeverity->values(),
         ];
 
         // Report Source Breakdown — donut
@@ -359,13 +447,13 @@ class StatisticsController extends Controller
             'source_breakdown'        => $sourceBreakdown,
             'evac_by_type'            => $evacByType,
             'user_roles'              => $userRoles,
+            'response_breakdown'      => $responseBreakdownData,
         ]);
     }
 
     public function aiInsights(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
-            // Period filter — using shared trait
             [$from, $to, $period] = $this->parsePeriod($request);
 
             $periodLabel = match($period) {
@@ -400,6 +488,97 @@ class StatisticsController extends Controller
                 ->orderByDesc('resolved_count')
                 ->first(['id', 'name']);
 
+            // ── NEW: Response time breakdown per stage ──
+            $stageDiffExprs = DB::getDriverName() === 'sqlite'
+                ? [
+                    'r2v' => "(julianday(verified_at) - julianday(created_at)) * 1440",
+                    'v2a' => "(julianday(assigned_at) - julianday(verified_at)) * 1440",
+                    'a2r' => "(julianday(resolved_at) - julianday(assigned_at)) * 1440",
+                ]
+                : [
+                    'r2v' => "TIMESTAMPDIFF(MINUTE, created_at, verified_at)",
+                    'v2a' => "TIMESTAMPDIFF(MINUTE, verified_at, assigned_at)",
+                    'a2r' => "TIMESTAMPDIFF(MINUTE, assigned_at, resolved_at)",
+                ];
+
+            $stageAvgs = DB::table('reports')
+                ->where('status', 'resolved')
+                ->whereNotNull('resolved_at')
+                ->selectRaw("
+                    ROUND(AVG(CASE WHEN verified_at IS NOT NULL THEN {$stageDiffExprs['r2v']} END), 1) as avg_report_to_verified,
+                    ROUND(AVG(CASE WHEN verified_at IS NOT NULL AND assigned_at IS NOT NULL THEN {$stageDiffExprs['v2a']} END), 1) as avg_verified_to_assigned,
+                    ROUND(AVG(CASE WHEN assigned_at IS NOT NULL THEN {$stageDiffExprs['a2r']} END), 1) as avg_assigned_to_resolved
+                ")
+                ->first();
+
+            $avgR2V = round((float) ($stageAvgs->avg_report_to_verified ?? 0), 1);
+            $avgV2A = round((float) ($stageAvgs->avg_verified_to_assigned ?? 0), 1);
+            $avgA2R = round((float) ($stageAvgs->avg_assigned_to_resolved ?? 0), 1);
+
+            // ── NEW: Top affected barangays ──
+            $topBarangays = (clone $reportQuery)
+                ->select('address', DB::raw('COUNT(*) as count'),
+                    DB::raw("SUM(CASE WHEN severity IN ('critical','high') THEN 1 ELSE 0 END) as critical_high"))
+                ->whereNotNull('address')
+                ->where('address', '!=', '')
+                ->groupBy('address')
+                ->orderByDesc('count')
+                ->limit(10)
+                ->get();
+
+            $barangayLines = $topBarangays->map(function ($b) {
+                return "  - {$b->address}: {$b->count} reports ({$b->critical_high} critical/high)";
+            })->implode("\n");
+
+            // ── NEW: Team performance ──
+            $teamAvgExpr = DB::getDriverName() === 'sqlite'
+                ? 'AVG((julianday(resolved_at) - julianday(created_at)) * 1440)'
+                : 'AVG(TIMESTAMPDIFF(MINUTE, created_at, resolved_at))';
+
+            $teams = Team::withCount([
+                    'reports as total_assigned',
+                    'reports as resolved_count' => fn ($q) => $q->whereNotNull('resolved_at'),
+                ])
+                ->where('is_active', true)
+                ->get(['id', 'name']);
+
+            $teamLines = $teams->map(function ($team) use ($teamAvgExpr) {
+                $eff = $team->total_assigned > 0 ? round(($team->resolved_count / $team->total_assigned) * 100) : 0;
+                $avg = Report::where('assigned_team_id', $team->id)
+                    ->whereNotNull('resolved_at')
+                    ->selectRaw("$teamAvgExpr as avg_minutes")
+                    ->value('avg_minutes');
+                $avgMin = round((float) ($avg ?? 0), 1);
+                $activeNow = Report::where('assigned_team_id', $team->id)
+                    ->whereIn('status', ['verified', 'assigned'])
+                    ->count();
+                return "  - {$team->name}: {$team->resolved_count}/{$team->total_assigned} resolved ({$eff}% efficiency), avg {$avgMin} min, {$activeNow} active now";
+            })->implode("\n");
+
+            // ── NEW: SLA breach data ──
+            $slaEnabled = Setting::getValue('sla_enabled', false);
+            $slaSection = '';
+            if ($slaEnabled) {
+                $totalBreached = ReportSlaTracking::where('sla_status', 'breached')->count();
+                $totalAtRisk   = ReportSlaTracking::whereNull('completed_at')
+                    ->get()
+                    ->filter(fn ($t) => $t->computeCurrentStatus() === 'at_risk')
+                    ->count();
+                $totalTracked  = ReportSlaTracking::count();
+                $breachRate    = $totalTracked > 0 ? round(($totalBreached / $totalTracked) * 100, 1) : 0;
+                $slaSection = "\nSLA Performance (enabled):\n- Total SLA-tracked stages: {$totalTracked}\n- Breached: {$totalBreached} ({$breachRate}%)\n- Currently at risk: {$totalAtRisk}";
+            }
+
+            // ── NEW: Report source distribution ──
+            $sources = (clone $reportQuery)
+                ->selectRaw("COALESCE(source, 'mobile') as source, COUNT(*) as count")
+                ->groupBy(DB::raw("COALESCE(source, 'mobile')"))
+                ->pluck('count', 'source');
+
+            $sourceLines = $sources->map(function ($count, $source) {
+                return "  - {$source}: {$count}";
+            })->implode("\n");
+
             // Per-center evacuation details
             $centers = EvacuationCenter::orderByDesc('current_occupancy')
                 ->get(['name', 'type', 'capacity', 'current_occupancy', 'is_active']);
@@ -419,7 +598,7 @@ class StatisticsController extends Controller
                 return "  - {$c->name} ({$c->type}): {$c->current_occupancy}/{$c->capacity} ({$pct}%) — {$status}{$flag}";
             })->implode("\n");
 
-            // Daily trend — last 7 days (new reports vs resolved per day)
+            // Daily trend — last 7 days
             $dailyTrend = Report::selectRaw("DATE(created_at) as date, count(*) as new_reports, SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved")
                 ->where('created_at', '>=', now()->subDays(7))
                 ->groupBy(DB::raw('DATE(created_at)'))
@@ -435,14 +614,12 @@ class StatisticsController extends Controller
                 return "  - {$date}: {$newR} new, {$resR} resolved{$indicator}";
             })->implode("\n");
 
-            // Compute trend direction
             $trendDays    = $dailyTrend->values();
             $totalNew7d   = $trendDays->sum('new_reports');
             $totalRes7d   = $trendDays->sum('resolved');
             $backlog7d    = $totalNew7d - $totalRes7d;
             $resRate7d    = $totalNew7d > 0 ? round(($totalRes7d / $totalNew7d) * 100, 1) : 0;
 
-            // Compare first half vs second half of the 7-day window for surge detection
             $halfPoint    = (int) ceil($trendDays->count() / 2);
             $firstHalf    = $trendDays->slice(0, $halfPoint);
             $secondHalf   = $trendDays->slice($halfPoint);
@@ -450,9 +627,9 @@ class StatisticsController extends Controller
             $avgSecond    = $secondHalf->count() > 0 ? round($secondHalf->avg('new_reports'), 1) : 0;
             $surgeNote    = '';
             if ($avgFirst > 0 && $avgSecond > $avgFirst * 1.5) {
-                $surgeNote = '⚠ SURGE DETECTED: reports in recent days are significantly higher than earlier in the week.';
+                $surgeNote = 'SURGE DETECTED: reports in recent days are significantly higher than earlier in the week.';
             } elseif ($avgFirst > 0 && $avgSecond < $avgFirst * 0.5) {
-                $surgeNote = '✓ Reports are declining compared to earlier in the week.';
+                $surgeNote = 'Reports are declining compared to earlier in the week.';
             }
 
             $sev_critical = $severity_breakdown['critical'] ?? 0;
@@ -464,11 +641,13 @@ class StatisticsController extends Controller
             $avg_minutes  = round((float) ($avg_response_time_raw ?? 0), 1);
             $centerCount  = $centers->count();
             $activeCount  = $centers->where('is_active', true)->count();
+            $barangayCount = $topBarangays->count();
+            $teamCount     = $teams->count();
 
             $prompt = <<<PROMPT
 Analysis period: {$periodLabel}
 
-Flood report data ({$periodLabel}):
+=== FLOOD REPORT DATA ({$periodLabel}) ===
 - Total reports: {$total_reports}
 - Pending reports: {$pending}
 - Active reports (verified/assigned): {$active}
@@ -477,33 +656,71 @@ Flood report data ({$periodLabel}):
 - High severity: {$sev_high}
 - Moderate severity: {$sev_moderate}
 - Low severity: {$sev_low}
-- Average response time: {$avg_minutes} minutes
+- Average total response time: {$avg_minutes} minutes
 - Top responder: {$top_name} with {$top_count} resolved reports
 
-Daily trend (last 7 days):
+=== RESPONSE TIME BREAKDOWN (avg per stage) ===
+- Report → Verified: {$avgR2V} minutes (how long until admin verifies)
+- Verified → Assigned: {$avgV2A} minutes (how long until team is dispatched)
+- Assigned → Resolved: {$avgA2R} minutes (how long until on-ground resolution)
+Note: Identify which stage is the slowest bottleneck and why it matters.
+
+=== TOP AFFECTED AREAS ({$barangayCount} areas) ===
+{$barangayLines}
+
+=== TEAM PERFORMANCE ({$teamCount} active teams) ===
+{$teamLines}
+{$slaSection}
+
+=== REPORT SOURCES ===
+{$sourceLines}
+
+=== DAILY TREND (last 7 days) ===
 {$trendLines}
-  Summary: {$totalNew7d} new reports, {$totalRes7d} resolved, net backlog change: {$backlog7d}, resolution rate: {$resRate7d}%
+  Summary: {$totalNew7d} new reports, {$totalRes7d} resolved, net backlog: {$backlog7d}, resolution rate: {$resRate7d}%
   {$surgeNote}
 
-Evacuation centers ({$activeCount} active out of {$centerCount} total, {$total_occupancy}/{$total_capacity} overall occupancy — {$occupancy_pct}%):
+=== EVACUATION CENTERS ({$activeCount} active / {$centerCount} total, {$total_occupancy}/{$total_capacity} occupancy — {$occupancy_pct}%) ===
 {$centerLines}
 
-Please analyze this flood situation and respond ONLY with a JSON object in this exact format:
+Analyze this flood situation comprehensively. Respond ONLY with a JSON object in this exact format:
 {
   "risk_level": "critical" | "high" | "moderate" | "low",
-  "summary": "A concise 2-3 sentence summary of the current flood situation.",
+  "confidence": "high" | "medium" | "low",
+  "summary": "2-3 sentence executive summary of the situation.",
   "key_findings": ["Finding 1", "Finding 2", "Finding 3", "Finding 4"],
+  "bottleneck": {
+    "stage": "report_to_verified" | "verified_to_assigned" | "assigned_to_resolved",
+    "avg_minutes": <number>,
+    "explanation": "Why this stage is the bottleneck and its impact.",
+    "fix": "Specific action to reduce this stage's time."
+  },
+  "affected_areas": [
+    {"name": "Barangay Name", "risk": "critical|high|moderate|low", "reason": "Why this area is at risk"}
+  ],
+  "team_actions": [
+    {"team": "Team Name", "action": "Specific action for this team", "priority": "high|medium|low"}
+  ],
+  "evacuation_actions": [
+    {"center": "Center Name", "action": "open|close|expand|monitor|relocate", "reason": "Why this action is needed"}
+  ],
   "recommendations": ["Recommendation 1", "Recommendation 2", "Recommendation 3"],
   "priority_action": "The single most important immediate action to take."
 }
+
+Rules:
+- "affected_areas": include up to 5 most critical areas from the data. If no areas have reports, return empty array.
+- "team_actions": include specific actions for teams that need attention (overloaded, low efficiency, or idle). If all teams are fine, return empty array.
+- "evacuation_actions": include actions for centers that need intervention (near capacity, inactive with evacuees, underutilized). If all centers are fine, return empty array.
+- "confidence": "high" if 50+ reports with good data coverage, "medium" if 10-49, "low" if under 10 reports.
+- "bottleneck": always identify the slowest stage even if times are reasonable — this helps continuous improvement.
 PROMPT;
 
-            // Adapt system prompt tone based on period
             $systemPrompt = match($period) {
-                'today' => 'You are an AI assistant specializing in flood disaster management and emergency response. You are providing a real-time situational briefing for today. Focus on immediate threats, urgent actions needed right now, and any evacuation centers that need attention. Flag any centers near capacity or inactive centers that still have evacuees. Use the daily trend data to detect surges — if today\'s reports are significantly higher than prior days, call it out urgently. If backlog is growing (more new than resolved), flag it. Be direct and actionable. Return only valid JSON with no additional text or markdown.',
-                'week'  => 'You are an AI assistant specializing in flood disaster management and emergency response. You are analyzing this week\'s flood activity. Use the daily trend data to identify whether reports are surging, stable, or declining day-over-day. Compare the resolution rate against incoming reports — if backlog is growing, highlight the gap. Identify developing trends, areas of concern, and whether the situation is improving or worsening. Highlight evacuation center capacity issues and distribution imbalances. Return only valid JSON with no additional text or markdown.',
-                'month' => 'You are an AI assistant specializing in flood disaster management and emergency response. You are providing a monthly operational review. Use the daily trend data to identify patterns — peak days, recurring surges, and resolution bottlenecks. Assess whether the team is keeping up with incoming reports or falling behind. Evaluate evacuation center utilization efficiency and suggest resource planning improvements. Return only valid JSON with no additional text or markdown.',
-                default => 'You are an AI assistant specializing in flood disaster management and emergency response. You are providing a comprehensive all-time strategic overview. Use the daily trend data to assess current momentum — is the situation getting better or worse recently? Identify long-term patterns, systemic issues, whether resolution capacity matches report volume, evacuation center capacity planning needs, and strategic recommendations for improving flood response. Return only valid JSON with no additional text or markdown.',
+                'today' => 'You are an AI disaster analyst for a Philippine municipal flood response system (MDRRMC). You are providing a REAL-TIME situational briefing for today. Be urgent and direct. Focus on: immediate threats from the report data, response bottlenecks that are slowing teams RIGHT NOW, evacuation centers needing immediate action, and which barangays are most at risk today. Use the response time breakdown to identify where the pipeline is stuck. If SLA breaches exist, escalate urgency. Cross-reference team performance with affected areas — are the right teams deployed to the right places? Return only valid JSON.',
+                'week'  => 'You are an AI disaster analyst for a Philippine municipal flood response system (MDRRMC). You are analyzing this week\'s flood activity. Identify trends: are reports surging or declining? Is the response pipeline keeping up? Use the stage-by-stage response times to pinpoint bottlenecks. Compare team workloads — flag imbalances. Assess whether evacuation center capacity matches the geographic distribution of reports. Recommend resource reallocation if needed. Return only valid JSON.',
+                'month' => 'You are an AI disaster analyst for a Philippine municipal flood response system (MDRRMC). You are providing a monthly operational review. Analyze patterns: recurring hotspot barangays, systemic bottlenecks in the response pipeline, team performance trends, and evacuation center utilization efficiency. Recommend structural improvements — staffing, training, infrastructure. Use the source breakdown to suggest communication strategy improvements. Return only valid JSON.',
+                default => 'You are an AI disaster analyst for a Philippine municipal flood response system (MDRRMC). You are providing a comprehensive strategic overview. Identify long-term patterns, systemic bottlenecks across all response stages, team capacity gaps, geographic risk concentrations, and evacuation infrastructure adequacy. Make data-driven recommendations for budget, staffing, infrastructure, and process improvements. Assess whether the overall system is improving or degrading. Return only valid JSON.',
             };
 
             $client   = OpenAI::factory()
@@ -514,14 +731,8 @@ PROMPT;
                 'model'       => 'gpt-4o-mini',
                 'temperature' => 0.4,
                 'messages'    => [
-                    [
-                        'role'    => 'system',
-                        'content' => $systemPrompt,
-                    ],
-                    [
-                        'role'    => 'user',
-                        'content' => $prompt,
-                    ],
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ['role' => 'user',   'content' => $prompt],
                 ],
             ]);
 

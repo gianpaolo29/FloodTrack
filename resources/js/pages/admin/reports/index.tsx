@@ -9,7 +9,6 @@ import {
     Clock,
     Copy,
     FileText,
-    Filter,
     Globe,
     ImageOff,
     MapPin,
@@ -23,11 +22,13 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { MultiSelectFilter } from '@/components/admin/MultiSelectFilter';
 import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
 import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
 import type { InsightRow } from '@/lib/kpi-utils';
 import { swalDelete, swalSuccess } from '@/lib/swal';
+import { useLocale } from '@/hooks/use-locale';
 import type { BreadcrumbItem } from '@/types';
 import type { Report, ReportStatus, Severity, SlaStatus } from '@/types/admin';
 import { SEVERITY_COLORS, SLA_STATUS_COLORS, SLA_STATUS_LABELS, STATUS_COLORS } from '@/types/admin';
@@ -80,11 +81,20 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Reports', href: '/admin/reports' },
 ];
 
-const SEVERITY_OPTIONS: { value: string; label: string }[] = [
-    { value: 'critical', label: 'Critical' },
-    { value: 'high',     label: 'High' },
-    { value: 'moderate', label: 'Moderate' },
-    { value: 'low',      label: 'Low' },
+const SEVERITY_FILTER_OPTIONS = [
+    { value: 'critical', label: 'Critical', color: '#ef4444' },
+    { value: 'high',     label: 'High',     color: '#f97316' },
+    { value: 'moderate', label: 'Moderate', color: '#fbbf24' },
+    { value: 'low',      label: 'Low',      color: '#22c55e' },
+];
+
+const STATUS_FILTER_OPTIONS = [
+    { value: 'pending',      label: 'Pending' },
+    { value: 'verified',     label: 'Verified' },
+    { value: 'acknowledged', label: 'Advisory Issued' },
+    { value: 'assigned',     label: 'Assigned' },
+    { value: 'resolved',     label: 'Resolved' },
+    { value: 'rejected',     label: 'Rejected' },
 ];
 
 const STATUS_LABEL: Record<string, string> = {
@@ -98,13 +108,14 @@ const STATUS_LABEL: Record<string, string> = {
 
 /* ─── Main page ─── */
 export default function AdminReportsIndex({ reports, filters, stats, trends, period, custom_from, custom_to, teams }: Props) {
+    const { t } = useLocale();
     const [selected, setSelected]             = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [searchValue, setSearchValue]       = useState(filters.search ?? '');
     const [mounted, setMounted]               = useState(false);
     const searchRef                            = useRef<HTMLInputElement>(null);
 
-    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+    useEffect(() => { const tm = setTimeout(() => setMounted(true), 80); return () => clearTimeout(tm); }, []);
 
     const tl = trends.label;
     const pendingPct = stats.total > 0 ? Math.round((stats.pending / stats.total) * 100) : 0;
@@ -194,7 +205,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
         return r.reference_number.toLowerCase().includes(q) || (r.address ?? '').toLowerCase().includes(q) || (r.user?.name ?? '').toLowerCase().includes(q);
     });
 
-    const hasExtraFilters = !!(filters.severity || searchValue || filters.team_id);
+    const hasExtraFilters = !!(filters.severity || filters.team_id || filters.status);
     const allOnPageSelected = filtered.length > 0 && filtered.every((r) => selected.includes(r.id));
 
     const toggleAll = () => {
@@ -222,7 +233,11 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
         });
     };
 
-    const activeStatusLabel = filters.status ? (STATUS_LABEL[filters.status] ?? filters.status) : 'All Reports';
+    const activeStatusLabel = filters.status
+        ? (filters.status.includes(',')
+            ? `${filters.status.split(',').length} statuses`
+            : (STATUS_LABEL[filters.status] ?? filters.status))
+        : 'All Reports';
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -242,7 +257,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                 {activeStatusLabel}
                             </h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-                                Monitor, verify, and manage flood incident reports.
+                                {t('reports.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -367,116 +382,46 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-neutral-300/50 to-transparent dark:via-neutral-600/50" />
 
                     {/* ── Toolbar ── */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/30">
-                        <div className="flex items-center gap-2.5">
-                            <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{activeStatusLabel}</span>
-                            <span className="inline-flex items-center rounded-full bg-neutral-900/10 px-2.5 py-0.5 text-[11px] font-bold text-neutral-600 dark:bg-white/10 dark:text-neutral-400">
-                                {reports.total}
-                            </span>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                            {/* Search */}
-                            <div className="relative w-56">
-                                <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
-                                <input
-                                    ref={searchRef}
-                                    type="text"
-                                    value={searchValue}
-                                    onChange={(e) => setSearchValue(e.target.value)}
-                                    placeholder="Search reference or address…"
-                                    className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
-                                />
-                                {searchValue && (
-                                    <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
-                                        <X className="size-3.5" />
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Severity filter */}
-                            <div className="flex items-center gap-1 rounded-xl border border-neutral-200/80 bg-white px-2 py-1 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-                                <Filter className="size-3.5 shrink-0 text-neutral-400" />
-                                <span className="pr-1 text-xs text-neutral-400">Severity</span>
-                                {SEVERITY_OPTIONS.map((opt) => {
-                                    const active = filters.severity === opt.value;
-                                    return (
-                                        <button
-                                            key={opt.value}
-                                            onClick={() => filter('severity', active ? '' : opt.value)}
-                                            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
-                                                active
-                                                    ? SEVERITY_COLORS[opt.value as Severity]
-                                                    : 'text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
-                                            }`}
-                                        >
-                                            {opt.label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Team filter */}
-                            {teams.length > 0 && (
-                                <select
-                                    value={filters.team_id ?? ''}
-                                    onChange={(e) => filter('team_id', e.target.value)}
-                                    className="h-9 rounded-xl border border-neutral-200/80 bg-white px-3 text-xs font-medium text-neutral-600 shadow-sm outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
-                                >
-                                    <option value="">All Teams</option>
-                                    {teams.map((t) => (
-                                        <option key={t.id} value={String(t.id)}>{t.name}</option>
-                                    ))}
-                                </select>
-                            )}
-
-                            {/* Active filter chips */}
-                            <AnimatePresence>
-                                {filters.team_id && (
-                                    <motion.span
-                                        key="team-chip"
-                                        initial={{ opacity: 0, scale: 0.88 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.88 }}
-                                        transition={{ duration: 0.15 }}
-                                        className="inline-flex items-center gap-1.5 rounded-full border border-violet-200/80 bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 dark:border-violet-800/40 dark:bg-violet-950/30 dark:text-violet-400"
-                                    >
-                                        <Filter className="size-3" />
-                                        {teams.find((t) => String(t.id) === filters.team_id)?.name ?? 'Team'}
-                                        <button onClick={() => filter('team_id', '')} className="rounded-full hover:bg-violet-100 dark:hover:bg-violet-900/40">
-                                            <X className="size-3" />
-                                        </button>
-                                    </motion.span>
-                                )}
-                            </AnimatePresence>
-                            <AnimatePresence>
-                                {searchValue && (
-                                    <motion.span
-                                        key="search-chip"
-                                        initial={{ opacity: 0, scale: 0.88 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.88 }}
-                                        transition={{ duration: 0.15 }}
-                                        className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200/80 bg-neutral-50 px-2.5 py-1 text-xs font-medium text-neutral-700 dark:border-neutral-700/40 dark:bg-neutral-800/30 dark:text-neutral-400"
-                                    >
-                                        <Search className="size-3" />
-                                        &ldquo;{searchValue}&rdquo;
-                                        <button onClick={() => setSearchValue('')} className="rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700/40">
-                                            <X className="size-3" />
-                                        </button>
-                                    </motion.span>
-                                )}
-                            </AnimatePresence>
-
-                            {hasExtraFilters && (
-                                <button
-                                    onClick={clearFilters}
-                                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-500 transition-all hover:bg-neutral-100 hover:text-neutral-700 active:scale-95 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                                >
+                    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
+                        {/* Search — left */}
+                        <div className="relative flex-1 min-w-[180px] max-w-xs">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                            <input
+                                ref={searchRef}
+                                type="text"
+                                value={searchValue}
+                                onChange={(e) => setSearchValue(e.target.value)}
+                                placeholder={t('reports.search_placeholder')}
+                                className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
+                            />
+                            {searchValue && (
+                                <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
                                     <X className="size-3.5" />
-                                    Clear
                                 </button>
                             )}
+                        </div>
+                        {/* Filters — right */}
+                        <div className="ml-auto flex flex-wrap items-center gap-2">
+                            {teams.length > 0 && (
+                                <MultiSelectFilter
+                                    label="Team"
+                                    options={teams.map((t) => ({ value: String(t.id), label: t.name }))}
+                                    selected={filters.team_id ? filters.team_id.split(',') : []}
+                                    onChange={(vals) => filter('team_id', vals.join(','))}
+                                />
+                            )}
+                            <MultiSelectFilter
+                                label="Severity"
+                                options={SEVERITY_FILTER_OPTIONS}
+                                selected={filters.severity ? filters.severity.split(',') : []}
+                                onChange={(vals) => filter('severity', vals.join(','))}
+                            />
+                            <MultiSelectFilter
+                                label="Status"
+                                options={STATUS_FILTER_OPTIONS}
+                                selected={filters.status ? filters.status.split(',') : []}
+                                onChange={(vals) => filter('status', vals.join(','))}
+                            />
                         </div>
                     </div>
 
@@ -521,7 +466,16 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                         </div>
                                     )}
                                     <div className="flex items-center justify-between text-[10px] text-neutral-400 dark:text-neutral-500">
-                                        <span>{report.user?.name ?? 'Unknown'}</span>
+                                        <span>
+                                            {report.source === 'messenger' && report.messenger_sender_name
+                                                ? report.messenger_sender_name
+                                                : report.user?.name ?? 'Unknown'}
+                                            {report.source && report.source !== 'app' && (
+                                                <span className="ml-1 text-[9px] text-neutral-300 dark:text-neutral-600">
+                                                    ({report.source === 'messenger' ? 'Messenger' : 'Facebook'})
+                                                </span>
+                                            )}
+                                        </span>
                                         <span>{new Date(report.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                 </Link>

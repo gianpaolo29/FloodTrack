@@ -35,6 +35,7 @@ class Report extends Model
         'source',
         'facebook_post_id',
         'messenger_sender_id',
+        'messenger_sender_name',
         'advisory',
     ];
 

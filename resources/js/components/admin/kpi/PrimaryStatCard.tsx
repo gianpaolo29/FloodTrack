@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useCountUp } from '@/hooks/use-count-up';
 import { KpiTooltip } from './KpiTooltip';
 import type { InsightRow } from '@/lib/kpi-utils';
@@ -17,6 +17,8 @@ interface Props {
     accent?: 'green' | 'amber' | 'red' | 'neutral';
     index: number;
     mounted: boolean;
+    urgency?: 'good' | 'warning' | 'urgent';
+    actionLink?: { label: string; href: string };
 }
 
 const ACCENT_STYLES = {
@@ -26,20 +28,33 @@ const ACCENT_STYLES = {
     neutral: 'bg-neutral-300 dark:bg-neutral-600',
 } as const;
 
-export function PrimaryStatCard({ label, value, trend, trendLabel, desc, insights, icon: Icon, alert, accent, index, mounted }: Props) {
+export function PrimaryStatCard({ label, value, trend, trendLabel, desc, insights, icon: Icon, alert, accent, index, mounted, urgency, actionLink }: Props) {
     const count = useCountUp(value, mounted, index * 90);
     const [showTooltip, setShowTooltip] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!showTooltip) return;
+        const handler = (e: MouseEvent) => {
+            if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+                setShowTooltip(false);
+            }
+        };
+        document.addEventListener('click', handler);
+        return () => document.removeEventListener('click', handler);
+    }, [showTooltip]);
+
     return (
         <div
             ref={cardRef}
             className={`group relative overflow-hidden rounded-2xl border border-neutral-200/70 bg-white p-4 sm:p-5 transition-all duration-700 hover:shadow-lg hover:border-neutral-300/80 cursor-pointer dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
             style={{ transitionDelay: `${index * 80}ms` }}
+            onClick={() => setShowTooltip(prev => !prev)}
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
         >
             {accent && <div className={`absolute inset-x-0 top-0 h-[3px] ${ACCENT_STYLES[accent]}`} />}
-            <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} />
+            <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} urgency={urgency} actionLink={actionLink} />
             {alert && (
                 <span className="absolute right-3 top-3 flex size-2">
                     <span className="absolute inline-flex size-full animate-ping rounded-full bg-neutral-900 opacity-20 dark:bg-white dark:opacity-30" />
@@ -59,7 +74,7 @@ export function PrimaryStatCard({ label, value, trend, trendLabel, desc, insight
                                     ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
                                     : 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
                             }`}>
-                                {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
+                                {trend >= 0 ? '\u2191' : '\u2193'} {Math.abs(trend)}%
                             </span>
                         </p>
                     )}

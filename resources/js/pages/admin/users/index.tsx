@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { useLocale } from '@/hooks/use-locale';
 import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
 import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
@@ -66,8 +67,9 @@ function cleanAddress(raw: string): string {
 const PLUS_CODE_RE = /^[0-9A-Z]{4,8}\+[0-9A-Z]{2,3}$/i;
 
 export default function AdminUsersIndex({ users, filters, stats, trends, period, custom_from, custom_to }: Props) {
+    const { t } = useLocale();
     const [mounted, setMounted] = useState(false);
-    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+    useEffect(() => { const tm = setTimeout(() => setMounted(true), 80); return () => clearTimeout(tm); }, []);
 
     const [showCreate, setShowCreate] = useState(false);
     const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
@@ -81,7 +83,7 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
         return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.contact_number ?? '').toLowerCase().includes(q) || (u.home_address ?? '').toLowerCase().includes(q);
     });
 
-    const hasFilters = !!searchValue;
+    const hasFilters = false;
 
     const allOnPageSelected = filtered.length > 0 && filtered.every((u) => selected.includes(u.id));
     const toggleAll = () => {
@@ -190,10 +192,10 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                         </div>
                         <div>
                             <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                                Residents
+                                {t('users.title')}
                             </h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-                                Manage resident accounts and their information
+                                {t('users.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -306,29 +308,21 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Toolbar */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
-                        <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
-                            All Residents
-                            <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                                {users.total}
-                            </span>
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <div className="relative w-56">
-                                <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search residents..."
-                                    value={searchValue}
-                                    onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
-                                />
-                                {searchValue && (
-                                    <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
-                                        <X className="size-3.5" />
-                                    </button>
-                                )}
-                            </div>
+                    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
+                        <div className="relative flex-1 min-w-[180px] max-w-xs">
+                            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                            <input
+                                type="text"
+                                placeholder={t('users.search_placeholder')}
+                                value={searchValue}
+                                onChange={(e) => setSearchValue(e.target.value)}
+                                className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
+                            />
+                            {searchValue && (
+                                <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
                         </div>
                     </div>
 

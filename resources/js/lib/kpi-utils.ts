@@ -2,6 +2,9 @@ export interface InsightRow {
     label: string;
     value: string | number;
     color?: string;
+    max?: number;
+    trend?: 'up' | 'down' | 'flat';
+    link?: string;
 }
 
 export interface TrendData {

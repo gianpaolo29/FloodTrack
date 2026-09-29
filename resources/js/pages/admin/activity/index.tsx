@@ -1,7 +1,9 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { CheckCircle2, ChevronDown, ChevronLeft, ChevronRight, Clock, History, Search, Sparkles, X } from 'lucide-react';
+import { CheckCircle2, ChevronLeft, ChevronRight, Clock, History, Search, Sparkles, X } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { useLocale } from '@/hooks/use-locale';
+import { MultiSelectFilter } from '@/components/admin/MultiSelectFilter';
 import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
 import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
@@ -74,6 +76,7 @@ const ROLE_AVATAR: Record<string, string> = {
 };
 
 export default function AdminActivityLog({ activities, filters, stats, trends, period, custom_from, custom_to, teams }: Props) {
+    const { t } = useLocale();
     const [searchValue, setSearchValue] = useState('');
     const [mounted, setMounted] = useState(false);
 
@@ -97,7 +100,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
         );
     });
 
-    const hasFilters = !!(filters.status || searchValue || filters.team_id);
+    const hasFilters = !!(filters.status || filters.team_id);
 
     const tl = trends.label;
     const resolvedPct = stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0;
@@ -172,7 +175,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                             <History className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Activity Log</h1>
+                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">{t('activity.title')}</h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Track every status change across all reports.
                             </p>
@@ -249,71 +252,41 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Toolbar */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
-                        <div className="flex items-center gap-2.5">
-                            <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Event Timeline</span>
-                            <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                                {activities.total.toLocaleString()}
-                            </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            {/* Search */}
-                            <div className="relative w-56">
-                                <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search reference…"
-                                    value={searchValue}
-                                    onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-900"
-                                />
-                                {searchValue && (
-                                    <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
-                                        <X className="size-3.5" />
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Status filter */}
-                            <div className="relative">
-                                <select
-                                    value={filters.status ?? ''}
-                                    onChange={(e) => filter('status', e.target.value)}
-                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50/50 pl-3 pr-8 text-sm outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100"
-                                >
-                                    <option value="">All actions</option>
-                                    {STATUS_OPTIONS.map((opt) => (
-                                        <option key={opt} value={opt}>
-                                            {opt.charAt(0).toUpperCase() + opt.slice(1).replace('_', ' ')}
-                                        </option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
-                            </div>
-
-                            {/* Team filter */}
-                            {teams.length > 0 && (
-                                <select
-                                    value={filters.team_id ?? ''}
-                                    onChange={(e) => filter('team_id', e.target.value)}
-                                    className="h-9 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 text-sm outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-100"
-                                >
-                                    <option value="">All Teams</option>
-                                    {teams.map((t) => (
-                                        <option key={t.id} value={String(t.id)}>{t.name}</option>
-                                    ))}
-                                </select>
-                            )}
-
-                            {hasFilters && (
-                                <button
-                                    onClick={() => { setSearchValue(''); router.get('/admin/activity'); }}
-                                    className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 bg-neutral-50 text-neutral-400 transition-colors hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
-                                    title="Clear filters"
-                                >
-                                    <X className="size-4" />
+                    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
+                        {/* Search — left */}
+                        <div className="relative flex-1 min-w-[180px] max-w-xs">
+                            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                            <input
+                                type="text"
+                                placeholder={t('activity.search_placeholder')}
+                                value={searchValue}
+                                onChange={(e) => setSearchValue(e.target.value)}
+                                className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-900"
+                            />
+                            {searchValue && (
+                                <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                    <X className="size-3.5" />
                                 </button>
+                            )}
+                        </div>
+                        {/* Filters — right */}
+                        <div className="ml-auto flex flex-wrap items-center gap-2">
+                            <MultiSelectFilter
+                                label="Status"
+                                options={STATUS_OPTIONS.map((opt) => ({
+                                    value: opt,
+                                    label: opt.charAt(0).toUpperCase() + opt.slice(1).replace('_', ' '),
+                                }))}
+                                selected={filters.status ? filters.status.split(',') : []}
+                                onChange={(vals) => filter('status', vals.join(','))}
+                            />
+                            {teams.length > 0 && (
+                                <MultiSelectFilter
+                                    label="Team"
+                                    options={teams.map((t) => ({ value: String(t.id), label: t.name }))}
+                                    selected={filters.team_id ? filters.team_id.split(',') : []}
+                                    onChange={(vals) => filter('team_id', vals.join(','))}
+                                />
                             )}
                         </div>
                     </div>

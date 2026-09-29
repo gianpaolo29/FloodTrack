@@ -24,6 +24,8 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { useLocale } from '@/hooks/use-locale';
+import { MultiSelectFilter } from '@/components/admin/MultiSelectFilter';
 import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
 import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
@@ -113,6 +115,7 @@ const TYPE_ICON: Record<EvacuationCenterType, React.ElementType> = {
 /* ─── Main Component ─── */
 
 export default function AdminEvacuationCentersIndex({ centers, filters, stats, trends, period, custom_from, custom_to }: Props) {
+    const { t } = useLocale();
     const [selected, setSelected] = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -154,7 +157,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
         setSelected((prev) => (prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]));
     };
 
-    const hasFilters = !!(searchValue || filters.type || filters.active);
+    const hasFilters = !!(filters.type || filters.active);
 
     const runBulkAction = async (action: 'delete' | 'activate' | 'deactivate') => {
         if (selected.length === 0) return;
@@ -255,10 +258,10 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                         </div>
                         <div>
                             <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                                Evacuation Centers
+                                {t('evac.title')}
                             </h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-                                Manage centers visible on the resident map
+                                {t('evac.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -391,60 +394,40 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Toolbar */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
-                        <div className="flex items-center gap-2">
-                            <div className="relative">
-                                <select
-                                    value={filters.type ?? ''}
-                                    onChange={(e) => filter('type', e.target.value)}
-                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
-                                >
-                                    <option value="">All types</option>
-                                    {TYPE_OPTIONS.map((t) => (
-                                        <option key={t} value={t}>{EVACUATION_CENTER_TYPE_LABELS[t]}</option>
-                                    ))}
-                                </select>
-                                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
-                            </div>
-                            <div className="relative">
-                                <select
-                                    value={filters.active ?? ''}
-                                    onChange={(e) => filter('active', e.target.value)}
-                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
-                                >
-                                    <option value="">All statuses</option>
-                                    <option value="1">Active</option>
-                                    <option value="0">Inactive</option>
-                                </select>
-                                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <div className="relative w-56">
-                                <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search centers..."
-                                    value={searchValue}
-                                    onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
-                                />
-                                {searchValue && (
-                                    <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
-                                        <X className="size-3.5" />
-                                    </button>
-                                )}
-                            </div>
-                            {hasFilters && (
-                                <button
-                                    onClick={() => { setSearchValue(''); router.get('/admin/evacuation-centers'); }}
-                                    className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-neutral-700 dark:hover:border-red-800/60 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-                                    title="Clear filters"
-                                >
+                    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
+                        {/* Search — left */}
+                        <div className="relative flex-1 min-w-[180px] max-w-xs">
+                            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                            <input
+                                type="text"
+                                placeholder={t('evac.search_placeholder')}
+                                value={searchValue}
+                                onChange={(e) => setSearchValue(e.target.value)}
+                                className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
+                            />
+                            {searchValue && (
+                                <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
                                     <X className="size-3.5" />
                                 </button>
                             )}
+                        </div>
+                        {/* Filters — right */}
+                        <div className="ml-auto flex flex-wrap items-center gap-2">
+                            <MultiSelectFilter
+                                label="Type"
+                                options={TYPE_OPTIONS.map((t) => ({ value: t, label: EVACUATION_CENTER_TYPE_LABELS[t] }))}
+                                selected={filters.type ? filters.type.split(',') : []}
+                                onChange={(vals) => filter('type', vals.join(','))}
+                            />
+                            <MultiSelectFilter
+                                label="Status"
+                                options={[
+                                    { value: '1', label: 'Active' },
+                                    { value: '0', label: 'Inactive' },
+                                ]}
+                                selected={filters.active ? filters.active.split(',') : []}
+                                onChange={(vals) => filter('active', vals.join(','))}
+                            />
                         </div>
                     </div>
 

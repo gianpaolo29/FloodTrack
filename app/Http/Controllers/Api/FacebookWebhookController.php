@@ -21,6 +21,18 @@ use Illuminate\Support\Facades\Storage;
 
 class FacebookWebhookController extends Controller
 {
+    private function resolveBarangay(?string $address, float $lat, float $lng): string
+    {
+        $barangays = config('barangays', []);
+        $nearest = null;
+        $minDist = PHP_FLOAT_MAX;
+        foreach ($barangays as $brgy) {
+            $dist = sqrt(pow($lat - $brgy['latitude'], 2) + pow($lng - $brgy['longitude'], 2));
+            if ($dist < $minDist) { $minDist = $dist; $nearest = $brgy['name']; }
+        }
+        return $nearest ? "{$nearest}, Nasugbu, Batangas" : ($address ?? 'Nasugbu, Batangas');
+    }
+
     /**
      * Facebook webhook verification (GET request).
      * Facebook sends a challenge to verify your endpoint.
@@ -121,7 +133,7 @@ class FacebookWebhookController extends Controller
                     'description' => mb_substr($message, 0, 1000),
                     'latitude' => $lat,
                     'longitude' => $lon,
-                    'address' => $address,
+                    'address' => $this->resolveBarangay($address, $lat, $lon),
                     'source' => 'facebook',
                     'facebook_post_id' => $postId,
                 ]);

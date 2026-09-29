@@ -4,21 +4,19 @@ import {
     AlertCircle,
     AlertTriangle,
     BarChart3,
-    Bell,
-    Building2,
     Calendar,
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
-    Church,
     Clock,
+    ClipboardCopy,
     FileText,
-    GraduationCap,
-    Landmark,
+    History,
     MapPin,
+    Navigation,
     PieChart,
     RefreshCw,
-    ShieldCheck,
+    Shield,
     Sparkles,
     TrendingUp,
     Users,
@@ -30,25 +28,52 @@ import ReactDOM from 'react-dom';
 import ReactApexChart from 'react-apexcharts';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import type { EvacuationCenter, EvacuationCenterType } from '@/types/admin';
-import { EVACUATION_CENTER_TYPE_LABELS } from '@/types/admin';
+import { KpiTooltip } from '@/components/admin/kpi/KpiTooltip';
+import type { InsightRow } from '@/lib/kpi-utils';
+import { useLocale } from '@/hooks/use-locale';
 
 /* ─── Types ─── */
+interface AiBottleneck {
+    stage: string;
+    avg_minutes: number;
+    explanation: string;
+    fix: string;
+}
+interface AiAffectedArea {
+    name: string;
+    risk: 'critical' | 'high' | 'moderate' | 'low';
+    reason: string;
+}
+interface AiTeamAction {
+    team: string;
+    action: string;
+    priority: 'high' | 'medium' | 'low';
+}
+interface AiEvacAction {
+    center: string;
+    action: string;
+    reason: string;
+}
 interface AiInsight {
     risk_level: 'critical' | 'high' | 'moderate' | 'low';
+    confidence: 'high' | 'medium' | 'low';
     summary: string;
     key_findings: string[];
+    bottleneck: AiBottleneck;
+    affected_areas: AiAffectedArea[];
+    team_actions: AiTeamAction[];
+    evacuation_actions: AiEvacAction[];
     recommendations: string[];
     priority_action: string;
 }
 
 interface MonthlyPoint { month: string; total: number; critical: number; high: number; }
-interface EvacOccupancySeries { name: string; data: { date: string; occupancy: number }[] }
-interface AlertFrequencyItem { date: string; critical: number; advisory: number; info: number }
 interface BarangayReport { area: string; count: number }
 interface MonthComparisonSide { label: string; critical: number; high: number; moderate: number; low: number }
+interface ResponseBreakdownOverall { avg_report_to_verified: number; avg_verified_to_assigned: number; avg_assigned_to_resolved: number; total_resolved: number }
+interface ResponseBreakdownBySeverity { severity: string; avg_report_to_verified: number; avg_verified_to_assigned: number; avg_assigned_to_resolved: number; count: number }
+interface ResponseBreakdown { overall: ResponseBreakdownOverall; by_severity: ResponseBreakdownBySeverity[] }
 interface Props {
-    daily_reports: Record<string, number>;
     severity_breakdown: Record<string, number>;
     status_breakdown: Record<string, number>;
     monthly_trend: MonthlyPoint[];
@@ -56,8 +81,6 @@ interface Props {
     total_reports: number;
     resolution_rate: number;
     critical_count: number;
-    evacuation_stats: { total_centers: number; total_capacity: number; total_occupancy: number };
-    evacuation_centers: Pick<EvacuationCenter, 'id' | 'name' | 'address' | 'type' | 'capacity' | 'current_occupancy' | 'is_active'>[];
     trends: {
         reports: number;
         resolved: number;
@@ -68,11 +91,16 @@ interface Props {
     period: string;
     custom_from?: string | null;
     custom_to?: string | null;
-    evac_occupancy_timeline: EvacOccupancySeries[];
-    alert_frequency: AlertFrequencyItem[];
     barangay_reports: BarangayReport[];
     month_comparison: { this_month: MonthComparisonSide; last_month: MonthComparisonSide };
     source_breakdown: Record<string, number>;
+    response_breakdown: ResponseBreakdown;
+    /* Props still accepted but no longer rendered */
+    daily_reports?: Record<string, number>;
+    evacuation_stats?: { total_centers: number; total_capacity: number; total_occupancy: number };
+    evacuation_centers?: unknown[];
+    evac_occupancy_timeline?: unknown[];
+    alert_frequency?: unknown[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -105,26 +133,26 @@ function tooltipHtml(label: string, rows: { color: string; name: string; value: 
     </div>`;
 }
 
-/* ─── Card ─── */
+/* ─── Card (dashboard-consistent style) ─── */
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={`overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm shadow-black/[0.04] transition-shadow hover:shadow-md hover:shadow-black/[0.07] dark:border-neutral-700/50 dark:bg-neutral-900 ${className}`}>
+        <div className={`overflow-hidden rounded-2xl border border-neutral-200/60 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-neutral-900/[0.04] hover:border-neutral-300/70 dark:border-neutral-800/80 dark:bg-neutral-900/80 dark:hover:border-neutral-700 dark:hover:shadow-black/20 ${className}`}>
             {children}
         </div>
     );
 }
 
-function CardHeader({ icon: Icon, gradient, title, subtitle, children }: {
-    icon: React.ElementType; gradient: string; title: string; subtitle: string; children?: React.ReactNode;
+function CardHeader({ icon: Icon, title, subtitle, children }: {
+    icon: React.ElementType; title: string; subtitle: string; children?: React.ReactNode;
 }) {
     return (
-        <div className="flex items-center gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800">
-            <div className="flex size-9 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
-                <Icon className="size-4 text-white dark:text-neutral-900" />
+        <div className="flex items-center gap-3 border-b border-neutral-100/80 px-5 py-4 dark:border-neutral-800/80">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/60">
+                <Icon className="size-4 text-neutral-500 dark:text-neutral-400" />
             </div>
             <div className="min-w-0 flex-1">
-                <p className="text-sm font-semibold text-neutral-900 dark:text-white">{title}</p>
-                <p className="text-[11px] text-neutral-400">{subtitle}</p>
+                <p className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{title}</p>
+                <p className="truncate text-[11px] text-neutral-400 dark:text-neutral-500">{subtitle}</p>
             </div>
             {children}
         </div>
@@ -151,22 +179,6 @@ const RISK_TEXT_STYLES: Record<string, string> = {
     high:     'text-orange-800 dark:text-orange-300',
     moderate: 'text-amber-800 dark:text-amber-300',
     low:      'text-green-800 dark:text-green-300',
-};
-
-const EVAC_TYPE_ICONS: Record<EvacuationCenterType, React.ElementType> = {
-    gymnasium:        Building2,
-    school:           GraduationCap,
-    barangay_hall:    Landmark,
-    church:           Church,
-    community_center: Users,
-};
-
-const EVAC_TYPE_COLORS: Record<EvacuationCenterType, string> = {
-    gymnasium:        'bg-blue-50 text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:ring-blue-700/40',
-    school:           'bg-violet-50 text-violet-700 ring-1 ring-violet-200 dark:bg-violet-950/50 dark:text-violet-300 dark:ring-violet-700/40',
-    barangay_hall:    'bg-amber-50 text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:ring-amber-700/40',
-    church:           'bg-rose-50 text-rose-700 ring-1 ring-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-700/40',
-    community_center: 'bg-teal-50 text-teal-700 ring-1 ring-teal-200 dark:bg-teal-950/50 dark:text-teal-300 dark:ring-teal-700/40',
 };
 
 function EmptyState({ text }: { text: string }) {
@@ -243,7 +255,7 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
     const monthName = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
     const formatDisplay = (d: string | null) => {
-        if (!d) return '—';
+        if (!d) return '\u2014';
         const dt = new Date(d + 'T00:00:00');
         return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     };
@@ -334,77 +346,76 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
     );
 }
 
-/* ─── KPI Tooltip ─── */
-interface InsightRow { label: string; value: string | number; color?: string }
-
-function KpiTooltip({ desc, insights, visible, parentRef }: {
-    desc: string; insights: InsightRow[];
-    visible: boolean; parentRef: React.RefObject<HTMLDivElement | null>;
-}) {
-    const tooltipRef = useRef<HTMLDivElement>(null);
-    const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-
-    useEffect(() => {
-        if (!visible || !parentRef.current) { setPos(null); return; }
-        const rect = parentRef.current.getBoundingClientRect();
-        const tooltipW = 260;
-        const top = rect.bottom + 8;
-        let left = rect.left + rect.width / 2;
-        left = Math.max(tooltipW / 2 + 8, Math.min(left, window.innerWidth - tooltipW / 2 - 8));
-        setPos({ top, left });
-    }, [visible, parentRef]);
-
-    if (!visible) return null;
-
-    return ReactDOM.createPortal(
-        <div
-            ref={tooltipRef}
-            className="fixed z-[9999] pointer-events-none"
-            style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, transform: 'translate(-50%, 0)', opacity: pos ? 1 : 0 }}
-        >
-            <div className="flex justify-center mb-[-5px]">
-                <div className="size-2.5 rotate-45 bg-white/95 ring-1 ring-neutral-200/60 dark:bg-neutral-900/95 dark:ring-neutral-700/60" />
-            </div>
-            <div className="w-[260px] rounded-xl bg-white/95 backdrop-blur-xl px-4 py-3 shadow-2xl shadow-black/15 ring-1 ring-neutral-200/60 dark:bg-neutral-900/95 dark:ring-neutral-700/60 animate-in fade-in slide-in-from-top-2 duration-200">
-                {insights.length > 0 && (
-                    <div className="flex flex-col gap-1.5 mb-2">
-                        {insights.map((row, i) => (
-                            <div key={i} className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-1.5">
-                                    <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: row.color ?? '#94a3b8' }} />
-                                    <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{row.label}</span>
-                                </div>
-                                <span className="text-[11px] font-bold tabular-nums text-neutral-800 dark:text-neutral-200">{row.value}</span>
-                            </div>
-                        ))}
-                    </div>
-                )}
-                {insights.length > 0 && (
-                    <div className="mb-2 h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-neutral-700" />
-                )}
-                <p className="text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">{desc}</p>
-            </div>
-        </div>,
-        document.body
-    );
+/* ─── Urgency Logic ─── */
+function getUrgency(key: string, trends: Props['trends'], critical_count: number, resolution_rate: number): 'good' | 'warning' | 'urgent' | undefined {
+    switch (key) {
+        case 'total_reports':
+            if (trends.reports > 50) return 'urgent';
+            if (trends.reports > 20) return 'warning';
+            return 'good';
+        case 'resolution_rate':
+            if (resolution_rate >= 80) return 'good';
+            if (resolution_rate >= 50) return 'warning';
+            return 'urgent';
+        case 'critical':
+            if (critical_count > 5) return 'urgent';
+            if (critical_count > 0) return 'warning';
+            return 'good';
+        default: return undefined;
+    }
 }
 
+/* ─── Action Links ─── */
+const ACTION_LINKS: Record<string, { label: string; href: string }> = {
+    total_reports: { label: 'View all reports', href: '/admin/reports' },
+    resolution_rate: { label: 'View reports', href: '/admin/reports' },
+    critical: { label: 'View critical reports', href: '/admin/reports?severity=critical' },
+};
+
+/* ─── Accent styles ─── */
+const ACCENT_STYLES = {
+    green: 'bg-emerald-500',
+    amber: 'bg-amber-500',
+    red: 'bg-red-500',
+    neutral: 'bg-neutral-300 dark:bg-neutral-600',
+} as const;
+
 /* ─── Stat KPI Card ─── */
-function StatKpiCard({ label, value, subtitle, icon: Icon, grad, shadow, alert, desc, insights, trend, trendLabel }: {
+function StatKpiCard({ label, value, subtitle, icon: Icon, desc, insights, trend, trendLabel, urgency, actionLink, accent, alert, mounted = true, index = 0 }: {
     label: string; value: string; subtitle: string; icon: React.ElementType;
-    grad: string; shadow: string; alert?: boolean; desc: string; insights: InsightRow[];
+    grad?: string; shadow?: string; alert?: boolean; desc: string; insights: InsightRow[];
     trend?: number; trendLabel?: string;
+    urgency?: 'good' | 'warning' | 'urgent';
+    actionLink?: { label: string; href: string };
+    accent?: 'green' | 'amber' | 'red' | 'neutral';
+    mounted?: boolean;
+    index?: number;
 }) {
     const [showTooltip, setShowTooltip] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!showTooltip) return;
+        const handler = (e: MouseEvent) => {
+            if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
+                setShowTooltip(false);
+            }
+        };
+        document.addEventListener('click', handler);
+        return () => document.removeEventListener('click', handler);
+    }, [showTooltip]);
+
     return (
         <div
             ref={cardRef}
-            className="group relative overflow-hidden rounded-2xl border border-neutral-200/70 bg-white p-4 shadow-sm sm:p-5 transition-all hover:shadow-lg hover:border-neutral-300/80 cursor-pointer dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700"
+            className={`group relative overflow-hidden rounded-2xl border border-neutral-200/70 bg-white p-4 sm:p-5 transition-all duration-700 hover:shadow-lg hover:border-neutral-300/80 cursor-pointer dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+            style={{ transitionDelay: `${index * 80}ms` }}
+            onClick={() => setShowTooltip(prev => !prev)}
             onMouseEnter={() => setShowTooltip(true)}
             onMouseLeave={() => setShowTooltip(false)}
         >
-            <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} />
+            {accent && <div className={`absolute inset-x-0 top-0 h-[3px] ${ACCENT_STYLES[accent]}`} />}
+            <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} urgency={urgency} actionLink={actionLink} />
             {alert && (
                 <span className="absolute right-3 top-3 flex size-2">
                     <span className="absolute inline-flex size-full animate-ping rounded-full bg-neutral-900 opacity-20 dark:bg-white dark:opacity-30" />
@@ -413,23 +424,20 @@ function StatKpiCard({ label, value, subtitle, icon: Icon, grad, shadow, alert, 
             )}
             <div className="relative flex items-start justify-between">
                 <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{label}</p>
-                    <p className="mt-2 text-2xl font-bold tabular-nums tracking-tight text-neutral-900 sm:text-3xl dark:text-white">{value}</p>
+                    <p className="truncate text-[10px] font-medium uppercase tracking-wider text-neutral-400 sm:text-[11px] dark:text-neutral-500">{label}</p>
+                    <p className="mt-1.5 text-xl font-bold tabular-nums tracking-tight text-neutral-900 sm:mt-2 sm:text-3xl dark:text-white">{value}</p>
                     {trend !== undefined && (
-                        <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                        <p className="mt-1.5 flex items-center gap-1.5">
                             <span className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
                                 trend >= 0
                                     ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
                                     : 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
                             }`}>
-                                {trend >= 0 ? '↑' : '↓'} {Math.abs(trend)}%
+                                {trend >= 0 ? '\u2191' : '\u2193'} {Math.abs(trend)}%
                             </span>
-                            {trendLabel && (
-                                <span className="text-[10px] text-neutral-400 dark:text-neutral-500">{trendLabel}</span>
-                            )}
-                        </div>
+                        </p>
                     )}
-                    {trend === undefined && <p className="mt-1 text-[10px] text-neutral-400 dark:text-neutral-500">{subtitle}</p>}
+                    <p className="mt-1 truncate text-[9px] text-neutral-400 sm:text-[10px] dark:text-neutral-500">{trendLabel || subtitle}</p>
                 </div>
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800 sm:size-11 transition-colors duration-300 group-hover:bg-neutral-200 dark:group-hover:bg-neutral-700">
                     <Icon className="size-5 text-neutral-500 dark:text-neutral-400 sm:size-[22px]" />
@@ -439,35 +447,7 @@ function StatKpiCard({ label, value, subtitle, icon: Icon, grad, shadow, alert, 
     );
 }
 
-/* ─── Secondary Stat Card ─── */
-function SecStatCard({ icon: Icon, label, value, subtitle, grad, shadow, desc, insights }: {
-    icon: React.ElementType; label: string; value: string; subtitle: string;
-    grad: string; shadow: string; desc: string; insights: InsightRow[];
-}) {
-    const [showTooltip, setShowTooltip] = useState(false);
-    const cardRef = useRef<HTMLDivElement>(null);
-    return (
-        <div
-            ref={cardRef}
-            className="relative flex items-start justify-between gap-4 rounded-2xl border border-white/60 bg-white p-4 shadow-sm shadow-black/[0.04] transition-all hover:shadow-md hover:scale-[1.01] cursor-pointer sm:p-5 dark:border-neutral-700/50 dark:bg-neutral-900"
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-        >
-            <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} />
-            <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">{label}</p>
-                <p className="mt-1 text-xl font-extrabold tabular-nums tracking-tight text-neutral-900 sm:text-2xl dark:text-white">{value}</p>
-                <p className="mt-0.5 text-[10px] text-neutral-400">{subtitle}</p>
-            </div>
-            <div className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800 transition-colors">
-                <Icon className="size-5 text-neutral-500 dark:text-neutral-400" />
-            </div>
-        </div>
-    );
-}
-
 export default function StatisticsPage({
-    daily_reports,
     severity_breakdown,
     status_breakdown,
     monthly_trend,
@@ -475,22 +455,56 @@ export default function StatisticsPage({
     total_reports,
     resolution_rate,
     critical_count,
-    evacuation_stats,
-    evacuation_centers,
     trends,
     period,
     custom_from,
     custom_to,
-    evac_occupancy_timeline,
-    alert_frequency,
     barangay_reports,
     month_comparison,
     source_breakdown,
+    response_breakdown,
 }: Props) {
+    const { t, locale } = useLocale();
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { const tm = setTimeout(() => setMounted(true), 80); return () => clearTimeout(tm); }, []);
+
     const [aiState, setAiState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
     const [aiData, setAiData] = useState<AiInsight | null>(null);
+    const [previousAi, setPreviousAi] = useState<{ data: AiInsight; timestamp: string; period: string } | null>(null);
+    const [showPrevious, setShowPrevious] = useState(false);
+    const [copied, setCopied] = useState(false);
+    const [typewriterReady, setTypewriterReady] = useState(false);
     const [showCalendar, setShowCalendar] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
+    const aiAutoTriggered = useRef(false);
+
+    // Cache key for localStorage
+    const AI_CACHE_KEY = 'floodtrack_ai_insights';
+    const AI_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+    // Load cached AI data on mount or auto-generate
+    useEffect(() => {
+        if (aiAutoTriggered.current) return;
+        aiAutoTriggered.current = true;
+
+        try {
+            const cached = localStorage.getItem(AI_CACHE_KEY);
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                const age = Date.now() - parsed.timestamp;
+                if (age < AI_CACHE_TTL && parsed.period === period) {
+                    setAiData(parsed.data);
+                    setAiState('done');
+                    setTypewriterReady(true);
+                    // Load previous if exists
+                    if (parsed.previous) setPreviousAi(parsed.previous);
+                    return;
+                }
+            }
+        } catch { /* ignore parse errors */ }
+
+        generateInsights();
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Close calendar on outside click
     useEffect(() => {
@@ -509,6 +523,8 @@ export default function StatisticsPage({
     const setPeriod = (p: string) => {
         setAiState('idle');
         setAiData(null);
+        setTypewriterReady(false);
+        aiAutoTriggered.current = false;
         if (p === 'custom') {
             setShowCalendar(true);
             return;
@@ -520,24 +536,93 @@ export default function StatisticsPage({
     const applyCustomRange = (from: string, to: string) => {
         setAiState('idle');
         setAiData(null);
+        setTypewriterReady(false);
+        aiAutoTriggered.current = false;
         setShowCalendar(false);
         router.get('/admin/statistics', { period: 'custom', from, to }, { preserveState: true, preserveScroll: true });
     };
 
     const customRangeLabel = custom_from && custom_to
-        ? `${new Date(custom_from + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(custom_to + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+        ? `${new Date(custom_from + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} \u2013 ${new Date(custom_to + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
         : null;
 
     async function generateInsights() {
         setAiState('loading');
+        setTypewriterReady(false);
         try {
             const res = await fetch(`/admin/statistics/ai-insights?period=${encodeURIComponent(period)}`);
             const data = await res.json();
             if (data.error) throw new Error(data.error);
+
+            // Save current as previous before replacing
+            const prevEntry = aiData ? { data: aiData, timestamp: new Date().toISOString(), period } : previousAi;
+            setPreviousAi(prevEntry ?? null);
+
             setAiData(data);
             setAiState('done');
+
+            // Trigger typewriter after a small delay
+            setTimeout(() => setTypewriterReady(true), 100);
+
+            // Cache to localStorage
+            try {
+                localStorage.setItem(AI_CACHE_KEY, JSON.stringify({
+                    data,
+                    timestamp: Date.now(),
+                    period,
+                    previous: prevEntry,
+                }));
+            } catch { /* storage full, ignore */ }
         } catch {
             setAiState('error');
+        }
+    }
+
+    // Copy AI analysis to clipboard
+    function copyAnalysis() {
+        if (!aiData) return;
+        const lines = [
+            `FLOODTRACK AI SITUATION ANALYSIS`,
+            `Risk Level: ${aiData.risk_level.toUpperCase()} | Confidence: ${aiData.confidence}`,
+            ``,
+            `SUMMARY`,
+            aiData.summary,
+            ``,
+            `KEY FINDINGS`,
+            ...aiData.key_findings.map((f, i) => `${i + 1}. ${f}`),
+            ``,
+            `BOTTLENECK: ${formatStageName(aiData.bottleneck?.stage)} (avg ${aiData.bottleneck?.avg_minutes} min)`,
+            aiData.bottleneck?.explanation,
+            `Fix: ${aiData.bottleneck?.fix}`,
+        ];
+        if (aiData.affected_areas?.length) {
+            lines.push(``, `AFFECTED AREAS`);
+            aiData.affected_areas.forEach(a => lines.push(`- ${a.name} [${a.risk.toUpperCase()}]: ${a.reason}`));
+        }
+        if (aiData.team_actions?.length) {
+            lines.push(``, `TEAM ACTIONS`);
+            aiData.team_actions.forEach(t => lines.push(`- ${t.team} [${t.priority}]: ${t.action}`));
+        }
+        if (aiData.evacuation_actions?.length) {
+            lines.push(``, `EVACUATION ACTIONS`);
+            aiData.evacuation_actions.forEach(e => lines.push(`- ${e.center}: ${e.action} — ${e.reason}`));
+        }
+        lines.push(``, `RECOMMENDATIONS`);
+        aiData.recommendations.forEach((r, i) => lines.push(`${i + 1}. ${r}`));
+        lines.push(``, `PRIORITY ACTION`, aiData.priority_action);
+
+        navigator.clipboard.writeText(lines.join('\n')).then(() => {
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        });
+    }
+
+    function formatStageName(stage?: string): string {
+        switch (stage) {
+            case 'report_to_verified': return 'Report \u2192 Verified';
+            case 'verified_to_assigned': return 'Verified \u2192 Assigned';
+            case 'assigned_to_resolved': return 'Assigned \u2192 Resolved';
+            default: return stage ?? 'Unknown';
         }
     }
 
@@ -552,19 +637,12 @@ export default function StatisticsPage({
     const totalSeverity = severityValues.reduce((a, b) => a + b, 0);
     const statusValues  = ['pending', 'verified', 'acknowledged', 'assigned', 'resolved', 'rejected'].map(s => status_breakdown[s] ?? 0);
 
-    const dailyDates  = Object.keys(daily_reports);
-    const dailyCounts = Object.values(daily_reports);
-
     const monthlyLabels = monthly_trend.map(m => m.month);
     const monthlySeries = [
         { name: 'Total',    data: monthly_trend.map(m => m.total) },
         { name: 'Critical', data: monthly_trend.map(m => m.critical) },
         { name: 'High',     data: monthly_trend.map(m => m.high) },
     ];
-
-    const occupancyPct = evacuation_stats.total_capacity > 0
-        ? Math.round((evacuation_stats.total_occupancy / evacuation_stats.total_capacity) * 100)
-        : 0;
 
     // Peak hours labels and series
     const peakHoursLabels = Array.from({ length: 24 }, (_, h) => {
@@ -582,98 +660,62 @@ export default function StatisticsPage({
     const rejectedCount  = status_breakdown['rejected'] ?? 0;
     const highCount      = severity_breakdown['high'] ?? 0;
     const critPct        = total_reports > 0 ? Math.round((critical_count / total_reports) * 100) : 0;
-    const availableCapacity = evacuation_stats.total_capacity - evacuation_stats.total_occupancy;
 
     /* ── Smart descriptions ── */
     function statDesc(key: string): string {
+        const isFil = locale === 'fil';
         switch (key) {
             case 'total_reports': {
+                if (isFil) {
+                    if (total_reports === 0) return 'Wala pang report.';
+                    const parts: string[] = [];
+                    parts.push(`${resolvedCount} resolved, ${activeCount} active, ${pendingCount} pending.`);
+                    if (pendingCount > 0 && total_reports > 0 && (pendingCount / total_reports) > 0.3)
+                        parts.push('Maraming reports ang naghihintay pa. Baka nahuhuli na.');
+                    if (resolution_rate >= 80) parts.push('Maganda ang resolution rate.');
+                    return parts.join(' ');
+                }
+                if (total_reports === 0) return 'No reports yet.';
                 const parts: string[] = [];
-                if (total_reports === 0) return 'No reports submitted yet.';
                 parts.push(`${resolvedCount} resolved, ${activeCount} active, ${pendingCount} pending.`);
                 if (pendingCount > 0 && total_reports > 0 && (pendingCount / total_reports) > 0.3)
-                    parts.push('Pending queue is high — review may be falling behind.');
-                if (resolution_rate >= 80) parts.push('Strong resolution rate.');
+                    parts.push('Lots of reports waiting to be checked. Might be falling behind.');
+                if (resolution_rate >= 80) parts.push('Resolution rate is looking solid.');
                 return parts.join(' ');
             }
             case 'resolution_rate': {
-                if (total_reports === 0) return 'No reports to calculate rate from.';
-                if (resolution_rate >= 90) return `Excellent — ${resolvedCount} of ${total_reports} reports resolved. Team is highly effective.`;
-                if (resolution_rate >= 70) return `Good progress — ${resolvedCount} resolved, but ${pendingCount + activeCount} still open.`;
-                if (resolution_rate >= 40) return `Needs improvement — ${pendingCount} pending and ${activeCount} active reports need attention.`;
-                return `Only ${resolution_rate}% resolved — most reports remain open. Consider allocating more resources.`;
+                if (isFil) {
+                    if (total_reports === 0) return 'Wala pang report para ma-compute.';
+                    if (resolution_rate >= 90) return `${resolvedCount} sa ${total_reports} ang resolved. Ang galing!`;
+                    if (resolution_rate >= 70) return `${resolvedCount} na ang resolved. ${pendingCount + activeCount} pa ang kailangan asikasuhin.`;
+                    if (resolution_rate >= 40) return `${resolution_rate}% lang. May ${pendingCount} pending at ${activeCount} active pa.`;
+                    return `${resolution_rate}% lang ang resolved. Karamihan open pa.`;
+                }
+                if (total_reports === 0) return 'No reports to calculate from yet.';
+                if (resolution_rate >= 90) return `${resolvedCount} out of ${total_reports} resolved. That's excellent.`;
+                if (resolution_rate >= 70) return `${resolvedCount} resolved so far. ${pendingCount + activeCount} still need attention.`;
+                if (resolution_rate >= 40) return `Only ${resolution_rate}% resolved. There are still ${pendingCount} pending and ${activeCount} active.`;
+                return `Just ${resolution_rate}% resolved. Most reports are still open.`;
             }
             case 'critical': {
-                if (critical_count === 0) return 'No critical reports — all severity levels are manageable.';
-                const parts: string[] = [];
-                parts.push(`${critical_count} critical report${critical_count > 1 ? 's' : ''} — ${critPct}% of all reports.`);
-                if (highCount > 0) parts.push(`Combined with ${highCount} high-severity, these need priority response.`);
-                if (critical_count > 5) parts.push('High critical count — consider emergency protocols.');
-                return parts.join(' ');
-            }
-            case 'evac_centers':
-                if (evacuation_stats.total_centers === 0) return 'No evacuation centers registered yet.';
-                return `${evacuation_stats.total_centers} centers available with total capacity for ${evacuation_stats.total_capacity.toLocaleString()} people.`;
-            case 'evac_capacity':
-                if (evacuation_stats.total_capacity === 0) return 'No capacity registered.';
-                return `${availableCapacity.toLocaleString()} spots still available. ${occupancyPct}% of total capacity is currently occupied.`;
-            case 'evac_occupancy': {
-                if (evacuation_stats.total_occupancy === 0) return 'No evacuees currently sheltered.';
-                if (occupancyPct >= 90) return `${evacuation_stats.total_occupancy.toLocaleString()} evacuees — capacity is nearly full at ${occupancyPct}%. Prepare overflow facilities.`;
-                if (occupancyPct >= 70) return `${evacuation_stats.total_occupancy.toLocaleString()} evacuees — ${occupancyPct}% capacity used. Monitor closely.`;
-                return `${evacuation_stats.total_occupancy.toLocaleString()} people sheltered. Capacity is well within limits at ${occupancyPct}%.`;
-            }
-            case 'evac_rate': {
-                if (evacuation_stats.total_capacity === 0) return 'No capacity data available.';
-                if (occupancyPct >= 90) return `Critical — ${occupancyPct}% full. Only ${availableCapacity.toLocaleString()} spots remain. Activate additional centers.`;
-                if (occupancyPct >= 70) return `Getting crowded at ${occupancyPct}%. Keep overflow centers on standby.`;
-                if (occupancyPct >= 30) return `Moderate usage at ${occupancyPct}%. Sufficient capacity available.`;
-                return `Low occupancy at ${occupancyPct}%. Plenty of room for additional evacuees if needed.`;
+                if (isFil) {
+                    if (critical_count === 0) return 'Walang critical na report. Lahat ng severity levels okay.';
+                    const parts: string[] = [];
+                    parts.push(`${critical_count} critical report, ${critPct}% ng lahat.`);
+                    if (highCount > 0) parts.push(`May ${highCount} pa na high-severity na kailangan din asikasuhin.`);
+                    if (critical_count > 5) parts.push('Ang dami. Baka kailangan na ng emergency protocol.');
+                    return parts.join(' ');
+                }
+                if (critical_count === 0) return 'No critical reports. All severity levels are under control.';
+                const cParts: string[] = [];
+                cParts.push(`${critical_count} critical report${critical_count > 1 ? 's' : ''}, making up ${critPct}% of all reports.`);
+                if (highCount > 0) cParts.push(`Plus ${highCount} high-severity that also need priority attention.`);
+                if (critical_count > 5) cParts.push('That\'s a lot. Emergency protocols might be needed.');
+                return cParts.join(' ');
             }
             default: return '';
         }
     }
-
-    /* ── Area Chart (Daily Reports) ── */
-    const areaOptions: ApexOptions = {
-        chart: { type: 'area', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600, easing: 'easeinout' }, selection: { enabled: false } },
-        dataLabels: { enabled: false },
-        stroke: { curve: 'smooth', width: 2.5 },
-        fill: {
-            type: 'gradient',
-            gradient: { type: 'vertical', shadeIntensity: 1, opacityFrom: 0.25, opacityTo: 0.02, stops: [0, 90, 100] },
-        },
-        colors: ['#6366f1'],
-        grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } }, padding: { left: 0, right: 4 } },
-        xaxis: {
-            categories: dailyDates,
-            tickAmount: 8,
-            axisBorder: { show: false }, axisTicks: { show: false },
-            labels: {
-                style: { fontSize: '10px', colors: '#94a3b8' },
-                rotate: 0,
-                formatter: (val: string) => {
-                    if (!val) return '';
-                    const d = new Date(val);
-                    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                },
-            },
-            tooltip: { enabled: false },
-        },
-        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
-        legend: { show: false },
-        markers: { size: 0, hover: { size: 5, sizeOffset: 1 } },
-        tooltip: {
-            shared: true, intersect: false,
-            custom: ({ series, dataPointIndex, w }) => {
-                const label = w.globals.categoryLabels[dataPointIndex] ?? w.globals.labels[dataPointIndex];
-                return tooltipHtml(label, [
-                    { color: '#6366f1', name: 'Reports', value: series[0][dataPointIndex] },
-                ]);
-            },
-        },
-    };
-    const areaSeries = [{ name: 'Reports', data: dailyCounts }];
 
     /* ── Donut Chart (Severity) ── */
     const donutOptions: ApexOptions = {
@@ -779,55 +821,7 @@ export default function StatisticsPage({
         },
     };
 
-    /* ── TREND: Evacuation Occupancy Over Time ── */
-    const EVAC_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6'];
-    const allEvacDates = [...new Set(evac_occupancy_timeline.flatMap(s => s.data.map(d => d.date)))].sort();
-    const evacOccupancyOptions: ApexOptions = {
-        chart: { type: 'area', toolbar: { show: false }, fontFamily: 'inherit', stacked: true, animations: { enabled: true, speed: 600 } },
-        dataLabels: { enabled: false },
-        stroke: { curve: 'smooth', width: 2 },
-        colors: EVAC_COLORS.slice(0, evac_occupancy_timeline.length),
-        fill: { type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.05, stops: [0, 90, 100] } },
-        grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } } },
-        xaxis: { categories: allEvacDates, tickAmount: 8, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, rotate: 0 } },
-        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
-        legend: { position: 'top', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
-        tooltip: { shared: true, intersect: false },
-    };
-    const evacOccupancySeries = evac_occupancy_timeline.map(s => {
-        const dateMap = Object.fromEntries(s.data.map(d => [d.date, d.occupancy]));
-        return { name: s.name, data: allEvacDates.map(d => dateMap[d] ?? 0) };
-    });
-
-    /* ── TREND: Alert Frequency Timeline ── */
-    const alertFreqOptions: ApexOptions = {
-        chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'inherit', stacked: true, animations: { enabled: true, speed: 600 } },
-        plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
-        dataLabels: { enabled: false },
-        colors: ['#ef4444', '#f97316', '#3b82f6'],
-        grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } } },
-        xaxis: { categories: alert_frequency.map(d => d.date), tickAmount: 8, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, rotate: 0 } },
-        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
-        legend: { position: 'top', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
-        tooltip: {
-            shared: true, intersect: false,
-            custom: ({ series, dataPointIndex, w }) => {
-                const label = w.globals.categoryLabels[dataPointIndex] ?? w.globals.labels[dataPointIndex];
-                return tooltipHtml(label, [
-                    { color: '#ef4444', name: 'Critical', value: series[0][dataPointIndex] },
-                    { color: '#f97316', name: 'Advisory', value: series[1][dataPointIndex] },
-                    { color: '#3b82f6', name: 'Info', value: series[2][dataPointIndex] },
-                ]);
-            },
-        },
-    };
-    const alertFreqSeries = [
-        { name: 'Critical', data: alert_frequency.map(d => d.critical) },
-        { name: 'Advisory', data: alert_frequency.map(d => d.advisory) },
-        { name: 'Info', data: alert_frequency.map(d => d.info) },
-    ];
-
-    /* ── COMPARISON: Barangay Reports Horizontal Bar ── */
+    /* ── Barangay Reports Horizontal Bar ── */
     const sortedBarangays = [...barangay_reports].sort((a, b) => b.count - a.count);
     const barangayBarOptions: ApexOptions = {
         chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
@@ -847,7 +841,7 @@ export default function StatisticsPage({
     };
     const barangayBarSeries = [{ name: 'Reports', data: sortedBarangays.map(b => b.count) }];
 
-    /* ── COMPARISON: This Month vs Last Month ── */
+    /* ── Month-over-Month Comparison ── */
     const sevKeys = ['critical', 'high', 'moderate', 'low'] as const;
     const monthCompOptions: ApexOptions = {
         chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
@@ -874,7 +868,7 @@ export default function StatisticsPage({
         { name: month_comparison.last_month.label, data: sevKeys.map(k => month_comparison.last_month[k]) },
     ];
 
-    /* ── COMPOSITION: Reports by Source (donut) ── */
+    /* ── Reports by Source (donut) ── */
     const sourceLabels = Object.keys(source_breakdown);
     const sourceValues = Object.values(source_breakdown);
     const SOURCE_COLORS = ['#6366f1', '#10b981', '#f97316', '#ef4444', '#8b5cf6'];
@@ -897,6 +891,64 @@ export default function StatisticsPage({
         },
     };
 
+    /* ── Response Time Breakdown (stacked bar by severity) ── */
+    const STAGE_COLORS = ['#6366f1', '#f59e0b', '#10b981'];
+    const STAGE_NAMES  = ['Report → Verified', 'Verified → Assigned', 'Assigned → Resolved'];
+    const severityOrder = ['critical', 'high', 'moderate', 'low'];
+    const breakdownBySev = severityOrder
+        .map(s => response_breakdown.by_severity.find(b => b.severity === s))
+        .filter((b): b is ResponseBreakdownBySeverity => !!b);
+    const breakdownCategories = breakdownBySev.map(b => b.severity.charAt(0).toUpperCase() + b.severity.slice(1));
+
+    const fmtMinutes = (m: number) => {
+        if (m < 1) return '< 1 min';
+        if (m < 60) return `${Math.round(m)} min`;
+        const h = Math.floor(m / 60);
+        const r = Math.round(m % 60);
+        return r > 0 ? `${h}h ${r}m` : `${h}h`;
+    };
+
+    const breakdownSeries = [
+        { name: STAGE_NAMES[0], data: breakdownBySev.map(b => b.avg_report_to_verified) },
+        { name: STAGE_NAMES[1], data: breakdownBySev.map(b => b.avg_verified_to_assigned) },
+        { name: STAGE_NAMES[2], data: breakdownBySev.map(b => b.avg_assigned_to_resolved) },
+    ];
+
+    const breakdownOptions: ApexOptions = {
+        chart: { type: 'bar', stacked: true, toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
+        plotOptions: { bar: { borderRadius: 4, borderRadiusApplication: 'end', borderRadiusWhenStacked: 'last', columnWidth: '50%' } },
+        dataLabels: { enabled: false },
+        colors: STAGE_COLORS,
+        fill: { type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 0.2, opacityFrom: 1, opacityTo: 0.85, stops: [0, 100] } },
+        xaxis: { categories: breakdownCategories, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
+        yaxis: { title: { text: 'Minutes', style: { fontSize: '10px', color: '#94a3b8', fontWeight: 400 } }, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, formatter: (v: number) => fmtMinutes(v) } },
+        grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } } },
+        legend: { position: 'top', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
+        tooltip: {
+            shared: true, intersect: false,
+            custom: ({ series, dataPointIndex, w }) => {
+                const label = w.globals.labels[dataPointIndex];
+                const total = series.reduce((a: number, s: number[]) => a + (s[dataPointIndex] ?? 0), 0);
+                return tooltipHtml(label, [
+                    { color: STAGE_COLORS[0], name: STAGE_NAMES[0], value: fmtMinutes(series[0][dataPointIndex]) },
+                    { color: STAGE_COLORS[1], name: STAGE_NAMES[1], value: fmtMinutes(series[1][dataPointIndex]) },
+                    { color: STAGE_COLORS[2], name: STAGE_NAMES[2], value: fmtMinutes(series[2][dataPointIndex]) },
+                    { color: '#111827', name: 'Total', value: fmtMinutes(total) },
+                ]);
+            },
+        },
+    };
+
+    // Overall breakdown for the summary stats
+    const overallTotal = response_breakdown.overall.avg_report_to_verified
+        + response_breakdown.overall.avg_verified_to_assigned
+        + response_breakdown.overall.avg_assigned_to_resolved;
+    const overallStages = [
+        { label: 'Report → Verified',   value: response_breakdown.overall.avg_report_to_verified,  color: STAGE_COLORS[0] },
+        { label: 'Verified → Assigned',  value: response_breakdown.overall.avg_verified_to_assigned, color: STAGE_COLORS[1] },
+        { label: 'Assigned → Resolved',  value: response_breakdown.overall.avg_assigned_to_resolved, color: STAGE_COLORS[2] },
+    ];
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Statistics" />
@@ -904,7 +956,7 @@ export default function StatisticsPage({
             <div className="min-h-full bg-neutral-50 dark:bg-neutral-950">
             <div className="flex flex-col gap-5 p-3 sm:gap-6 sm:p-6 lg:gap-7 lg:p-8">
 
-                {/* Page Header */}
+                {/* ── Header ── */}
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3 sm:gap-4">
                         <div className="flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 shadow-sm dark:bg-white">
@@ -912,10 +964,10 @@ export default function StatisticsPage({
                         </div>
                         <div>
                             <h1 className="text-lg font-extrabold tracking-tight text-neutral-900 sm:text-2xl dark:text-white">
-                                Statistics
+                                {t('stats.title')}
                             </h1>
                             <p className="mt-0.5 text-[11px] text-neutral-500 sm:text-sm dark:text-neutral-400">
-                                Flood incident analytics &amp; AI insights
+                                {t('stats.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -970,70 +1022,354 @@ export default function StatisticsPage({
                     </div>
                 </div>
 
-                {/* Summary Stat Cards */}
+                {/* ── 3 KPI Cards ── */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-                    <StatKpiCard label="Total Reports" value={total_reports.toLocaleString()} subtitle="All time" icon={FileText} grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" trend={trends.reports} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('total_reports')} insights={[
-                        { label: 'Resolved', value: resolvedCount, color: '#10b981' },
-                        { label: 'Active', value: activeCount, color: '#3b82f6' },
-                        { label: 'Pending', value: pendingCount, color: '#f59e0b' },
+                    <StatKpiCard label={t('stats.total_reports')} value={total_reports.toLocaleString()} subtitle="All time" icon={FileText} trend={trends.reports} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('total_reports')} urgency={getUrgency('total_reports', trends, critical_count, resolution_rate)} actionLink={ACTION_LINKS.total_reports} accent="neutral" mounted={mounted} index={0} insights={[
+                        { label: 'Resolved', value: resolvedCount, color: '#10b981', max: total_reports || 1 },
+                        { label: 'Active', value: activeCount, color: '#3b82f6', max: total_reports || 1 },
+                        { label: 'Pending', value: pendingCount, color: '#f59e0b', max: total_reports || 1 },
                         { label: 'Rejected', value: rejectedCount, color: '#94a3b8' },
                     ]} />
-                    <StatKpiCard label="Resolution Rate" value={`${resolution_rate}%`} subtitle="Resolved / total" icon={CheckCircle2} grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" trend={trends.resolved} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('resolution_rate')} insights={[
-                        { label: 'Resolved', value: resolvedCount, color: '#10b981' },
+                    <StatKpiCard label={t('stats.resolution_rate')} value={`${resolution_rate}%`} subtitle="Resolved / total" icon={CheckCircle2} trend={trends.resolved} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('resolution_rate')} urgency={getUrgency('resolution_rate', trends, critical_count, resolution_rate)} actionLink={ACTION_LINKS.resolution_rate} accent={resolution_rate >= 80 ? 'green' : resolution_rate >= 50 ? 'amber' : 'red'} mounted={mounted} index={1} insights={[
+                        { label: 'Resolved', value: resolvedCount, color: '#10b981', max: total_reports || 1 },
                         { label: 'Total reports', value: total_reports, color: '#6366f1' },
-                        { label: 'Still open', value: pendingCount + activeCount, color: '#f59e0b' },
+                        { label: 'Still open', value: pendingCount + activeCount, color: '#f59e0b', max: total_reports || 1 },
                     ]} />
-                    <StatKpiCard label="Critical Reports" value={critical_count.toLocaleString()} subtitle="Highest severity" icon={AlertTriangle} grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" alert={critical_count > 0} trend={trends.critical} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('critical')} insights={[
-                        { label: 'Critical', value: critical_count, color: '#ef4444' },
-                        { label: 'High', value: highCount, color: '#f97316' },
+                    <StatKpiCard label={t('stats.critical_reports')} value={critical_count.toLocaleString()} subtitle="Highest severity" icon={AlertTriangle} trend={trends.critical} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('critical')} urgency={getUrgency('critical', trends, critical_count, resolution_rate)} actionLink={ACTION_LINKS.critical} accent={critical_count > 5 ? 'red' : critical_count > 0 ? 'amber' : 'green'} alert={critical_count > 0} mounted={mounted} index={2} insights={[
+                        { label: 'Critical', value: critical_count, color: '#ef4444', max: total_reports || 1 },
+                        { label: 'High', value: highCount, color: '#f97316', max: total_reports || 1 },
                         { label: '% of total', value: `${critPct}%`, color: '#ef4444' },
                     ]} />
                 </div>
 
-                {/* Evacuation Centers Quick Stats — 4 cards */}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-                    <SecStatCard icon={Building2} label="Total Centers" value={evacuation_stats.total_centers.toLocaleString()} subtitle="Active centers" grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" desc={statDesc('evac_centers')} insights={[
-                        { label: 'Total capacity', value: evacuation_stats.total_capacity.toLocaleString(), color: '#8b5cf6' },
-                        { label: 'Currently sheltered', value: evacuation_stats.total_occupancy.toLocaleString(), color: '#10b981' },
-                        { label: 'Occupancy', value: `${occupancyPct}%`, color: '#06b6d4' },
-                    ]} />
-                    <SecStatCard icon={Users} label="Total Capacity" value={evacuation_stats.total_capacity.toLocaleString()} subtitle="Maximum capacity" grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" desc={statDesc('evac_capacity')} insights={[
-                        { label: 'Currently used', value: evacuation_stats.total_occupancy.toLocaleString(), color: '#10b981' },
-                        { label: 'Available spots', value: availableCapacity.toLocaleString(), color: '#3b82f6' },
-                        { label: 'Occupancy rate', value: `${occupancyPct}%`, color: '#06b6d4' },
-                    ]} />
-                    <SecStatCard icon={TrendingUp} label="Current Evacuees" value={evacuation_stats.total_occupancy.toLocaleString()} subtitle="People sheltered" grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" desc={statDesc('evac_occupancy')} insights={[
-                        { label: 'Total capacity', value: evacuation_stats.total_capacity.toLocaleString(), color: '#8b5cf6' },
-                        { label: 'Available spots', value: availableCapacity.toLocaleString(), color: '#3b82f6' },
-                        { label: 'Centers', value: evacuation_stats.total_centers, color: '#0ea5e9' },
-                    ]} />
-                    <SecStatCard icon={AlertCircle} label="Occupancy Rate" value={`${occupancyPct}%`} subtitle="Of total capacity" grad="from-neutral-800 to-neutral-900" shadow="shadow-sm" desc={statDesc('evac_rate')} insights={[
-                        { label: 'Sheltered', value: evacuation_stats.total_occupancy.toLocaleString(), color: '#10b981' },
-                        { label: 'Capacity', value: evacuation_stats.total_capacity.toLocaleString(), color: '#8b5cf6' },
-                        { label: 'Available', value: availableCapacity.toLocaleString(), color: '#3b82f6' },
-                    ]} />
-                </div>
-
-                {/* Charts Row 1: Area + Donut */}
-                <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
-                    <Card>
-                        <CardHeader icon={TrendingUp} gradient="from-indigo-500 to-violet-600" title="Daily Reports (Last 30 Days)" subtitle="Flood report submissions">
-                            <div className="ml-auto hidden items-center gap-4 text-[10px] sm:flex">
-                                <span className="flex items-center gap-1.5 text-neutral-400">
-                                    <span className="size-2 rounded-full bg-indigo-500" />
-                                    Reports
-                                </span>
+                {/* ── AI Situation Analysis (hero) ── */}
+                <Card>
+                    <CardHeader icon={Sparkles} title={t('stats.ai_analysis')} subtitle={`Analyzing: ${PERIODS.find(p => p.key === period)?.label ?? 'All'} \u00B7 GPT-4o mini`}>
+                        {aiState === 'done' && (
+                            <div className="ml-auto flex items-center gap-1.5">
+                                {previousAi && (
+                                    <button
+                                        onClick={() => setShowPrevious(!showPrevious)}
+                                        className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${showPrevious ? 'border-indigo-300 bg-indigo-50 text-indigo-600 dark:border-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400' : 'border-neutral-200 text-neutral-400 hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-neutral-200'}`}
+                                    >
+                                        <History className="size-3" />
+                                        Previous
+                                    </button>
+                                )}
+                                <button
+                                    onClick={copyAnalysis}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1 text-[11px] font-medium text-neutral-400 transition-all hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-neutral-200"
+                                >
+                                    <ClipboardCopy className="size-3" />
+                                    {copied ? 'Copied!' : 'Copy'}
+                                </button>
+                                <button
+                                    onClick={generateInsights}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1 text-[11px] font-medium text-neutral-400 transition-all hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-neutral-200"
+                                >
+                                    <RefreshCw className="size-3" />
+                                    Refresh
+                                </button>
                             </div>
-                        </CardHeader>
-                        <div className="px-2 pb-2 pt-1 sm:px-3">
-                            {dailyCounts.length > 0
-                                ? <ReactApexChart type="area" series={areaSeries} options={areaOptions} height={270} />
-                                : <EmptyState text="No data for last 30 days" />}
-                        </div>
-                    </Card>
+                        )}
+                    </CardHeader>
+                    <div className="p-5">
+                        {aiState === 'idle' && (
+                            <div className="flex flex-col items-center gap-4 py-6 text-center">
+                                <div className="flex size-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+                                    <Sparkles className="size-7 text-neutral-500 dark:text-neutral-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-neutral-800 dark:text-white">AI-Powered Analysis</p>
+                                    <p className="mt-1 text-xs text-neutral-400">Generate instant insights from your flood data using AI</p>
+                                </div>
+                                <button
+                                    onClick={generateInsights}
+                                    className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 active:scale-95"
+                                >
+                                    <Sparkles className="size-4" />
+                                    {t('stats.generate_insights')}
+                                </button>
+                            </div>
+                        )}
 
+                        {aiState === 'loading' && (
+                            <div className="flex flex-col items-center gap-4 py-10 text-center">
+                                <div className="relative">
+                                    <div className="size-12 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-600 dark:border-neutral-700 dark:border-t-neutral-300" />
+                                    <Sparkles className="absolute inset-0 m-auto size-5 text-neutral-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Analyzing flood data...</p>
+                                    <p className="mt-0.5 text-xs text-neutral-400">Processing reports, teams, areas, and evacuation data</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {aiState === 'error' && (
+                            <div className="flex flex-col items-center gap-4 py-8 text-center">
+                                <div className="flex size-14 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-900/20">
+                                    <AlertCircle className="size-7 text-red-500" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-semibold text-neutral-800 dark:text-white">Analysis failed</p>
+                                    <p className="mt-1 text-xs text-neutral-400">Could not connect to AI service. Please try again.</p>
+                                </div>
+                                <button
+                                    onClick={generateInsights}
+                                    className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-600 shadow-sm transition-all hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-neutral-100"
+                                >
+                                    <RefreshCw className="size-3.5" />
+                                    Retry
+                                </button>
+                            </div>
+                        )}
+
+                        {aiState === 'done' && aiData && (
+                            <div className={`flex flex-col gap-5 transition-opacity duration-500 ${typewriterReady ? 'opacity-100' : 'opacity-0'}`}>
+                                {/* Risk level + Confidence badges */}
+                                <div className="flex items-center gap-2 flex-wrap">
+                                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${RISK_STYLES[aiData.risk_level]}`}>
+                                        <span className="size-1.5 rounded-full bg-current" />
+                                        {aiData.risk_level} risk
+                                    </span>
+                                    {aiData.confidence && (
+                                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${
+                                            aiData.confidence === 'high' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800'
+                                            : aiData.confidence === 'medium' ? 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800'
+                                            : 'bg-neutral-100 text-neutral-500 border border-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700'
+                                        }`}>
+                                            <Shield className="size-3" />
+                                            {aiData.confidence} confidence
+                                        </span>
+                                    )}
+                                    {previousAi && showPrevious && previousAi.data.risk_level !== aiData.risk_level && (
+                                        <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
+                                            was <span className="font-semibold">{previousAi.data.risk_level}</span>
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Summary */}
+                                <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">{aiData.summary}</p>
+
+                                {/* Previous comparison */}
+                                {showPrevious && previousAi && (
+                                    <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-3.5 dark:border-indigo-800 dark:bg-indigo-950/20">
+                                        <div className="mb-2 flex items-center gap-1.5">
+                                            <History className="size-3.5 text-indigo-500" />
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Previous Analysis</span>
+                                            <span className="ml-auto text-[10px] text-indigo-400">{new Date(previousAi.timestamp).toLocaleString()}</span>
+                                        </div>
+                                        <p className="text-xs leading-relaxed text-indigo-700 dark:text-indigo-300">{previousAi.data.summary}</p>
+                                    </div>
+                                )}
+
+                                {/* Key Findings */}
+                                <div>
+                                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Key Findings</p>
+                                    <ul className="flex flex-col gap-2">
+                                        {aiData.key_findings.map((finding, i) => (
+                                            <li key={i} className="flex items-start gap-2 text-xs text-neutral-600 dark:text-neutral-300">
+                                                <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
+                                                {finding}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                {/* Bottleneck */}
+                                {aiData.bottleneck && (
+                                    <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-800 dark:bg-amber-950/20">
+                                        <div className="mb-2 flex items-center gap-1.5">
+                                            <Clock className="size-3.5 text-amber-600 dark:text-amber-400" />
+                                            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">Response Bottleneck</span>
+                                        </div>
+                                        <div className="mb-2 flex items-center gap-2">
+                                            <span className="rounded-lg bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                                {formatStageName(aiData.bottleneck.stage)}
+                                            </span>
+                                            <span className="text-xs tabular-nums text-amber-600 dark:text-amber-400">
+                                                avg {aiData.bottleneck.avg_minutes} min
+                                            </span>
+                                        </div>
+                                        <p className="text-xs leading-relaxed text-amber-700 dark:text-amber-300">{aiData.bottleneck.explanation}</p>
+                                        <div className="mt-2 flex items-start gap-1.5">
+                                            <Zap className="mt-0.5 size-3 shrink-0 text-amber-600 dark:text-amber-400" />
+                                            <p className="text-xs font-medium text-amber-800 dark:text-amber-200">{aiData.bottleneck.fix}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Affected Areas + Team Actions grid */}
+                                <div className="grid gap-4 lg:grid-cols-2">
+                                    {/* Affected Areas */}
+                                    {aiData.affected_areas?.length > 0 && (
+                                        <div>
+                                            <div className="mb-2 flex items-center gap-1.5">
+                                                <Navigation className="size-3.5 text-neutral-400" />
+                                                <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Affected Areas</p>
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                {aiData.affected_areas.map((area, i) => (
+                                                    <div key={i} className="flex items-start gap-2 rounded-lg border border-neutral-100 bg-neutral-50/50 p-2.5 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                                        <span className={`mt-0.5 inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase ${RISK_STYLES[area.risk]}`}>
+                                                            {area.risk}
+                                                        </span>
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-semibold text-neutral-800 dark:text-white">{area.name}</p>
+                                                            <p className="mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">{area.reason}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Team Actions */}
+                                    {aiData.team_actions?.length > 0 && (
+                                        <div>
+                                            <div className="mb-2 flex items-center gap-1.5">
+                                                <Users className="size-3.5 text-neutral-400" />
+                                                <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Team Actions</p>
+                                            </div>
+                                            <div className="flex flex-col gap-2">
+                                                {aiData.team_actions.map((ta, i) => (
+                                                    <div key={i} className="flex items-start gap-2 rounded-lg border border-neutral-100 bg-neutral-50/50 p-2.5 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                                        <span className={`mt-0.5 inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase ${
+                                                            ta.priority === 'high' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                                                            : ta.priority === 'medium' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                                                            : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-400'
+                                                        }`}>
+                                                            {ta.priority}
+                                                        </span>
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-semibold text-neutral-800 dark:text-white">{ta.team}</p>
+                                                            <p className="mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">{ta.action}</p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Evacuation Actions */}
+                                {aiData.evacuation_actions?.length > 0 && (
+                                    <div>
+                                        <div className="mb-2 flex items-center gap-1.5">
+                                            <MapPin className="size-3.5 text-neutral-400" />
+                                            <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Evacuation Actions</p>
+                                        </div>
+                                        <div className="grid gap-2 sm:grid-cols-2">
+                                            {aiData.evacuation_actions.map((ea, i) => {
+                                                const actionColors: Record<string, string> = {
+                                                    open: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+                                                    close: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+                                                    expand: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                                                    monitor: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+                                                    relocate: 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400',
+                                                };
+                                                return (
+                                                    <div key={i} className="flex items-start gap-2 rounded-lg border border-neutral-100 bg-neutral-50/50 p-2.5 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                                        <span className={`mt-0.5 inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase ${actionColors[ea.action] ?? 'bg-neutral-100 text-neutral-500'}`}>
+                                                            {ea.action}
+                                                        </span>
+                                                        <div className="min-w-0">
+                                                            <p className="text-xs font-semibold text-neutral-800 dark:text-white">{ea.center}</p>
+                                                            <p className="mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">{ea.reason}</p>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Recommendations */}
+                                <div>
+                                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Recommendations</p>
+                                    <ul className="flex flex-col gap-2">
+                                        {aiData.recommendations.map((rec, i) => (
+                                            <li key={i} className="flex items-start gap-2 text-xs text-neutral-600 dark:text-neutral-300">
+                                                <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-[9px] font-bold text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
+                                                    {i + 1}
+                                                </span>
+                                                {rec}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+
+                                {/* Priority Action */}
+                                <div className={`rounded-xl p-3.5 ${RISK_BOX_STYLES[aiData.risk_level]}`}>
+                                    <div className="mb-1.5 flex items-center gap-1.5">
+                                        <Zap className={`size-3.5 ${RISK_TEXT_STYLES[aiData.risk_level]}`} />
+                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${RISK_TEXT_STYLES[aiData.risk_level]}`}>
+                                            Priority Action
+                                        </span>
+                                    </div>
+                                    <p className={`text-xs font-medium leading-relaxed ${RISK_TEXT_STYLES[aiData.risk_level]}`}>
+                                        {aiData.priority_action}
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 text-[10px] text-neutral-300 dark:text-neutral-600">
+                                    <ChevronRight className="size-3" />
+                                    AI-generated analysis. Always verify with on-ground information.
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </Card>
+
+                {/* ── Response Time Breakdown ── */}
+                <Card>
+                    <CardHeader icon={Clock} title={t('stats.response_time')} subtitle="Average time per stage (resolved reports)">
+                        <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
+                            {STAGE_NAMES.map((name, i) => (
+                                <span key={name} className="flex items-center gap-1.5 text-neutral-400">
+                                    <span className="size-2 rounded-full" style={{ backgroundColor: STAGE_COLORS[i] }} />
+                                    {name}
+                                </span>
+                            ))}
+                        </div>
+                    </CardHeader>
+                    <div className="p-5">
+                        {/* Overall summary row */}
+                        <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                            {overallStages.map(stage => {
+                                const pct = overallTotal > 0 ? Math.round((stage.value / overallTotal) * 100) : 0;
+                                return (
+                                    <div key={stage.label} className="rounded-xl border border-neutral-100 bg-neutral-50/50 p-3 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                        <p className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500">{stage.label}</p>
+                                        <p className="mt-1 text-lg font-bold tabular-nums text-neutral-900 dark:text-white">{fmtMinutes(stage.value)}</p>
+                                        <div className="mt-1.5 flex items-center gap-2">
+                                            <div className="h-1 flex-1 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-700">
+                                                <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: stage.color }} />
+                                            </div>
+                                            <span className="text-[10px] tabular-nums text-neutral-400">{pct}%</span>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            <div className="rounded-xl border border-neutral-100 bg-neutral-50/50 p-3 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                <p className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500">Total Avg Response</p>
+                                <p className="mt-1 text-lg font-bold tabular-nums text-neutral-900 dark:text-white">{fmtMinutes(overallTotal)}</p>
+                                <p className="mt-1.5 text-[10px] text-neutral-400">{response_breakdown.overall.total_resolved.toLocaleString()} resolved</p>
+                            </div>
+                        </div>
+                        {/* Chart by severity */}
+                        {breakdownBySev.length > 0
+                            ? <ReactApexChart type="bar" series={breakdownSeries} options={breakdownOptions} height={280} />
+                            : <EmptyState text="No resolved reports with stage data" />}
+                    </div>
+                </Card>
+
+                {/* ── Charts Row 1: Severity Donut + Status Bar ── */}
+                <div className="grid gap-5 lg:grid-cols-2">
                     <Card>
-                        <CardHeader icon={AlertTriangle} gradient="from-rose-500 to-pink-600" title="Severity Breakdown" subtitle="All-time distribution" />
+                        <CardHeader icon={AlertTriangle} title={t('stats.severity_breakdown')} subtitle="Distribution by severity level" />
                         <div className="flex flex-col items-center px-5 pb-5 pt-4">
                             <ReactApexChart type="donut" series={severityValues} options={donutOptions} height={200} width={200} />
                             <div className="mt-3 flex w-full flex-col gap-2.5">
@@ -1055,337 +1391,174 @@ export default function StatisticsPage({
                             </div>
                         </div>
                     </Card>
+
+                    <Card>
+                        <CardHeader icon={BarChart3} title={t('stats.status_distribution')} subtitle="Reports by current status" />
+                        <div className="px-2 pb-2 pt-1 sm:px-3">
+                            <ReactApexChart type="bar" series={statusSeries} options={statusOptions} height={280} />
+                        </div>
+                    </Card>
                 </div>
 
-                {/* Charts Row 2: Status + Monthly Trend */}
+                {/* ── Charts Row 2: Monthly Trend (full width) ── */}
+                <Card>
+                    <CardHeader icon={TrendingUp} title={t('stats.monthly_trend')} subtitle="Last 6 months">
+                        <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
+                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-indigo-500" />Total</span>
+                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-rose-500" />Critical</span>
+                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-orange-500" />High</span>
+                        </div>
+                    </CardHeader>
+                    {/* Smart insight */}
+                    {monthly_trend.length >= 2 && (() => {
+                        const latest = monthly_trend[monthly_trend.length - 1];
+                        const prev = monthly_trend[monthly_trend.length - 2];
+                        const change = prev.total > 0 ? Math.round(((latest.total - prev.total) / prev.total) * 100) : 0;
+                        const peakMonth = monthly_trend.reduce((a, b) => b.total > a.total ? b : a, monthly_trend[0]);
+                        const totalAll = monthly_trend.reduce((s, m) => s + m.total, 0);
+                        const avgMonthly = Math.round(totalAll / monthly_trend.length);
+                        const isUp = change > 0;
+                        const criticalTotal = monthly_trend.reduce((s, m) => s + m.critical, 0);
+                        const critPct = totalAll > 0 ? Math.round((criticalTotal / totalAll) * 100) : 0;
+
+                        return (
+                            <div className="mx-5 mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl bg-neutral-50 px-4 py-2.5 dark:bg-neutral-800/40">
+                                <div className="flex items-center gap-2">
+                                    <span className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${isUp ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400' : change < 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-400'}`}>
+                                        {isUp ? '↑' : change < 0 ? '↓' : '—'} {Math.abs(change)}%
+                                    </span>
+                                    <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                                        {isUp ? 'Reports are increasing' : change < 0 ? 'Reports are decreasing' : 'Reports are steady'} vs last month
+                                    </span>
+                                </div>
+                                <span className="hidden sm:block h-3 w-px bg-neutral-200 dark:bg-neutral-700" />
+                                <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                                    Peak: <span className="font-semibold text-neutral-600 dark:text-neutral-300">{peakMonth.month}</span> ({peakMonth.total} reports)
+                                </span>
+                                <span className="hidden sm:block h-3 w-px bg-neutral-200 dark:bg-neutral-700" />
+                                <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                                    Avg: <span className="font-semibold text-neutral-600 dark:text-neutral-300">{avgMonthly}/mo</span>
+                                </span>
+                                {critPct > 0 && (
+                                    <>
+                                        <span className="hidden sm:block h-3 w-px bg-neutral-200 dark:bg-neutral-700" />
+                                        <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                                            Critical: <span className="font-semibold text-red-500">{critPct}%</span> of all reports
+                                        </span>
+                                    </>
+                                )}
+                            </div>
+                        );
+                    })()}
+                    <div className="px-2 pb-2 pt-1 sm:px-3">
+                        {monthly_trend.length > 0
+                            ? <ReactApexChart type="bar" series={monthlySeries} options={monthlyOptions} height={280} />
+                            : <EmptyState text="No monthly data available" />}
+                    </div>
+                </Card>
+
+                {/* ── Charts Row 3: Peak Hours + Month-over-Month ── */}
                 <div className="grid gap-5 lg:grid-cols-2">
                     <Card>
-                        <CardHeader icon={BarChart3} gradient="from-violet-500 to-purple-600" title="Status Distribution" subtitle="All-time by status" />
+                        <CardHeader icon={Clock} title={t('stats.peak_hours')} subtitle="When reports come in most" />
+                        {(() => {
+                            const hours = Array.from({ length: 24 }, (_, h) => peak_hours[h] ?? 0);
+                            const maxHour = hours.indexOf(Math.max(...hours));
+                            const totalReportsHours = hours.reduce((a, b) => a + b, 0);
+                            const peakLabel = maxHour === 0 ? '12 AM' : maxHour < 12 ? `${maxHour} AM` : maxHour === 12 ? '12 PM' : `${maxHour - 12} PM`;
+                            const peakPct = totalReportsHours > 0 ? Math.round((hours[maxHour] / totalReportsHours) * 100) : 0;
+                            // Morning (6-12), Afternoon (12-18), Evening (18-24), Night (0-6)
+                            const morning = hours.slice(6, 12).reduce((a, b) => a + b, 0);
+                            const afternoon = hours.slice(12, 18).reduce((a, b) => a + b, 0);
+                            const evening = hours.slice(18, 24).reduce((a, b) => a + b, 0);
+                            const night = hours.slice(0, 6).reduce((a, b) => a + b, 0);
+                            const busiestPeriod = [
+                                { name: 'Morning', v: morning }, { name: 'Afternoon', v: afternoon },
+                                { name: 'Evening', v: evening }, { name: 'Night', v: night },
+                            ].sort((a, b) => b.v - a.v)[0];
+
+                            return totalReportsHours > 0 ? (
+                                <div className="mx-5 mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-neutral-50 px-4 py-2.5 dark:bg-neutral-800/40">
+                                    <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                                        Busiest hour: <span className="font-semibold text-neutral-600 dark:text-neutral-300">{peakLabel}</span> ({peakPct}% of reports)
+                                    </span>
+                                    <span className="hidden sm:block h-3 w-px bg-neutral-200 dark:bg-neutral-700" />
+                                    <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                                        Most reports come in the <span className="font-semibold text-neutral-600 dark:text-neutral-300">{busiestPeriod.name}</span>
+                                    </span>
+                                </div>
+                            ) : null;
+                        })()}
                         <div className="px-2 pb-2 pt-1 sm:px-3">
-                            <ReactApexChart type="bar" series={statusSeries} options={statusOptions} height={225} />
+                            <ReactApexChart type="bar" series={peakHoursSeries} options={peakHoursOptions} height={250} />
                         </div>
                     </Card>
 
                     <Card>
-                        <CardHeader icon={TrendingUp} gradient="from-violet-500 to-fuchsia-600" title="Monthly Trend" subtitle="Last 6 months">
+                        <CardHeader icon={BarChart3} title={t('stats.month_over_month')} subtitle={`${month_comparison.this_month.label} vs ${month_comparison.last_month.label}`}>
                             <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
-                                <span className="flex items-center gap-1.5 text-neutral-400">
-                                    <span className="size-2 rounded-full bg-indigo-500" />
-                                    Total
-                                </span>
-                                <span className="flex items-center gap-1.5 text-neutral-400">
-                                    <span className="size-2 rounded-full bg-rose-500" />
-                                    Critical
-                                </span>
-                                <span className="flex items-center gap-1.5 text-neutral-400">
-                                    <span className="size-2 rounded-full bg-orange-500" />
-                                    High
-                                </span>
+                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-indigo-500" />{month_comparison.this_month.label}</span>
+                                <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-violet-400" />{month_comparison.last_month.label}</span>
                             </div>
                         </CardHeader>
+                        {/* Smart comparison summary */}
+                        {(() => {
+                            const thisTotal = month_comparison.this_month.critical + month_comparison.this_month.high + month_comparison.this_month.moderate + month_comparison.this_month.low;
+                            const lastTotal = month_comparison.last_month.critical + month_comparison.last_month.high + month_comparison.last_month.moderate + month_comparison.last_month.low;
+                            const change = lastTotal > 0 ? Math.round(((thisTotal - lastTotal) / lastTotal) * 100) : 0;
+                            const critChange = month_comparison.this_month.critical - month_comparison.last_month.critical;
+                            const isUp = change > 0;
+
+                            return (thisTotal > 0 || lastTotal > 0) ? (
+                                <div className="mx-5 mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-neutral-50 px-4 py-2.5 dark:bg-neutral-800/40">
+                                    <div className="flex items-center gap-2">
+                                        <span className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${isUp ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400' : change < 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-400'}`}>
+                                            {isUp ? '↑' : change < 0 ? '↓' : '—'} {Math.abs(change)}%
+                                        </span>
+                                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
+                                            {isUp ? 'More reports this month' : change < 0 ? 'Fewer reports this month' : 'Same as last month'}
+                                        </span>
+                                    </div>
+                                    {critChange !== 0 && (
+                                        <>
+                                            <span className="hidden sm:block h-3 w-px bg-neutral-200 dark:bg-neutral-700" />
+                                            <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                                                Critical: <span className={`font-semibold ${critChange > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{critChange > 0 ? '+' : ''}{critChange}</span> vs last month
+                                            </span>
+                                        </>
+                                    )}
+                                </div>
+                            ) : null;
+                        })()}
                         <div className="px-2 pb-2 pt-1 sm:px-3">
-                            {monthly_trend.length > 0
-                                ? <ReactApexChart type="bar" series={monthlySeries} options={monthlyOptions} height={225} />
-                                : <EmptyState text="No monthly data available" />}
+                            <ReactApexChart type="bar" series={monthCompSeries} options={monthCompOptions} height={250} />
                         </div>
                     </Card>
                 </div>
 
-                {/* Peak Report Hours */}
-                <Card>
-                    <CardHeader icon={Clock} gradient="from-amber-400 to-orange-500" title="Peak Report Hours" subtitle="By hour of day (all time)" />
-                    <div className="px-2 pb-2 pt-1 sm:px-3">
-                        <ReactApexChart type="bar" series={peakHoursSeries} options={peakHoursOptions} height={220} />
-                    </div>
-                </Card>
-
-                {/* AI Insights */}
-                <Card>
-                        <CardHeader icon={Sparkles} gradient="from-violet-500 to-fuchsia-600" title="AI Situation Analysis" subtitle={`Analyzing: ${PERIODS.find(p => p.key === period)?.label ?? 'All'} · GPT-4o mini`} />
-                        <div className="p-5">
-                            {aiState === 'idle' && (
-                                <div className="flex flex-col items-center gap-4 py-6 text-center">
-                                    <div className="flex size-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
-                                        <Sparkles className="size-7 text-neutral-500 dark:text-neutral-400" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-neutral-800 dark:text-white">AI-Powered Analysis</p>
-                                        <p className="mt-1 text-xs text-neutral-400">Generate instant insights from your flood data using AI</p>
-                                    </div>
-                                    <button
-                                        onClick={generateInsights}
-                                        className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 active:scale-95"
-                                    >
-                                        <Sparkles className="size-4" />
-                                        Generate Insights
-                                    </button>
-                                </div>
-                            )}
-
-                            {aiState === 'loading' && (
-                                <div className="flex flex-col items-center gap-4 py-10 text-center">
-                                    <div className="relative">
-                                        <div className="size-12 animate-spin rounded-full border-4 border-neutral-200 border-t-neutral-600 dark:border-neutral-700 dark:border-t-neutral-300" />
-                                        <Sparkles className="absolute inset-0 m-auto size-5 text-neutral-400" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">Analyzing flood data...</p>
-                                        <p className="mt-0.5 text-xs text-neutral-400">This may take a few seconds</p>
-                                    </div>
-                                </div>
-                            )}
-
-                            {aiState === 'error' && (
-                                <div className="flex flex-col items-center gap-4 py-8 text-center">
-                                    <div className="flex size-14 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-900/20">
-                                        <AlertCircle className="size-7 text-red-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-neutral-800 dark:text-white">Analysis failed</p>
-                                        <p className="mt-1 text-xs text-neutral-400">Could not connect to AI service. Please try again.</p>
-                                    </div>
-                                    <button
-                                        onClick={generateInsights}
-                                        className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-600 shadow-sm transition-all hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-neutral-100"
-                                    >
-                                        <RefreshCw className="size-3.5" />
-                                        Retry
-                                    </button>
-                                </div>
-                            )}
-
-                            {aiState === 'done' && aiData && (
-                                <div className="flex flex-col gap-4">
-                                    {/* Risk level + refresh */}
-                                    <div className="flex items-center justify-between">
-                                        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${RISK_STYLES[aiData.risk_level]}`}>
-                                            <span className="size-1.5 rounded-full bg-current" />
-                                            {aiData.risk_level} risk
-                                        </span>
-                                        <button
-                                            onClick={generateInsights}
-                                            className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1 text-[11px] font-medium text-neutral-400 transition-all hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-neutral-200"
-                                        >
-                                            <RefreshCw className="size-3" />
-                                            Refresh
-                                        </button>
-                                    </div>
-
-                                    {/* Summary */}
-                                    <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">{aiData.summary}</p>
-
-                                    {/* Key Findings */}
-                                    <div>
-                                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Key Findings</p>
-                                        <ul className="flex flex-col gap-2">
-                                            {aiData.key_findings.map((finding, i) => (
-                                                <li key={i} className="flex items-start gap-2 text-xs text-neutral-600 dark:text-neutral-300">
-                                                    <CheckCircle2 className="mt-0.5 size-3.5 shrink-0 text-emerald-500" />
-                                                    {finding}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-
-                                    {/* Recommendations */}
-                                    <div>
-                                        <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Recommendations</p>
-                                        <ul className="flex flex-col gap-2">
-                                            {aiData.recommendations.map((rec, i) => (
-                                                <li key={i} className="flex items-start gap-2 text-xs text-neutral-600 dark:text-neutral-300">
-                                                    <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-[9px] font-bold text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
-                                                        {i + 1}
-                                                    </span>
-                                                    {rec}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-
-                                    {/* Priority Action */}
-                                    <div className={`rounded-xl p-3.5 ${RISK_BOX_STYLES[aiData.risk_level]}`}>
-                                        <div className="mb-1.5 flex items-center gap-1.5">
-                                            <Zap className={`size-3.5 ${RISK_TEXT_STYLES[aiData.risk_level]}`} />
-                                            <span className={`text-[10px] font-bold uppercase tracking-widest ${RISK_TEXT_STYLES[aiData.risk_level]}`}>
-                                                Priority Action
-                                            </span>
-                                        </div>
-                                        <p className={`text-xs font-medium leading-relaxed ${RISK_TEXT_STYLES[aiData.risk_level]}`}>
-                                            {aiData.priority_action}
-                                        </p>
-                                    </div>
-
-                                    <div className="flex items-center gap-1.5 text-[10px] text-neutral-300 dark:text-neutral-600">
-                                        <ChevronRight className="size-3" />
-                                        AI-generated analysis. Always verify with on-ground information.
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                </Card>
-
-                {/* Evacuation Centers List */}
-                <Card>
-                    <CardHeader icon={ShieldCheck} gradient="from-sky-500 to-blue-600" title="Evacuation Centers" subtitle="All centers with status &amp; occupancy" />
-                    {evacuation_centers.length === 0 ? (
-                        <div className="px-5 py-10"><EmptyState text="No evacuation centers registered" /></div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full min-w-[700px] border-collapse text-sm">
-                                <thead>
-                                    <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                        {['Center', 'Type', 'Status', 'Occupancy', 'Capacity', ''].map((h) => (
-                                            <th key={h} className="px-5 py-3 text-left text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{h}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/60">
-                                    {evacuation_centers.map((ec) => {
-                                        const occ = ec.current_occupancy ?? 0;
-                                        const cap = ec.capacity ?? 0;
-                                        const pct = cap > 0 ? Math.round((occ / cap) * 100) : 0;
-                                        const TypeIcon = EVAC_TYPE_ICONS[ec.type];
-                                        return (
-                                            <tr key={ec.id} className="transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
-                                                <td className="px-5 py-3.5">
-                                                    <div className="flex flex-col gap-0.5">
-                                                        <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">{ec.name}</span>
-                                                        {ec.address && (
-                                                            <span className="truncate text-[11px] text-neutral-400 dark:text-neutral-500 max-w-[220px]">{ec.address}</span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="px-5 py-3.5">
-                                                    <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[11px] font-semibold ${EVAC_TYPE_COLORS[ec.type]}`}>
-                                                        <TypeIcon className="size-3" />
-                                                        {EVACUATION_CENTER_TYPE_LABELS[ec.type]}
-                                                    </span>
-                                                </td>
-                                                <td className="px-5 py-3.5">
-                                                    {ec.is_active ? (
-                                                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-800/40">
-                                                            <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
-                                                            Active
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2.5 py-0.5 text-[10px] font-semibold text-neutral-500 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700">
-                                                            <span className="size-1.5 rounded-full bg-neutral-400 dark:bg-neutral-500" />
-                                                            Inactive
-                                                        </span>
-                                                    )}
-                                                </td>
-                                                <td className="px-5 py-3.5">
-                                                    <div className="flex flex-col gap-1 min-w-[110px]">
-                                                        <div className="flex items-center gap-1">
-                                                            <span className="text-xs font-bold tabular-nums text-neutral-800 dark:text-neutral-200">{occ.toLocaleString()}</span>
-                                                            <span className="text-[10px] text-neutral-400">/ {cap.toLocaleString()}</span>
-                                                            <span className={`ml-auto text-[10px] font-semibold ${
-                                                                pct >= 90 ? 'text-red-600 dark:text-red-400'
-                                                                : pct >= 70 ? 'text-amber-600 dark:text-amber-400'
-                                                                : 'text-emerald-600 dark:text-emerald-400'
-                                                            }`}>{pct}%</span>
-                                                        </div>
-                                                        <div className="h-1.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
-                                                            <div
-                                                                className={`h-full rounded-full transition-all ${
-                                                                    pct >= 90 ? 'bg-red-500'
-                                                                    : pct >= 70 ? 'bg-amber-500'
-                                                                    : 'bg-emerald-500'
-                                                                }`}
-                                                                style={{ width: `${Math.min(pct, 100)}%` }}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="px-5 py-3.5 text-xs font-medium tabular-nums text-neutral-600 dark:text-neutral-300">
-                                                    {cap.toLocaleString()}
-                                                </td>
-                                                <td className="px-5 py-3.5">
-                                                    {!ec.is_active && occ > 0 && (
-                                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:ring-amber-800/40">
-                                                            <AlertTriangle className="size-3" />
-                                                            Inactive with evacuees
-                                                        </span>
-                                                    )}
-                                                    {pct >= 90 && ec.is_active && (
-                                                        <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700 ring-1 ring-red-200 dark:bg-red-950/30 dark:text-red-400 dark:ring-red-800/40">
-                                                            <AlertCircle className="size-3" />
-                                                            Near capacity
-                                                        </span>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
+                {/* ── Charts Row 4: Barangay Reports + Report Sources ── */}
+                <div className="grid gap-5 lg:grid-cols-2">
+                    {barangay_reports.length > 0 && (
+                        <Card>
+                            <CardHeader icon={MapPin} title={t('stats.reports_by_barangay')} subtitle="Top areas by report volume" />
+                            <div className="px-2 pb-2 pt-1 sm:px-3">
+                                <ReactApexChart type="bar" series={barangayBarSeries} options={barangayBarOptions} height={Math.max(250, sortedBarangays.length * 40)} />
+                            </div>
+                        </Card>
                     )}
-                </Card>
 
-                {/* ═══ ADVANCED TRENDS ═══ */}
-
-                <Card>
-                    <CardHeader icon={Bell} gradient="from-red-500 to-rose-600" title="Alert Frequency" subtitle="Alerts issued — last 30 days">
-                        <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
-                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-red-500" />Critical</span>
-                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-orange-400" />Advisory</span>
-                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-blue-500" />Info</span>
-                        </div>
-                    </CardHeader>
-                    <div className="px-2 pb-2 pt-1 sm:px-3">
-                        {alert_frequency.length > 0
-                            ? <ReactApexChart type="bar" series={alertFreqSeries} options={alertFreqOptions} height={250} />
-                            : <EmptyState text="No alert data" />}
-                    </div>
-                </Card>
-
-                <Card>
-                    <CardHeader icon={Building2} gradient="from-teal-500 to-cyan-600" title="Evacuation Occupancy" subtitle="Center occupancy — last 30 days" />
-                    <div className="px-2 pb-2 pt-1 sm:px-3">
-                        {evacOccupancySeries.length > 0
-                            ? <ReactApexChart type="area" series={evacOccupancySeries} options={evacOccupancyOptions} height={250} />
-                            : <EmptyState text="No occupancy data" />}
-                    </div>
-                </Card>
-
-                {/* ═══ ANALYSIS ═══ */}
-
-                <Card>
-                    <CardHeader icon={BarChart3} gradient="from-indigo-500 to-blue-600" title="Month-over-Month" subtitle={`${month_comparison.this_month.label} vs ${month_comparison.last_month.label}`}>
-                        <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
-                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-indigo-500" />{month_comparison.this_month.label}</span>
-                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-violet-400" />{month_comparison.last_month.label}</span>
-                        </div>
-                    </CardHeader>
-                    <div className="px-2 pb-2 pt-1 sm:px-3">
-                        <ReactApexChart type="bar" series={monthCompSeries} options={monthCompOptions} height={280} />
-                    </div>
-                </Card>
-
-                {barangay_reports.length > 0 && (
                     <Card>
-                        <CardHeader icon={MapPin} gradient="from-violet-500 to-purple-600" title="Reports by Barangay" subtitle="Top areas by report volume" />
-                        <div className="px-2 pb-2 pt-1 sm:px-3">
-                            <ReactApexChart type="bar" series={barangayBarSeries} options={barangayBarOptions} height={Math.max(250, sortedBarangays.length * 40)} />
+                        <CardHeader icon={PieChart} title={t('stats.report_sources')} subtitle="Where reports come from" />
+                        <div className="flex items-center justify-center px-4 pb-6 pt-4">
+                            {sourceValues.length > 0
+                                ? <ReactApexChart type="donut" series={sourceValues} options={sourceDonutOptions} height={260} width={260} />
+                                : <EmptyState text="No data" />}
                         </div>
                     </Card>
-                )}
-
-                {/* ═══ COMPOSITION ═══ */}
-
-                <Card>
-                    <CardHeader icon={PieChart} gradient="from-indigo-500 to-violet-600" title="Report Sources" subtitle="Where reports come from" />
-                    <div className="flex items-center justify-center px-4 pb-6 pt-4">
-                        {sourceValues.length > 0
-                            ? <ReactApexChart type="donut" series={sourceValues} options={sourceDonutOptions} height={220} width={220} />
-                            : <EmptyState text="No data" />}
-                    </div>
-                </Card>
+                </div>
 
             </div>
             </div>
         </AppLayout>
     );
 }
-

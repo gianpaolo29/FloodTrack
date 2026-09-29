@@ -1,0 +1,210 @@
+export const fil: Record<string, string> = {
+    // Sidebar
+    'sidebar.overview': 'Overview',
+    'sidebar.dashboard': 'Dashboard',
+    'sidebar.map_view': 'Mapa',
+    'sidebar.weather': 'Lagay ng Panahon',
+    'sidebar.management': 'Management',
+    'sidebar.flood_reports': 'Mga Report ng Baha',
+    'sidebar.all': 'Lahat',
+    'sidebar.to_be_reviewed': 'Para Suriin',
+    'sidebar.verified': 'Na-verify Na',
+    'sidebar.assigned': 'May Assigned Na',
+    'sidebar.resolved': 'Tapos Na',
+    'sidebar.rejected': 'Rejected',
+    'sidebar.hazard_zones': 'Mga Delikadong Lugar',
+    'sidebar.evacuation_centers': 'Evacuation Centers',
+    'sidebar.announcements': 'Mga Anunsyo',
+    'sidebar.residents': 'Mga Residente',
+    'sidebar.rescue_personnel': 'Mga Rescuer',
+    'sidebar.response_teams': 'Response Teams',
+    'sidebar.analytics': 'Analytics',
+    'sidebar.statistics': 'Statistics',
+    'sidebar.sla_rules': 'SLA Rules',
+    'sidebar.export': 'I-export',
+    'sidebar.system': 'System',
+    'sidebar.activity_log': 'Activity Log',
+    'sidebar.settings': 'Settings',
+
+    // Navbar
+    'nav.search': 'Maghanap\u2026',
+    'nav.notifications': 'Mga Notification',
+    'nav.mark_all_read': 'Basahin lahat',
+    'nav.no_notifications': 'Wala pang notification',
+    'nav.switch_light': 'Light mode',
+    'nav.switch_dark': 'Dark mode',
+    'nav.fullscreen': 'Fullscreen',
+    'nav.exit_fullscreen': 'Exit fullscreen',
+    'nav.language': 'Wika',
+
+    // Common
+    'common.search': 'Hanapin',
+    'common.filter': 'Filter',
+    'common.clear': 'Clear',
+    'common.apply': 'Apply',
+    'common.reset': 'Reset',
+    'common.cancel': 'Cancel',
+    'common.save': 'I-save',
+    'common.delete': 'Tanggalin',
+    'common.edit': 'I-edit',
+    'common.create': 'Gumawa',
+    'common.close': 'Isara',
+    'common.back': 'Bumalik',
+    'common.next': 'Susunod',
+    'common.previous': 'Nakaraan',
+    'common.loading': 'Loading...',
+    'common.no_data': 'Walang data',
+    'common.select_all': '(Piliin Lahat)',
+    'common.export': 'I-export',
+    'common.view_all': 'Tingnan lahat',
+    'common.submit': 'I-submit',
+    'common.confirm': 'Confirm',
+
+    // Dashboard
+    'dashboard.title': 'Dashboard',
+    'dashboard.subtitle': 'Live na tingin sa mga baha at response ng team',
+    'dashboard.total_flood_reports': 'Lahat ng Report ng Baha',
+    'dashboard.flooded_areas': 'Mga Lugar na Binabaha',
+    'dashboard.awaiting_verification': 'Kailangan Pa I-verify',
+    'dashboard.rescue_personnel': 'Mga Rescuer',
+    'dashboard.announcements': 'Mga Anunsyo',
+    'dashboard.resolved_today': 'Na-verify Ngayong Araw',
+    'dashboard.avg_response_time': 'Ave. Response Time',
+    'dashboard.resolution_rate': 'Resolution Rate',
+    'dashboard.response_teams': 'Response Teams',
+    'dashboard.verification_rate': 'Verification Rate',
+    'dashboard.flood_incident_trend': 'Trend ng Baha',
+    'dashboard.daily_reports': 'Araw-araw na report',
+    'dashboard.reports': 'Mga Report',
+    'dashboard.resolved': 'Naayos Na',
+    'dashboard.daily': 'Per Araw',
+    'dashboard.cumulative': 'Pinagsama',
+    'dashboard.flood_risk': 'Risk ng Baha',
+    'dashboard.barangay_ranking': 'Ranking ng Barangay',
+    'dashboard.top_barangays': 'Top Barangays',
+    'dashboard.by_incident_count': 'Ayon sa dami ng insidente',
+    'dashboard.flood_incident_map': 'Mapa ng Baha',
+    'dashboard.active_flooded_areas': 'lugar na binabaha ngayon',
+    'dashboard.full_map': 'Buong Mapa',
+    'dashboard.no_active_floods': 'Walang baha ngayon',
+    'dashboard.on_track': 'Okay',
+    'dashboard.needs_attention': 'Kailangan Pansin',
+    'dashboard.critical': 'Kritikal',
+    'dashboard.looking_good': 'Okay naman',
+    'dashboard.urgent': 'Kailangan Agad',
+    'dashboard.updated_just_now': 'Ka-update lang',
+    'dashboard.view_details': 'Tingnan',
+    'dashboard.reports_label': 'report',
+    'dashboard.reports_label_plural': 'reports',
+    'dashboard.incidents': 'insidente',
+    'dashboard.deployed': 'naka-deploy',
+    'dashboard.inactive': 'hindi aktibo',
+    'dashboard.cases_resolved_today': 'naayos ngayong araw',
+
+    // Statistics
+    'stats.title': 'Statistics',
+    'stats.subtitle': 'Analytics ng baha at AI insights',
+    'stats.total_reports': 'Lahat ng Report',
+    'stats.resolution_rate': 'Resolution Rate',
+    'stats.critical_reports': 'Mga Kritikal na Report',
+    'stats.ai_analysis': 'AI Analysis',
+    'stats.generate_insights': 'Mag-generate ng Insights',
+    'stats.analyzing': 'Sinusuri...',
+    'stats.severity_breakdown': 'Breakdown ng Severity',
+    'stats.status_distribution': 'Status ng mga Report',
+    'stats.monthly_trend': 'Trend Buwan-buwan',
+    'stats.peak_hours': 'Pinaka-busy na Oras',
+    'stats.month_over_month': 'Ngayon vs Nakaraang Buwan',
+    'stats.reports_by_barangay': 'Report per Barangay',
+    'stats.report_sources': 'Saan Galing ang Report',
+    'stats.response_time': 'Bilis ng Response',
+
+    // Filters
+    'filter.severity': 'Severity',
+    'filter.status': 'Status',
+    'filter.team': 'Team',
+    'filter.type': 'Uri',
+    'filter.category': 'Kategorya',
+    'filter.all_teams': 'Lahat ng Team',
+    'filter.today': 'Ngayon',
+    'filter.this_week': 'This Week',
+    'filter.monthly': 'Monthly',
+    'filter.all': 'Lahat',
+    'filter.custom': 'Custom',
+
+    // Severity levels
+    'severity.critical': 'Kritikal',
+    'severity.high': 'Mataas',
+    'severity.moderate': 'Katamtaman',
+    'severity.low': 'Mababa',
+
+    // Status
+    'status.pending': 'Pending',
+    'status.verified': 'Na-verify Na',
+    'status.assigned': 'May Assigned Na',
+    'status.resolved': 'Tapos Na',
+    'status.rejected': 'Rejected',
+    'status.advisory_issued': 'May Advisory Na',
+
+    // Reports page
+    'reports.title': 'Mga Report ng Baha',
+    'reports.subtitle': 'I-track, i-verify, at pamahalaan ang mga report ng baha.',
+    'reports.search_placeholder': 'Hanapin reference o address\u2026',
+    'reports.no_reports': 'Walang nakitang report',
+    'reports.reference': 'Reference',
+    'reports.severity': 'Severity',
+    'reports.status': 'Status',
+    'reports.location': 'Lokasyon',
+    'reports.reporter': 'Nag-report',
+    'reports.date': 'Petsa',
+    'reports.actions': 'Actions',
+
+    // Tooltip smart descriptions
+    'tooltip.looking_good': 'Okay naman',
+    'tooltip.needs_attention': 'Kailangan pansin',
+    'tooltip.urgent': 'Kailangan agad',
+
+    // Table
+    'table.showing': 'Showing',
+    'table.of': 'sa',
+    'table.entries': 'entries',
+    'table.no_results': 'Walang resulta',
+
+    // Teams
+    'teams.title': 'Response Teams',
+    'teams.search_placeholder': 'Hanapin ang team...',
+
+    // Responders
+    'responders.title': 'Mga Rescuer',
+    'responders.search_placeholder': 'Hanapin ang rescuer...',
+
+    // Users
+    'users.title': 'Mga Residente',
+    'users.subtitle': 'I-manage ang mga account ng residente',
+    'users.search_placeholder': 'Hanapin ang residente...',
+
+    // Alerts
+    'alerts.title': 'Mga Anunsyo',
+    'alerts.subtitle': 'Mag-post ng advisory at mga update para sa mga residente',
+    'alerts.search_placeholder': 'Hanapin ang anunsyo...',
+
+    // Hazards
+    'hazards.title': 'Mga Delikadong Lugar',
+    'hazards.subtitle': 'I-manage ang mga flood at road hazard na nakikita sa mapa',
+    'hazards.search_placeholder': 'Hanapin ang hazard...',
+
+    // Evacuation
+    'evac.title': 'Evacuation Centers',
+    'evac.subtitle': 'I-manage ang mga evacuation center na makikita sa mapa',
+    'evac.search_placeholder': 'Hanapin ang center...',
+
+    // Activity
+    'activity.title': 'Activity Log',
+    'activity.search_placeholder': 'Hanapin ang reference\u2026',
+
+    // Settings
+    'settings.title': 'Settings',
+
+    // Export
+    'export.title': 'I-export',
+};

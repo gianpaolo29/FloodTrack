@@ -88,6 +88,8 @@ export interface Report {
     address: string | null;
     user?: { id: number; name: string; email: string; contact_number: string | null };
     assigned_to?: number | null;
+    source?: 'app' | 'facebook' | 'messenger';
+    messenger_sender_name?: string | null;
     assigned_responder?: { id: number; name: string; contact_number: string | null } | null;
     assigned_team?: { id: number; name: string } | null;
     team_members?: TeamMember[];

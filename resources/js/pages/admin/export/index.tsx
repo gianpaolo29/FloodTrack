@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { useLocale } from '@/hooks/use-locale';
 import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
 import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
@@ -51,8 +52,9 @@ const SEVERITY_OPTIONS = ['', 'critical', 'high', 'moderate', 'low'];
 const EXPORT_LIMIT     = 10_000;
 
 export default function AdminExport({ stats, trends, period, custom_from, custom_to }: Props) {
+    const { t } = useLocale();
     const [mounted, setMounted] = useState(false);
-    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+    useEffect(() => { const tm = setTimeout(() => setMounted(true), 80); return () => clearTimeout(tm); }, []);
 
     const [status,   setStatus]   = useState('');
     const [severity, setSeverity] = useState('');
@@ -184,7 +186,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                            Export Reports
+                            {t('export.title')}
                         </h1>
                         <p className="mt-1 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                             Download report data as Excel with optional filters. Export is capped at {EXPORT_LIMIT.toLocaleString()} records.

@@ -17,6 +17,7 @@ import {
     Users,
     UsersRound,
 } from 'lucide-react';
+import { useMemo } from 'react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import { NavSection } from '@/components/nav-section';
@@ -29,117 +30,55 @@ import {
     SidebarMenuItem,
     SidebarSeparator,
 } from '@/components/ui/sidebar';
+import { useLocale } from '@/hooks/use-locale';
 import { dashboard } from '@/routes';
 import type { NavItem } from '@/types';
-
-const defaultNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
-
-// ─── Admin sidebar sections ─────────────────────────────────────────────────
-
-const mainItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: '/admin',
-        icon: LayoutDashboard,
-    },
-    {
-        title: 'Map View',
-        href: '/admin/reports/map',
-        icon: Globe,
-    },
-    {
-        title: 'Weather',
-        href: '/admin/weather',
-        icon: CloudSun,
-    },
-];
-
-const managementItems: NavItem[] = [
-    {
-        title: 'Flood Reports',
-        href: '/admin/reports',
-        icon: FileText,
-        children: [
-            { title: 'All',      href: '/admin/reports' },
-            { title: 'Pending',  href: '/admin/reports?status=pending' },
-            { title: 'Verified', href: '/admin/reports?status=verified' },
-            { title: 'Assigned', href: '/admin/reports?status=assigned' },
-            { title: 'Resolved', href: '/admin/reports?status=resolved' },
-            { title: 'Rejected', href: '/admin/reports?status=rejected' },
-        ],
-    },
-    {
-        title: 'Hazard Zones',
-        href: '/admin/hazards',
-        icon: ShieldAlert,
-    },
-    {
-        title: 'Evacuation Centers',
-        href: '/admin/evacuation-centers',
-        icon: Building2,
-    },
-    {
-        title: 'Announcements',
-        href: '/admin/alerts',
-        icon: AlertTriangle,
-    },
-    {
-        title: 'Residents',
-        href: '/admin/users',
-        icon: Users,
-    },
-    {
-        title: 'Rescue Personnel',
-        href: '/admin/responders',
-        icon: ShieldCheck,
-    },
-    {
-        title: 'Response Teams',
-        href: '/admin/teams',
-        icon: UsersRound,
-    },
-];
-
-const analyticsItems: NavItem[] = [
-    {
-        title: 'Statistics',
-        href: '/admin/statistics',
-        icon: BarChart3,
-    },
-    {
-        title: 'SLA Rules',
-        href: '/admin/sla',
-        icon: Clock,
-    },
-    {
-        title: 'Export',
-        href: '/admin/export',
-        icon: Download,
-    },
-];
-
-const systemItems: NavItem[] = [
-    {
-        title: 'Activity Log',
-        href: '/admin/activity',
-        icon: History,
-    },
-    {
-        title: 'Settings',
-        href: '/admin/settings',
-        icon: Settings,
-    },
-];
 
 export function AppSidebar() {
     const { auth } = usePage().props;
     const isAdmin = auth.user?.role === 'admin';
+    const { t } = useLocale();
+
+    const defaultNavItems: NavItem[] = useMemo(() => [
+        { title: t('sidebar.dashboard'), href: dashboard(), icon: LayoutGrid },
+    ], [t]);
+
+    const mainItems: NavItem[] = useMemo(() => [
+        { title: t('sidebar.dashboard'), href: '/admin', icon: LayoutDashboard },
+        { title: t('sidebar.map_view'), href: '/admin/reports/map', icon: Globe },
+        { title: t('sidebar.weather'), href: '/admin/weather', icon: CloudSun },
+    ], [t]);
+
+    const managementItems: NavItem[] = useMemo(() => [
+        {
+            title: t('sidebar.flood_reports'), href: '/admin/reports', icon: FileText,
+            children: [
+                { title: t('sidebar.all'), href: '/admin/reports' },
+                { title: t('sidebar.to_be_reviewed'), href: '/admin/reports?status=pending' },
+                { title: t('sidebar.verified'), href: '/admin/reports?status=verified' },
+                { title: t('sidebar.assigned'), href: '/admin/reports?status=assigned' },
+                { title: t('sidebar.resolved'), href: '/admin/reports?status=resolved' },
+                { title: t('sidebar.rejected'), href: '/admin/reports?status=rejected' },
+            ],
+        },
+        { title: t('sidebar.hazard_zones'), href: '/admin/hazards', icon: ShieldAlert },
+        { title: t('sidebar.evacuation_centers'), href: '/admin/evacuation-centers', icon: Building2 },
+        { title: t('sidebar.announcements'), href: '/admin/alerts', icon: AlertTriangle },
+        { title: t('sidebar.residents'), href: '/admin/users', icon: Users },
+        { title: t('sidebar.rescue_personnel'), href: '/admin/responders', icon: ShieldCheck },
+        { title: t('sidebar.response_teams'), href: '/admin/teams', icon: UsersRound },
+    ], [t]);
+
+    const analyticsItems: NavItem[] = useMemo(() => [
+        { title: t('sidebar.statistics'), href: '/admin/statistics', icon: BarChart3 },
+        { title: t('sidebar.sla_rules'), href: '/admin/sla', icon: Clock },
+        { title: t('sidebar.export'), href: '/admin/export', icon: Download },
+    ], [t]);
+
+    const systemItems: NavItem[] = useMemo(() => [
+        { title: t('sidebar.activity_log'), href: '/admin/activity', icon: History },
+        { title: t('sidebar.settings'), href: '/admin/settings', icon: Settings },
+    ], [t]);
 
     return (
         <Sidebar collapsible="icon" variant="sidebar">
@@ -162,13 +101,13 @@ export function AppSidebar() {
             <SidebarContent className="py-2 gap-1">
                 {isAdmin ? (
                     <>
-                        <NavSection label="Overview" items={mainItems} />
+                        <NavSection label={t('sidebar.overview')} items={mainItems} />
                         <SidebarSeparator className="mx-4 my-1 opacity-20" />
-                        <NavSection label="Management" items={managementItems} />
+                        <NavSection label={t('sidebar.management')} items={managementItems} />
                         <SidebarSeparator className="mx-4 my-1 opacity-20" />
-                        <NavSection label="Analytics" items={analyticsItems} />
+                        <NavSection label={t('sidebar.analytics')} items={analyticsItems} />
                         <SidebarSeparator className="mx-4 my-1 opacity-20" />
-                        <NavSection label="System" items={systemItems} />
+                        <NavSection label={t('sidebar.system')} items={systemItems} />
                     </>
                 ) : (
                     <NavMain items={defaultNavItems} />

@@ -27,6 +27,7 @@ import {
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAppearance } from '@/hooks/use-appearance';
 import { useInitials } from '@/hooks/use-initials';
+import { useLocale } from '@/hooks/use-locale';
 import { UserMenuContent } from '@/components/user-menu-content';
 import type { BreadcrumbItem as BreadcrumbItemType } from '@/types';
 
@@ -69,6 +70,7 @@ export function AppSidebarHeader({
     const { auth, unreadNotifications } = usePage().props;
     const getInitials = useInitials();
     const { appearance, updateAppearance } = useAppearance();
+    const { locale, setLocale, t } = useLocale();
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [searchOpen, setSearchOpen]       = useState(false);
     const [searchQuery, setSearchQuery]     = useState('');
@@ -263,7 +265,7 @@ export function AppSidebarHeader({
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={(e) => { if (e.key === 'Escape') closeSearch(); }}
-                                    placeholder="Search…"
+                                    placeholder={t('nav.search')}
                                     className="h-9 w-full rounded-xl border-0 bg-muted/50 pl-9 pr-8 text-sm text-foreground shadow-sm ring-1 ring-border/40 placeholder:text-muted-foreground/40 focus:bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none transition-all"
                                 />
                                 <button
@@ -354,14 +356,14 @@ export function AppSidebarHeader({
                         <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 max-h-[28rem] overflow-hidden rounded-2xl border border-border/50 bg-card shadow-xl shadow-black/10 z-50 animate-in slide-in-from-top-2 fade-in duration-200 sm:w-96">
                             {/* Header */}
                             <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
-                                <h3 className="text-sm font-semibold">Notifications</h3>
+                                <h3 className="text-sm font-semibold">{t('nav.notifications')}</h3>
                                 {localUnread > 0 && (
                                     <button
                                         onClick={markAllAsRead}
                                         className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary hover:bg-primary/5 transition-colors"
                                     >
                                         <CheckCheck className="size-3.5" />
-                                        Mark all read
+                                        {t('nav.mark_all_read')}
                                     </button>
                                 )}
                             </div>
@@ -375,7 +377,7 @@ export function AppSidebarHeader({
                                 ) : notifications.length === 0 ? (
                                     <div className="flex flex-col items-center gap-2 py-12">
                                         <Bell className="size-8 text-muted-foreground/30" />
-                                        <p className="text-sm text-muted-foreground">No notifications yet</p>
+                                        <p className="text-sm text-muted-foreground">{t('nav.no_notifications')}</p>
                                     </div>
                                 ) : (
                                     notifications.map((notification) => (
@@ -391,11 +393,20 @@ export function AppSidebarHeader({
                     )}
                 </div>
 
+                {/* Language toggle */}
+                <button
+                    onClick={() => setLocale(locale === 'en' ? 'fil' : 'en')}
+                    className="flex size-9 items-center justify-center rounded-xl text-[11px] font-bold text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
+                    title={t('nav.language')}
+                >
+                    {locale === 'en' ? 'FIL' : 'EN'}
+                </button>
+
                 {/* Dark mode toggle */}
                 <button
                     onClick={() => updateAppearance(appearance === 'dark' ? 'light' : 'dark')}
                     className="flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
-                    title={appearance === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                    title={appearance === 'dark' ? t('nav.switch_light') : t('nav.switch_dark')}
                 >
                     {appearance === 'dark' ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
                 </button>
@@ -404,7 +415,7 @@ export function AppSidebarHeader({
                 <button
                     onClick={toggleFullscreen}
                     className="hidden md:flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
-                    title={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+                    title={isFullscreen ? t('nav.exit_fullscreen') : t('nav.fullscreen')}
                 >
                     {isFullscreen ? <Minimize className="size-[18px]" /> : <Maximize className="size-[18px]" />}
                 </button>

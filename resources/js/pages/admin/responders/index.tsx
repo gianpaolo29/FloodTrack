@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Activity, CheckCircle2, ChevronLeft, ChevronRight, ClipboardList, Eye, EyeOff, MapPin, Pencil, Phone, Plus, Search, ShieldCheck, Star, Trash2, Users, X } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { useLocale } from '@/hooks/use-locale';
 import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
 import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
@@ -63,8 +64,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function AdminRespondersIndex({ responders, filters, teams_count, stats, trends, period, custom_from, custom_to }: Props) {
+    const { t } = useLocale();
     const [mounted, setMounted] = useState(false);
-    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+    useEffect(() => { const tm = setTimeout(() => setMounted(true), 80); return () => clearTimeout(tm); }, []);
 
     const [showCreate, setShowCreate] = useState(false);
     const [editingResponder, setEditingResponder] = useState<Responder | null>(null);
@@ -82,7 +84,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
         return r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q) || (r.contact_number ?? '').toLowerCase().includes(q) || (r.home_address ?? '').toLowerCase().includes(q) || (r.team_name ?? '').toLowerCase().includes(q);
     });
 
-    const hasFilters = !!searchValue;
+    const hasFilters = false;
 
     const tl = trends.label;
     const inTeamsPct = stats.total > 0 ? Math.round((stats.in_teams / stats.total) * 100) : 0;
@@ -156,7 +158,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                             <ShieldCheck className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Rescue Personnel</h1>
+                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">{t('responders.title')}</h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Manage rescue personnel accounts and track their flood response assignments.
                             </p>
@@ -238,30 +240,21 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Toolbar */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-neutral-100 dark:border-neutral-800">
-                        <div className="flex items-center gap-2.5">
-                            <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">All Responders</span>
-                            <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                                {responders.total}
-                            </span>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <div className="relative w-56">
-                                <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search responders..."
-                                    value={searchValue}
-                                    onChange={(e) => setSearchValue(e.target.value)}
-                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-900"
-                                />
-                                {searchValue && (
-                                    <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
-                                        <X className="size-3.5" />
-                                    </button>
-                                )}
-                            </div>
+                    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
+                        <div className="relative flex-1 min-w-[180px] max-w-xs">
+                            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                            <input
+                                type="text"
+                                placeholder={t('responders.search_placeholder')}
+                                value={searchValue}
+                                onChange={(e) => setSearchValue(e.target.value)}
+                                className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-900"
+                            />
+                            {searchValue && (
+                                <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                    <X className="size-3.5" />
+                                </button>
+                            )}
                         </div>
                     </div>
 

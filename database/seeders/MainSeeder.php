@@ -14,6 +14,18 @@ use Illuminate\Support\Carbon;
 
 class MainSeeder extends Seeder
 {
+    private function resolveBarangay(?string $address, float $lat, float $lng): string
+    {
+        $barangays = config('barangays', []);
+        $nearest = null;
+        $minDist = PHP_FLOAT_MAX;
+        foreach ($barangays as $brgy) {
+            $dist = sqrt(pow($lat - $brgy['latitude'], 2) + pow($lng - $brgy['longitude'], 2));
+            if ($dist < $minDist) { $minDist = $dist; $nearest = $brgy['name']; }
+        }
+        return $nearest ? "{$nearest}, Nasugbu, Batangas" : ($address ?? 'Nasugbu, Batangas');
+    }
+
     public function run(): void
     {
         $this->call(EvacuationCenterSeeder::class);
@@ -290,6 +302,9 @@ class MainSeeder extends Seeder
                 ? ($assignedAt ?? $createdAt)->copy()->addHours(rand(2, 8))
                 : null;
 
+            // Normalize address to nearest barangay
+            $normalizedAddress = $this->resolveBarangay($r['address'], $r['lat'], $r['lng']);
+
             $report = Report::firstOrCreate(
                 ['latitude' => $r['lat'], 'longitude' => $r['lng'], 'created_at' => $createdAt],
                 [
@@ -299,7 +314,7 @@ class MainSeeder extends Seeder
                     'description'      => $r['desc'],
                     'latitude'         => $r['lat'],
                     'longitude'        => $r['lng'],
-                    'address'          => $r['address'],
+                    'address'          => $normalizedAddress,
                     'assigned_to'      => $responder?->id,
                     'assigned_team_id' => $team?->id,
                     'verified_by'      => $verifiedAt ? $admin->id : null,

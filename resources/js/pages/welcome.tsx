@@ -469,7 +469,7 @@ function FloatingHeroCards({ isDark, heroVis }: { isDark: boolean; heroVis: bool
 /* ─── Marquee Ticker ─────────────────────────────────────────────────────── */
 
 function MarqueeTicker({ isDark }: { isDark: boolean }) {
-    const items = ['LIVE REPORTING', 'REAL-TIME ALERTS', 'GPS TRACKING', 'PHOTO EVIDENCE', 'MDRRMO NASUGBU', 'AI VERIFIED', 'INSTANT DISPATCH', '24/7 MONITORING', 'COMMUNITY DRIVEN', 'FLOOD TRACKING'];
+    const items = ['LIVE REPORTING', 'REAL-TIME ALERTS', 'GPS TRACKING', 'PHOTO PROOF', 'MDRRMO NASUGBU', 'FAST RESPONSE', 'INSTANT DISPATCH', '24/7 MONITORING', 'COMMUNITY POWERED', 'FLOOD TRACKING'];
     const doubled = [...items, ...items];
     return (
         <div className={`relative overflow-hidden border-y ${isDark ? 'border-white/[0.04] bg-white/[0.01]' : 'border-neutral-100/80 bg-neutral-50/60'}`}>
@@ -926,7 +926,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             <div ref={heroSubRef} className="mx-auto mb-8 sm:mb-14 max-w-[38rem]" style={{ opacity: 0 }}>
                                 {heroVis && (
                                     <BlurText
-                                        text="Connect directly with MDRRMO. Submit a hazard report from your phone in seconds — with GPS location, photo evidence, and flood depth. Responders are dispatched faster."
+                                        text="See a flood or road hazard? Report it straight from your phone — just pick the flood level, snap a photo or video, and send. MDRRMO gets it right away and dispatches help fast."
                                         delay={30}
                                         animateBy="words"
                                         direction="bottom"
@@ -983,7 +983,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                         <div className={`pointer-events-none absolute inset-y-0 left-0 z-10 w-32 ${isDark ? 'bg-gradient-to-r from-[#06090f]' : 'bg-gradient-to-r from-[#fafbfc]'} to-transparent`} />
                         <div className={`pointer-events-none absolute inset-y-0 right-0 z-10 w-32 ${isDark ? 'bg-gradient-to-l from-[#06090f]' : 'bg-gradient-to-l from-[#fafbfc]'} to-transparent`} />
                         <ScrollVelocity
-                            texts={['LIVE REPORTING  ·  REAL-TIME ALERTS  ·  GPS TRACKING  ·  PHOTO EVIDENCE  ·  MDRRMO NASUGBU  ·  AI VERIFIED  ·  INSTANT DISPATCH  ·  24/7 MONITORING  ·  COMMUNITY DRIVEN  ·  FLOOD TRACKING  ·  ']}
+                            texts={['LIVE REPORTING  ·  REAL-TIME ALERTS  ·  GPS TRACKING  ·  PHOTO PROOF  ·  MDRRMO NASUGBU  ·  FAST RESPONSE  ·  INSTANT DISPATCH  ·  24/7 MONITORING  ·  COMMUNITY POWERED  ·  FLOOD TRACKING  ·  ']}
                             velocity={30}
                             className={`text-[10px] font-bold tracking-[0.25em] ${isDark ? 'text-white/[0.10]' : 'text-neutral-300'}`}
                             numCopies={4}
@@ -1000,10 +1000,10 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                                 <div className={`grid grid-cols-2 sm:grid-cols-4 sm:divide-x ${isDark ? 'divide-white/[0.04]' : 'divide-neutral-100'}`}>
                                     {([
-                                        { value: stats?.total_reports ?? 0, label: 'Reports Filed', sub: 'Community submissions', icon: TrendingUp, accentColor: '#22d3ee', gradient: 'from-cyan-400 to-blue-500' },
-                                        { value: stats?.resolved_reports ?? 0, label: 'Resolved', sub: 'Hazards addressed', icon: CheckCircle2, accentColor: '#34d399', gradient: 'from-emerald-400 to-teal-500' },
-                                        { value: stats?.active_incidents ?? 0, label: 'Active Now', sub: 'Being monitored', icon: Activity, accentColor: '#fbbf24', gradient: 'from-amber-400 to-orange-500', pulse: true },
-                                        { value: stats?.evacuation_centers ?? 0, label: 'Evacuation Centers', sub: 'Ready & active', icon: Building2, accentColor: '#a78bfa', gradient: 'from-violet-400 to-purple-500' },
+                                        { value: stats?.total_reports ?? 0, label: 'Reports Sent', sub: 'From the community', icon: TrendingUp, accentColor: '#22d3ee', gradient: 'from-cyan-400 to-blue-500' },
+                                        { value: stats?.resolved_reports ?? 0, label: 'Resolved', sub: 'Hazards handled', icon: CheckCircle2, accentColor: '#34d399', gradient: 'from-emerald-400 to-teal-500' },
+                                        { value: stats?.active_incidents ?? 0, label: 'Active Now', sub: 'Being responded to', icon: Activity, accentColor: '#fbbf24', gradient: 'from-amber-400 to-orange-500', pulse: true },
+                                        { value: stats?.evacuation_centers ?? 0, label: 'Evacuation Centers', sub: 'Open and ready', icon: Building2, accentColor: '#a78bfa', gradient: 'from-violet-400 to-purple-500' },
                                     ] as const).map((s, i) => {
                                         const Icon = s.icon;
                                         return (
@@ -1071,18 +1071,18 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 badge="Features"
                                 badgeIcon={<Sparkles className="size-3" />}
                                 badgeColor="border-cyan-500/20 bg-cyan-500/[0.06] text-cyan-400"
-                                title={<>Everything you need, <Gradient>in one platform</Gradient></>}
-                                sub="Built for residents, responders, and MDRRMO — simple, fast, and reliable."
+                                title={<>Everything you need, <Gradient>in one app</Gradient></>}
+                                sub="Simple tools for residents, responders, and MDRRMO to stay connected during emergencies."
                             />
 
                             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                 {([
-                                    { icon: MapPin,    grad: 'from-sky-500 to-blue-600',    title: 'Location-pinned reports',  body: 'Auto-detects GPS position. Drag the pin to adjust. Accurate to meters.' },
-                                    { icon: Map,       grad: 'from-cyan-500 to-teal-600',   title: 'Live GIS map & heatmap',   body: 'All active hazards on a real-time map. Density heatmap reveals hotspots.' },
-                                    { icon: AlertTriangle, grad: 'from-amber-500 to-orange-600', title: 'Depth-based severity', body: 'Pick flood depth — severity is auto-classified. Four levels from Low to Critical.' },
-                                    { icon: Camera,    grad: 'from-violet-500 to-indigo-600', title: 'Photo & video evidence', body: 'Attach multiple photos or videos from camera or gallery with every report.' },
-                                    { icon: Zap,       grad: 'from-emerald-500 to-green-600', title: 'Instant dispatch',       body: 'MDRRMO verifies and assigns responders directly from the admin dashboard.' },
-                                    { icon: Bell,      grad: 'from-rose-500 to-pink-600',    title: 'Alerts & advisories',     body: 'Official MDRRMO advisories and real-time status updates on your reports.' },
+                                    { icon: MapPin,    grad: 'from-sky-500 to-blue-600',    title: 'Auto GPS location',        body: 'Your phone pins the exact spot automatically. You can also drag the pin to adjust.' },
+                                    { icon: Map,       grad: 'from-cyan-500 to-teal-600',   title: 'Live hazard map',          body: 'See all reported floods and hazards on a real-time map. Spot danger zones at a glance.' },
+                                    { icon: AlertTriangle, grad: 'from-amber-500 to-orange-600', title: 'Smart severity rating', body: 'Just pick the flood depth — the app figures out how serious it is, from Low to Critical.' },
+                                    { icon: Camera,    grad: 'from-violet-500 to-indigo-600', title: 'Photo & video proof',    body: 'Take a photo or record a short video as evidence. Helps MDRRMO verify the situation faster.' },
+                                    { icon: Zap,       grad: 'from-emerald-500 to-green-600', title: 'Fast response',          body: 'Once verified, MDRRMO assigns a responder right from the dashboard. No delays.' },
+                                    { icon: Bell,      grad: 'from-rose-500 to-pink-600',    title: 'Real-time updates',       body: 'Get notified when your report is reviewed, when help is on the way, and when it\'s resolved.' },
                                 ] as const).map((f, i) => {
                                     const Icon = f.icon;
                                     return (
@@ -1128,8 +1128,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 badge="Process"
                                 badgeIcon={<Radio className="size-3" />}
                                 badgeColor="border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-400"
-                                title={<>Three steps to <GradientAlt>safety</GradientAlt></>}
-                                sub="From hazard spotted to responder on scene — under a minute."
+                                title={<>How it <GradientAlt>works</GradientAlt></>}
+                                sub="Report a hazard, MDRRMO checks it, help arrives — that simple."
                             />
 
                             <div className="relative grid grid-cols-1 gap-6 sm:grid-cols-3">
@@ -1140,9 +1140,9 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 </div>
 
                                 {([
-                                    { n: '01', icon: Smartphone, grad: 'from-sky-400 to-blue-600', ring: 'shadow-sky-500/10', title: 'Resident reports', body: 'Open the app, select flood depth, attach photos, submit. Severity is auto-determined. Under 60 seconds.' },
-                                    { n: '02', icon: ShieldCheck, grad: 'from-cyan-400 to-teal-600', ring: 'shadow-cyan-500/10', title: 'MDRRMO verifies', body: 'Admin reviews photo evidence on the dashboard, verifies the report, assigns a responder.' },
-                                    { n: '03', icon: Navigation, grad: 'from-emerald-400 to-green-600', ring: 'shadow-emerald-500/10', title: 'Responder acts', body: 'Responder navigates to the site, updates status live — the reporter sees every change.' },
+                                    { n: '01', icon: Smartphone, grad: 'from-sky-400 to-blue-600', ring: 'shadow-sky-500/10', title: 'You report it', body: 'Open the app, choose the flood depth, attach a photo or video, and hit submit. Takes less than a minute.' },
+                                    { n: '02', icon: ShieldCheck, grad: 'from-cyan-400 to-teal-600', ring: 'shadow-cyan-500/10', title: 'MDRRMO checks it', body: 'The admin reviews your report and evidence, confirms it\'s real, and assigns a responder.' },
+                                    { n: '03', icon: Navigation, grad: 'from-emerald-400 to-green-600', ring: 'shadow-emerald-500/10', title: 'Help arrives', body: 'A responder heads to the location. You can track their progress until the situation is handled.' },
                                 ] as const).map((s, i) => {
                                     const Icon = s.icon;
                                     return (
@@ -1182,8 +1182,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 badge="See it in action"
                                 badgeIcon={<Smartphone className="size-3" />}
                                 badgeColor="border-blue-500/20 bg-blue-500/[0.06] text-blue-400"
-                                title={<>Report a hazard <Gradient>in seconds</Gradient></>}
-                                sub="Four taps from your phone to a verified report on the MDRRMO dashboard."
+                                title={<>Report a hazard <Gradient>in under a minute</Gradient></>}
+                                sub="Three quick steps from your phone — that's all it takes."
                             />
 
                             <PhoneDemo visible={demoIn} />
@@ -1207,8 +1207,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 badge="Severity"
                                 badgeIcon={<AlertTriangle className="size-3" />}
                                 badgeColor="border-red-500/20 bg-red-500/[0.06] text-red-400"
-                                title={<>Four-level <GradientWarm>severity scale</GradientWarm></>}
-                                sub="Every report is tagged with color + icon + label. Never color alone."
+                                title={<>Flood depth = <GradientWarm>severity level</GradientWarm></>}
+                                sub="When you report, just pick how deep the water is. The app sets the severity for you."
                             />
 
                             <SeverityGrid isDark={isDark} sevIn={sevIn} activeSev={activeSev} setActiveSev={setActiveSev} />
@@ -1225,8 +1225,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 badge="For Everyone"
                                 badgeIcon={<Users className="size-3" />}
                                 badgeColor="border-violet-500/20 bg-violet-500/[0.06] text-violet-400"
-                                title={<>Built for all of <GradientPurple>Nasugbu</GradientPurple></>}
-                                sub="Every stakeholder has a purpose-built experience."
+                                title={<>Made for everyone in <GradientPurple>Nasugbu</GradientPurple></>}
+                                sub="Whether you're a resident, responder, or admin — there's a role for you."
                             />
 
                             <RolesGrid isDark={isDark} rolesIn={rolesIn} />
@@ -1250,8 +1250,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     badge="Safety"
                                     badgeIcon={<Building2 className="size-3" />}
                                     badgeColor="border-emerald-500/20 bg-emerald-500/[0.06] text-emerald-400"
-                                    title={<>Evacuation centers <GradientAlt>near you</GradientAlt></>}
-                                    sub="Know where to go before disaster strikes. All centers are verified by MDRRMO."
+                                    title={<>Find evacuation centers <GradientAlt>near you</GradientAlt></>}
+                                    sub="Know where to go when it matters. All locations are verified by MDRRMO."
                                 />
 
                                 <div className={`transition-all duration-[800ms] ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
@@ -1325,11 +1325,11 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     <CtaRippleRings active={ctaIn} />
                                 </div>
                                 <h2 className="mb-4 sm:mb-5 text-3xl font-bold tracking-tight sm:text-5xl">
-                                    <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white to-white/70' : 'bg-gradient-to-b from-slate-900 to-slate-500'}`}>Ready to help keep </span>
-                                    <Gradient>Nasugbu safe?</Gradient>
+                                    <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white to-white/70' : 'bg-gradient-to-b from-slate-900 to-slate-500'}`}>Help keep </span>
+                                    <Gradient>Nasugbu safe</Gradient>
                                 </h2>
                                 <p className={`mx-auto mb-8 sm:mb-14 max-w-md text-base sm:text-lg font-[350] ${isDark ? 'text-white/35' : 'text-neutral-500'}`}>
-                                    Join residents and responders already using FloodTrack. Free to use, forever.
+                                    Join your neighbors and local responders on FloodTrack. It's free, always.
                                 </p>
                                 <ClickSpark sparkColor={isDark ? '#38bdf8' : '#3b82f6'} sparkSize={12} sparkRadius={25} sparkCount={10} duration={500}>
                                     <div ref={ctaButtonsRef} className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
@@ -1521,17 +1521,17 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                 /* Leaflet popup override */
                 .evac-popup .leaflet-popup-content-wrapper {
-                    background: #0f1420;
-                    color: #e2e8f0;
-                    border: 1px solid rgba(255,255,255,0.08);
+                    background: #fff;
+                    color: #1a202c;
+                    border: 1px solid #e5e7eb;
                     border-radius: 14px;
-                    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+                    padding: 0;
                 }
-                .evac-popup .leaflet-popup-tip { background: #0f1420; }
-                .evac-popup .leaflet-popup-close-button { color: rgba(255,255,255,0.3); }
-                .evac-popup .leaflet-popup-close-button:hover { color: white; }
-
-                /* Evacuation marker */
+                .evac-popup .leaflet-popup-content { margin: 14px 16px; }
+                .evac-popup .leaflet-popup-tip { background: #fff; border: 1px solid #e5e7eb; }
+                .evac-popup .leaflet-popup-close-button { color: #aaa; font-size: 18px; padding: 6px 8px 0 0; }
+                .evac-popup .leaflet-popup-close-button:hover { color: #333; }
                 .custom-evac-marker { background: none !important; border: none !important; }
 
                 /* Marquee ticker */
@@ -1681,10 +1681,10 @@ function SeverityGrid({ isDark, sevIn, activeSev, setActiveSev }: {
     }, [sevIn]);
 
     const levels = [
-        { level: 'Low', color: '#22c55e', icon: CheckCircle2, meaning: 'Passable. Monitor only.', detail: 'Accessible area. Continuous monitoring recommended. No immediate action.' },
-        { level: 'Moderate', color: '#eab308', icon: AlertTriangle, meaning: 'Caution — may worsen.', detail: 'Exercise caution. May deteriorate. Prepare for possible response.' },
-        { level: 'High', color: '#f97316', icon: AlertTriangle, meaning: 'Unsafe. Prompt action.', detail: 'Area is unsafe. Prompt dispatch required. Avoid unless responding.' },
-        { level: 'Critical', color: '#ef4444', icon: Siren, meaning: 'Life-threatening.', detail: 'Immediate threat to life. Emergency dispatch now. All units respond.' },
+        { level: 'Low', color: '#22c55e', icon: CheckCircle2, meaning: 'Ankle-deep — you can still walk through.', detail: 'Water is around 1 foot or less. The area is passable but being monitored. No responder needed yet.' },
+        { level: 'Moderate', color: '#eab308', icon: AlertTriangle, meaning: 'Knee-deep — getting harder to pass.', detail: 'Water is about 1.5–2 feet. Vehicles may struggle. The situation could get worse, so responders are put on standby.' },
+        { level: 'High', color: '#f97316', icon: AlertTriangle, meaning: 'Waist-deep — unsafe to cross.', detail: 'Water is around 3 feet. Walking through is dangerous. MDRRMO sends a responder right away.' },
+        { level: 'Critical', color: '#ef4444', icon: Siren, meaning: 'Chest-deep or higher — life-threatening.', detail: 'Water is 4 feet or more. Extremely dangerous. All available responders are dispatched immediately.' },
     ] as const;
 
     return (
@@ -1698,7 +1698,7 @@ function SeverityGrid({ isDark, sevIn, activeSev, setActiveSev }: {
                         className={`sev-card group cursor-pointer rounded-2xl sm:rounded-[20px] border p-4 transition-all duration-500 sm:p-7 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'} ${open ? isDark ? 'scale-[1.03] border-white/[0.12] shadow-2xl' : 'scale-[1.03] border-blue-200/80 shadow-2xl shadow-blue-500/[0.06] ring-1 ring-blue-100/50' : ''}`}
                         spotlightColor={`${s.color}15`}
                     >
-                        <div onClick={() => setActiveSev(open ? null : i)} className="relative">
+                        <div onClick={() => setActiveSev(activeSev === i ? null : i)} className="relative">
                             {/* Shimmer sweep */}
                             <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1200ms] ease-in-out bg-gradient-to-r from-transparent via-white/[0.02] to-transparent skew-x-[-20deg]" />
 
@@ -1710,7 +1710,7 @@ function SeverityGrid({ isDark, sevIn, activeSev, setActiveSev }: {
                             </div>
                             <p className={`relative text-[14px] font-medium transition-colors duration-300 ${isDark ? 'text-white/70 group-hover:text-white/85' : 'text-neutral-600 group-hover:text-neutral-800'}`}>{s.meaning}</p>
                             <div className="overflow-hidden transition-all duration-500"
-                                style={{ maxHeight: open ? '80px' : '0', opacity: open ? 1 : 0 }}
+                                style={{ maxHeight: open ? '120px' : '0', opacity: open ? 1 : 0 }}
                             >
                                 <p className={`mt-3 text-[13px] leading-relaxed ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>{s.detail}</p>
                             </div>
@@ -1759,9 +1759,9 @@ function RolesGrid({ isDark, rolesIn }: { isDark: boolean; rolesIn: boolean }) {
     }, [rolesIn]);
 
     const roles = [
-        { role: 'Residents',     icon: Home, grad: 'from-sky-500 to-blue-600', accent: 'bg-sky-500', accentColor: '#38bdf8', points: ['Report hazards with GPS + photos', 'Track your report status live', 'Receive official MDRRMO alerts', 'View all hazards on the map'] },
-        { role: 'Responders',    icon: Truck, grad: 'from-cyan-500 to-teal-600', accent: 'bg-cyan-500', accentColor: '#06b6d4', points: ['Receive assigned incident queue', 'Navigate directly to hazard', 'Update status en route / on scene', 'Upload field evidence'] },
-        { role: 'MDRRMO Admin',  icon: Shield, grad: 'from-violet-500 to-indigo-600', accent: 'bg-violet-500', accentColor: '#a78bfa', points: ['Verify & triage incoming reports', 'Assign responders from dashboard', 'Publish official public advisories', 'Monitor all active incidents'] },
+        { role: 'Residents',     icon: Home, grad: 'from-sky-500 to-blue-600', accent: 'bg-sky-500', accentColor: '#38bdf8', points: ['Report floods with photos or videos', 'See updates on your report in real time', 'Get alerts and advisories from MDRRMO', 'Check the map for nearby hazards'] },
+        { role: 'Responders',    icon: Truck, grad: 'from-cyan-500 to-teal-600', accent: 'bg-cyan-500', accentColor: '#06b6d4', points: ['See which incidents are assigned to you', 'Get directions straight to the hazard', 'Update your status as you respond', 'Upload photos or videos from the field'] },
+        { role: 'MDRRMO Admin',  icon: Shield, grad: 'from-violet-500 to-indigo-600', accent: 'bg-violet-500', accentColor: '#a78bfa', points: ['Review and verify incoming reports', 'Assign the right responder instantly', 'Post public safety advisories', 'Monitor everything from one dashboard'] },
     ] as const;
 
     return (
@@ -1847,9 +1847,9 @@ function CtaRippleRings({ active }: { active: boolean }) {
 /* ─── Phone Demo (synced phone + timeline) ─────────────────────────────── */
 
 const DEMO_STEPS = [
-    { icon: MapPin, gradient: 'from-sky-500 to-blue-600', color: '#38bdf8', title: 'Set flood depth', desc: 'GPS auto-detects your location. Select how deep the flood is — severity is determined automatically.' },
-    { icon: Camera, gradient: 'from-violet-500 to-indigo-600', color: '#a78bfa', title: 'Snap photo evidence', desc: 'Take a photo or pick from gallery. AI verifies it matches a real hazard scene.' },
-    { icon: Zap, gradient: 'from-emerald-500 to-green-600', color: '#34d399', title: 'Submit & track', desc: 'Your report goes live instantly. Track verification and resolution in real time.' },
+    { icon: MapPin, gradient: 'from-sky-500 to-blue-600', color: '#38bdf8', title: 'Pick flood depth', desc: 'Your location is detected automatically. Just choose how deep the water is — ankle, knee, waist, or chest level.' },
+    { icon: Camera, gradient: 'from-violet-500 to-indigo-600', color: '#a78bfa', title: 'Add proof', desc: 'Take a photo, record a short video, or pick from your gallery. This helps MDRRMO verify what\'s happening.' },
+    { icon: Zap, gradient: 'from-emerald-500 to-green-600', color: '#34d399', title: 'Send & track', desc: 'Hit submit and you\'re done. You\'ll see updates as your report gets reviewed and responded to.' },
 ] as const;
 
 function PhoneDemo({ visible }: { visible: boolean }) {
@@ -2126,7 +2126,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                                 <div className="flex size-7 items-center justify-center rounded-lg bg-white/[0.04]">
                                                     <Camera className="size-3.5 text-white/25" />
                                                 </div>
-                                                <span className="text-[11px] font-medium text-white/25">Add more photos</span>
+                                                <span className="text-[11px] font-medium text-white/25">Add more photos or videos</span>
                                             </div>
                                             {/* AI banner */}
                                             <div className="flex items-center gap-2.5 rounded-2xl bg-emerald-500/[0.05] px-4 py-3 border border-emerald-500/[0.08]">
@@ -2207,15 +2207,11 @@ function EvacuationMap({ centers }: { centers: EvacuationCenterData[] }) {
     useEffect(() => {
         if (!mapRef.current || mapInstance.current || centers.length === 0) return;
 
-        // Dynamically import Leaflet to avoid SSR issues
         const initMap = async () => {
             const L = await import('leaflet');
             await import('leaflet/dist/leaflet.css');
 
-            // Nasugbu, Batangas center coordinates
             const nasugbuCenter: [number, number] = [14.0714, 120.6328];
-
-            // Find center from evacuation centers if available
             const avgLat = centers.reduce((s, c) => s + Number(c.latitude), 0) / centers.length;
             const avgLng = centers.reduce((s, c) => s + Number(c.longitude), 0) / centers.length;
             const center: [number, number] = avgLat && avgLng ? [avgLat, avgLng] : nasugbuCenter;
@@ -2230,51 +2226,36 @@ function EvacuationMap({ centers }: { centers: EvacuationCenterData[] }) {
 
             L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-            // Map tiles -- dark or light
-            const tileUrl = isDark
-                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
-            L.tileLayer(tileUrl, {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 maxZoom: 19,
             }).addTo(map);
 
-            // Custom marker icon
-            const createIcon = (occupancyRatio: number) => {
-                const color = occupancyRatio > 0.8 ? '#ef4444' : occupancyRatio > 0.5 ? '#eab308' : '#22c55e';
-                return L.divIcon({
+            centers.forEach((c) => {
+                const ratio = c.capacity > 0 ? c.current_occupancy / c.capacity : 0;
+                const color = ratio > 0.8 ? '#ef4444' : ratio > 0.5 ? '#eab308' : '#22c55e';
+                const status = ratio > 0.8 ? 'Near Full' : ratio > 0.5 ? 'Moderate' : 'Available';
+
+                const icon = L.divIcon({
                     className: 'custom-evac-marker',
-                    html: `<div style="
-                        width: 32px; height: 32px;
-                        background: ${color}20;
-                        border: 2px solid ${color};
-                        border-radius: 50%;
-                        display: flex; align-items: center; justify-content: center;
-                        box-shadow: 0 0 12px ${color}40;
-                    ">
-                        <div style="width: 10px; height: 10px; background: ${color}; border-radius: 50%;"></div>
-                    </div>`,
+                    html: `<div style="width:32px;height:32px;background:${color}20;border:2px solid ${color};border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px ${color}40;"><div style="width:10px;height:10px;background:${color};border-radius:50%;"></div></div>`,
                     iconSize: [32, 32],
                     iconAnchor: [16, 16],
                     popupAnchor: [0, -18],
                 });
-            };
 
-            centers.forEach((c) => {
-                const ratio = c.capacity > 0 ? c.current_occupancy / c.capacity : 0;
-                const marker = L.marker([Number(c.latitude), Number(c.longitude)], {
-                    icon: createIcon(ratio),
-                }).addTo(map);
+                const marker = L.marker([Number(c.latitude), Number(c.longitude)], { icon }).addTo(map);
 
-                const status = ratio > 0.8 ? 'Near Full' : ratio > 0.5 ? 'Moderate' : 'Available';
-                const statusColor = ratio > 0.8 ? '#ef4444' : ratio > 0.5 ? '#eab308' : '#22c55e';
-
+                const pct = Math.min(ratio * 100, 100);
                 marker.bindPopup(`
-                    <div style="font-family: system-ui; min-width: 180px;">
-                        <div style="font-weight: 700; font-size: 13px; margin-bottom: 4px;">${c.name}</div>
-                        <div style="font-size: 11px; color: #888; margin-bottom: 8px;">${c.address}</div>
-                        <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
-                            <span style="color: ${statusColor}; font-weight: 600;">${status}</span>
-                            <span style="color: #666;">${c.current_occupancy}/${c.capacity}</span>
+                    <div style="font-family:system-ui;min-width:200px;max-width:260px;line-height:1.4;">
+                        <div style="font-weight:700;font-size:14px;margin-bottom:4px;color:#1a202c;">${c.name}</div>
+                        <div style="font-size:11px;color:#888;margin-bottom:10px;">${c.address}</div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;font-size:12px;margin-bottom:6px;">
+                            <span style="color:${color};font-weight:700;">${status}</span>
+                            <span style="color:#555;font-weight:600;">${c.current_occupancy} / ${c.capacity}</span>
+                        </div>
+                        <div style="height:6px;border-radius:3px;background:#e5e7eb;overflow:hidden;">
+                            <div style="height:100%;width:${pct}%;border-radius:3px;background:${color};"></div>
                         </div>
                     </div>
                 `, { className: 'evac-popup' });

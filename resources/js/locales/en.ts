@@ -1,0 +1,210 @@
+export const en: Record<string, string> = {
+    // Sidebar
+    'sidebar.overview': 'Overview',
+    'sidebar.dashboard': 'Dashboard',
+    'sidebar.map_view': 'Map View',
+    'sidebar.weather': 'Weather',
+    'sidebar.management': 'Management',
+    'sidebar.flood_reports': 'Flood Reports',
+    'sidebar.all': 'All',
+    'sidebar.to_be_reviewed': 'To be Reviewed',
+    'sidebar.verified': 'Verified',
+    'sidebar.assigned': 'Assigned',
+    'sidebar.resolved': 'Resolved',
+    'sidebar.rejected': 'Rejected',
+    'sidebar.hazard_zones': 'Hazard Zones',
+    'sidebar.evacuation_centers': 'Evacuation Centers',
+    'sidebar.announcements': 'Announcements',
+    'sidebar.residents': 'Residents',
+    'sidebar.rescue_personnel': 'Rescue Personnel',
+    'sidebar.response_teams': 'Response Teams',
+    'sidebar.analytics': 'Analytics',
+    'sidebar.statistics': 'Statistics',
+    'sidebar.sla_rules': 'SLA Rules',
+    'sidebar.export': 'Export',
+    'sidebar.system': 'System',
+    'sidebar.activity_log': 'Activity Log',
+    'sidebar.settings': 'Settings',
+
+    // Navbar
+    'nav.search': 'Search\u2026',
+    'nav.notifications': 'Notifications',
+    'nav.mark_all_read': 'Mark all read',
+    'nav.no_notifications': 'No notifications yet',
+    'nav.switch_light': 'Switch to light mode',
+    'nav.switch_dark': 'Switch to dark mode',
+    'nav.fullscreen': 'Enter fullscreen',
+    'nav.exit_fullscreen': 'Exit fullscreen',
+    'nav.language': 'Language',
+
+    // Common
+    'common.search': 'Search',
+    'common.filter': 'Filter',
+    'common.clear': 'Clear',
+    'common.apply': 'Apply',
+    'common.reset': 'Reset',
+    'common.cancel': 'Cancel',
+    'common.save': 'Save',
+    'common.delete': 'Delete',
+    'common.edit': 'Edit',
+    'common.create': 'Create',
+    'common.close': 'Close',
+    'common.back': 'Back',
+    'common.next': 'Next',
+    'common.previous': 'Previous',
+    'common.loading': 'Loading...',
+    'common.no_data': 'No data available',
+    'common.select_all': '(Select All)',
+    'common.export': 'Export',
+    'common.view_all': 'View all',
+    'common.submit': 'Submit',
+    'common.confirm': 'Confirm',
+
+    // Dashboard
+    'dashboard.title': 'Dashboard',
+    'dashboard.subtitle': 'Real-time overview of flood incidents and system performance',
+    'dashboard.total_flood_reports': 'Total Flood Reports',
+    'dashboard.flooded_areas': 'Flooded Areas',
+    'dashboard.awaiting_verification': 'Awaiting Verification',
+    'dashboard.rescue_personnel': 'Rescue Personnel',
+    'dashboard.announcements': 'Announcements',
+    'dashboard.resolved_today': 'Resolved Today',
+    'dashboard.avg_response_time': 'Avg. Response Time',
+    'dashboard.resolution_rate': 'Resolution Rate',
+    'dashboard.response_teams': 'Response Teams',
+    'dashboard.verification_rate': 'Verification Rate',
+    'dashboard.flood_incident_trend': 'Flood Incident Trend',
+    'dashboard.daily_reports': 'Daily reports',
+    'dashboard.reports': 'Reports',
+    'dashboard.resolved': 'Resolved',
+    'dashboard.daily': 'Daily',
+    'dashboard.cumulative': 'Cumulative',
+    'dashboard.flood_risk': 'Flood Risk',
+    'dashboard.barangay_ranking': 'Barangay ranking',
+    'dashboard.top_barangays': 'Top Barangays',
+    'dashboard.by_incident_count': 'By incident count',
+    'dashboard.flood_incident_map': 'Flood Incident Map',
+    'dashboard.active_flooded_areas': 'active flooded areas',
+    'dashboard.full_map': 'Full Map',
+    'dashboard.no_active_floods': 'No active flooded areas',
+    'dashboard.on_track': 'On Track',
+    'dashboard.needs_attention': 'Needs Attention',
+    'dashboard.critical': 'Critical',
+    'dashboard.looking_good': 'Looking good',
+    'dashboard.urgent': 'Urgent',
+    'dashboard.updated_just_now': 'Updated just now',
+    'dashboard.view_details': 'View details',
+    'dashboard.reports_label': 'report',
+    'dashboard.reports_label_plural': 'reports',
+    'dashboard.incidents': 'incidents',
+    'dashboard.deployed': 'deployed',
+    'dashboard.inactive': 'inactive',
+    'dashboard.cases_resolved_today': 'cases resolved today',
+
+    // Statistics
+    'stats.title': 'Statistics',
+    'stats.subtitle': 'Flood incident analytics & AI insights',
+    'stats.total_reports': 'Total Reports',
+    'stats.resolution_rate': 'Resolution Rate',
+    'stats.critical_reports': 'Critical Reports',
+    'stats.ai_analysis': 'AI Situation Analysis',
+    'stats.generate_insights': 'Generate Insights',
+    'stats.analyzing': 'Analyzing data...',
+    'stats.severity_breakdown': 'Severity Breakdown',
+    'stats.status_distribution': 'Status Distribution',
+    'stats.monthly_trend': 'Monthly Trend',
+    'stats.peak_hours': 'Peak Report Hours',
+    'stats.month_over_month': 'Month-over-Month',
+    'stats.reports_by_barangay': 'Reports by Barangay',
+    'stats.report_sources': 'Report Sources',
+    'stats.response_time': 'Response Time Breakdown',
+
+    // Filters
+    'filter.severity': 'Severity',
+    'filter.status': 'Status',
+    'filter.team': 'Team',
+    'filter.type': 'Type',
+    'filter.category': 'Category',
+    'filter.all_teams': 'All Teams',
+    'filter.today': 'Today',
+    'filter.this_week': 'This Week',
+    'filter.monthly': 'Monthly',
+    'filter.all': 'All',
+    'filter.custom': 'Custom',
+
+    // Severity levels
+    'severity.critical': 'Critical',
+    'severity.high': 'High',
+    'severity.moderate': 'Moderate',
+    'severity.low': 'Low',
+
+    // Status
+    'status.pending': 'Pending',
+    'status.verified': 'Verified',
+    'status.assigned': 'Assigned',
+    'status.resolved': 'Resolved',
+    'status.rejected': 'Rejected',
+    'status.advisory_issued': 'Advisory Issued',
+
+    // Reports page
+    'reports.title': 'Flood Reports',
+    'reports.subtitle': 'Monitor, verify, and manage flood incident reports.',
+    'reports.search_placeholder': 'Search reference or address\u2026',
+    'reports.no_reports': 'No reports found',
+    'reports.reference': 'Reference',
+    'reports.severity': 'Severity',
+    'reports.status': 'Status',
+    'reports.location': 'Location',
+    'reports.reporter': 'Reporter',
+    'reports.date': 'Date',
+    'reports.actions': 'Actions',
+
+    // Tooltip smart descriptions
+    'tooltip.looking_good': 'Looking good',
+    'tooltip.needs_attention': 'Needs attention',
+    'tooltip.urgent': 'Urgent',
+
+    // Table
+    'table.showing': 'Showing',
+    'table.of': 'of',
+    'table.entries': 'entries',
+    'table.no_results': 'No results found',
+
+    // Teams
+    'teams.title': 'Response Teams',
+    'teams.search_placeholder': 'Search teams...',
+
+    // Responders
+    'responders.title': 'Rescue Personnel',
+    'responders.search_placeholder': 'Search responders...',
+
+    // Users
+    'users.title': 'Residents',
+    'users.subtitle': 'Manage resident accounts and their information',
+    'users.search_placeholder': 'Search residents...',
+
+    // Alerts
+    'alerts.title': 'Announcement Management',
+    'alerts.subtitle': 'Publish flood advisories and critical announcements to residents',
+    'alerts.search_placeholder': 'Search alerts...',
+
+    // Hazards
+    'hazards.title': 'Hazard Zone Management',
+    'hazards.subtitle': 'Manage flood & road hazards visible on the resident map',
+    'hazards.search_placeholder': 'Search hazards...',
+
+    // Evacuation
+    'evac.title': 'Evacuation Centers',
+    'evac.subtitle': 'Manage centers visible on the resident map',
+    'evac.search_placeholder': 'Search centers...',
+
+    // Activity
+    'activity.title': 'Activity Log',
+    'activity.search_placeholder': 'Search reference\u2026',
+
+    // Settings
+    'settings.title': 'Settings',
+
+    // Export
+    'export.title': 'Export',
+};

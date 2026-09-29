@@ -521,11 +521,22 @@ export default function AdminReportShow({ report, teams }: Props) {
                             <div className="p-5">
                                 <div className="flex items-center gap-3 mb-4">
                                     <div className="flex size-10 items-center justify-center rounded-full bg-neutral-900 dark:bg-white text-sm font-bold text-white dark:text-neutral-900 shadow-sm">
-                                        {(report.user?.name ?? 'U').charAt(0).toUpperCase()}
+                                        {(report.source === 'messenger' && report.messenger_sender_name
+                                            ? report.messenger_sender_name
+                                            : report.user?.name ?? 'U'
+                                        ).charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                        <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{report.user?.name ?? '---'}</p>
-                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">Resident</p>
+                                        <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                                            {report.source === 'messenger' && report.messenger_sender_name
+                                                ? report.messenger_sender_name
+                                                : report.user?.name ?? '---'}
+                                        </p>
+                                        <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                            {report.source === 'messenger' ? 'via Messenger'
+                                                : report.source === 'facebook' ? 'via Facebook'
+                                                : 'Resident'}
+                                        </p>
                                     </div>
                                 </div>
                                 <div className="flex flex-col gap-2.5">

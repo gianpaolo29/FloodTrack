@@ -24,6 +24,18 @@ class ImportFacebookReports extends Command
     protected $signature = 'facebook:import-reports';
     protected $description = 'Import flood-related posts from the APLA Facebook Page as reports';
 
+    private function resolveBarangay(?string $address, float $lat, float $lng): string
+    {
+        $barangays = config('barangays', []);
+        $nearest = null;
+        $minDist = PHP_FLOAT_MAX;
+        foreach ($barangays as $brgy) {
+            $dist = sqrt(pow($lat - $brgy['latitude'], 2) + pow($lng - $brgy['longitude'], 2));
+            if ($dist < $minDist) { $minDist = $dist; $nearest = $brgy['name']; }
+        }
+        return $nearest ? "{$nearest}, Nasugbu, Batangas" : ($address ?? 'Nasugbu, Batangas');
+    }
+
     public function handle(FacebookService $facebook): int
     {
         if (!config('services.facebook.page_access_token')) {
@@ -97,7 +109,7 @@ class ImportFacebookReports extends Command
                 'description' => mb_substr($message, 0, 1000),
                 'latitude'    => $lat,
                 'longitude'   => $lon,
-                'address'     => $address,
+                'address'     => $this->resolveBarangay($address, $lat, $lon),
                 'source'      => 'facebook',
                 'facebook_post_id' => $postId,
             ]);

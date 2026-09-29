@@ -19,6 +19,78 @@ class DashboardController extends Controller
 {
     use HasPeriodStats;
 
+    /**
+     * Normalize a report to its barangay name using config/barangays.php.
+     *
+     * Strategy:
+     * 1. If lat/lng is available → find nearest barangay by distance (most reliable)
+     * 2. Else if address text → match known barangay names from config
+     * 3. Fallback → "Other / Unclassified"
+     */
+    private function normalizeBarangay(?string $address, ?float $lat = null, ?float $lng = null): string
+    {
+        $barangays = config('barangays', []);
+
+        // Strategy 1: Nearest barangay by coordinates (most accurate)
+        if ($lat && $lng) {
+            $nearest = null;
+            $minDist = PHP_FLOAT_MAX;
+
+            foreach ($barangays as $brgy) {
+                $dist = sqrt(pow($lat - $brgy['latitude'], 2) + pow($lng - $brgy['longitude'], 2));
+                if ($dist < $minDist) {
+                    $minDist = $dist;
+                    $nearest = $brgy['name'];
+                }
+            }
+
+            if ($nearest) {
+                return $nearest;
+            }
+        }
+
+        // Strategy 2: Match barangay name from address text
+        if ($address) {
+            $address = trim($address);
+
+            // Sort by name length descending so "Malapad na Bato" matches before "Bato"
+            $sorted = collect($barangays)->sortByDesc(fn ($b) => mb_strlen($b['name']))->values();
+
+            foreach ($sorted as $brgy) {
+                $name = $brgy['name'];
+
+                // For numbered Poblacion barangays: match "Barangay 3", "Brgy. 3", etc.
+                if (preg_match('/^Barangay\s+(\d+)/i', $name, $m)) {
+                    $num = $m[1];
+                    if (preg_match('/\b(?:Brgy\.?|Barangay)\s*' . $num . '\b/i', $address)) {
+                        return $name;
+                    }
+                    // Also match Roman numerals for Poblacion
+                    $roman = ['1' => 'I', '2' => 'II', '3' => 'III', '4' => 'IV', '5' => 'V',
+                              '6' => 'VI', '7' => 'VII', '8' => 'VIII', '9' => 'IX', '10' => 'X',
+                              '11' => 'XI', '12' => 'XII'];
+                    if (isset($roman[$num]) && preg_match('/\b(?:Brgy\.?|Barangay)\s*' . preg_quote($roman[$num], '/') . '\b/i', $address)) {
+                        return $name;
+                    }
+                    continue;
+                }
+
+                // For regular barangays: match "Brgy. Wawa", "Barangay Wawa", or just "Wawa"
+                $escaped = preg_quote($name, '/');
+                if (preg_match('/\b(?:Brgy\.?\s*|Barangay\s*)?' . $escaped . '\b/i', $address)) {
+                    return $name;
+                }
+            }
+
+            // Generic Poblacion mention without a number
+            if (preg_match('/\bPoblacion\b/i', $address)) {
+                return 'Barangay 1 (Pob.)';
+            }
+        }
+
+        return 'Other / Unclassified';
+    }
+
     public function index(Request $request): Response
     {
         [$from, $to, $period] = $this->parsePeriod($request);
@@ -155,66 +227,60 @@ class DashboardController extends Controller
         $verifiedReports = (clone $reportQuery)->whereIn('status', ['verified', 'assigned', 'resolved', 'rejected'])->count();
         $verification_rate = $totalReports > 0 ? round(($verifiedReports / $totalReports) * 100) : 0;
 
-        // ── Barangay Breakdown (top 8 by report count) ──
-        $barangay_breakdown = (clone $reportQuery)
-            ->selectRaw('address, count(*) as count')
-            ->whereNotNull('address')
-            ->where('address', '!=', '')
-            ->groupBy('address')
-            ->orderByDesc('count')
-            ->limit(8)
-            ->get()
-            ->map(fn ($row) => [
-                'barangay' => $row->address,
-                'count'    => (int) $row->count,
-            ]);
+        // ── Barangay Breakdown (top 8 by report count, normalized via coordinates) ──
+        $rawBarangayData = (clone $reportQuery)
+            ->select('address', 'latitude', 'longitude')
+            ->get();
 
-        // ── Flood Risk Score (all-time analysis per barangay) ──
+        $normalizedCounts = [];
+        foreach ($rawBarangayData as $row) {
+            $brgy = $this->normalizeBarangay($row->address, $row->latitude ? (float) $row->latitude : null, $row->longitude ? (float) $row->longitude : null);
+            $normalizedCounts[$brgy] = ($normalizedCounts[$brgy] ?? 0) + 1;
+        }
+        arsort($normalizedCounts);
+
+        $barangay_breakdown = collect(array_slice($normalizedCounts, 0, 8, true))
+            ->map(fn ($count, $brgy) => ['barangay' => $brgy, 'count' => $count])
+            ->values();
+
+        // ── Flood Risk Score (all-time analysis per barangay, normalized) ──
         $severityWeight = ['critical' => 4, 'high' => 3, 'moderate' => 2, 'low' => 1];
         $currentMonth = now()->month;
 
-        $floodRiskData = Report::selectRaw('address, severity, count(*) as count')
-            ->whereNotNull('address')
-            ->where('address', '!=', '')
-            ->groupBy('address', 'severity')
+        $allReportsForRisk = Report::select('address', 'severity', 'created_at', 'latitude', 'longitude')
             ->get();
 
-        // Monthly pattern per barangay
-        $monthExpr = $this->isUsingSqlite()
-            ? "CAST(strftime('%m', created_at) AS INTEGER)"
-            : 'MONTH(created_at)';
-
-        $monthlyPattern = Report::selectRaw("address, {$monthExpr} as month, count(*) as count")
-            ->whereNotNull('address')
-            ->where('address', '!=', '')
-            ->groupBy('address', DB::raw($monthExpr))
-            ->get()
-            ->groupBy('address');
+        // Group by normalized barangay (using coordinates when available)
+        $barangayGroups = [];
+        foreach ($allReportsForRisk as $report) {
+            $brgy = $this->normalizeBarangay($report->address, $report->latitude ? (float) $report->latitude : null, $report->longitude ? (float) $report->longitude : null);
+            if (!isset($barangayGroups[$brgy])) {
+                $barangayGroups[$brgy] = ['severities' => [], 'months' => []];
+            }
+            $barangayGroups[$brgy]['severities'][] = $report->severity;
+            $month = (int) date('n', strtotime($report->created_at));
+            $barangayGroups[$brgy]['months'][] = $month;
+        }
 
         $riskScores = [];
-        $barangayTotals = $floodRiskData->groupBy('address');
+        $maxCount = max(array_map(fn ($g) => count($g['severities']), $barangayGroups) ?: [1]);
 
-        foreach ($barangayTotals as $address => $rows) {
-            $totalCount = $rows->sum('count');
-            $weightedSeverity = $rows->sum(fn ($r) => ($severityWeight[$r->severity] ?? 1) * $r->count);
+        foreach ($barangayGroups as $brgy => $group) {
+            $totalCount = count($group['severities']);
+            $weightedSeverity = array_sum(array_map(fn ($s) => $severityWeight[$s] ?? 1, $group['severities']));
             $avgSeverity = $totalCount > 0 ? $weightedSeverity / $totalCount : 0;
 
-            // Seasonal match: what % of this barangay's reports happen in the current month
-            $monthData = $monthlyPattern->get($address, collect());
-            $currentMonthCount = $monthData->firstWhere('month', $currentMonth)?->count ?? 0;
-            $totalAllTime = $monthData->sum('count');
-            $seasonalMatch = $totalAllTime > 0 ? ($currentMonthCount / $totalAllTime) : 0;
+            $currentMonthCount = count(array_filter($group['months'], fn ($m) => $m === $currentMonth));
+            $seasonalMatch = $totalCount > 0 ? ($currentMonthCount / $totalCount) : 0;
 
-            // Score: frequency (40%) + avg severity (30%) + seasonal match (30%)
-            $maxCount = max($barangayTotals->map(fn ($r) => $r->sum('count'))->toArray());
             $freqNorm = $maxCount > 0 ? $totalCount / $maxCount : 0;
-            $sevNorm = $avgSeverity / 4; // max severity weight is 4
+            $sevNorm = $avgSeverity / 4;
 
             $score = round(($freqNorm * 40) + ($sevNorm * 30) + ($seasonalMatch * 30));
             $level = $score >= 60 ? 'High' : ($score >= 30 ? 'Moderate' : 'Low');
 
             $riskScores[] = [
-                'barangay'  => $address,
+                'barangay'  => $brgy,
                 'score'     => $score,
                 'level'     => $level,
                 'incidents' => $totalCount,

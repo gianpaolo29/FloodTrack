@@ -11,10 +11,10 @@ use App\Http\Controllers\Api\ResponderStatsController;
 use App\Http\Controllers\Api\IncidentMessageController;
 use App\Http\Controllers\Api\TeamController;
 use App\Http\Controllers\Api\WeatherController;
-use App\Http\Controllers\Api\FamilyController;
 use App\Http\Controllers\Api\EvacuationCenterController;
 use App\Http\Controllers\Api\ProtocolController;
 use App\Http\Controllers\Api\AdminStatsController;
+use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\UserNotificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -96,14 +96,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/reports/{report}/typing', [IncidentMessageController::class, 'typing'])->middleware('throttle:60,1');
     Route::get('/reports/{report}/typing', [IncidentMessageController::class, 'typingUsers']);
 
-    // ── Family safety group ─────────────────────────────────────────────
-    Route::get('/family',                  [FamilyController::class, 'show']);
-    Route::post('/family',                 [FamilyController::class, 'store']);
-    Route::post('/family/join/{code}',     [FamilyController::class, 'join']);
-    Route::post('/family/invite',          [FamilyController::class, 'invite']);
-    Route::post('/family/check-in',        [FamilyController::class, 'checkIn']);
-    Route::delete('/family/leave',         [FamilyController::class, 'leave']);
-    Route::delete('/family/members/{id}',  [FamilyController::class, 'removeMember']);
 
     // Avatar upload
     Route::post('/user/avatar', [UserController::class, 'updateAvatar']);
@@ -122,6 +114,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/hazards', function () {
         return \App\Models\Hazard::where('active', true)->latest()->get();
     });
+
+    // Schedule (all authenticated users can read)
+    Route::get('/schedule', [ScheduleController::class, 'index']);
 
     // ── Responder only ───────────────────────────────────────────────────
     Route::middleware('role:responder,admin')->prefix('responder')->group(function () {
@@ -144,6 +139,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // ── Admin only ───────────────────────────────────────────────────────
     Route::middleware('role:admin')->group(function () {
+        Route::post('/admin/schedule',                     [ScheduleController::class, 'update']);
         Route::post('/alerts',                             [AlertController::class, 'store']);
         Route::patch('/reports/{report}/assign',           [ReportController::class, 'assign']);
         Route::patch('/reports/{report}/verify',           [ReportController::class, 'verify']);

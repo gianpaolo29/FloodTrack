@@ -19,6 +19,28 @@ use Illuminate\Support\Facades\Storage;
 
 class ReportController extends Controller
 {
+    /**
+     * Resolve address to nearest barangay using coordinates from config/barangays.php.
+     */
+    private function resolveBarangay(?string $address, float $lat, float $lng): string
+    {
+        $barangays = config('barangays', []);
+        $nearest = null;
+        $minDist = PHP_FLOAT_MAX;
+
+        foreach ($barangays as $brgy) {
+            $dist = sqrt(pow($lat - $brgy['latitude'], 2) + pow($lng - $brgy['longitude'], 2));
+            if ($dist < $minDist) {
+                $minDist = $dist;
+                $nearest = $brgy['name'];
+            }
+        }
+
+        return $nearest
+            ? "{$nearest}, Nasugbu, Batangas"
+            : ($address ?? 'Nasugbu, Batangas');
+    }
+
     public function index(Request $request)
     {
         $query = Report::with(['user:id,name,contact_number', 'media', 'statusUpdates.user:id,name,role', 'responderUsers', 'assignedTeam:id,name'])
@@ -52,6 +74,13 @@ class ReportController extends Controller
             'media'       => 'nullable|array|max:5',
             'media.*'     => 'file|mimes:jpg,jpeg,png,mp4,mov,avi,mkv,webm|max:51200',
         ]);
+
+        // Normalize address to nearest barangay using coordinates
+        $data['address'] = $this->resolveBarangay(
+            $data['address'] ?? null,
+            (float) $data['latitude'],
+            (float) $data['longitude'],
+        );
 
         $report = $request->user()->reports()->create($data);
 

@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { useLocale } from '@/hooks/use-locale';
+import { MultiSelectFilter } from '@/components/admin/MultiSelectFilter';
 import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
 import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
@@ -139,8 +141,9 @@ function detectHazardFromGeocode(
 /* ─── Main ─── */
 
 export default function AdminHazardsIndex({ hazards, stats, trends, period, custom_from, custom_to }: Props) {
+    const { t } = useLocale();
     const [mounted, setMounted] = useState(false);
-    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+    useEffect(() => { const tm = setTimeout(() => setMounted(true), 80); return () => clearTimeout(tm); }, []);
 
     const [selected,        setSelected]        = useState<number[]>([]);
     const [bulkProcessing,  setBulkProcessing]  = useState(false);
@@ -148,8 +151,8 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingHazard,   setEditingHazard]   = useState<Hazard | null>(null);
     const [search,          setSearch]          = useState('');
-    const [categoryFilter,  setCategoryFilter]  = useState('');
-    const [statusFilter,    setStatusFilter]    = useState('');
+    const [categoryFilter,  setCategoryFilter]  = useState<string[]>([]);
+    const [statusFilter,    setStatusFilter]    = useState<string[]>([]);
 
     const allOnPageSelected = hazards.data.length > 0 && hazards.data.every((h) => selected.includes(h.id));
     const toggleAll = () => {
@@ -176,13 +179,16 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
         });
     };
 
-    const hasFilters    = !!(search || categoryFilter || statusFilter);
-    const clearFilters  = () => { setSearch(''); setCategoryFilter(''); setStatusFilter(''); };
+    const hasFilters    = !!(categoryFilter.length > 0 || statusFilter.length > 0);
+    const clearFilters  = () => { setSearch(''); setCategoryFilter([]); setStatusFilter([]); };
 
     const filtered = hazards.data.filter((h) => {
-        if (categoryFilter && h.category !== categoryFilter) return false;
-        if (statusFilter === 'active'   &&  !h.active) return false;
-        if (statusFilter === 'inactive' &&   h.active) return false;
+        if (categoryFilter.length > 0 && !categoryFilter.includes(h.category)) return false;
+        if (statusFilter.length > 0) {
+            const isActive = h.active;
+            if (statusFilter.includes('active') && !statusFilter.includes('inactive') && !isActive) return false;
+            if (statusFilter.includes('inactive') && !statusFilter.includes('active') && isActive) return false;
+        }
         if (search) {
             const q = search.toLowerCase();
             return h.title.toLowerCase().includes(q) || (h.address ?? '').toLowerCase().includes(q);
@@ -278,10 +284,10 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                         </div>
                         <div>
                             <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                                Hazard Zone Management
+                                {t('hazards.title')}
                             </h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-                                Manage flood &amp; road hazards visible on the resident map
+                                {t('hazards.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -425,50 +431,43 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Toolbar */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 px-3 sm:px-5 py-4 dark:border-neutral-800">
-                        <div className="flex items-center gap-2">
-                            <div className="relative">
-                                <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
-                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                                    <option value="">All categories</option>
-                                    <option value="flood">Flood</option>
-                                    <option value="road">Road</option>
-                                </select>
-                                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
-                            </div>
-                            <div className="relative">
-                                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-                                    className="h-9 appearance-none rounded-xl border border-neutral-200 bg-neutral-50 pl-3 pr-8 text-xs font-medium text-neutral-700 outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                                    <option value="">All statuses</option>
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
-                                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="relative w-56">
-                                <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search hazards..."
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-xs outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
-                                />
-                                {search && (
-                                    <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
-                                        <X className="size-3.5" />
-                                    </button>
-                                )}
-                            </div>
-                            {hasFilters && (
-                                <button onClick={clearFilters}
-                                    className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 text-neutral-400 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-500 dark:border-neutral-700 dark:hover:border-red-800/60 dark:hover:bg-red-950/30 dark:hover:text-red-400"
-                                    title="Clear filters">
+                    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
+                        {/* Search — left */}
+                        <div className="relative flex-1 min-w-[180px] max-w-xs">
+                            <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                            <input
+                                type="text"
+                                placeholder={t('hazards.search_placeholder')}
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
+                            />
+                            {search && (
+                                <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
                                     <X className="size-3.5" />
                                 </button>
                             )}
+                        </div>
+                        {/* Filters — right */}
+                        <div className="ml-auto flex flex-wrap items-center gap-2">
+                            <MultiSelectFilter
+                                label="Category"
+                                options={[
+                                    { value: 'flood', label: 'Flood' },
+                                    { value: 'road', label: 'Road' },
+                                ]}
+                                selected={categoryFilter}
+                                onChange={setCategoryFilter}
+                            />
+                            <MultiSelectFilter
+                                label="Status"
+                                options={[
+                                    { value: 'active', label: 'Active' },
+                                    { value: 'inactive', label: 'Inactive' },
+                                ]}
+                                selected={statusFilter}
+                                onChange={setStatusFilter}
+                            />
                         </div>
                     </div>
 

@@ -10,6 +10,7 @@ class Team extends Model
         'name',
         'leader_id',
         'is_active',
+        'shift',
     ];
 
     protected $casts = [

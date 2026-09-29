@@ -1,11 +1,18 @@
 import { Head, useForm } from '@inertiajs/react';
 import {
+    AlertTriangle,
     Bell,
     Bot,
+    Clock,
     Globe,
+    Moon,
     Save,
+    Shield,
+    Sun,
+    Sunset,
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
+import { useLocale } from '@/hooks/use-locale';
 import { swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 
@@ -24,6 +31,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function AdminSettings({ settings }: Props) {
+    const { t } = useLocale();
     const initialData: Record<string, string> = {};
     for (const group of Object.values(settings)) {
         for (const [key, entry] of Object.entries(group)) {
@@ -56,7 +64,7 @@ export default function AdminSettings({ settings }: Props) {
                     {/* ─── Header ─── */}
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">Settings</h1>
+                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">{t('settings.title')}</h1>
                             <p className="mt-1 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 System configuration and platform information.
                             </p>
@@ -163,6 +171,100 @@ export default function AdminSettings({ settings }: Props) {
                                 enabled={getBool('ai_report_analysis')}
                                 onToggle={() => toggleBool('ai_report_analysis')}
                             />
+                        </SettingsCard>
+
+                        {/* Responder Schedule */}
+                        <SettingsCard
+                            icon={Shield}
+                            grad="from-neutral-800 to-neutral-900"
+                            title="Responder Schedule"
+                            sub="Manage shift rotation and emergency alert levels"
+                        >
+                            {/* Alert Level */}
+                            <div className="px-6 py-5">
+                                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Alert Level</p>
+                                <p className="mb-4 text-xs text-neutral-400">Set the current operational status for all responder teams.</p>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => set('schedule_level', 'white')}
+                                        className={`flex flex-col items-center gap-2 rounded-xl border-2 px-4 py-4 transition-all ${
+                                            get('schedule_level') !== 'red'
+                                                ? 'border-blue-500 bg-blue-50/50 dark:border-blue-400 dark:bg-blue-950/20'
+                                                : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600'
+                                        }`}
+                                    >
+                                        <div className={`flex size-10 items-center justify-center rounded-xl ${
+                                            get('schedule_level') !== 'red'
+                                                ? 'bg-blue-500 shadow-sm shadow-blue-500/30'
+                                                : 'bg-neutral-200 dark:bg-neutral-700'
+                                        }`}>
+                                            <Clock className={`size-5 ${get('schedule_level') !== 'red' ? 'text-white' : 'text-neutral-500 dark:text-neutral-400'}`} />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className={`text-sm font-bold ${get('schedule_level') !== 'red' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-900 dark:text-neutral-100'}`}>
+                                                White
+                                            </p>
+                                            <p className="text-[11px] text-neutral-400">Normal Operations</p>
+                                        </div>
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        onClick={() => set('schedule_level', 'red')}
+                                        className={`flex flex-col items-center gap-2 rounded-xl border-2 px-4 py-4 transition-all ${
+                                            get('schedule_level') === 'red'
+                                                ? 'border-red-500 bg-red-50/50 dark:border-red-400 dark:bg-red-950/20'
+                                                : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600'
+                                        }`}
+                                    >
+                                        <div className={`flex size-10 items-center justify-center rounded-xl ${
+                                            get('schedule_level') === 'red'
+                                                ? 'bg-red-500 shadow-sm shadow-red-500/30'
+                                                : 'bg-neutral-200 dark:bg-neutral-700'
+                                        }`}>
+                                            <AlertTriangle className={`size-5 ${get('schedule_level') === 'red' ? 'text-white' : 'text-neutral-500 dark:text-neutral-400'}`} />
+                                        </div>
+                                        <div className="text-center">
+                                            <p className={`text-sm font-bold ${get('schedule_level') === 'red' ? 'text-red-700 dark:text-red-400' : 'text-neutral-900 dark:text-neutral-100'}`}>
+                                                Red
+                                            </p>
+                                            <p className="text-[11px] text-neutral-400">Emergency 24/7</p>
+                                        </div>
+                                    </button>
+                                </div>
+
+                                {/* Status info */}
+                                {get('schedule_level') === 'red' ? (
+                                    <div className="mt-4 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-800/40 dark:bg-red-950/20">
+                                        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" />
+                                        <div>
+                                            <p className="text-sm font-semibold text-red-700 dark:text-red-400">All Units Assembled</p>
+                                            <p className="mt-0.5 text-xs text-red-600/80 dark:text-red-400/70">
+                                                24-hour deployment — all responder teams are on active duty until the alert level is lowered. Use during typhoons, floods, or declared emergencies.
+                                            </p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="mt-4 flex flex-col gap-2">
+                                        <p className="text-xs font-semibold text-neutral-500 dark:text-neutral-400">Shift Rotation</p>
+                                        {[
+                                            { icon: Sun,    label: 'Shift A', time: '7:00 AM – 3:00 PM',  color: 'text-amber-500' },
+                                            { icon: Sunset, label: 'Shift B', time: '3:00 PM – 11:00 PM', color: 'text-orange-500' },
+                                            { icon: Moon,   label: 'Shift C', time: '11:00 PM – 7:00 AM', color: 'text-indigo-500' },
+                                        ].map(shift => (
+                                            <div key={shift.label} className="flex items-center gap-3 rounded-xl border border-neutral-100 bg-neutral-50/60 px-4 py-2.5 dark:border-neutral-800 dark:bg-neutral-800/40">
+                                                <shift.icon className={`size-4 shrink-0 ${shift.color}`} />
+                                                <div className="flex-1">
+                                                    <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{shift.label}</span>
+                                                    <span className="ml-2 text-xs text-neutral-400">{shift.time}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </SettingsCard>
 
                     </div>

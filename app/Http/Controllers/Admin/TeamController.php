@@ -97,6 +97,7 @@ class TeamController extends Controller
         $validated = $request->validate([
             'name'       => 'required|string|max:255|unique:teams,name',
             'leader_id'  => 'required|exists:users,id',
+            'shift'      => 'required|in:A,B,C',
             'member_ids' => 'nullable|array',
             'member_ids.*' => 'exists:users,id',
         ]);
@@ -110,6 +111,7 @@ class TeamController extends Controller
         $team = Team::create([
             'name'      => $validated['name'],
             'leader_id' => $validated['leader_id'],
+            'shift'     => $validated['shift'],
         ]);
 
         User::whereIn('id', $memberIds)->update(['team_id' => $team->id]);
@@ -124,6 +126,7 @@ class TeamController extends Controller
         $validated = $request->validate([
             'name'         => "required|string|max:255|unique:teams,name,{$team->id}",
             'leader_id'    => 'required|exists:users,id',
+            'shift'        => 'required|in:A,B,C',
             'member_ids'   => 'nullable|array',
             'member_ids.*' => 'exists:users,id',
         ]);
@@ -145,6 +148,7 @@ class TeamController extends Controller
         $team->update([
             'name'      => $validated['name'],
             'leader_id' => $validated['leader_id'],
+            'shift'     => $validated['shift'],
         ]);
 
         User::whereIn('id', $newMemberIds)->update(['team_id' => $team->id]);

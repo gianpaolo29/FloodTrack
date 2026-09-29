@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { ApexOptions } from 'apexcharts';
 import {
     AlertTriangle,
@@ -30,6 +30,7 @@ import { formatResponseTime } from '@/lib/kpi-utils';
 import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
 import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
+import { useLocale } from '@/hooks/use-locale';
 
 /* ─── Types ─── */
 interface Stats { total_reports: number; pending: number; active: number; resolved_today: number; total_users: number; total_responders: number }
@@ -67,7 +68,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/admin' },
 ];
 
-const DONUT_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#10b981'];
 
 /* ─── Tooltip ─── */
 function tooltipHtml(label: string, rows: { color: string; name: string; value: number | string }[]) {
@@ -125,17 +125,15 @@ export default function AdminDashboard({
     verification_rate, barangay_breakdown, flood_risk_scores,
     period, custom_from, custom_to,
 }: Props) {
+    const { t, locale } = useLocale();
     const [mounted, setMounted] = useState(false);
-    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+    useEffect(() => { const tm = setTimeout(() => setMounted(true), 80); return () => clearTimeout(tm); }, []);
 
-    const severityValues = [
-        severity_breakdown['critical'] ?? 0,
-        severity_breakdown['high'] ?? 0,
-        severity_breakdown['moderate'] ?? 0,
-        severity_breakdown['low'] ?? 0,
-    ];
-    const severityLabels = ['Critical', 'High', 'Moderate', 'Low'];
-    const totalSeverity  = severityValues.reduce((a, b) => a + b, 0);
+    /* ── Trend chart state ── */
+    const [chartRange, setChartRange] = useState<7 | 14 | 30 | 90>(30);
+    const [visibleSeries, setVisibleSeries] = useState<Set<string>>(() => new Set(['Reports', 'Resolved']));
+    const [cumulative, setCumulative] = useState(false);
+
     const resolvedCount  = status_breakdown['resolved'] ?? 0;
     const rejectedCount  = status_breakdown['rejected'] ?? 0;
     const resolutionRate = stats.total_reports > 0
@@ -151,121 +149,278 @@ export default function AdminDashboard({
     const deploymentRate = team_stats.active > 0
         ? Math.round((team_stats.deployed / team_stats.active) * 100) : 0;
 
+    /* ── Urgency logic ── */
+    function getUrgency(key: string): 'good' | 'warning' | 'urgent' {
+        switch (key) {
+            case 'total_reports':
+                if (trends.reports > 30) return 'urgent';
+                if (trends.reports > 10) return 'warning';
+                return 'good';
+            case 'active_floods':
+                if (activePct > 60) return 'urgent';
+                if (activePct > 30) return 'warning';
+                return 'good';
+            case 'pending':
+                if (pendingPct > 40) return 'urgent';
+                if (pendingPct > 20) return 'warning';
+                return 'good';
+            case 'responders':
+                if (reportsPerResponder > 10) return 'urgent';
+                if (reportsPerResponder > 5) return 'warning';
+                return 'good';
+            case 'alerts':
+                if (critical_alerts.length > 0) return 'urgent';
+                if (active_alerts > 3) return 'warning';
+                return 'good';
+            case 'resolved_today':
+                if (stats.resolved_today === 0) return 'warning';
+                if (trends.resolved > 0) return 'good';
+                return 'good';
+            case 'avg_response':
+                if (avg_response_time > 180) return 'urgent';
+                if (avg_response_time > 60) return 'warning';
+                return 'good';
+            case 'resolution_rate':
+                if (resolutionRate < 50) return 'urgent';
+                if (resolutionRate < 80) return 'warning';
+                return 'good';
+            case 'active_teams':
+                if (team_stats.deployed === 0 && stats.active > 0) return 'warning';
+                return 'good';
+            default: return 'good';
+        }
+    }
+
+    /* ── Action links ── */
+    const actionLinks: Record<string, { label: string; href: string }> = {
+        total_reports: { label: 'View all reports', href: '/admin/reports' },
+        active_floods: { label: 'View active floods', href: '/admin/reports?status=active' },
+        pending: { label: 'View pending reports', href: '/admin/reports?status=pending' },
+        responders: { label: 'View responders', href: '/admin/responders' },
+        alerts: { label: 'View alerts', href: '/admin/alerts' },
+        resolved_today: { label: 'View resolved reports', href: '/admin/reports?status=resolved' },
+        avg_response: { label: 'View reports', href: '/admin/reports' },
+        resolution_rate: { label: 'View reports', href: '/admin/reports' },
+        active_teams: { label: 'View teams', href: '/admin/teams' },
+    };
+
     /* ── Smart insight generator ── */
     const tl = trends.label;
 
     function smartDesc(key: string): string {
+        const isFil = locale === 'fil';
         switch (key) {
             case 'total_reports': {
                 const t = trends.reports;
                 const parts: string[] = [];
-                if (t === 0) parts.push(`Flood reports are steady ${tl} — no unusual activity.`);
-                else if (t > 20) parts.push(`Flood reports surged ${Math.abs(t)}% ${tl} — consider deploying more rescue personnel to handle the spike.`);
-                else if (t > 0) parts.push(`Flood reports are gradually rising (${Math.abs(t)}% ${tl}) — keep monitoring the situation.`);
-                else if (t < -20) parts.push(`Flood reports dropped ${Math.abs(t)}% ${tl} — good time to clear the remaining backlog.`);
-                else parts.push(`Flood reports are easing slightly (${Math.abs(t)}% ${tl}) — situation is stabilizing.`);
-                if (resolutionRate >= 80) parts.push(`Strong performance with ${resolutionRate}% resolution rate.`);
-                else if (resolutionRate >= 50) parts.push(`Resolution rate at ${resolutionRate}% — push to close more open cases.`);
-                else if (stats.total_reports > 0) parts.push(`Only ${resolutionRate}% resolved — prioritize clearing the queue.`);
-                if (pendingPct > 30) parts.push('Verification queue is building up — speed up the review process.');
-                if (reportsPerResponder > 8) parts.push('High workload per rescue personnel — consider adding more team members.');
+                if (isFil) {
+                    if (t === 0) parts.push(`Steady ang reports ${tl}. Walang unusual.`);
+                    else if (t > 20) parts.push(`Tumaas ng ${Math.abs(t)}% ang reports ${tl}. Baka kailangan ng mas maraming tao.`);
+                    else if (t > 0) parts.push(`Unti-unting tumataas ang reports (${Math.abs(t)}% ${tl}). Bantayan.`);
+                    else if (t < -20) parts.push(`Bumaba ng ${Math.abs(t)}% ang reports ${tl}. Good time para i-clear ang backlog.`);
+                    else parts.push(`Bumababa nang konti ang reports (${Math.abs(t)}% ${tl}). Kumakalma na.`);
+                    if (resolutionRate >= 80) parts.push(`${resolutionRate}% na ang resolved — maganda.`);
+                    else if (resolutionRate >= 50) parts.push(`${resolutionRate}% pa lang ang resolved. Pwede pa.`);
+                    else if (stats.total_reports > 0) parts.push(`${resolutionRate}% lang ang resolved. Kailangan pang i-trabaho.`);
+                    if (pendingPct > 30) parts.push('Maraming reports ang naghihintay pa ng verification.');
+                    if (reportsPerResponder > 8) parts.push('Mabigat ang load ng bawat responder ngayon.');
+                } else {
+                    if (t === 0) parts.push(`Reports are steady ${tl}. Nothing unusual.`);
+                    else if (t > 20) parts.push(`Reports went up ${Math.abs(t)}% ${tl}. You might need more people out there.`);
+                    else if (t > 0) parts.push(`Reports are slowly climbing (${Math.abs(t)}% ${tl}). Worth keeping an eye on.`);
+                    else if (t < -20) parts.push(`Reports dropped ${Math.abs(t)}% ${tl}. Good time to catch up on the backlog.`);
+                    else parts.push(`Reports are easing a bit (${Math.abs(t)}% ${tl}). Things are calming down.`);
+                    if (resolutionRate >= 80) parts.push(`${resolutionRate}% of reports are resolved — that's great.`);
+                    else if (resolutionRate >= 50) parts.push(`${resolutionRate}% resolved so far. Could be better.`);
+                    else if (stats.total_reports > 0) parts.push(`Only ${resolutionRate}% resolved. The queue needs attention.`);
+                    if (pendingPct > 30) parts.push('A lot of reports are stuck waiting for verification.');
+                    if (reportsPerResponder > 8) parts.push('Each responder has a heavy load right now.');
+                }
                 return parts.join(' ');
             }
             case 'active_floods': {
                 const t = trends.active;
                 const parts: string[] = [];
-                if (stats.active === 0) return 'No flooded areas reported — all situations have been resolved. Great job by the response teams.';
-                if (t > 20) parts.push(`Flooded areas surging (${Math.abs(t)}% ${tl}) — escalate response and deploy additional teams.`);
-                else if (t > 0) parts.push(`Flooded areas rising (${Math.abs(t)}% ${tl}) — situation is getting worse, stay alert.`);
-                else if (t < -20) parts.push(`Flooded areas dropping fast (${Math.abs(t)}% ${tl}) — response effort is paying off.`);
-                else if (t < 0) parts.push(`Flooded areas declining (${Math.abs(t)}% ${tl}) — situation is gradually improving.`);
-                else parts.push(`Flooded areas holding steady ${tl} — no improvement yet.`);
-                if (activePct > 60) parts.push('Majority of reports remain unresolved — response teams need to accelerate.');
-                else if (activePct > 30) parts.push('Moderate flood activity — maintain current response pace.');
-                if (team_stats.deployed < Math.ceil(stats.active / 3) && stats.active > 0) parts.push('More response teams should be deployed to cover the flooded areas.');
-                else if (team_stats.deployed > 0) parts.push('Team deployment looks adequate for current demand.');
-                if (stats.pending > 3) parts.push('Several flood reports still awaiting verification — speed up triage.');
+                if (isFil) {
+                    if (stats.active === 0) return 'Walang baha ngayon. Na-handle na lahat.';
+                    if (t > 20) parts.push(`Tumataas ang baha (${Math.abs(t)}% ${tl}). Kailangan ng mas maraming team.`);
+                    else if (t > 0) parts.push(`Dumadami ang baha (${Math.abs(t)}% ${tl}). Lumalala.`);
+                    else if (t < -20) parts.push(`Bumababa na ang baha (${Math.abs(t)}% ${tl}). Gumagana ang response.`);
+                    else if (t < 0) parts.push(`Unti-unting bumababa ang baha (${Math.abs(t)}% ${tl}). Papunta sa tamang direksyon.`);
+                    else parts.push(`Steady ang baha ${tl}. Walang pagbabago.`);
+                    if (activePct > 60) parts.push('Karamihan ng reports hindi pa resolved. Kailangan bilisan.');
+                    else if (activePct > 30) parts.push('Katamtaman ang flood activity. Ituloy ang pace.');
+                    if (team_stats.deployed < Math.ceil(stats.active / 3) && stats.active > 0) parts.push('Kailangan ng mas maraming team sa field.');
+                    else if (team_stats.deployed > 0) parts.push('Sapat ang team coverage ngayon.');
+                    if (stats.pending > 3) parts.push('May mga report pa na hindi pa na-verify.');
+                } else {
+                    if (stats.active === 0) return 'No active floods right now. Everything\'s been handled.';
+                    if (t > 20) parts.push(`Floods are spiking (${Math.abs(t)}% ${tl}). More teams should get out there.`);
+                    else if (t > 0) parts.push(`Floods are increasing (${Math.abs(t)}% ${tl}). Things are getting worse.`);
+                    else if (t < -20) parts.push(`Floods are dropping fast (${Math.abs(t)}% ${tl}). The response is working.`);
+                    else if (t < 0) parts.push(`Floods are slowly going down (${Math.abs(t)}% ${tl}). Heading in the right direction.`);
+                    else parts.push(`Floods are holding steady ${tl}. No change yet.`);
+                    if (activePct > 60) parts.push('Most reports are still unresolved. Teams need to pick up the pace.');
+                    else if (activePct > 30) parts.push('Moderate flood activity. Keep the current pace going.');
+                    if (team_stats.deployed < Math.ceil(stats.active / 3) && stats.active > 0) parts.push('Could use more teams deployed to cover all the areas.');
+                    else if (team_stats.deployed > 0) parts.push('Team coverage looks good for now.');
+                    if (stats.pending > 3) parts.push('Some reports are still waiting to be verified.');
+                }
                 return parts.join(' ');
             }
             case 'pending': {
-                if (stats.pending === 0) return 'All caught up — no flood reports awaiting verification.';
                 const t = trends.pending;
                 const parts: string[] = [];
-                if (t > 0) parts.push(`Verification queue grew by ${Math.abs(t)}% ${tl}.`);
-                else if (t < 0) parts.push(`Verification queue shrank by ${Math.abs(t)}% ${tl} — good progress.`);
-                if (pendingPct > 40) parts.push(`${pendingPct}% of flood reports are waiting for verification — this is a bottleneck.`);
-                else if (pendingPct > 20) parts.push(`${pendingPct}% of flood reports still need verification.`);
-                else parts.push(`Only ${pendingPct}% of reports are awaiting verification — manageable.`);
-                if (avg_response_time > 60) parts.push(`Avg response time is ${formatResponseTime(avg_response_time)} — try to speed up the verification process.`);
+                if (isFil) {
+                    if (stats.pending === 0) return 'Wala nang pending. Lahat na-check na.';
+                    if (t > 0) parts.push(`${Math.abs(t)}% mas maraming reports ang naghihintay ${tl}.`);
+                    else if (t < 0) parts.push(`Bumaba ng ${Math.abs(t)}% ang pending ${tl}. Nice.`);
+                    if (pendingPct > 40) parts.push(`${pendingPct}% ng reports pending pa. Bottleneck na yan.`);
+                    else if (pendingPct > 20) parts.push(`${pendingPct}% kailangan pa i-verify.`);
+                    else parts.push(`${pendingPct}% lang ang pending. Kaya pa.`);
+                    if (avg_response_time > 60) parts.push(`Response time ay ${formatResponseTime(avg_response_time)}. Pabilisin ang verification.`);
+                } else {
+                    if (stats.pending === 0) return 'All caught up. Nothing waiting for verification.';
+                    if (t > 0) parts.push(`${Math.abs(t)}% more reports are waiting to be checked ${tl}.`);
+                    else if (t < 0) parts.push(`The queue shrank by ${Math.abs(t)}% ${tl}. Nice progress.`);
+                    if (pendingPct > 40) parts.push(`${pendingPct}% of reports are still pending. That's a bottleneck.`);
+                    else if (pendingPct > 20) parts.push(`${pendingPct}% still need verification.`);
+                    else parts.push(`Only ${pendingPct}% pending. That's manageable.`);
+                    if (avg_response_time > 60) parts.push(`Response time is at ${formatResponseTime(avg_response_time)}. Speeding up verification would help.`);
+                }
                 return parts.join(' ');
             }
             case 'responders': {
                 const parts: string[] = [];
-                if (reportsPerResponder > 10) parts.push(`Each rescue personnel is handling ~${reportsPerResponder} flood reports — team may be stretched thin.`);
-                else if (reportsPerResponder > 0) parts.push(`Workload is balanced at ~${reportsPerResponder} flood reports per rescue personnel.`);
-                else parts.push('No flood reports assigned to rescue personnel yet.');
-                if (stats.resolved_today > 0) parts.push(`${stats.resolved_today} cases resolved today — team is active.`);
-                if (team_stats.deployed > 0) parts.push(`${team_stats.deployed} response team${team_stats.deployed > 1 ? 's' : ''} currently deployed in the field.`);
-                else if (stats.active > 0) parts.push('No response teams deployed yet despite active flooded areas.');
+                if (isFil) {
+                    if (reportsPerResponder > 10) parts.push(`Mga ${reportsPerResponder} reports per responder. Ang dami — baka kailangan ng tulong.`);
+                    else if (reportsPerResponder > 0) parts.push(`Mga ${reportsPerResponder} reports per responder. Balanced naman.`);
+                    else parts.push('Wala pang reports na naka-assign sa responders.');
+                    if (stats.resolved_today > 0) parts.push(`${stats.resolved_today} ang naayos ngayon. Active ang team.`);
+                    if (team_stats.deployed > 0) parts.push(`${team_stats.deployed} team ang nasa field.`);
+                    else if (stats.active > 0) parts.push('Wala pang team na naka-deploy pero may active na baha.');
+                } else {
+                    if (reportsPerResponder > 10) parts.push(`Each responder has about ${reportsPerResponder} reports. That's a lot — you might need more help.`);
+                    else if (reportsPerResponder > 0) parts.push(`About ${reportsPerResponder} reports per responder. Workload is balanced.`);
+                    else parts.push('No reports assigned to responders yet.');
+                    if (stats.resolved_today > 0) parts.push(`${stats.resolved_today} resolved today. Team is active.`);
+                    if (team_stats.deployed > 0) parts.push(`${team_stats.deployed} team${team_stats.deployed > 1 ? 's' : ''} out in the field.`);
+                    else if (stats.active > 0) parts.push('No teams deployed yet, but there are active floods.');
+                }
                 return parts.join(' ');
             }
             case 'alerts': {
-                if (active_alerts === 0) return 'No active announcements. Conditions are stable.';
                 const t = trends.alerts;
                 const parts: string[] = [];
-                if (t > 0) parts.push(`Announcements surged by ${Math.abs(t)}% ${tl}.`);
-                else if (t < 0) parts.push(`Announcements dropped by ${Math.abs(t)}% ${tl}.`);
-                if (critical_alerts.length > 0) parts.push(`${critical_alerts.length} critical announcement${critical_alerts.length > 1 ? 's' : ''} — immediate action required.`);
-                if (affected_areas > 3) parts.push(`Spread across ${affected_areas} areas — monitor for wider impact.`);
-                else if (affected_areas > 0) parts.push(`Concentrated in ${affected_areas} area${affected_areas > 1 ? 's' : ''}.`);
+                if (isFil) {
+                    if (active_alerts === 0) return 'Walang active na anunsyo. Tahimik.';
+                    if (t > 0) parts.push(`Tumaas ng ${Math.abs(t)}% ang anunsyo ${tl}.`);
+                    else if (t < 0) parts.push(`Bumaba ng ${Math.abs(t)}% ang anunsyo ${tl}.`);
+                    if (critical_alerts.length > 0) parts.push(`${critical_alerts.length} kritikal — kailangan agad.`);
+                    if (affected_areas > 3) parts.push(`Apektado ang ${affected_areas} na lugar.`);
+                    else if (affected_areas > 0) parts.push(`Nasa ${affected_areas} lugar lang.`);
+                } else {
+                    if (active_alerts === 0) return 'No active announcements. All calm.';
+                    if (t > 0) parts.push(`Announcements went up ${Math.abs(t)}% ${tl}.`);
+                    else if (t < 0) parts.push(`Announcements dropped ${Math.abs(t)}% ${tl}.`);
+                    if (critical_alerts.length > 0) parts.push(`${critical_alerts.length} critical — needs immediate attention.`);
+                    if (affected_areas > 3) parts.push(`Affecting ${affected_areas} areas. Keep an eye on the spread.`);
+                    else if (affected_areas > 0) parts.push(`Concentrated in ${affected_areas} area${affected_areas > 1 ? 's' : ''}.`);
+                }
                 return parts.join(' ');
             }
             case 'resolved_today': {
-                if (stats.resolved_today === 0) return `No flood reports resolved yet today. ${stats.pending} awaiting verification and ${stats.active} flooded areas still need attention.`;
                 const parts: string[] = [];
                 const t = trends.resolved;
-                if (t > 0) parts.push(`Resolutions up ${Math.abs(t)}% ${tl} — great momentum.`);
-                else if (t < 0) parts.push(`Resolutions down ${Math.abs(t)}% ${tl}.`);
-                if (stats.pending > stats.resolved_today) parts.push(`Still ${stats.pending} awaiting verification — more than what was resolved today.`);
-                else if (stats.pending > 0) parts.push(`Almost caught up — only ${stats.pending} left awaiting verification.`);
-                else parts.push('No flood reports left pending — fully caught up.');
-                parts.push(`Overall resolution rate: ${resolutionRate}%.`);
+                if (isFil) {
+                    if (stats.resolved_today === 0) return `Wala pang naayos ngayon. ${stats.pending} pending at ${stats.active} active pa.`;
+                    if (t > 0) parts.push(`Tumaas ng ${Math.abs(t)}% ang resolutions ${tl}. Good pace.`);
+                    else if (t < 0) parts.push(`Bumaba ng ${Math.abs(t)}% ang resolutions ${tl}.`);
+                    if (stats.pending > stats.resolved_today) parts.push(`May ${stats.pending} pa — mas marami pa sa na-resolve ngayon.`);
+                    else if (stats.pending > 0) parts.push(`Halos tapos na. ${stats.pending} na lang ang pending.`);
+                    else parts.push('Wala nang pending. Tapos na lahat.');
+                    parts.push(`Overall resolution rate: ${resolutionRate}%.`);
+                } else {
+                    if (stats.resolved_today === 0) return `Nothing resolved yet today. ${stats.pending} pending and ${stats.active} active floods still need work.`;
+                    if (t > 0) parts.push(`Resolutions are up ${Math.abs(t)}% ${tl}. Good momentum.`);
+                    else if (t < 0) parts.push(`Resolutions are down ${Math.abs(t)}% ${tl}.`);
+                    if (stats.pending > stats.resolved_today) parts.push(`Still ${stats.pending} waiting — more than today's resolved count.`);
+                    else if (stats.pending > 0) parts.push(`Almost caught up. Only ${stats.pending} left to verify.`);
+                    else parts.push('No reports left pending. Fully caught up.');
+                    parts.push(`Overall resolution rate is ${resolutionRate}%.`);
+                }
                 return parts.join(' ');
             }
             case 'avg_response': {
                 const parts: string[] = [];
-                if (avg_response_time <= 0) return 'No resolved flood reports to calculate response time from.';
-                if (avg_response_time < 30) parts.push('Response time is excellent — under 30 minutes.');
-                else if (avg_response_time < 60) parts.push('Response time is good — under an hour.');
-                else if (avg_response_time < 180) parts.push(`Response time is ${formatResponseTime(avg_response_time)} — room for improvement.`);
-                else parts.push(`Response time is ${formatResponseTime(avg_response_time)} — this needs urgent attention.`);
-                if (reportsPerResponder > 8) parts.push(`High workload (~${reportsPerResponder} reports/personnel) may be slowing things down.`);
-                if (stats.pending > 5) parts.push(`${stats.pending} flood reports queued for verification — reducing backlog would help.`);
+                if (isFil) {
+                    if (avg_response_time <= 0) return 'Wala pang resolved na report para makuha ang response time.';
+                    if (avg_response_time < 30) parts.push('Mabilis ang response — wala pang 30 minuto.');
+                    else if (avg_response_time < 60) parts.push('Wala pang isang oras ang response time. Okay yan.');
+                    else if (avg_response_time < 180) parts.push(`${formatResponseTime(avg_response_time)} ang response time. Pwede pang pabilisin.`);
+                    else parts.push(`${formatResponseTime(avg_response_time)} ang response time. Sobrang tagal, kailangan ayusin.`);
+                    if (reportsPerResponder > 8) parts.push(`Mabigat ang workload (~${reportsPerResponder} reports each). Baka yan ang dahilan.`);
+                    if (stats.pending > 5) parts.push(`${stats.pending} reports sa queue. Pag na-clear, babilis din.`);
+                } else {
+                    if (avg_response_time <= 0) return 'No resolved reports to measure response time from.';
+                    if (avg_response_time < 30) parts.push('Responses are fast — under 30 minutes on average.');
+                    else if (avg_response_time < 60) parts.push('Response time is under an hour. That\'s solid.');
+                    else if (avg_response_time < 180) parts.push(`Response time is ${formatResponseTime(avg_response_time)}. There\'s room to improve.`);
+                    else parts.push(`Response time is ${formatResponseTime(avg_response_time)}. That\'s too slow and needs fixing.`);
+                    if (reportsPerResponder > 8) parts.push(`Heavy workload (~${reportsPerResponder} reports each) is probably slowing things down.`);
+                    if (stats.pending > 5) parts.push(`${stats.pending} reports in the queue. Clearing those would help.`);
+                }
                 return parts.join(' ');
             }
             case 'resolution_rate': {
                 const parts: string[] = [];
-                if (resolutionRate >= 90) parts.push(`Excellent — ${resolutionRate}% of flood reports are resolved.`);
-                else if (resolutionRate >= 70) parts.push(`Good — ${resolutionRate}% resolved, but ${stats.pending + stats.active} flood reports still open.`);
-                else if (resolutionRate >= 40) parts.push(`${resolutionRate}% resolved — needs improvement. ${stats.pending} awaiting verification, ${stats.active} flooded areas active.`);
-                else if (stats.total_reports > 0) parts.push(`Only ${resolutionRate}% resolved — most flood reports are still unresolved.`);
-                else return 'No flood reports submitted yet.';
-                if (rejectedCount > 0) parts.push(`${rejectedCount} report${rejectedCount > 1 ? 's were' : ' was'} rejected.`);
+                if (isFil) {
+                    if (resolutionRate >= 90) parts.push(`${resolutionRate}% na ang resolved. Ang galing!`);
+                    else if (resolutionRate >= 70) parts.push(`${resolutionRate}% resolved, pero ${stats.pending + stats.active} ang open pa.`);
+                    else if (resolutionRate >= 40) parts.push(`${resolutionRate}% lang. ${stats.pending} pending, ${stats.active} active. Kailangan pang i-improve.`);
+                    else if (stats.total_reports > 0) parts.push(`${resolutionRate}% lang ang resolved. Karamihan open pa.`);
+                    else return 'Wala pang report na na-submit.';
+                    if (rejectedCount > 0) parts.push(`${rejectedCount} report ang na-reject.`);
+                } else {
+                    if (resolutionRate >= 90) parts.push(`${resolutionRate}% resolved. Excellent work.`);
+                    else if (resolutionRate >= 70) parts.push(`${resolutionRate}% resolved, but ${stats.pending + stats.active} reports are still open.`);
+                    else if (resolutionRate >= 40) parts.push(`${resolutionRate}% resolved. ${stats.pending} pending, ${stats.active} active. Needs improvement.`);
+                    else if (stats.total_reports > 0) parts.push(`Only ${resolutionRate}% resolved. Most reports are still open.`);
+                    else return 'No reports submitted yet.';
+                    if (rejectedCount > 0) parts.push(`${rejectedCount} report${rejectedCount > 1 ? 's' : ''} rejected.`);
+                }
                 return parts.join(' ');
             }
             case 'active_teams': {
-                if (team_stats.active === 0) return 'No active response teams. Teams need to be activated for deployment.';
                 const parts: string[] = [];
-                if (deploymentRate >= 80) parts.push(`${deploymentRate}% deployment rate — nearly all response teams are in the field.`);
-                else if (deploymentRate >= 50) parts.push(`${deploymentRate}% deployed — ${team_stats.active - team_stats.deployed} response teams still available.`);
-                else if (team_stats.deployed > 0) parts.push(`Only ${deploymentRate}% deployed — capacity available for more flooded areas.`);
-                else parts.push('No response teams deployed yet.');
-                if (team_stats.inactive > 0) parts.push(`${team_stats.inactive} inactive team${team_stats.inactive > 1 ? 's' : ''} could be reactivated if needed.`);
-                if (stats.active > 0 && team_stats.deployed === 0) parts.push(`${stats.active} flooded areas with no teams deployed — needs immediate action.`);
+                if (isFil) {
+                    if (team_stats.active === 0) return 'Walang active na team ngayon. Kailangan mag-activate para ma-deploy.';
+                    if (deploymentRate >= 80) parts.push(`${deploymentRate}% deployment rate. Halos lahat nasa field na.`);
+                    else if (deploymentRate >= 50) parts.push(`${deploymentRate}% ang naka-deploy. ${team_stats.active - team_stats.deployed} team pa ang available.`);
+                    else if (team_stats.deployed > 0) parts.push(`${deploymentRate}% lang ang naka-deploy. May pwede pang i-send.`);
+                    else parts.push('Walang team na naka-deploy.');
+                    if (team_stats.inactive > 0) parts.push(`${team_stats.inactive} inactive team ang pwedeng i-activate.`);
+                    if (stats.active > 0 && team_stats.deployed === 0) parts.push(`${stats.active} active na baha pero walang team sa field. Kailangan ng aksyon agad.`);
+                } else {
+                    if (team_stats.active === 0) return 'No active teams right now. You\'ll need to activate some for deployment.';
+                    if (deploymentRate >= 80) parts.push(`${deploymentRate}% deployment rate. Almost everyone is in the field.`);
+                    else if (deploymentRate >= 50) parts.push(`${deploymentRate}% deployed. ${team_stats.active - team_stats.deployed} teams still available.`);
+                    else if (team_stats.deployed > 0) parts.push(`Only ${deploymentRate}% deployed. There's capacity for more.`);
+                    else parts.push('No teams deployed yet.');
+                    if (team_stats.inactive > 0) parts.push(`${team_stats.inactive} inactive team${team_stats.inactive > 1 ? 's' : ''} could be brought back if needed.`);
+                    if (stats.active > 0 && team_stats.deployed === 0) parts.push(`${stats.active} active floods with no teams out there. This needs action now.`);
+                }
                 return parts.join(' ');
             }
             default: return '';
         }
+    }
+
+    /* ── Trend helper for insight rows ── */
+    function trendDir(val: number): 'up' | 'down' | 'flat' {
+        if (val > 0) return 'up';
+        if (val < 0) return 'down';
+        return 'flat';
     }
 
     /* ── KPI Threshold Colors ── */
@@ -283,77 +438,102 @@ export default function AdminDashboard({
 
     /* ── Verification Rate color ── */
     const vrColor = verification_rate >= 80 ? '#10b981' : verification_rate >= 50 ? '#f59e0b' : '#ef4444';
-    const vrLabel = verification_rate >= 80 ? 'On Track' : verification_rate >= 50 ? 'Needs Attention' : 'Critical';
+    const vrLabel = verification_rate >= 80 ? t('dashboard.on_track') : verification_rate >= 50 ? t('dashboard.needs_attention') : t('dashboard.critical');
     const vrBg    = verification_rate >= 80 ? 'bg-emerald-500' : verification_rate >= 50 ? 'bg-amber-500' : 'bg-red-500';
 
-    /* ── Area Chart ── */
-    const areaOptions: ApexOptions = {
-        chart: { type: 'area', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600, easing: 'easeinout' }, selection: { enabled: false } },
-        dataLabels: { enabled: false },
-        stroke: { curve: 'smooth', width: [2.5, 2.5] },
-        fill: {
-            type: 'gradient',
-            gradient: { type: 'vertical', shadeIntensity: 1, opacityFrom: 0.25, opacityTo: 0.02, stops: [0, 90, 100] },
-        },
-        colors: ['#6366f1', '#10b981'],
-        grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } }, padding: { left: 0, right: 4 } },
-        xaxis: { categories: daily_reports.map(d => d.date), axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, rotate: 0 }, tooltip: { enabled: false } },
-        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
-        legend: { show: false },
-        markers: { size: 0, hover: { size: 5, sizeOffset: 1 } },
-        tooltip: {
-            shared: true, intersect: false,
-            custom: ({ series, dataPointIndex, w }) => {
-                const label = w.globals.categoryLabels[dataPointIndex] ?? w.globals.labels[dataPointIndex];
-                return tooltipHtml(label, [
-                    { color: '#6366f1', name: 'Reports',  value: series[0][dataPointIndex] },
-                    { color: '#10b981', name: 'Resolved', value: series[1][dataPointIndex] },
-                ]);
+    /* ── Area Chart (enhanced) ── */
+    const SERIES_COLORS: Record<string, string> = { Reports: '#6366f1', Resolved: '#10b981' };
+
+    const { filteredDays, reportsData, resolvedData, pendingData, peakIndex, peakValue, peakDate, avgValue, alertDates } = useMemo(() => {
+        const fd = daily_reports.slice(-chartRange);
+        let rp = fd.map(d => d.total);
+        let rv = fd.map(d => d.resolved);
+        let pd = fd.map(d => Math.max(0, d.total - d.resolved));
+
+        if (cumulative) {
+            rp = rp.reduce<number[]>((acc, v) => [...acc, (acc[acc.length - 1] ?? 0) + v], []);
+            rv = rv.reduce<number[]>((acc, v) => [...acc, (acc[acc.length - 1] ?? 0) + v], []);
+            pd = pd.reduce<number[]>((acc, v) => [...acc, (acc[acc.length - 1] ?? 0) + v], []);
+        }
+
+        const pi = rp.length > 0 ? rp.indexOf(Math.max(...rp)) : -1;
+        const pv = pi >= 0 ? rp[pi] : 0;
+        const pDate = pi >= 0 ? fd[pi]?.date : undefined;
+        const av = rp.length > 0 ? Math.round(rp.reduce((a, b) => a + b, 0) / rp.length) : 0;
+
+        // Build set of alert dates that fall within filtered range
+        const fdSet = new Set(fd.map(d => d.date));
+        const aDates = critical_alerts
+            .map(a => {
+                const d = new Date(a.created_at);
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            })
+            .filter(d => fdSet.has(d));
+
+        return { filteredDays: fd, reportsData: rp, resolvedData: rv, pendingData: pd, peakIndex: pi, peakValue: pv, peakDate: pDate, avgValue: av, alertDates: [...new Set(aDates)] };
+    }, [daily_reports, chartRange, cumulative, critical_alerts]);
+
+    const areaSeries = useMemo(() => {
+        const all: { name: string; data: number[] }[] = [];
+        if (visibleSeries.has('Reports'))  all.push({ name: 'Reports',  data: reportsData });
+        if (visibleSeries.has('Resolved')) all.push({ name: 'Resolved', data: resolvedData });
+        return all;
+    }, [visibleSeries, reportsData, resolvedData, pendingData]);
+
+    const areaOptions: ApexOptions = useMemo(() => {
+        const seriesColors = areaSeries.map(s => SERIES_COLORS[s.name] ?? '#94a3b8');
+        const seriesWidths = areaSeries.map(() => 2.5);
+
+        // Build annotations
+        const yaxisAnnotations: ApexOptions['annotations'] extends { yaxis?: infer Y } ? Y : never = [{
+            y: avgValue,
+            borderColor: '#94a3b8',
+            strokeDashArray: 4,
+            label: { text: `Avg: ${avgValue}`, position: 'left', style: { fontSize: '10px', color: '#94a3b8', background: 'transparent' }, offsetX: 10 },
+        }];
+
+        const xaxisAnnotations = alertDates.map(d => ({
+            x: d,
+            borderColor: '#ef4444',
+            strokeDashArray: 3,
+            label: { text: 'Alert', orientation: 'horizontal' as const, style: { fontSize: '9px', color: '#ef4444', background: '#fef2f2', padding: { left: 4, right: 4, top: 2, bottom: 2 } } },
+        }));
+
+
+        return {
+            chart: { type: 'area', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600, easing: 'easeinout' }, selection: { enabled: false } },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: seriesWidths },
+            fill: {
+                type: 'gradient',
+                gradient: { type: 'vertical', shadeIntensity: 1, opacityFrom: 0.25, opacityTo: 0.02, stops: [0, 90, 100] },
             },
-        },
-    };
-    const areaSeries = [
-        { name: 'Reports',  data: daily_reports.map(d => d.total) },
-        { name: 'Resolved', data: daily_reports.map(d => d.resolved) },
-    ];
+            colors: seriesColors,
+            grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } }, padding: { left: 0, right: 4 } },
+            xaxis: { categories: filteredDays.map(d => d.date), axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, rotate: 0 }, tooltip: { enabled: false } },
+            yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
+            legend: { show: false },
+            markers: { size: 0, hover: { size: 5, sizeOffset: 1 } },
+            annotations: {
+                yaxis: yaxisAnnotations,
+                xaxis: xaxisAnnotations,
+            },
+            tooltip: {
+                shared: true, intersect: false,
+                custom: ({ series, dataPointIndex, w }) => {
+                    const label = w.globals.categoryLabels[dataPointIndex] ?? w.globals.labels[dataPointIndex];
+                    const rows = series.map((s: number[], i: number) => ({
+                        color: seriesColors[i] ?? '#94a3b8',
+                        name: areaSeries[i]?.name ?? '',
+                        value: s[dataPointIndex],
+                    }));
+                    return tooltipHtml(label, rows);
+                },
+            },
+        };
+    }, [filteredDays, areaSeries, avgValue, alertDates]);
 
     /* ── Donut Chart ── */
-    const donutOptions: ApexOptions = {
-        chart: { type: 'donut', fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
-        labels: severityLabels,
-        colors: DONUT_COLORS,
-        dataLabels: { enabled: false },
-        legend: { show: false },
-        stroke: { width: 2, colors: ['#ffffff'] },
-        plotOptions: {
-            pie: {
-                donut: {
-                    size: '70%',
-                    labels: {
-                        show: true,
-                        name: { show: true, fontSize: '10px', fontWeight: '500', color: '#94a3b8', offsetY: 8 },
-                        value: { show: true, fontSize: '30px', fontWeight: '800', color: '#111827', offsetY: -14, formatter: v => v },
-                        total: { show: true, showAlways: true, label: 'total', fontSize: '11px', fontWeight: '500', color: '#94a3b8', formatter: () => String(totalSeverity) },
-                    },
-                },
-                expandOnClick: false,
-            },
-        },
-        states: { hover: { filter: { type: 'darken', value: 0.88 } }, active: { filter: { type: 'none' } } },
-        tooltip: {
-            custom: ({ series, seriesIndex, w }) => {
-                const label = w.globals.labels[seriesIndex];
-                const color = DONUT_COLORS[seriesIndex];
-                const total = series.reduce((a: number, b: number) => a + b, 0);
-                const pct   = total > 0 ? Math.round((series[seriesIndex] / total) * 100) : 0;
-                return tooltipHtml(label, [
-                    { color, name: 'Count', value: series[seriesIndex] },
-                    { color, name: 'Share', value: `${pct}%` },
-                ]);
-            },
-        },
-    };
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />
@@ -369,9 +549,9 @@ export default function AdminDashboard({
                         </div>
                         <div>
                             <h1 className="text-xl font-bold tracking-tight text-neutral-900 sm:text-2xl dark:text-white">
-                                Dashboard
+                                {t('dashboard.title')}
                             </h1>
-                            <p className="mt-0.5 text-xs text-neutral-500 sm:text-sm dark:text-neutral-400">Real-time overview of flood incidents and system performance</p>
+                            <p className="mt-0.5 text-xs text-neutral-500 sm:text-sm dark:text-neutral-400">{t('dashboard.subtitle')}</p>
                         </div>
                     </div>
                     <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin" />
@@ -381,38 +561,39 @@ export default function AdminDashboard({
                 <div>
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
                         {([
-                            { label: 'Total Flood Reports', value: stats.total_reports, trend: trends.reports, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('total_reports'), icon: FileText, grad: 'from-indigo-500 via-blue-500 to-cyan-500', shadow: 'shadow-indigo-500/40', alert: false, accent: 'neutral' as const, insights: [
-                                { label: 'Resolved cases', value: resolvedCount, color: '#10b981' },
-                                { label: 'Flooded areas', value: stats.active, color: '#3b82f6' },
-                                { label: 'Awaiting verification', value: stats.pending, color: '#f59e0b' },
+                            { key: 'total_reports', label: t('dashboard.total_flood_reports'), value: stats.total_reports, trend: trends.reports, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('total_reports'), icon: FileText, grad: 'from-indigo-500 via-blue-500 to-cyan-500', shadow: 'shadow-indigo-500/40', alert: false, accent: 'neutral' as const, insights: [
+                                { label: 'Resolved cases', value: resolvedCount, color: '#10b981', max: stats.total_reports, trend: trendDir(trends.resolved) },
+                                { label: 'Flooded areas', value: stats.active, color: '#3b82f6', max: stats.total_reports, trend: trendDir(trends.active) },
+                                { label: 'Awaiting verification', value: stats.pending, color: '#f59e0b', max: stats.total_reports, trend: trendDir(trends.pending) },
                                 { label: 'Rejected reports', value: rejectedCount, color: '#94a3b8' },
                             ] },
-                            { label: 'Flooded Areas', value: stats.active, trend: trends.active, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('active_floods'), icon: Waves, grad: 'from-cyan-500 via-teal-500 to-emerald-500', shadow: 'shadow-cyan-500/40', alert: false, accent: kpiAccent('active'), insights: [
+                            { key: 'active_floods', label: t('dashboard.flooded_areas'), value: stats.active, trend: trends.active, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('active_floods'), icon: Waves, grad: 'from-cyan-500 via-teal-500 to-emerald-500', shadow: 'shadow-cyan-500/40', alert: false, accent: kpiAccent('active'), insights: [
                                 { label: 'Critical flood incidents', value: criticalCount, color: '#ef4444' },
                                 { label: 'High severity floods', value: highCount, color: '#f97316' },
                                 { label: '% of total flood reports', value: `${activePct}%`, color: '#3b82f6' },
                             ] },
-                            { label: 'Awaiting Verification', value: stats.pending, trend: trends.pending, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('pending'), icon: Clock, grad: 'from-amber-400 via-orange-500 to-rose-500', shadow: 'shadow-amber-500/40', alert: stats.pending > 0, accent: kpiAccent('pending'), insights: [
+                            { key: 'pending', label: t('dashboard.awaiting_verification'), value: stats.pending, trend: trends.pending, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('pending'), icon: Clock, grad: 'from-amber-400 via-orange-500 to-rose-500', shadow: 'shadow-amber-500/40', alert: stats.pending > 0, accent: kpiAccent('pending'), insights: [
                                 { label: '% of total flood reports', value: `${pendingPct}%`, color: '#f59e0b' },
                                 { label: 'Resolved today', value: stats.resolved_today, color: '#10b981' },
                                 { label: 'Avg response time', value: formatResponseTime(avg_response_time), color: '#6366f1' },
                             ] },
-                            { label: 'Rescue Personnel', value: stats.total_responders, trend: undefined, trendLabel: `${stats.resolved_today} cases resolved today`, desc: smartDesc('responders'), icon: ShieldCheck, grad: 'from-violet-500 via-purple-500 to-indigo-600', shadow: 'shadow-violet-500/40', alert: false, accent: 'neutral' as const, insights: [
+                            { key: 'responders', label: t('dashboard.rescue_personnel'), value: stats.total_responders, trend: undefined, trendLabel: `${stats.resolved_today} ${t('dashboard.cases_resolved_today')}`, desc: smartDesc('responders'), icon: ShieldCheck, grad: 'from-violet-500 via-purple-500 to-indigo-600', shadow: 'shadow-violet-500/40', alert: false, accent: 'neutral' as const, insights: [
                                 { label: 'Reports per personnel', value: reportsPerResponder, color: '#8b5cf6' },
                                 { label: 'Cases resolved today', value: stats.resolved_today, color: '#10b981' },
                                 { label: 'Response teams deployed', value: team_stats.deployed, color: '#06b6d4' },
                             ] },
-                            { label: 'Announcements', value: active_alerts, trend: trends.alerts, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('alerts'), icon: AlertTriangle, grad: 'from-rose-500 via-red-500 to-pink-600', shadow: 'shadow-rose-500/40', alert: active_alerts > 0, accent: kpiAccent('alerts'), insights: [
+                            { key: 'alerts', label: t('dashboard.announcements'), value: active_alerts, trend: trends.alerts, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('alerts'), icon: AlertTriangle, grad: 'from-rose-500 via-red-500 to-pink-600', shadow: 'shadow-rose-500/40', alert: active_alerts > 0, accent: kpiAccent('alerts'), insights: [
                                 { label: 'Critical announcements', value: critical_alerts.length, color: '#ef4444' },
                                 { label: 'Affected areas', value: affected_areas, color: '#8b5cf6' },
                                 { label: 'Flooded areas', value: stats.active, color: '#06b6d4' },
                             ] },
-                        ] as const).map(({ label, value, trend, trendLabel, desc, insights, icon: Icon, grad, shadow, alert, accent }, i) => (
+                        ] as const).map(({ key, label, value, trend, trendLabel, desc, insights, icon: Icon, grad, shadow, alert, accent }, i) => (
                             <PrimaryStatCard
                                 key={label}
                                 label={label} value={value} trend={trend} trendLabel={trendLabel} desc={desc} insights={[...insights]}
                                 icon={Icon} grad={grad} shadow={shadow} alert={alert} accent={accent}
                                 index={i} mounted={mounted}
+                                urgency={getUrgency(key)} actionLink={actionLinks[key]}
                             />
                         ))}
                     </div>
@@ -421,34 +602,34 @@ export default function AdminDashboard({
                 {/* ━━━ Secondary KPI + Verification Gauge Row ━━━ */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
                     {([
-                        { icon: CheckCircle2, grad: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/20', value: stats.resolved_today, label: 'Resolved Today', trend: trends.resolved, accent: kpiAccent('resolved'), desc: smartDesc('resolved_today'), insights: [
-                            { label: 'Awaiting verification', value: stats.pending, color: '#f59e0b' },
-                            { label: 'Flooded areas active', value: stats.active, color: '#3b82f6' },
+                        { key: 'resolved_today', icon: CheckCircle2, grad: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/20', value: stats.resolved_today, label: t('dashboard.resolved_today'), trend: trends.resolved, accent: kpiAccent('resolved'), desc: smartDesc('resolved_today'), insights: [
+                            { label: 'Awaiting verification', value: stats.pending, color: '#f59e0b', max: stats.total_reports, trend: trendDir(trends.pending) },
+                            { label: 'Flooded areas active', value: stats.active, color: '#3b82f6', max: stats.total_reports, trend: trendDir(trends.active) },
                             { label: 'Resolution rate', value: `${resolutionRate}%`, color: '#10b981' },
                         ] },
-                        { icon: Clock, grad: 'from-orange-400 to-amber-500', shadow: 'shadow-orange-500/20', value: formatResponseTime(avg_response_time), label: 'Avg. Response Time', trend: undefined, accent: kpiAccent('response'), desc: smartDesc('avg_response'), insights: [
+                        { key: 'avg_response', icon: Clock, grad: 'from-orange-400 to-amber-500', shadow: 'shadow-orange-500/20', value: formatResponseTime(avg_response_time), label: t('dashboard.avg_response_time'), trend: undefined, accent: kpiAccent('response'), desc: smartDesc('avg_response'), insights: [
                             { label: 'Awaiting verification', value: stats.pending, color: '#f59e0b' },
                             { label: 'Rescue personnel', value: stats.total_responders, color: '#8b5cf6' },
                             { label: 'Reports per personnel', value: reportsPerResponder, color: '#6366f1' },
                         ] },
-                        { icon: TrendingUp, grad: 'from-teal-500 to-cyan-600', shadow: 'shadow-teal-500/20', value: `${resolutionRate}%`, label: 'Resolution Rate', trend: undefined, accent: kpiAccent('resolution'), desc: smartDesc('resolution_rate'), insights: [
+                        { key: 'resolution_rate', icon: TrendingUp, grad: 'from-teal-500 to-cyan-600', shadow: 'shadow-teal-500/20', value: `${resolutionRate}%`, label: t('dashboard.resolution_rate'), trend: undefined, accent: kpiAccent('resolution'), desc: smartDesc('resolution_rate'), insights: [
                             { label: 'Resolved cases', value: resolvedCount, color: '#10b981' },
                             { label: 'Total flood reports', value: stats.total_reports, color: '#6366f1' },
                             { label: 'Rejected reports', value: rejectedCount, color: '#94a3b8' },
                         ] },
-                        { icon: Shield, grad: 'from-teal-400 to-cyan-500', shadow: 'shadow-teal-500/20', value: team_stats.active, label: 'Response Teams', trend: undefined, accent: 'neutral' as const, desc: smartDesc('active_teams'), insights: [
+                        { key: 'active_teams', icon: Shield, grad: 'from-teal-400 to-cyan-500', shadow: 'shadow-teal-500/20', value: team_stats.active, label: t('dashboard.response_teams'), trend: undefined, accent: 'neutral' as const, desc: smartDesc('active_teams'), insights: [
                             { label: 'Teams deployed', value: team_stats.deployed, color: '#14b8a6' },
                             { label: 'Inactive teams', value: team_stats.inactive, color: '#94a3b8' },
                             { label: 'Deployment rate', value: `${deploymentRate}%`, color: '#06b6d4' },
                         ] },
-                    ] as const).map(({ icon: Icon, grad, shadow, value, label, trend, accent, desc, insights }, i) => (
-                        <SecondaryStatCard key={label} icon={Icon} grad={grad} shadow={shadow} value={value} label={label} trend={trend} accent={accent} desc={desc} insights={[...insights]} trendLabel={i < 3 ? trends.label : `${team_stats.deployed} deployed${team_stats.inactive > 0 ? ` · ${team_stats.inactive} inactive` : ''}`} periodLabel={i < 3 ? trends.period_label : ''} mounted={mounted} delay={i * 80 + 480} />
+                    ] as const).map(({ key, icon: Icon, grad, shadow, value, label, trend, accent, desc, insights }, i) => (
+                        <SecondaryStatCard key={label} icon={Icon} grad={grad} shadow={shadow} value={value} label={label} trend={trend} accent={accent} desc={desc} insights={[...insights]} trendLabel={i < 3 ? trends.label : `${team_stats.deployed} deployed${team_stats.inactive > 0 ? ` · ${team_stats.inactive} inactive` : ''}`} periodLabel={i < 3 ? trends.period_label : ''} mounted={mounted} delay={i * 80 + 480} urgency={getUrgency(key)} actionLink={actionLinks[key]} />
                     ))}
 
                     {/* Inline Verification Gauge */}
                     <div className={`group relative overflow-hidden rounded-2xl border border-neutral-200/60 bg-white/80 backdrop-blur-sm p-4 sm:p-5 transition-all duration-700 hover:shadow-xl hover:shadow-neutral-900/[0.04] hover:border-neutral-300/70 dark:border-neutral-800/80 dark:bg-neutral-900/80 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '800ms' }}>
                         <div className={`absolute inset-x-0 top-0 h-[3px] ${vrBg}`} />
-                        <p className="truncate text-[10px] font-medium uppercase tracking-wider text-neutral-400 sm:text-[11px] dark:text-neutral-500">Verification Rate</p>
+                        <p className="truncate text-[10px] font-medium uppercase tracking-wider text-neutral-400 sm:text-[11px] dark:text-neutral-500">{t('dashboard.verification_rate')}</p>
                         <div className="mt-2 flex items-center gap-3">
                             <div className="relative flex size-14 shrink-0 items-center justify-center">
                                 <svg className="size-full -rotate-90" viewBox="0 0 56 56">
@@ -470,138 +651,134 @@ export default function AdminDashboard({
                     </div>
                 </div>
 
-                {/* ━━━ Charts Row: Trend + Severity + Flood Risk ━━━ */}
+                {/* ━━━ Flood Incident Trend (full width) ━━━ */}
                 <div>
                     <SectionLabel>Analytics</SectionLabel>
-                    <div className="mt-3 grid gap-4 lg:grid-cols-[1fr_280px_280px]">
-                        {/* Area Chart */}
+                    <div className="mt-3">
                         <Card>
-                            <CardHeader icon={TrendingUp} title="Flood Incident Trend" subtitle="Daily reports over the last 30 days">
-                                <div className="ml-auto hidden items-center gap-4 text-[10px] sm:flex">
-                                    <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full" style={{ background: '#6366f1' }} />Reports</span>
-                                    <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full" style={{ background: '#10b981' }} />Resolved</span>
+                            <CardHeader icon={TrendingUp} title={t('dashboard.flood_incident_trend')} subtitle={cumulative ? `${t('dashboard.cumulative')} - ${chartRange}D` : `${t('dashboard.daily_reports')} - ${chartRange}D`}>
+                                {/* Time range pills */}
+                                <div className="ml-auto flex items-center gap-1">
+                                    {([7, 14, 30, 90] as const).map(d => (
+                                        <button key={d} onClick={() => setChartRange(d)}
+                                            className={`rounded-lg px-2 py-1 text-[10px] font-semibold transition-colors ${chartRange === d ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}`}
+                                        >{d}D</button>
+                                    ))}
                                 </div>
                             </CardHeader>
-                            <div className="px-2 pb-2 pt-1 sm:px-3">
-                                {daily_reports.length > 0
-                                    ? <ReactApexChart type="area" series={areaSeries} options={areaOptions} height={280} />
-                                    : <Empty text="No flood report data available" />}
-                            </div>
-                        </Card>
 
-                        {/* Severity Donut */}
-                        <Card>
-                            <CardHeader icon={AlertTriangle} title="Severity" subtitle="By level" />
-                            <div className="flex flex-col items-center px-4 pb-4 pt-3">
-                                <ReactApexChart type="donut" series={severityValues} options={donutOptions} height={170} width={170} />
-                                <div className="mt-3 flex w-full flex-col gap-2">
-                                    {severityLabels.map((name, i) => {
-                                        const val = severityValues[i];
-                                        const pct = totalSeverity > 0 ? Math.round((val / totalSeverity) * 100) : 0;
-                                        return (
-                                            <div key={name} className="flex items-center gap-2">
-                                                <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: DONUT_COLORS[i] }} />
-                                                <span className="flex-1 text-[11px] text-neutral-500 dark:text-neutral-400">{name}</span>
-                                                <div className="w-16 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800" style={{ height: 3 }}>
-                                                    <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: DONUT_COLORS[i] }} />
-                                                </div>
-                                                <span className="w-8 text-right text-[10px] font-semibold tabular-nums text-neutral-900 dark:text-white">{val}</span>
-                                            </div>
-                                        );
-                                    })}
+                            {/* Controls row: series toggles + cumulative switch */}
+                            <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100/60 px-4 pb-3 pt-3 dark:border-neutral-800/60">
+                                {(['Reports', 'Resolved'] as const).map(name => {
+                                    const color = SERIES_COLORS[name];
+                                    const active = visibleSeries.has(name);
+                                    return (
+                                        <button key={name} onClick={() => { const next = new Set(visibleSeries); if (active) next.delete(name); else next.add(name); setVisibleSeries(next); }}
+                                            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold transition-all ${active ? '' : 'opacity-40'}`}
+                                            style={active ? { backgroundColor: color + '15', color } : {}}
+                                        >
+                                            <span className="size-1.5 rounded-full" style={{ backgroundColor: color }} />
+                                            {name}
+                                        </button>
+                                    );
+                                })}
+
+                                <div className="ml-auto flex items-center gap-2">
+                                    <button onClick={() => setCumulative(!cumulative)}
+                                        className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold transition-colors ${cumulative ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900' : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}`}
+                                    >{cumulative ? t('dashboard.cumulative') : t('dashboard.daily')}</button>
                                 </div>
                             </div>
-                        </Card>
 
-                        {/* Flood Risk Score */}
-                        <Card>
-                            <CardHeader icon={Target} title="Flood Risk" subtitle="Barangay ranking" />
-                            <div className="px-4 pb-4 pt-3">
-                                {flood_risk_scores.length > 0 ? (
-                                    <div className="flex flex-col gap-2">
-                                        {flood_risk_scores.map((r, i) => (
-                                            <div key={i} className="flex items-center gap-2.5 rounded-xl border border-neutral-100/80 bg-neutral-50/40 px-3 py-2 transition-colors hover:bg-neutral-50 dark:border-neutral-800/60 dark:bg-neutral-800/30 dark:hover:bg-neutral-800/50">
-                                                <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-neutral-900 text-[9px] font-bold text-white dark:bg-neutral-200 dark:text-neutral-900">
-                                                    {i + 1}
-                                                </span>
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="truncate text-[11px] font-semibold text-neutral-900 dark:text-white" title={r.barangay}>
-                                                        {r.barangay.replace(/,.*$/, '').replace(/Nasugbu.*$/i, '').trim() || r.barangay}
-                                                    </p>
-                                                    <p className="text-[9px] text-neutral-400">{r.incidents} incident{r.incidents !== 1 ? 's' : ''}</p>
-                                                </div>
-                                                <div className="flex shrink-0 flex-col items-end">
-                                                    <span className="text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{r.score}</span>
-                                                    <span className={`inline-flex items-center rounded-md px-1 py-0.5 text-[8px] font-semibold ${
-                                                        r.level === 'High' ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
-                                                        : r.level === 'Moderate' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
-                                                        : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
-                                                    }`}>{r.level}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : <Empty text="Not enough data" />}
+                            <div className="px-2 pb-2 pt-1 sm:px-3">
+                                {filteredDays.length > 0 && areaSeries.length > 0
+                                    ? <ReactApexChart type="area" series={areaSeries} options={areaOptions} height={320} />
+                                    : <Empty text="No flood report data available" />}
                             </div>
                         </Card>
                     </div>
                 </div>
 
-                {/* ━━━ Barangay + Activity Row ━━━ */}
-                <div className="grid gap-4 lg:grid-cols-[340px_1fr]">
+                {/* ━━━ Flood Risk + Barangay Row ━━━ */}
+                <div className="grid gap-4 lg:grid-cols-2">
+                    {/* Flood Risk Score */}
+                    <Card>
+                        <CardHeader icon={Target} title={t('dashboard.flood_risk')} subtitle={t('dashboard.barangay_ranking')} />
+                        <div className="px-4 pb-4 pt-3">
+                            {flood_risk_scores.length > 0 ? (
+                                <div className="flex flex-col gap-2">
+                                    {flood_risk_scores.map((r, i) => (
+                                        <div key={i} className="flex items-center gap-2.5 rounded-xl border border-neutral-100/80 bg-neutral-50/40 px-3 py-2 transition-colors hover:bg-neutral-50 dark:border-neutral-800/60 dark:bg-neutral-800/30 dark:hover:bg-neutral-800/50">
+                                            <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-neutral-900 text-[9px] font-bold text-white dark:bg-neutral-200 dark:text-neutral-900">
+                                                {i + 1}
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-[11px] font-semibold text-neutral-900 dark:text-white" title={r.barangay}>
+                                                    {r.barangay}
+                                                </p>
+                                                <p className="text-[9px] text-neutral-400">{r.incidents} incident{r.incidents !== 1 ? 's' : ''}</p>
+                                            </div>
+                                            <div className="flex shrink-0 flex-col items-end">
+                                                <span className="text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{r.score}</span>
+                                                <span className={`inline-flex items-center rounded-md px-1 py-0.5 text-[8px] font-semibold ${
+                                                    r.level === 'High' ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
+                                                    : r.level === 'Moderate' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
+                                                    : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+                                                }`}>{r.level}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : <Empty text="Not enough data" />}
+                        </div>
+                    </Card>
+
                     {/* Barangay Comparison */}
                     <Card>
-                        <CardHeader icon={BarChart3} title="Top Barangays" subtitle="By incident count" />
+                        <CardHeader icon={BarChart3} title={t('dashboard.top_barangays')} subtitle={t('dashboard.by_incident_count')} />
                         <div className="px-5 pb-5 pt-3">
                             {barangay_breakdown.length > 0 ? (
-                                <div className="flex flex-col gap-2.5">
+                                <div className="flex flex-col gap-1.5">
                                     {barangay_breakdown.map((b, i) => {
                                         const maxCount = barangay_breakdown[0]?.count ?? 1;
                                         const pct = Math.round((b.count / maxCount) * 100);
+                                        const barColor = i === 0
+                                            ? 'from-red-500 to-rose-400'
+                                            : i <= 2
+                                                ? 'from-amber-500 to-orange-400'
+                                                : 'from-indigo-500 to-indigo-400';
+                                        const medalColors = ['bg-amber-400 text-amber-950', 'bg-neutral-300 text-neutral-700 dark:bg-neutral-500 dark:text-white', 'bg-amber-600 text-amber-100'];
                                         return (
-                                            <div key={i} className="group/bar flex items-center gap-2.5">
-                                                <span className="w-20 truncate text-[10px] font-medium text-neutral-500 transition-colors group-hover/bar:text-neutral-700 dark:text-neutral-400 dark:group-hover/bar:text-neutral-300" title={b.barangay}>
-                                                    {b.barangay.replace(/,.*$/, '').replace(/Nasugbu.*$/i, '').trim() || b.barangay}
+                                            <div key={i} className="group/bar relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+                                                {/* Rank */}
+                                                <span className={`flex size-6 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold ${
+                                                    i < 3 ? medalColors[i] : 'bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500'
+                                                }`}>
+                                                    {i + 1}
                                                 </span>
-                                                <div className="flex-1 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800" style={{ height: 6 }}>
-                                                    <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-indigo-400 transition-all duration-700" style={{ width: `${pct}%` }} />
+                                                {/* Name + bar */}
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="flex items-center justify-between mb-1.5">
+                                                        <span className="truncate text-[11px] font-semibold text-neutral-800 transition-colors group-hover/bar:text-neutral-900 dark:text-neutral-200 dark:group-hover/bar:text-white" title={b.barangay}>
+                                                            {b.barangay}
+                                                        </span>
+                                                        <span className="ml-2 shrink-0 text-[11px] font-bold tabular-nums text-neutral-900 dark:text-white">
+                                                            {b.count}
+                                                            <span className="ml-0.5 text-[9px] font-normal text-neutral-400"> report{b.count !== 1 ? 's' : ''}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
+                                                        <div
+                                                            className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-700`}
+                                                            style={{ width: `${pct}%` }}
+                                                        />
+                                                    </div>
                                                 </div>
-                                                <span className="w-6 text-right text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{b.count}</span>
                                             </div>
                                         );
                                     })}
                                 </div>
                             ) : <Empty text="No barangay data available" />}
-                        </div>
-                    </Card>
-
-                    {/* Recent Activity */}
-                    <Card>
-                        <CardHeader icon={Activity} title="Recent Activity" subtitle="Latest status changes">
-                            <Link href="/admin/activity" className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-lg border border-neutral-200/80 px-2.5 py-1 text-[11px] font-medium text-neutral-400 transition-all hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-600 dark:hover:text-neutral-300">
-                                View all <ArrowUpRight className="size-3" />
-                            </Link>
-                        </CardHeader>
-                        <div className="divide-y divide-neutral-100/80 dark:divide-neutral-800/80">
-                            {recent_activity.length > 0 ? recent_activity.map((a) => (
-                                <div key={a.id} className="flex items-start gap-3 px-5 py-3 transition-colors hover:bg-neutral-50/60 dark:hover:bg-neutral-800/30">
-                                    <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-neutral-900 to-neutral-700 text-[10px] font-bold text-white dark:from-neutral-200 dark:to-neutral-300 dark:text-neutral-900">
-                                        {a.user?.name?.charAt(0) ?? '?'}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-xs text-neutral-600 dark:text-neutral-300">
-                                            <span className="font-semibold text-neutral-900 dark:text-white">{a.user?.name ?? 'System'}</span>
-                                            <span className="text-neutral-400"> changed to </span>
-                                            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${STA[a.status as keyof typeof STA] ?? 'bg-neutral-100 text-neutral-500'}`}>
-                                                {a.status.replace('_', ' ')}
-                                            </span>
-                                        </p>
-                                        <p className="mt-0.5 text-[10px] text-neutral-400">
-                                            {a.report.reference_number} · {new Date(a.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                        </p>
-                                    </div>
-                                </div>
-                            )) : <div className="px-5 py-10"><Empty text="No recent flood report activity" /></div>}
                         </div>
                     </Card>
                 </div>
@@ -617,13 +794,13 @@ export default function AdminDashboard({
                                         <MapPin className="size-4 text-neutral-500 dark:text-neutral-400" />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-semibold text-neutral-900 dark:text-white">Flood Incident Map</p>
-                                        <p className="text-[11px] text-neutral-400">{map_reports.length} active flooded area{map_reports.length !== 1 ? 's' : ''}</p>
+                                        <p className="text-sm font-semibold text-neutral-900 dark:text-white">{t('dashboard.flood_incident_map')}</p>
+                                        <p className="text-[11px] text-neutral-400">{map_reports.length} {t('dashboard.active_flooded_areas')}</p>
                                     </div>
                                 </div>
                                 <Link href="/admin/reports/map" className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white px-3 py-1.5 text-xs font-medium text-neutral-500 transition-all hover:border-neutral-400 hover:text-neutral-900 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-white">
                                     <Globe className="size-3.5" />
-                                    Full Map
+                                    {t('dashboard.full_map')}
                                 </Link>
                             </div>
                             <div className="p-3 sm:p-4">
@@ -647,7 +824,7 @@ export default function AdminDashboard({
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="flex h-32 items-center justify-center"><Empty text="No active flooded areas" /></div>
+                                    <div className="flex h-32 items-center justify-center"><Empty text={t('dashboard.no_active_floods')} /></div>
                                 )}
                             </div>
                         </Card>

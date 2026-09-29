@@ -6,6 +6,8 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
+import { useLocale } from '@/hooks/use-locale';
+import { MultiSelectFilter } from '@/components/admin/MultiSelectFilter';
 import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
 import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
@@ -201,6 +203,7 @@ function BarangayMultiSelect({
    ═══════════════════════════════════════════════════════════════════════════════ */
 
 export default function AdminAlertsIndex({ alerts, filters, stats, trends, period, custom_from, custom_to, barangays }: Props) {
+    const { t } = useLocale();
     const [selected, setSelected] = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -392,10 +395,10 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                         </div>
                         <div>
                             <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
-                                Announcement Management
+                                {t('alerts.title')}
                             </h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
-                                Publish flood advisories and critical announcements to residents
+                                {t('alerts.subtitle')}
                             </p>
                         </div>
                     </div>
@@ -516,84 +519,32 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-neutral-500/25 to-transparent" />
 
                     {/* ── Toolbar ── */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-800/30">
-                        <div className="flex items-center gap-2.5">
-                            <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">All Alerts</span>
-                            <span className="inline-flex items-center rounded-full bg-neutral-500/10 px-2.5 py-0.5 text-[11px] font-bold text-neutral-600 dark:bg-neutral-400/10 dark:text-neutral-400">
-                                {alerts.total}
-                            </span>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                            {/* Search */}
-                            <div className="relative w-56">
-                                <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
-                                <input
-                                    ref={searchRef}
-                                    type="text"
-                                    value={searchValue}
-                                    onChange={(e) => setSearchValue(e.target.value)}
-                                    placeholder="Search alerts..."
-                                    className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
-                                />
-                                {searchValue && (
-                                    <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
-                                        <X className="size-3.5" />
-                                    </button>
-                                )}
-                            </div>
-
-                            {/* Type filter */}
-                            <div className="flex items-center gap-1 rounded-xl border border-neutral-200/80 bg-white px-2 py-1 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-                                <Filter className="size-3.5 shrink-0 text-neutral-400" />
-                                <span className="pr-1 text-xs text-neutral-400">Type</span>
-                                {TYPE_FILTER_OPTIONS.map((opt) => {
-                                    const active = filters.type === opt.value;
-                                    return (
-                                        <button
-                                            key={opt.value}
-                                            onClick={() => applyFilter('type', active ? '' : opt.value)}
-                                            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
-                                                active
-                                                    ? TYPE_STYLES[opt.value]
-                                                    : 'text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-700'
-                                            }`}
-                                        >
-                                            {opt.label}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-
-                            {/* Active filter chips */}
-                            <AnimatePresence>
-                                {filters.type && (
-                                    <motion.span
-                                        key="type-chip"
-                                        initial={{ opacity: 0, scale: 0.88 }}
-                                        animate={{ opacity: 1, scale: 1 }}
-                                        exit={{ opacity: 0, scale: 0.88 }}
-                                        transition={{ duration: 0.15 }}
-                                        className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200/80 bg-neutral-50 px-2.5 py-1 text-xs font-medium capitalize text-neutral-700 dark:border-neutral-700/40 dark:bg-neutral-800/30 dark:text-neutral-400"
-                                    >
-                                        <Filter className="size-3" />
-                                        {filters.type}
-                                        <button onClick={() => applyFilter('type', '')} className="rounded-full p-0.5 hover:bg-neutral-100 dark:hover:bg-neutral-700/40">
-                                            <X className="size-3" />
-                                        </button>
-                                    </motion.span>
-                                )}
-                            </AnimatePresence>
-
-                            {hasActiveFilters && (
-                                <button
-                                    onClick={clearFilters}
-                                    className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-500 transition-all hover:bg-neutral-100 hover:text-neutral-700 active:scale-95 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                                >
+                    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
+                        {/* Search — left */}
+                        <div className="relative flex-1 min-w-[180px] max-w-xs">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                            <input
+                                ref={searchRef}
+                                type="text"
+                                value={searchValue}
+                                onChange={(e) => setSearchValue(e.target.value)}
+                                placeholder={t('alerts.search_placeholder')}
+                                className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
+                            />
+                            {searchValue && (
+                                <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
                                     <X className="size-3.5" />
-                                    Clear
                                 </button>
                             )}
+                        </div>
+                        {/* Filters — right */}
+                        <div className="ml-auto flex flex-wrap items-center gap-2">
+                            <MultiSelectFilter
+                                label="Type"
+                                options={TYPE_FILTER_OPTIONS}
+                                selected={filters.type ? filters.type.split(',') : []}
+                                onChange={(vals) => applyFilter('type', vals.join(','))}
+                            />
                         </div>
                     </div>
 

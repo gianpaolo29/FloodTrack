@@ -4,6 +4,7 @@ import { GoogleMap, InfoWindowF, MarkerF, OverlayViewF, PolylineF, useJsApiLoade
 import { AlertTriangle, Building2, CalendarDays, ChevronDown, Clock, Flame, List, MapPin, Radio, SlidersHorizontal, Users, X } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import { MultiSelectFilter } from '@/components/admin/MultiSelectFilter';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import type { EvacuationCenter, Hazard, MapResponder, Report, ReportStatus, Severity } from '@/types/admin';
@@ -30,8 +31,20 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Map view', href: '/admin/reports/map' },
 ];
 
-const STATUS_OPTIONS = ['', 'pending', 'verified', 'acknowledged', 'assigned', 'resolved', 'rejected'];
-const SEVERITY_OPTIONS = ['', 'critical', 'high', 'moderate', 'low'];
+const STATUS_FILTER_OPTIONS = [
+    { value: 'pending',      label: 'Pending' },
+    { value: 'verified',     label: 'Verified' },
+    { value: 'acknowledged', label: 'Advisory Issued' },
+    { value: 'assigned',     label: 'Assigned' },
+    { value: 'resolved',     label: 'Resolved' },
+    { value: 'rejected',     label: 'Rejected' },
+];
+const SEVERITY_FILTER_OPTIONS = [
+    { value: 'critical', label: 'Critical', color: '#ef4444' },
+    { value: 'high',     label: 'High',     color: '#f97316' },
+    { value: 'moderate', label: 'Moderate', color: '#fbbf24' },
+    { value: 'low',      label: 'Low',      color: '#22c55e' },
+];
 
 const SEVERITY_META: Record<Severity, { color: string; hex: string; rgb: string; label: string }> = {
     critical: { color: 'bg-red-500',    hex: '#ef4444', rgb: '239,68,68',   label: 'Critical' },
@@ -562,8 +575,20 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                             )}
                         </div>
                         <div className="space-y-2">
-                            <FilterSelect value={filters.status ?? ''} onChange={(v) => filter('status', v)} options={STATUS_OPTIONS} placeholder="All statuses" />
-                            <FilterSelect value={filters.severity ?? ''} onChange={(v) => filter('severity', v)} options={SEVERITY_OPTIONS} placeholder="All severities" />
+                            <div className="flex flex-wrap gap-2">
+                                <MultiSelectFilter
+                                    label="Status"
+                                    options={STATUS_FILTER_OPTIONS}
+                                    selected={filters.status ? filters.status.split(',') : []}
+                                    onChange={(vals) => filter('status', vals.join(','))}
+                                />
+                                <MultiSelectFilter
+                                    label="Severity"
+                                    options={SEVERITY_FILTER_OPTIONS}
+                                    selected={filters.severity ? filters.severity.split(',') : []}
+                                    onChange={(vals) => filter('severity', vals.join(','))}
+                                />
+                            </div>
                             <div className="grid grid-cols-2 gap-2">
                                 <div>
                                     <label className="mb-1 block text-[10px] text-neutral-400">From</label>

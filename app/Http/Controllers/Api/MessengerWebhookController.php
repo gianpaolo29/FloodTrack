@@ -751,6 +751,24 @@ PROMPT;
         return $nearest ? "{$nearest}, Nasugbu, Batangas" : null;
     }
 
+    /**
+     * Normalize a raw address to a clean barangay-based format.
+     * Uses coordinates to find the nearest barangay, then formats as
+     * "Brgy. <Name>, Nasugbu, Batangas".
+     */
+    private function normalizeAddress(?string $rawAddress, float $lat, float $lng): ?string
+    {
+        // Always try to determine barangay from coordinates (most reliable)
+        $barangay = $this->reverseGeocode($lat, $lng);
+
+        if ($barangay) {
+            return $barangay;
+        }
+
+        // Fallback: return cleaned raw address if reverse geocode fails
+        return $rawAddress;
+    }
+
     // ── Submit report ───────────────────────────────────────────────────────
 
     private function submitReport(FacebookService $fb, string $senderId, array $session): void
@@ -783,9 +801,10 @@ PROMPT;
             'description'          => mb_substr($description, 0, 1000),
             'latitude'             => $lat,
             'longitude'            => $lng,
-            'address'              => $session['address'] ?? null,
+            'address'              => $this->normalizeAddress($session['address'] ?? null, $lat, $lng),
             'source'               => 'messenger',
             'messenger_sender_id'  => $senderId,
+            'messenger_sender_name' => $senderName,
         ]);
 
         ReportStatusUpdate::create([

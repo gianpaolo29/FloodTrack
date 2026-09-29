@@ -11,3 +11,4 @@ Artisan::command('inspire', function () {
 Schedule::command('hazards:sync-weather')->everyThirtyMinutes();
 Schedule::command('sla:check-breaches')->everyMinute()->withoutOverlapping();
 Schedule::command('facebook:import-reports')->everyFifteenMinutes()->withoutOverlapping();
+Schedule::command('schedule:shift-reminders')->everyMinute()->withoutOverlapping();

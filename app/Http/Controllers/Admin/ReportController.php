@@ -40,9 +40,13 @@ class ReportController extends Controller
                 'verified_at', 'resolved_at',
             ])
             ->with(['user:id,name'])
-            ->when($request->status, fn ($q) => $q->where('status', $request->status),
+            ->when($request->status, fn ($q) => str_contains($request->status, ',')
+                ? $q->whereIn('status', explode(',', $request->status))
+                : $q->where('status', $request->status),
                 fn ($q) => $q->whereIn('status', ['verified', 'acknowledged', 'assigned', 'resolved']))
-            ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
+            ->when($request->severity, fn ($q) => str_contains($request->severity, ',')
+                ? $q->whereIn('severity', explode(',', $request->severity))
+                : $q->where('severity', $request->severity))
             ->when($request->date_from, fn ($q) => $q->whereDate('created_at', '>=', $request->date_from))
             ->when($request->date_to, fn ($q) => $q->whereDate('created_at', '<=', $request->date_to))
             ->whereNotNull('latitude')
@@ -85,8 +89,12 @@ class ReportController extends Controller
 
         $reports = Report::with(['user:id,name', 'assignedResponder:id,name', 'assignedTeam:id,name', 'slaTracking'])
             ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
-            ->when($request->status, fn ($q) => $q->where('status', $request->status))
-            ->when($request->severity, fn ($q) => $q->where('severity', $request->severity))
+            ->when($request->status, fn ($q) => str_contains($request->status, ',')
+                ? $q->whereIn('status', explode(',', $request->status))
+                : $q->where('status', $request->status))
+            ->when($request->severity, fn ($q) => str_contains($request->severity, ',')
+                ? $q->whereIn('severity', explode(',', $request->severity))
+                : $q->where('severity', $request->severity))
             ->when($request->team_id, fn ($q) => $q->where('assigned_team_id', $request->team_id))
             ->when($request->search, fn ($q) => $q->where(function ($q2) use ($request) {
                 $q2->where('address', 'like', "%{$request->search}%")
