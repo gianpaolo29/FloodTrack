@@ -191,6 +191,29 @@ function EmptyState({ text }: { text: string }) {
     );
 }
 
+function InsightBar({ question, answers }: { question: string; answers: string[] }) {
+    return (
+        <div className="mx-5 mt-3 overflow-hidden rounded-xl border border-neutral-100/80 bg-gradient-to-r from-neutral-50 to-white dark:border-neutral-800/60 dark:from-neutral-800/40 dark:to-neutral-800/20">
+            <div className="flex items-start gap-3 px-4 py-3">
+                <div className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-md bg-neutral-900/5 dark:bg-white/5">
+                    <Sparkles className="size-3 text-neutral-400 dark:text-neutral-500" />
+                </div>
+                <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{question}</p>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-0 gap-y-1">
+                        {answers.map((a, i) => (
+                            <span key={i} className="flex items-center">
+                                <span className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-300 [&_strong]:font-bold [&_strong]:text-neutral-900 dark:[&_strong]:text-white" dangerouslySetInnerHTML={{ __html: a }} />
+                                {i < answers.length - 1 && <span className="mx-3 h-3.5 w-px shrink-0 bg-neutral-200/80 dark:bg-neutral-700/80" />}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 /* ─── Calendar Date Range Picker (portal) ─── */
 function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
     fromDate: string | null; toDate: string | null;
@@ -1368,6 +1391,20 @@ export default function StatisticsPage({
                             ))}
                         </div>
                     </CardHeader>
+                    {overallTotal > 0 && (() => {
+                        const slowest = overallStages.reduce((a, b) => b.value > a.value ? b : a, overallStages[0]);
+                        const slowestPct = Math.round((slowest.value / overallTotal) * 100);
+                        return (
+                            <InsightBar
+                                question="Where is the most time spent in our response pipeline?"
+                                answers={[
+                                    `Slowest stage: <strong>${slowest.label}</strong> (${fmtMinutes(slowest.value)}, ${slowestPct}% of total)`,
+                                    `Total avg response: <strong>${fmtMinutes(overallTotal)}</strong>`,
+                                    `<strong>${response_breakdown.overall.total_resolved.toLocaleString()}</strong> resolved reports`,
+                                ]}
+                            />
+                        );
+                    })()}
                     <div className="p-5">
                         {/* Overall summary row */}
                         <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -1403,6 +1440,23 @@ export default function StatisticsPage({
                 <div className="grid gap-5 lg:grid-cols-2">
                     <Card>
                         <CardHeader icon={AlertTriangle} title={t('stats.severity_breakdown')} subtitle="Distribution by severity level" />
+                        {totalSeverity > 0 && (() => {
+                            const maxIdx = severityValues.indexOf(Math.max(...severityValues));
+                            const maxLabel = severityLabels[maxIdx];
+                            const maxPct = Math.round((severityValues[maxIdx] / totalSeverity) * 100);
+                            const critHigh = (severity_breakdown['critical'] ?? 0) + (severity_breakdown['high'] ?? 0);
+                            const critHighPct = Math.round((critHigh / totalSeverity) * 100);
+                            return (
+                                <InsightBar
+                                    question="Are we dealing mostly with emergencies or minor incidents?"
+                                    answers={[
+                                        `Most common: <strong>${maxLabel}</strong> (${maxPct}% of reports)`,
+                                        `Critical + High: <strong>${critHighPct}%</strong> of all reports`,
+                                        critHighPct > 50 ? '<strong style="color:#ef4444">System under stress</strong>' : '<strong style="color:#10b981">Manageable load</strong>',
+                                    ]}
+                                />
+                            );
+                        })()}
                         <div className="flex items-center gap-4 px-5 pt-3">
                             {severityLabels.map((name, i) => (
                                 <span key={name} className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500">
@@ -1417,6 +1471,24 @@ export default function StatisticsPage({
 
                     <Card>
                         <CardHeader icon={BarChart3} title={t('stats.status_distribution')} subtitle="Reports by current status" />
+                        {(() => {
+                            const statusNames = ['Pending', 'Verified', 'Assigned', 'Resolved', 'Rejected'];
+                            const totalStatus = statusValues.reduce((a, b) => a + b, 0);
+                            const actionable = statusValues[0] + statusValues[1];
+                            const actionablePct = totalStatus > 0 ? Math.round((actionable / totalStatus) * 100) : 0;
+                            const resolvedPct = totalStatus > 0 ? Math.round((statusValues[3] / totalStatus) * 100) : 0;
+                            const maxIdx = statusValues.indexOf(Math.max(...statusValues));
+                            return totalStatus > 0 ? (
+                                <InsightBar
+                                    question="Are reports getting stuck at a particular stage?"
+                                    answers={[
+                                        `Most reports are: <strong>${statusNames[maxIdx]}</strong> (${statusValues[maxIdx]})`,
+                                        `Needs attention: <strong>${actionable}</strong> (${actionablePct}%)`,
+                                        `Resolved: <strong>${resolvedPct}%</strong>`,
+                                    ]}
+                                />
+                            ) : null;
+                        })()}
                         <div className="px-2 pb-2 pt-1 sm:px-3">
                             <ReactApexChart type="bar" series={statusSeries} options={statusOptions} height={280} />
                         </div>
@@ -1432,7 +1504,6 @@ export default function StatisticsPage({
                             <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-orange-500" />High</span>
                         </div>
                     </CardHeader>
-                    {/* Smart insight */}
                     {monthly_trend.length >= 2 && (() => {
                         const latest = monthly_trend[monthly_trend.length - 1];
                         const prev = monthly_trend[monthly_trend.length - 2];
@@ -1443,35 +1514,13 @@ export default function StatisticsPage({
                         const isUp = change > 0;
                         const criticalTotal = monthly_trend.reduce((s, m) => s + m.critical, 0);
                         const critPct = totalAll > 0 ? Math.round((criticalTotal / totalAll) * 100) : 0;
-
-                        return (
-                            <div className="mx-5 mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl bg-neutral-50 px-4 py-2.5 dark:bg-neutral-800/40">
-                                <div className="flex items-center gap-2">
-                                    <span className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${isUp ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400' : change < 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-400'}`}>
-                                        {isUp ? '↑' : change < 0 ? '↓' : '—'} {Math.abs(change)}%
-                                    </span>
-                                    <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                                        {isUp ? 'Reports are increasing' : change < 0 ? 'Reports are decreasing' : 'Reports are steady'} vs last month
-                                    </span>
-                                </div>
-                                <span className="hidden sm:block h-3 w-px bg-neutral-200 dark:bg-neutral-700" />
-                                <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                                    Peak: <span className="font-semibold text-neutral-600 dark:text-neutral-300">{peakMonth.month}</span> ({peakMonth.total} reports)
-                                </span>
-                                <span className="hidden sm:block h-3 w-px bg-neutral-200 dark:bg-neutral-700" />
-                                <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                                    Avg: <span className="font-semibold text-neutral-600 dark:text-neutral-300">{avgMonthly}/mo</span>
-                                </span>
-                                {critPct > 0 && (
-                                    <>
-                                        <span className="hidden sm:block h-3 w-px bg-neutral-200 dark:bg-neutral-700" />
-                                        <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                                            Critical: <span className="font-semibold text-red-500">{critPct}%</span> of all reports
-                                        </span>
-                                    </>
-                                )}
-                            </div>
-                        );
+                        const answers = [
+                            `<strong>${isUp ? '↑' : change < 0 ? '↓' : '—'} ${Math.abs(change)}%</strong> ${isUp ? 'increasing' : change < 0 ? 'decreasing' : 'steady'} vs last month`,
+                            `Peak: <strong>${peakMonth.month}</strong> (${peakMonth.total} reports)`,
+                            `Avg: <strong>${avgMonthly}/mo</strong>`,
+                        ];
+                        if (critPct > 0) answers.push(`Critical: <strong style="color:#ef4444">${critPct}%</strong> of all`);
+                        return <InsightBar question="Are flood incidents increasing or decreasing over time?" answers={answers} />;
                     })()}
                     <div className="px-2 pb-2 pt-1 sm:px-3">
                         {monthly_trend.length > 0
@@ -1500,15 +1549,13 @@ export default function StatisticsPage({
                             ].sort((a, b) => b.v - a.v)[0];
 
                             return totalReportsHours > 0 ? (
-                                <div className="mx-5 mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-neutral-50 px-4 py-2.5 dark:bg-neutral-800/40">
-                                    <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                                        Busiest hour: <span className="font-semibold text-neutral-600 dark:text-neutral-300">{peakLabel}</span> ({peakPct}% of reports)
-                                    </span>
-                                    <span className="hidden sm:block h-3 w-px bg-neutral-200 dark:bg-neutral-700" />
-                                    <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                                        Most reports come in the <span className="font-semibold text-neutral-600 dark:text-neutral-300">{busiestPeriod.name}</span>
-                                    </span>
-                                </div>
+                                <InsightBar
+                                    question="When do floods get reported most — and should we adjust shifts?"
+                                    answers={[
+                                        `Busiest hour: <strong>${peakLabel}</strong> (${peakPct}% of reports)`,
+                                        `Most reports come in the <strong>${busiestPeriod.name}</strong>`,
+                                    ]}
+                                />
                             ) : null;
                         })()}
                         <div className="flex items-center gap-4 px-5 pt-2">
@@ -1530,33 +1577,18 @@ export default function StatisticsPage({
                                 <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-violet-400" />{month_comparison.last_month.label}</span>
                             </div>
                         </CardHeader>
-                        {/* Smart comparison summary */}
                         {(() => {
                             const thisTotal = month_comparison.this_month.critical + month_comparison.this_month.high + month_comparison.this_month.moderate + month_comparison.this_month.low;
                             const lastTotal = month_comparison.last_month.critical + month_comparison.last_month.high + month_comparison.last_month.moderate + month_comparison.last_month.low;
                             const change = lastTotal > 0 ? Math.round(((thisTotal - lastTotal) / lastTotal) * 100) : 0;
                             const critChange = month_comparison.this_month.critical - month_comparison.last_month.critical;
                             const isUp = change > 0;
-
+                            const answers = [
+                                `<strong>${isUp ? '↑' : change < 0 ? '↓' : '—'} ${Math.abs(change)}%</strong> ${isUp ? 'more reports this month' : change < 0 ? 'fewer reports this month' : 'same as last month'}`,
+                            ];
+                            if (critChange !== 0) answers.push(`Critical: <strong style="color:${critChange > 0 ? '#ef4444' : '#10b981'}">${critChange > 0 ? '+' : ''}${critChange}</strong> vs last month`);
                             return (thisTotal > 0 || lastTotal > 0) ? (
-                                <div className="mx-5 mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl bg-neutral-50 px-4 py-2.5 dark:bg-neutral-800/40">
-                                    <div className="flex items-center gap-2">
-                                        <span className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold ${isUp ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400' : change < 0 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400' : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-400'}`}>
-                                            {isUp ? '↑' : change < 0 ? '↓' : '—'} {Math.abs(change)}%
-                                        </span>
-                                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400">
-                                            {isUp ? 'More reports this month' : change < 0 ? 'Fewer reports this month' : 'Same as last month'}
-                                        </span>
-                                    </div>
-                                    {critChange !== 0 && (
-                                        <>
-                                            <span className="hidden sm:block h-3 w-px bg-neutral-200 dark:bg-neutral-700" />
-                                            <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                                                Critical: <span className={`font-semibold ${critChange > 0 ? 'text-red-500' : 'text-emerald-500'}`}>{critChange > 0 ? '+' : ''}{critChange}</span> vs last month
-                                            </span>
-                                        </>
-                                    )}
-                                </div>
+                                <InsightBar question="Is this month better or worse than last month?" answers={answers} />
                             ) : null;
                         })()}
                         <div className="px-2 pb-2 pt-1 sm:px-3">
@@ -1570,6 +1602,21 @@ export default function StatisticsPage({
                     {barangay_reports.length > 0 && (
                         <Card>
                             <CardHeader icon={MapPin} title={t('stats.reports_by_barangay')} subtitle="Top areas by report volume" />
+                            {(() => {
+                                const totalBrgy = sortedBarangays.reduce((a, b) => a + b.count, 0);
+                                const top3Count = sortedBarangays.slice(0, 3).reduce((a, b) => a + b.count, 0);
+                                const top3Pct = totalBrgy > 0 ? Math.round((top3Count / totalBrgy) * 100) : 0;
+                                return (
+                                    <InsightBar
+                                        question="Is flooding concentrated or spread across barangays?"
+                                        answers={[
+                                            `Hotspot: <strong>${sortedBarangays[0]?.area}</strong> (${sortedBarangays[0]?.count} reports)`,
+                                            `Top 3 account for <strong>${top3Pct}%</strong> of all reports`,
+                                            top3Pct > 60 ? '<strong>Concentrated</strong> — focus resources here' : '<strong>Widespread</strong> — distributed response needed',
+                                        ]}
+                                    />
+                                );
+                            })()}
                             <div className="px-2 pb-2 pt-1 sm:px-3">
                                 <ReactApexChart type="bar" series={barangayBarSeries} options={barangayBarOptions} height={Math.max(250, sortedBarangays.length * 40)} />
                             </div>
@@ -1578,6 +1625,23 @@ export default function StatisticsPage({
 
                     <Card>
                         <CardHeader icon={PieChart} title={t('stats.report_sources')} subtitle="Where reports come from" />
+                        {totalSources > 0 && (() => {
+                            const maxSrcIdx = sourceValues.indexOf(Math.max(...sourceValues));
+                            const maxSrcPct = Math.round((sourceValues[maxSrcIdx] / totalSources) * 100);
+                            const dominates = maxSrcPct > 60;
+                            return (
+                                <InsightBar
+                                    question="How are residents reaching us — and is our multi-channel strategy working?"
+                                    answers={[
+                                        `Top channel: <strong>${sourceFormattedLabels[maxSrcIdx]}</strong> (${maxSrcPct}%)`,
+                                        dominates
+                                            ? `<strong style="color:#d97706">Dependency risk</strong> — one channel dominates`
+                                            : `<strong style="color:#10b981">Balanced</strong> — good channel diversity`,
+                                        `${sourceLabels.length} active channel${sourceLabels.length !== 1 ? 's' : ''}`,
+                                    ]}
+                                />
+                            );
+                        })()}
                         <div className="flex items-center gap-4 px-5 pt-3">
                             {sourceFormattedLabels.map((name, i) => (
                                 <span key={name} className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500">
