@@ -31,4 +31,14 @@ class Team extends Model
     {
         return $this->hasMany(Report::class, 'assigned_team_id');
     }
+
+    public function activeReport()
+    {
+        return $this->hasOne(Report::class, 'assigned_team_id')->where('status', 'assigned');
+    }
+
+    public function hasActiveAssignment(): bool
+    {
+        return $this->activeReport()->exists();
+    }
 }

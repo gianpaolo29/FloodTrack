@@ -543,6 +543,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                 {showCreate && (
                     <TeamFormModal
                         responders={responders}
+                        existingNames={teams.data.map((t) => t.name)}
                         onClose={() => setShowCreate(false)}
                     />
                 )}
@@ -554,6 +555,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                     <TeamFormModal
                         team={editTarget}
                         responders={responders}
+                        existingNames={teams.data.filter((t) => t.id !== editTarget.id).map((t) => t.name)}
                         onClose={() => setEditTarget(null)}
                     />
                 )}
@@ -568,10 +570,12 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
 function TeamFormModal({
     team,
     responders,
+    existingNames,
     onClose,
 }: {
     team?: Team;
     responders: Responder[];
+    existingNames: string[];
     onClose: () => void;
 }) {
     const isEdit = !!team;
@@ -605,6 +609,20 @@ function TeamFormModal({
         }
     };
 
+    const [memberSearch, setMemberSearch] = useState('');
+
+    const isDuplicateName = form.data.name.trim() !== '' && existingNames.some(
+        (n) => n.toLowerCase() === form.data.name.trim().toLowerCase(),
+    );
+
+    // Only show responders that are unassigned or belong to the team being edited
+    const availableResponders = responders.filter((r) => !r.team_id || r.team_id === team?.id);
+    const filteredResponders = availableResponders.filter((r) => {
+        if (!memberSearch) return true;
+        const q = memberSearch.toLowerCase();
+        return r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q);
+    });
+
     const toggleMember = (id: string) => {
         const current = form.data.member_ids;
         form.setData(
@@ -634,7 +652,7 @@ function TeamFormModal({
             onClick={onClose}
         >
             <motion.div
-                className="flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-2xl dark:border-neutral-700/60 dark:bg-neutral-900"
+                className="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-2xl dark:border-neutral-700/60 dark:bg-neutral-900"
                 initial={{ opacity: 0, scale: 0.95, y: 12 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 12 }}
@@ -663,110 +681,137 @@ function TeamFormModal({
                 </div>
 
                 {/* Body */}
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 sm:gap-5 overflow-y-auto p-3 sm:p-6" style={{ maxHeight: '70vh' }}>
+                <form onSubmit={handleSubmit} className="flex flex-col gap-0 p-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-neutral-200/60 dark:divide-neutral-700/60">
 
-                    {/* Team name */}
-                    <FormField label="Team Name" error={form.errors.name}>
-                        <input
-                            type="text"
-                            value={form.data.name}
-                            onChange={(e) => form.setData('name', e.target.value)}
-                            className={inputClass}
-                            placeholder="e.g. Alpha Squad"
-                            required
-                        />
-                    </FormField>
+                        {/* Left column — Team info */}
+                        <div className="flex flex-col gap-4 p-4 sm:p-6">
+                            {/* Team name */}
+                            <FormField label="Team Name" error={form.errors.name || (isDuplicateName ? 'This team name is already taken.' : undefined)}>
+                                <input
+                                    type="text"
+                                    value={form.data.name}
+                                    onChange={(e) => form.setData('name', e.target.value)}
+                                    className={inputClass}
+                                    placeholder="e.g. Alpha Squad"
+                                    required
+                                />
+                            </FormField>
 
-                    {/* Leader */}
-                    <FormField label="Team Leader" error={form.errors.leader_id}>
-                        <div className="relative">
-                            <select
-                                value={form.data.leader_id}
-                                onChange={(e) => ensureLeaderInMembers(e.target.value)}
-                                className={inputClass + ' appearance-none pr-8'}
-                                required
-                            >
-                                <option value="">Select leader...</option>
-                                {responders.map((r) => (
-                                    <option key={r.id} value={r.id}>{r.name}</option>
-                                ))}
-                            </select>
-                            <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
-                        </div>
-                    </FormField>
-
-                    {/* Shift */}
-                    <FormField label="Assigned Shift" error={form.errors.shift}>
-                        <div className="grid grid-cols-3 gap-2">
-                            {(['A', 'B', 'C'] as const).map(s => {
-                                const meta = SHIFT_META[s];
-                                const active = form.data.shift === s;
-                                return (
-                                    <button
-                                        key={s}
-                                        type="button"
-                                        onClick={() => form.setData('shift', s)}
-                                        className={`flex flex-col items-center gap-1 rounded-xl border-2 px-3 py-3 transition-all ${
-                                            active
-                                                ? 'border-neutral-900 bg-neutral-900 dark:border-white dark:bg-white'
-                                                : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600'
-                                        }`}
+                            {/* Leader */}
+                            <FormField label="Team Leader" error={form.errors.leader_id}>
+                                <div className="relative">
+                                    <select
+                                        value={form.data.leader_id}
+                                        onChange={(e) => ensureLeaderInMembers(e.target.value)}
+                                        className={inputClass + ' appearance-none pr-8'}
+                                        required
                                     >
-                                        <span className={`text-sm font-bold ${active ? 'text-white dark:text-neutral-900' : 'text-neutral-900 dark:text-neutral-100'}`}>
-                                            {meta.label}
-                                        </span>
-                                        <span className={`text-[11px] ${active ? 'text-neutral-300 dark:text-neutral-500' : 'text-neutral-400 dark:text-neutral-500'}`}>
-                                            {meta.time}
-                                        </span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </FormField>
+                                        <option value="">Select leader...</option>
+                                        {availableResponders.map((r) => (
+                                            <option key={r.id} value={r.id}>{r.name}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+                                </div>
+                            </FormField>
 
-                    {/* Members */}
-                    <FormField label={`Members (${form.data.member_ids.length} selected)`} error={form.errors.member_ids as string | undefined}>
-                        <div className="max-h-52 overflow-y-auto rounded-xl border border-neutral-200 dark:border-neutral-700">
-                            {responders.map((r, idx) => {
-                                const selected  = form.data.member_ids.includes(String(r.id));
-                                const isLeader  = String(r.id) === form.data.leader_id;
-                                const isLast    = idx === responders.length - 1;
-                                return (
-                                    <label
-                                        key={r.id}
-                                        className={`flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors ${selected ? 'bg-neutral-100 dark:bg-neutral-800/40' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'} ${!isLast ? 'border-b border-neutral-100 dark:border-neutral-800' : ''}`}
-                                    >
+                            {/* Shift */}
+                            <FormField label="Assigned Shift" error={form.errors.shift}>
+                                <div className="grid grid-cols-3 gap-2">
+                                    {(['A', 'B', 'C'] as const).map(s => {
+                                        const meta = SHIFT_META[s];
+                                        const active = form.data.shift === s;
+                                        return (
+                                            <button
+                                                key={s}
+                                                type="button"
+                                                onClick={() => form.setData('shift', s)}
+                                                className={`flex flex-col items-center gap-1 rounded-xl border-2 px-3 py-3 transition-all ${
+                                                    active
+                                                        ? 'border-neutral-900 bg-neutral-900 dark:border-white dark:bg-white'
+                                                        : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600'
+                                                }`}
+                                            >
+                                                <span className={`text-sm font-bold ${active ? 'text-white dark:text-neutral-900' : 'text-neutral-900 dark:text-neutral-100'}`}>
+                                                    {meta.label}
+                                                </span>
+                                                <span className={`text-[11px] ${active ? 'text-neutral-300 dark:text-neutral-500' : 'text-neutral-400 dark:text-neutral-500'}`}>
+                                                    {meta.time}
+                                                </span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </FormField>
+                        </div>
+
+                        {/* Right column — Members */}
+                        <div className="flex flex-col p-4 sm:p-6">
+                            <FormField label={`Members (${form.data.member_ids.length} selected)`} error={form.errors.member_ids as string | undefined}>
+                                <div className="flex flex-col overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700" style={{ height: '280px' }}>
+                                    <div className="relative shrink-0 border-b border-neutral-200 dark:border-neutral-700">
+                                        <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                                         <input
-                                            type="checkbox"
-                                            checked={selected}
-                                            onChange={() => toggleMember(String(r.id))}
-                                            disabled={isLeader} // leader always included
-                                            className="size-4 rounded accent-neutral-900 dark:accent-white"
+                                            type="text"
+                                            placeholder="Search members..."
+                                            value={memberSearch}
+                                            onChange={(e) => setMemberSearch(e.target.value)}
+                                            className="w-full bg-neutral-50/50 py-2.5 pl-9 pr-8 text-sm outline-none placeholder:text-neutral-400 dark:bg-neutral-800/50 dark:text-neutral-100 dark:placeholder:text-neutral-500"
                                         />
-                                        <div className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white ${isLeader ? 'bg-neutral-900' : 'bg-neutral-500'}`}>
-                                            {r.name.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{r.name}</p>
-                                            <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{r.email}</p>
-                                        </div>
-                                        {isLeader && (
-                                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300">
-                                                <Star className="size-2.5" />
-                                                Leader
-                                            </span>
+                                        {memberSearch && (
+                                            <button onClick={() => setMemberSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                                <X className="size-3.5" />
+                                            </button>
                                         )}
-                                        {!isLeader && r.team_id && r.team_id !== team?.id && (
-                                            <span className="shrink-0 text-[10px] text-neutral-400">in team</span>
+                                    </div>
+                                    <div className="flex-1 overflow-y-auto">
+                                        {filteredResponders.length === 0 && (
+                                            <div className="flex flex-col items-center gap-1.5 py-6 text-center">
+                                                <Users className="size-5 text-neutral-300 dark:text-neutral-600" />
+                                                <p className="text-xs text-neutral-400 dark:text-neutral-500">{memberSearch ? 'No matching responders' : 'No available responders'}</p>
+                                            </div>
                                         )}
-                                    </label>
-                                );
-                            })}
+                                        {filteredResponders.map((r, idx) => {
+                                            const selected  = form.data.member_ids.includes(String(r.id));
+                                            const isLeader  = String(r.id) === form.data.leader_id;
+                                            const isLast    = idx === filteredResponders.length - 1;
+                                            return (
+                                                <label
+                                                    key={r.id}
+                                                    className={`flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors ${selected ? 'bg-neutral-100 dark:bg-neutral-800/40' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/40'} ${!isLast ? 'border-b border-neutral-100 dark:border-neutral-800' : ''}`}
+                                                >
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={selected}
+                                                        onChange={() => toggleMember(String(r.id))}
+                                                        disabled={isLeader}
+                                                        className="size-4 rounded accent-neutral-900 dark:accent-white"
+                                                    />
+                                                    <div className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white ${isLeader ? 'bg-neutral-900' : 'bg-neutral-500'}`}>
+                                                        {r.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate text-sm font-medium text-neutral-900 dark:text-neutral-100">{r.name}</p>
+                                                        <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{r.email}</p>
+                                                    </div>
+                                                    {isLeader && (
+                                                        <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300">
+                                                            <Star className="size-2.5" />
+                                                            Leader
+                                                        </span>
+                                                    )}
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </FormField>
                         </div>
-                    </FormField>
+                    </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-end gap-3 border-t border-neutral-200/60 pt-2 dark:border-neutral-700/60">
+                    <div className="flex items-center justify-end gap-3 border-t border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
                         <button
                             type="button"
                             onClick={onClose}
@@ -776,7 +821,7 @@ function TeamFormModal({
                         </button>
                         <button
                             type="submit"
-                            disabled={form.processing}
+                            disabled={form.processing || isDuplicateName}
                             className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                         >
                             {isEdit ? <Pencil className="size-3.5" /> : <Plus className="size-3.5" />}

@@ -657,9 +657,11 @@ export default function AdminReportShow({ report, teams }: Props) {
                                             {report.assigned_team ? 'Reassign team' : report.status === 'acknowledged' ? 'Escalate — Assign team' : 'Assign team'}
                                         </label>
                                         <div className="max-h-[220px] space-y-1.5 overflow-y-auto rounded-xl border border-neutral-200 bg-neutral-50/50 p-1.5 dark:border-neutral-700 dark:bg-neutral-800/50">
-                                            {teams.map((t) => {
+                                            {teams.filter((t) => {
+                                                const isCurrentTeam = report.assigned_team?.id === t.id;
+                                                return isCurrentTeam || (t.active_assignments ?? 0) === 0;
+                                            }).map((t) => {
                                                 const selected = assignForm.data.team_id === String(t.id);
-                                                const active = (t.active_assignments ?? 0) > 0;
                                                 return (
                                                     <button
                                                         key={t.id}
@@ -689,21 +691,11 @@ export default function AdminReportShow({ report, teams }: Props) {
                                                                     {t.distance_km} km
                                                                 </span>
                                                             )}
-                                                            {active && (
-                                                                <span className="font-medium text-amber-600 dark:text-amber-400">
-                                                                    {t.active_assignments} active
-                                                                </span>
-                                                            )}
                                                         </div>
                                                     </button>
                                                 );
                                             })}
                                         </div>
-                                        {report.assigned_team && (t => t && (t.active_assignments ?? 0) > 1)(teams.find(t => t.id === report.assigned_team!.id)) && (
-                                            <p className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-700 dark:bg-amber-950/30 dark:text-amber-400">
-                                                <span>⚠</span> This team is currently deployed on another report.
-                                            </p>
-                                        )}
                                         <button
                                             type="submit"
                                             disabled={assignForm.processing}

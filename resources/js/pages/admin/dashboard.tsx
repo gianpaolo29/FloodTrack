@@ -717,31 +717,49 @@ export default function AdminDashboard({
                     {/* Flood Risk Score */}
                     <Card>
                         <CardHeader icon={Target} title={t('dashboard.flood_risk')} subtitle={t('dashboard.barangay_ranking')} />
-                        <div className="px-4 pb-4 pt-3">
+                        <div className="flex items-center gap-4 px-5 pt-3">
+                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#dc2626]" />High</span>
+                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#d97706]" />Moderate</span>
+                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#059669]" />Low</span>
+                        </div>
+                        <div className="px-3 pb-3 pt-1 sm:px-5 sm:pb-5">
                             {flood_risk_scores.length > 0 ? (
-                                <div className="flex flex-col gap-2">
-                                    {flood_risk_scores.map((r, i) => (
-                                        <div key={i} className="flex items-center gap-2.5 rounded-xl border border-neutral-100/80 bg-neutral-50/40 px-3 py-2 transition-colors hover:bg-neutral-50 dark:border-neutral-800/60 dark:bg-neutral-800/30 dark:hover:bg-neutral-800/50">
-                                            <span className="flex size-5 shrink-0 items-center justify-center rounded-md bg-neutral-900 text-[9px] font-bold text-white dark:bg-neutral-200 dark:text-neutral-900">
-                                                {i + 1}
-                                            </span>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="truncate text-[11px] font-semibold text-neutral-900 dark:text-white" title={r.barangay}>
-                                                    {r.barangay}
-                                                </p>
-                                                <p className="text-[9px] text-neutral-400">{r.incidents} incident{r.incidents !== 1 ? 's' : ''}</p>
-                                            </div>
-                                            <div className="flex shrink-0 flex-col items-end">
-                                                <span className="text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{r.score}</span>
-                                                <span className={`inline-flex items-center rounded-md px-1 py-0.5 text-[8px] font-semibold ${
-                                                    r.level === 'High' ? 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
-                                                    : r.level === 'Moderate' ? 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400'
-                                                    : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
-                                                }`}>{r.level}</span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                                <ReactApexChart
+                                    type="bar"
+                                    height={280}
+                                    series={[{ name: 'Risk Score', data: flood_risk_scores.map(r => r.score) }]}
+                                    options={{
+                                        chart: { type: 'bar', fontFamily: 'inherit', toolbar: { show: false }, animations: { enabled: true, speed: 800, easing: 'easeinout' }, sparkline: { enabled: false } },
+                                        plotOptions: { bar: { borderRadius: 6, borderRadiusApplication: 'end', columnWidth: '50%', distributed: true } },
+                                        fill: {
+                                            type: 'gradient',
+                                            gradient: { shade: 'light', type: 'vertical', shadeIntensity: 0.2, opacityFrom: 1, opacityTo: 0.85, stops: [0, 100] },
+                                        },
+                                        colors: flood_risk_scores.map(r => r.level === 'High' ? '#dc2626' : r.level === 'Moderate' ? '#d97706' : '#059669'),
+                                        dataLabels: {
+                                            enabled: true,
+                                            offsetY: -18,
+                                            style: { fontSize: '10px', fontWeight: 700, colors: ['#374151'] },
+                                            formatter: (val: number) => String(val),
+                                            background: { enabled: false },
+                                        },
+                                        states: { hover: { filter: { type: 'darken', value: 0.15 } } },
+                                        xaxis: {
+                                            categories: flood_risk_scores.map(r => r.barangay),
+                                            labels: { style: { fontSize: '10px', fontWeight: 500, colors: '#6b7280' }, rotate: 0, trim: true, hideOverlappingLabels: true },
+                                            axisBorder: { show: false },
+                                            axisTicks: { show: false },
+                                        },
+                                        yaxis: { show: false },
+                                        grid: { show: false },
+                                        legend: { show: false },
+                                        tooltip: {
+                                            theme: 'light',
+                                            style: { fontSize: '11px' },
+                                            y: { formatter: (val: number, opt: any) => `${val} pts · ${flood_risk_scores[opt.dataPointIndex].incidents} incidents · ${flood_risk_scores[opt.dataPointIndex].level}` },
+                                        },
+                                    } as ApexOptions}
+                                />
                             ) : <Empty text="Not enough data" />}
                         </div>
                     </Card>
@@ -749,48 +767,48 @@ export default function AdminDashboard({
                     {/* Barangay Comparison */}
                     <Card>
                         <CardHeader icon={BarChart3} title={t('dashboard.top_barangays')} subtitle={t('dashboard.by_incident_count')} />
-                        <div className="px-5 pb-5 pt-3">
+                        <div className="flex items-center gap-4 px-5 pt-3">
+                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#dc2626]" />Highest</span>
+                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#d97706]" />Top 3</span>
+                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#4f46e5]" />Others</span>
+                        </div>
+                        <div className="px-3 pb-3 pt-1 sm:px-5 sm:pb-5">
                             {barangay_breakdown.length > 0 ? (
-                                <div className="flex flex-col gap-1.5">
-                                    {barangay_breakdown.map((b, i) => {
-                                        const maxCount = barangay_breakdown[0]?.count ?? 1;
-                                        const pct = Math.round((b.count / maxCount) * 100);
-                                        const barColor = i === 0
-                                            ? 'from-red-500 to-rose-400'
-                                            : i <= 2
-                                                ? 'from-amber-500 to-orange-400'
-                                                : 'from-indigo-500 to-indigo-400';
-                                        const medalColors = ['bg-amber-400 text-amber-950', 'bg-neutral-300 text-neutral-700 dark:bg-neutral-500 dark:text-white', 'bg-amber-600 text-amber-100'];
-                                        return (
-                                            <div key={i} className="group/bar relative flex items-center gap-3 rounded-xl px-3 py-2.5 transition-all duration-200 hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
-                                                {/* Rank */}
-                                                <span className={`flex size-6 shrink-0 items-center justify-center rounded-lg text-[10px] font-bold ${
-                                                    i < 3 ? medalColors[i] : 'bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500'
-                                                }`}>
-                                                    {i + 1}
-                                                </span>
-                                                {/* Name + bar */}
-                                                <div className="min-w-0 flex-1">
-                                                    <div className="flex items-center justify-between mb-1.5">
-                                                        <span className="truncate text-[11px] font-semibold text-neutral-800 transition-colors group-hover/bar:text-neutral-900 dark:text-neutral-200 dark:group-hover/bar:text-white" title={b.barangay}>
-                                                            {b.barangay}
-                                                        </span>
-                                                        <span className="ml-2 shrink-0 text-[11px] font-bold tabular-nums text-neutral-900 dark:text-white">
-                                                            {b.count}
-                                                            <span className="ml-0.5 text-[9px] font-normal text-neutral-400"> report{b.count !== 1 ? 's' : ''}</span>
-                                                        </span>
-                                                    </div>
-                                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
-                                                        <div
-                                                            className={`h-full rounded-full bg-gradient-to-r ${barColor} transition-all duration-700`}
-                                                            style={{ width: `${pct}%` }}
-                                                        />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                <ReactApexChart
+                                    type="bar"
+                                    height={280}
+                                    series={[{ name: 'Reports', data: barangay_breakdown.map(b => b.count) }]}
+                                    options={{
+                                        chart: { type: 'bar', fontFamily: 'inherit', toolbar: { show: false }, animations: { enabled: true, speed: 800, easing: 'easeinout' } },
+                                        plotOptions: { bar: { borderRadius: 6, borderRadiusApplication: 'end', columnWidth: '50%', distributed: true } },
+                                        fill: {
+                                            type: 'gradient',
+                                            gradient: { shade: 'light', type: 'vertical', shadeIntensity: 0.2, opacityFrom: 1, opacityTo: 0.85, stops: [0, 100] },
+                                        },
+                                        colors: barangay_breakdown.map((_, i) => i === 0 ? '#dc2626' : i <= 2 ? '#d97706' : '#4f46e5'),
+                                        dataLabels: {
+                                            enabled: true,
+                                            offsetY: -18,
+                                            style: { fontSize: '10px', fontWeight: 700, colors: ['#374151'] },
+                                            background: { enabled: false },
+                                        },
+                                        states: { hover: { filter: { type: 'darken', value: 0.15 } } },
+                                        xaxis: {
+                                            categories: barangay_breakdown.map(b => b.barangay),
+                                            labels: { style: { fontSize: '10px', fontWeight: 500, colors: '#6b7280' }, rotate: 0, trim: true, hideOverlappingLabels: true },
+                                            axisBorder: { show: false },
+                                            axisTicks: { show: false },
+                                        },
+                                        yaxis: { show: false },
+                                        grid: { show: false },
+                                        legend: { show: false },
+                                        tooltip: {
+                                            theme: 'light',
+                                            style: { fontSize: '11px' },
+                                            y: { formatter: (val: number) => `${val} report${val !== 1 ? 's' : ''}` },
+                                        },
+                                    } as ApexOptions}
+                                />
                             ) : <Empty text="No barangay data available" />}
                         </div>
                     </Card>

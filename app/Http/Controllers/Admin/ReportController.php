@@ -413,8 +413,19 @@ class ReportController extends Controller
             'team_id' => 'required|exists:teams,id',
         ]);
 
+        $team = Team::with('members:id,name')->findOrFail($request->team_id);
+
+        // Enforce one-to-one: a team can only be assigned to one active report at a time
+        $activeReport = $team->activeReport()->where('id', '!=', $report->id)->first();
+        if ($activeReport) {
+            Inertia::flash('toast', [
+                'type'    => 'error',
+                'message' => "Team \"{$team->name}\" is already assigned to report {$activeReport->reference_number}.",
+            ]);
+            return back();
+        }
+
         $oldStatus = $report->status;
-        $team      = Team::with('members:id,name')->findOrFail($request->team_id);
 
         $report->update([
             'assigned_team_id' => $team->id,
