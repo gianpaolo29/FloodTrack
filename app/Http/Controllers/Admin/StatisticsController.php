@@ -124,6 +124,23 @@ class StatisticsController extends Controller
             ->pluck('count', 'hour');
         $peak_hours = collect(range(0, 23))->mapWithKeys(fn($h) => [$h => $raw_peak[$h] ?? 0])->toArray();
 
+        // Peak hours heatmap (hour x day-of-week)
+        $dayExpr = DB::getDriverName() === 'sqlite'
+            ? "CAST(strftime('%w', created_at) AS INTEGER)"
+            : "DAYOFWEEK(created_at) - 1";
+        $raw_heatmap = Report::selectRaw("$dayExpr as dow, $hourExpr as hour, count(*) as count")
+            ->groupBy(DB::raw($dayExpr), DB::raw($hourExpr))
+            ->get();
+        $peak_hours_heatmap = [];
+        foreach (range(0, 6) as $d) {
+            foreach (range(0, 23) as $h) {
+                $peak_hours_heatmap[$d][$h] = 0;
+            }
+        }
+        foreach ($raw_heatmap as $row) {
+            $peak_hours_heatmap[(int) $row->dow][(int) $row->hour] = (int) $row->count;
+        }
+
         // Top 5 responders — with efficiency and avg response time
         $top_responders = User::where('role', 'responder')
             ->withCount(['assignedReports as resolved_count' => fn($q) => $q->where('status', 'resolved')])
@@ -428,6 +445,7 @@ class StatisticsController extends Controller
             'top_responders'     => $top_responders,
             'monthly_trend'      => $monthly_trend->values(),
             'peak_hours'         => $peak_hours,
+            'peak_hours_heatmap' => $peak_hours_heatmap,
             'total_reports'      => $total_reports,
             'resolution_rate'    => $resolution_rate,
             'critical_count'     => $critical_count,

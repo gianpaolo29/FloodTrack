@@ -78,6 +78,7 @@ interface Props {
     status_breakdown: Record<string, number>;
     monthly_trend: MonthlyPoint[];
     peak_hours: Record<number, number>;
+    peak_hours_heatmap: Record<number, Record<number, number>>;
     total_reports: number;
     resolution_rate: number;
     critical_count: number;
@@ -452,6 +453,7 @@ export default function StatisticsPage({
     status_breakdown,
     monthly_trend,
     peak_hours,
+    peak_hours_heatmap,
     total_reports,
     resolution_rate,
     critical_count,
@@ -717,42 +719,31 @@ export default function StatisticsPage({
         }
     }
 
-    /* ── Donut Chart (Severity) ── */
-    const donutOptions: ApexOptions = {
-        chart: { type: 'donut', fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
-        labels: severityLabels,
+    /* ── Severity Bar Chart ── */
+    const severityBarOptions: ApexOptions = {
+        chart: { type: 'bar', fontFamily: 'inherit', toolbar: { show: false }, animations: { enabled: true, speed: 800, easing: 'easeinout' } },
+        plotOptions: { bar: { borderRadius: 6, borderRadiusApplication: 'end', columnWidth: '55%', distributed: true } },
+        fill: { type: 'gradient', gradient: { shade: 'light', type: 'vertical', shadeIntensity: 0.2, opacityFrom: 1, opacityTo: 0.85, stops: [0, 100] } },
         colors: DONUT_COLORS,
-        dataLabels: { enabled: false },
+        dataLabels: { enabled: true, offsetY: -18, style: { fontSize: '11px', fontWeight: 700, colors: ['#374151'] }, background: { enabled: false } },
+        xaxis: { categories: severityLabels, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', fontWeight: 500, colors: '#6b7280' } } },
+        yaxis: { show: false },
+        grid: { show: false },
         legend: { show: false },
-        stroke: { width: 2, colors: ['#ffffff'] },
-        plotOptions: {
-            pie: {
-                donut: {
-                    size: '70%',
-                    labels: {
-                        show: true,
-                        name: { show: true, fontSize: '10px', fontWeight: '500', color: '#94a3b8', offsetY: -4 },
-                        value: { show: true, fontSize: '30px', fontWeight: '800', color: '#111827', offsetY: 4, formatter: v => v },
-                        total: { show: true, showAlways: true, label: 'total', fontSize: '11px', fontWeight: '500', color: '#94a3b8', formatter: () => String(totalSeverity) },
-                    },
-                },
-                expandOnClick: false,
-            },
-        },
-        states: { hover: { filter: { type: 'darken', value: 0.88 } }, active: { filter: { type: 'none' } } },
+        states: { hover: { filter: { type: 'darken', value: 0.15 } }, active: { filter: { type: 'none' } } },
         tooltip: {
-            custom: ({ series, seriesIndex, w }) => {
-                const label = w.globals.labels[seriesIndex];
-                const color = DONUT_COLORS[seriesIndex];
-                const total = series.reduce((a: number, b: number) => a + b, 0);
-                const pct   = total > 0 ? Math.round((series[seriesIndex] / total) * 100) : 0;
+            custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+                const label = w.globals.labels[dataPointIndex];
+                const color = DONUT_COLORS[dataPointIndex];
+                const pct = totalSeverity > 0 ? Math.round((series[seriesIndex][dataPointIndex] / totalSeverity) * 100) : 0;
                 return tooltipHtml(label, [
-                    { color, name: 'Count', value: series[seriesIndex] },
+                    { color, name: 'Count', value: series[seriesIndex][dataPointIndex] },
                     { color, name: 'Share', value: `${pct}%` },
                 ]);
             },
         },
     };
+    const severityBarSeries = [{ name: 'Reports', data: severityValues }];
 
     /* ── Status Bar Chart ── */
     const statusOptions: ApexOptions = {
@@ -801,7 +792,41 @@ export default function StatisticsPage({
         },
     };
 
-    /* ── Peak Hours Bar Chart ── */
+    /* ── Peak Hours Heatmap (Hour x Day-of-Week) ── */
+    const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const heatmapSeries = DAY_NAMES.map((day, di) => ({
+        name: day,
+        data: Array.from({ length: 24 }, (_, h) => ({
+            x: h < 12 ? (h === 0 ? '12a' : `${h}a`) : (h === 12 ? '12p' : `${h - 12}p`),
+            y: peak_hours_heatmap?.[di]?.[h] ?? 0,
+        })),
+    })).reverse();
+    const heatmapOptions: ApexOptions = {
+        chart: { type: 'heatmap', fontFamily: 'inherit', toolbar: { show: false }, animations: { enabled: true, speed: 600 } },
+        plotOptions: { heatmap: { radius: 4, enableShades: false, colorScale: { ranges: [
+            { from: 0, to: 0, color: '#f1f5f9', name: 'None' },
+            { from: 1, to: 2, color: '#bfdbfe', name: 'Low' },
+            { from: 3, to: 5, color: '#60a5fa', name: 'Medium' },
+            { from: 6, to: 10, color: '#2563eb', name: 'High' },
+            { from: 11, to: 1000, color: '#1e3a8a', name: 'Very High' },
+        ] } } },
+        dataLabels: { enabled: false },
+        xaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '9px', colors: '#9ca3af' } }, position: 'bottom' },
+        yaxis: { labels: { style: { fontSize: '10px', fontWeight: 500, colors: '#6b7280' } } },
+        grid: { show: false },
+        legend: { show: false },
+        states: { hover: { filter: { type: 'none' } } },
+        tooltip: {
+            custom: ({ seriesIndex, dataPointIndex }) => {
+                const day = heatmapSeries[seriesIndex].name;
+                const hour = heatmapSeries[seriesIndex].data[dataPointIndex].x;
+                const val = heatmapSeries[seriesIndex].data[dataPointIndex].y as number;
+                return tooltipHtml(`${day} ${hour}`, [{ color: '#2563eb', name: 'Reports', value: val }]);
+            },
+        },
+    };
+
+    /* ── Peak Hours Bar Chart (kept for summary stats) ── */
     const peakHoursOptions: ApexOptions = {
         chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 }, selection: { enabled: false } },
         plotOptions: { bar: { borderRadius: 4, borderRadiusApplication: 'end', distributed: false, columnWidth: '70%' } },
@@ -868,28 +893,36 @@ export default function StatisticsPage({
         { name: month_comparison.last_month.label, data: sevKeys.map(k => month_comparison.last_month[k]) },
     ];
 
-    /* ── Reports by Source (donut) ── */
+    /* ── Reports by Source (bar chart) ── */
     const sourceLabels = Object.keys(source_breakdown);
     const sourceValues = Object.values(source_breakdown);
     const SOURCE_COLORS = ['#6366f1', '#10b981', '#f97316', '#ef4444', '#8b5cf6'];
-    const sourceDonutOptions: ApexOptions = {
-        chart: { type: 'donut', fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
-        labels: sourceLabels.map(s => s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ')),
+    const sourceFormattedLabels = sourceLabels.map(s => s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' '));
+    const totalSources = sourceValues.reduce((a, b) => a + b, 0);
+    const sourceBarOptions: ApexOptions = {
+        chart: { type: 'bar', fontFamily: 'inherit', toolbar: { show: false }, animations: { enabled: true, speed: 800, easing: 'easeinout' } },
+        plotOptions: { bar: { borderRadius: 6, borderRadiusApplication: 'end', columnWidth: '55%', distributed: true } },
+        fill: { type: 'gradient', gradient: { shade: 'light', type: 'vertical', shadeIntensity: 0.2, opacityFrom: 1, opacityTo: 0.85, stops: [0, 100] } },
         colors: SOURCE_COLORS.slice(0, sourceLabels.length),
-        dataLabels: { enabled: false },
-        legend: { position: 'bottom', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
-        stroke: { width: 2, colors: ['#ffffff'] },
-        plotOptions: { pie: { donut: { size: '68%', labels: { show: true, name: { show: true, fontSize: '10px', fontWeight: '500', color: '#94a3b8', offsetY: -4 }, value: { show: true, fontSize: '24px', fontWeight: '800', color: '#111827', offsetY: 4, formatter: v => v }, total: { show: true, showAlways: true, label: 'total', fontSize: '10px', fontWeight: '500', color: '#94a3b8', formatter: () => String(sourceValues.reduce((a, b) => a + b, 0)) } } } } },
+        dataLabels: { enabled: true, offsetY: -18, style: { fontSize: '11px', fontWeight: 700, colors: ['#374151'] }, background: { enabled: false } },
+        xaxis: { categories: sourceFormattedLabels, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', fontWeight: 500, colors: '#6b7280' } } },
+        yaxis: { show: false },
+        grid: { show: false },
+        legend: { show: false },
+        states: { hover: { filter: { type: 'darken', value: 0.15 } }, active: { filter: { type: 'none' } } },
         tooltip: {
-            custom: ({ series, seriesIndex, w }) => {
-                const label = w.globals.labels[seriesIndex];
-                const color = SOURCE_COLORS[seriesIndex % SOURCE_COLORS.length];
-                const total = series.reduce((a: number, b: number) => a + b, 0);
-                const pct = total > 0 ? Math.round((series[seriesIndex] / total) * 100) : 0;
-                return tooltipHtml(label, [{ color, name: 'Count', value: series[seriesIndex] }, { color, name: 'Share', value: `${pct}%` }]);
+            custom: ({ series, seriesIndex, dataPointIndex, w }) => {
+                const label = w.globals.labels[dataPointIndex];
+                const color = SOURCE_COLORS[dataPointIndex % SOURCE_COLORS.length];
+                const pct = totalSources > 0 ? Math.round((series[seriesIndex][dataPointIndex] / totalSources) * 100) : 0;
+                return tooltipHtml(label, [
+                    { color, name: 'Count', value: series[seriesIndex][dataPointIndex] },
+                    { color, name: 'Share', value: `${pct}%` },
+                ]);
             },
         },
     };
+    const sourceBarSeries = [{ name: 'Reports', data: sourceValues }];
 
     /* ── Response Time Breakdown (stacked bar by severity) ── */
     const STAGE_COLORS = ['#6366f1', '#f59e0b', '#10b981'];
@@ -1370,25 +1403,15 @@ export default function StatisticsPage({
                 <div className="grid gap-5 lg:grid-cols-2">
                     <Card>
                         <CardHeader icon={AlertTriangle} title={t('stats.severity_breakdown')} subtitle="Distribution by severity level" />
-                        <div className="flex flex-col items-center px-5 pb-5 pt-4">
-                            <ReactApexChart type="donut" series={severityValues} options={donutOptions} height={200} width={200} />
-                            <div className="mt-3 flex w-full flex-col gap-2.5">
-                                {severityLabels.map((name, i) => {
-                                    const val = severityValues[i];
-                                    const pct = totalSeverity > 0 ? Math.round((val / totalSeverity) * 100) : 0;
-                                    return (
-                                        <div key={name} className="flex items-center gap-2.5">
-                                            <span className="size-2.5 shrink-0 rounded-full shadow-sm" style={{ backgroundColor: DONUT_COLORS[i], boxShadow: `0 0 0 3px ${DONUT_COLORS[i]}22` }} />
-                                            <span className="flex-1 text-xs font-medium text-neutral-500 dark:text-neutral-400">{name}</span>
-                                            <div className="flex-1 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800" style={{ height: 4 }}>
-                                                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: DONUT_COLORS[i] }} />
-                                            </div>
-                                            <span className="w-6 text-right text-[10px] tabular-nums text-neutral-400">{pct}%</span>
-                                            <span className="w-5 text-right text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{val}</span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
+                        <div className="flex items-center gap-4 px-5 pt-3">
+                            {severityLabels.map((name, i) => (
+                                <span key={name} className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500">
+                                    <span className="size-2.5 rounded-sm" style={{ backgroundColor: DONUT_COLORS[i] }} />{name}
+                                </span>
+                            ))}
+                        </div>
+                        <div className="px-3 pb-3 pt-1 sm:px-5 sm:pb-5">
+                            <ReactApexChart type="bar" series={severityBarSeries} options={severityBarOptions} height={280} />
                         </div>
                     </Card>
 
@@ -1460,14 +1483,13 @@ export default function StatisticsPage({
                 {/* ── Charts Row 3: Peak Hours + Month-over-Month ── */}
                 <div className="grid gap-5 lg:grid-cols-2">
                     <Card>
-                        <CardHeader icon={Clock} title={t('stats.peak_hours')} subtitle="When reports come in most" />
+                        <CardHeader icon={Clock} title={t('stats.peak_hours')} subtitle="Hour x Day-of-Week heatmap" />
                         {(() => {
                             const hours = Array.from({ length: 24 }, (_, h) => peak_hours[h] ?? 0);
                             const maxHour = hours.indexOf(Math.max(...hours));
                             const totalReportsHours = hours.reduce((a, b) => a + b, 0);
                             const peakLabel = maxHour === 0 ? '12 AM' : maxHour < 12 ? `${maxHour} AM` : maxHour === 12 ? '12 PM' : `${maxHour - 12} PM`;
                             const peakPct = totalReportsHours > 0 ? Math.round((hours[maxHour] / totalReportsHours) * 100) : 0;
-                            // Morning (6-12), Afternoon (12-18), Evening (18-24), Night (0-6)
                             const morning = hours.slice(6, 12).reduce((a, b) => a + b, 0);
                             const afternoon = hours.slice(12, 18).reduce((a, b) => a + b, 0);
                             const evening = hours.slice(18, 24).reduce((a, b) => a + b, 0);
@@ -1489,8 +1511,15 @@ export default function StatisticsPage({
                                 </div>
                             ) : null;
                         })()}
+                        <div className="flex items-center gap-4 px-5 pt-2">
+                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#f1f5f9]" />None</span>
+                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#bfdbfe]" />Low</span>
+                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#60a5fa]" />Medium</span>
+                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#2563eb]" />High</span>
+                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#1e3a8a]" />Very High</span>
+                        </div>
                         <div className="px-2 pb-2 pt-1 sm:px-3">
-                            <ReactApexChart type="bar" series={peakHoursSeries} options={peakHoursOptions} height={250} />
+                            <ReactApexChart type="heatmap" series={heatmapSeries} options={heatmapOptions} height={220} />
                         </div>
                     </Card>
 
@@ -1549,9 +1578,16 @@ export default function StatisticsPage({
 
                     <Card>
                         <CardHeader icon={PieChart} title={t('stats.report_sources')} subtitle="Where reports come from" />
-                        <div className="flex items-center justify-center px-4 pb-6 pt-4">
+                        <div className="flex items-center gap-4 px-5 pt-3">
+                            {sourceFormattedLabels.map((name, i) => (
+                                <span key={name} className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500">
+                                    <span className="size-2.5 rounded-sm" style={{ backgroundColor: SOURCE_COLORS[i % SOURCE_COLORS.length] }} />{name}
+                                </span>
+                            ))}
+                        </div>
+                        <div className="px-3 pb-3 pt-1 sm:px-5 sm:pb-5">
                             {sourceValues.length > 0
-                                ? <ReactApexChart type="donut" series={sourceValues} options={sourceDonutOptions} height={260} width={260} />
+                                ? <ReactApexChart type="bar" series={sourceBarSeries} options={sourceBarOptions} height={280} />
                                 : <EmptyState text="No data" />}
                         </div>
                     </Card>
