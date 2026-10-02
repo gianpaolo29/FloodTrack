@@ -374,13 +374,13 @@ class DumpSeeder extends Seeder
 
             $createdAt  = $r['date'];
             $verifiedAt = in_array($r['status'], ['verified', 'assigned', 'resolved', 'rejected'])
-                ? $createdAt->copy()->addMinutes(rand(5, 15))
+                ? $createdAt->copy()->addMinutes(rand(2, 4))
                 : null;
             $assignedAt = in_array($r['status'], ['assigned', 'resolved']) && $team
-                ? ($verifiedAt ?? $createdAt)->copy()->addMinutes(rand(3, 10))
+                ? ($verifiedAt ?? $createdAt)->copy()->addMinutes(rand(1, 3))
                 : null;
             $resolvedAt = $r['status'] === 'resolved'
-                ? ($assignedAt ?? $createdAt)->copy()->addMinutes(rand(15, 90))
+                ? ($assignedAt ?? $createdAt)->copy()->addMinutes(rand(10, 15))
                 : null;
 
             $report = Report::create([
