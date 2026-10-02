@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Models\Team;
 use App\Models\User;
+use App\Notifications\ScheduleLevelChanged;
 use App\Services\ExpoPushService;
 use App\Services\SocketService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Notification;
 
 class ScheduleController extends Controller
 {
@@ -104,14 +106,27 @@ class ScheduleController extends Controller
 
         Setting::setValue('schedule_level', $newLevel);
 
+        $currentShift = static::currentShift();
+
         // Broadcast real-time to all connected clients
         SocketService::toAll('schedule-updated', [
             'level'         => $newLevel,
-            'current_shift' => static::currentShift(),
+            'current_shift' => $currentShift,
         ]);
 
-        // Notify all responders via push
-        $responderIds = User::where('role', 'responder')->pluck('id')->toArray();
+        // Create database notification for each responder (appears in alerts tab)
+        $responders = User::where('role', 'responder')->get();
+        $responderIds = $responders->pluck('id')->toArray();
+
+        Notification::send($responders, new ScheduleLevelChanged($newLevel, $currentShift));
+
+        // Emit per-user socket event so alerts tab updates in real-time
+        foreach ($responderIds as $uid) {
+            SocketService::toUser($uid, 'new-notification', [
+                'id'   => 'schedule_' . now()->timestamp,
+                'type' => 'schedule_change',
+            ]);
+        }
 
         if ($newLevel === 'red') {
             ExpoPushService::sendToUsers(
@@ -125,7 +140,6 @@ class ScheduleController extends Controller
                 ],
             );
         } else {
-            $currentShift = static::currentShift();
             ExpoPushService::sendToUsers(
                 $responderIds,
                 'Alert Level Lowered — Normal Operations',
