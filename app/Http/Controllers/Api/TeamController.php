@@ -119,65 +119,63 @@ class TeamController extends Controller
 
         // When a responder marks as resolved, update the main report status
         // and notify admin + resident (same as leader confirmation flow)
-        if ($request->status === 'resolved') {
-            $allResolved = ReportResponder::where('report_id', $report->id)
-                ->where('status', '!=', 'resolved')
-                ->doesntExist();
+        if ($request->status === 'resolved' && $report->status !== 'resolved') {
+            // Mark all team members as resolved
+            ReportResponder::where('report_id', $report->id)
+                ->update(['status' => 'resolved', 'updated_at' => now()]);
 
-            if ($allResolved) {
-                $report->update([
-                    'status'      => 'resolved',
-                    'resolved_at' => now(),
-                ]);
+            $report->update([
+                'status'      => 'resolved',
+                'resolved_at' => now(),
+            ]);
 
-                // Broadcast report-status to the report room
-                SocketService::toReport($report->id, 'report-status', [
+            // Broadcast report-status to the report room
+            SocketService::toReport($report->id, 'report-status', [
+                'reportId' => $report->id,
+                'status'   => 'resolved',
+            ]);
+
+            // Notify the resident
+            if ($report->user_id) {
+                SocketService::toUser($report->user_id, 'report-status', [
                     'reportId' => $report->id,
                     'status'   => 'resolved',
                 ]);
 
-                // Notify the resident
-                if ($report->user_id) {
-                    SocketService::toUser($report->user_id, 'report-status', [
+                ExpoPushService::sendToUsers(
+                    $report->user_id,
+                    "Report Resolved — {$report->reference_number}",
+                    'Your report has been resolved. Thank you for keeping your community safe.',
+                    ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'resolved']
+                );
+
+                $report->loadMissing('user');
+                if ($report->user) {
+                    $report->user->notify(
+                        new ReportStatusChanged($report, $report->status, 'resolved', $user->name)
+                    );
+
+                    SocketService::toUser($report->user_id, 'new-notification', [
+                        'type'     => 'status_update',
                         'reportId' => $report->id,
                         'status'   => 'resolved',
                     ]);
-
-                    ExpoPushService::sendToUsers(
-                        $report->user_id,
-                        "Report Resolved — {$report->reference_number}",
-                        'Your report has been resolved. Thank you for keeping your community safe.',
-                        ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'resolved']
-                    );
-
-                    $report->loadMissing('user');
-                    if ($report->user) {
-                        $report->user->notify(
-                            new ReportStatusChanged($report, $report->status, 'resolved', $user->name)
-                        );
-
-                        SocketService::toUser($report->user_id, 'new-notification', [
-                            'type'     => 'status_update',
-                            'reportId' => $report->id,
-                            'status'   => 'resolved',
-                        ]);
-                    }
                 }
+            }
 
-                // Notify all admins
-                $teamName = $user->team?->name ?? 'Unknown team';
-                $address  = $report->address ?? 'unknown location';
+            // Notify all admins
+            $teamName = $user->team?->name ?? 'Unknown team';
+            $address  = $report->address ?? 'unknown location';
 
-                $admins = User::where('role', 'admin')->get();
-                foreach ($admins as $admin) {
-                    $admin->notify(new TeamResolvedReport($report, $teamName, $address));
+            $admins = User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                $admin->notify(new TeamResolvedReport($report, $teamName, $address));
 
-                    SocketService::toUser($admin->id, 'new-notification', [
-                        'type'     => 'team_resolved',
-                        'reportId' => $report->id,
-                        'team'     => $teamName,
-                    ]);
-                }
+                SocketService::toUser($admin->id, 'new-notification', [
+                    'type'     => 'team_resolved',
+                    'reportId' => $report->id,
+                    'team'     => $teamName,
+                ]);
             }
         }
 
