@@ -130,6 +130,10 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                     reconnectionDelay: 3000,
                 });
 
+                socket.on('connect', () => {
+                    socket?.emit('join-report', String(report.id));
+                });
+
                 const reload = () => {
                     router.reload({ only: ['report'], preserveState: true, preserveScroll: true });
                 };

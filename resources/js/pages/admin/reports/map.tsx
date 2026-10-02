@@ -795,18 +795,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                     </span>
                                 </div>
                             )}
-                            {showResponders && (
-                                <div className="flex flex-wrap gap-3 mt-2">
-                                    <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                                        <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
-                                        Responder
-                                    </span>
-                                    <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                                        <span className="h-2.5 w-2.5 rounded-full bg-blue-600 opacity-40" />
-                                        Stale ({'>'}10m)
-                                    </span>
-                                </div>
-                            )}
                             {showAssignmentLines && assignmentLines.length > 0 && (
                                 <div className={`flex flex-wrap gap-3 mt-2`}>
                                     <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">

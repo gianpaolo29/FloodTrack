@@ -117,6 +117,17 @@ class TeamController extends Controller
             'status'    => $request->status,
         ]);
 
+        // Also notify all team members via their personal rooms
+        // so home/assignments pages update even when not viewing this report
+        $teamMemberIds = $report->responders()->pluck('user_id')->toArray();
+        foreach ($teamMemberIds as $memberId) {
+            if ((int) $memberId === (int) $user->id) continue;
+            SocketService::toUser($memberId, 'report-status', [
+                'reportId' => $report->id,
+                'status'   => $request->status,
+            ]);
+        }
+
         // When a responder marks as resolved, update the main report status
         // and notify admin + resident (same as leader confirmation flow)
         if ($request->status === 'resolved' && $report->status !== 'resolved') {

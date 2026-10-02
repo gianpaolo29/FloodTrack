@@ -21,6 +21,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { io, type Socket } from 'socket.io-client';
 import AppLayout from '@/layouts/app-layout';
 import { MultiSelectFilter } from '@/components/admin/MultiSelectFilter';
 import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
@@ -117,6 +118,45 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
     const searchRef                            = useRef<HTMLInputElement>(null);
 
     useEffect(() => { const tm = setTimeout(() => setMounted(true), 80); return () => clearTimeout(tm); }, []);
+
+    // Real-time: reload when reports change
+    useEffect(() => {
+        const socketUrl = (import.meta.env.VITE_SOCKET_URL || window.location.origin).replace(/\/$/, '');
+        let socket: Socket | null = null;
+
+        fetch('/admin/socket-token', {
+            headers: {
+                'Accept': 'application/json',
+                'X-XSRF-TOKEN': decodeURIComponent(
+                    document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? ''
+                ),
+            },
+        })
+            .then((res) => res.ok ? res.json() : null)
+            .then((data) => {
+                if (!data?.token) return;
+
+                socket = io(socketUrl, {
+                    auth: { token: data.token },
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionAttempts: 10,
+                    reconnectionDelay: 3000,
+                });
+
+                const reload = () => {
+                    router.reload({ preserveState: true, preserveScroll: true });
+                };
+
+                socket.on('new-report', reload);
+                socket.on('report-status', reload);
+                socket.on('member-status-updated', reload);
+                socket.on('new-notification', reload);
+            })
+            .catch(() => {});
+
+        return () => { socket?.disconnect(); };
+    }, []);
 
     const tl = trends.label;
     const pendingPct = stats.total > 0 ? Math.round((stats.pending / stats.total) * 100) : 0;

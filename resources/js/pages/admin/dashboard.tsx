@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Popover, PopoverButton, PopoverPanel, Transition } from '@headlessui/react';
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { io, type Socket } from 'socket.io-client';
 import type { ApexOptions } from 'apexcharts';
 import {
     AlertTriangle,
@@ -139,6 +140,45 @@ export default function AdminDashboard({
     const { t, locale } = useLocale();
     const [mounted, setMounted] = useState(false);
     useEffect(() => { const tm = setTimeout(() => setMounted(true), 80); return () => clearTimeout(tm); }, []);
+
+    // Real-time: reload dashboard when reports/statuses change
+    useEffect(() => {
+        const socketUrl = (import.meta.env.VITE_SOCKET_URL || window.location.origin).replace(/\/$/, '');
+        let socket: Socket | null = null;
+
+        fetch('/admin/socket-token', {
+            headers: {
+                'Accept': 'application/json',
+                'X-XSRF-TOKEN': decodeURIComponent(
+                    document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? ''
+                ),
+            },
+        })
+            .then((res) => res.ok ? res.json() : null)
+            .then((data) => {
+                if (!data?.token) return;
+
+                socket = io(socketUrl, {
+                    auth: { token: data.token },
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionAttempts: 10,
+                    reconnectionDelay: 3000,
+                });
+
+                const reload = () => {
+                    router.reload({ preserveState: true, preserveScroll: true });
+                };
+
+                socket.on('new-report', reload);
+                socket.on('report-status', reload);
+                socket.on('member-status-updated', reload);
+                socket.on('new-notification', reload);
+            })
+            .catch(() => {});
+
+        return () => { socket?.disconnect(); };
+    }, []);
 
     /* ── Trend chart state ── */
     const [chartRange, setChartRange] = useState<7 | 14 | 30 | 90>(30);
