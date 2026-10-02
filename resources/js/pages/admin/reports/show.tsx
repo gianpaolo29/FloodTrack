@@ -31,7 +31,8 @@ import {
     X,
     XCircle,
 } from 'lucide-react';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useRef, useState } from 'react';
+import { io, type Socket } from 'socket.io-client';
 import AppLayout from '@/layouts/app-layout';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
@@ -103,6 +104,44 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
         }, 3000);
         return () => clearInterval(interval);
     }, [awaitingAdvisory]);
+
+    // Real-time socket: reload report when status changes or member status updates
+    useEffect(() => {
+        const socketUrl = (import.meta.env.VITE_SOCKET_URL || window.location.origin).replace(/\/$/, '');
+        let socket: Socket | null = null;
+
+        fetch('/admin/socket-token', {
+            headers: {
+                'Accept': 'application/json',
+                'X-XSRF-TOKEN': decodeURIComponent(
+                    document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? ''
+                ),
+            },
+        })
+            .then((res) => res.ok ? res.json() : null)
+            .then((data) => {
+                if (!data?.token) return;
+
+                socket = io(socketUrl, {
+                    auth: { token: data.token },
+                    transports: ['websocket', 'polling'],
+                    reconnection: true,
+                    reconnectionAttempts: 10,
+                    reconnectionDelay: 3000,
+                });
+
+                const reload = () => {
+                    router.reload({ only: ['report'], preserveState: true, preserveScroll: true });
+                };
+
+                socket.on('report-status', reload);
+                socket.on('member-status-updated', reload);
+                socket.on('new-notification', reload);
+            })
+            .catch(() => {});
+
+        return () => { socket?.disconnect(); };
+    }, [report.id]);
 
     const handleDelete = async () => {
         const confirmed = await swalDelete('this report');
