@@ -86,6 +86,15 @@ class TeamController extends Controller
             ->where('user_id', $user->id)
             ->first();
 
+        // Auto-add team member to pivot if they belong to the assigned team
+        if (! $pivot && $user->team_id && (int) $report->assigned_team_id === (int) $user->team_id) {
+            $pivot = ReportResponder::create([
+                'report_id' => $report->id,
+                'user_id'   => $user->id,
+                'status'    => 'pending',
+            ]);
+        }
+
         if (! $pivot) {
             return response()->json(['message' => 'You are not assigned to this report.'], 403);
         }
