@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Traits\HasPeriodStats;
 use App\Jobs\GenerateAdvisoryJob;
 use App\Models\Hazard;
 use App\Models\Report;
+use App\Models\Setting;
 use App\Models\ReportResponder;
 use App\Models\User;
 use App\Models\ReportStatusUpdate;
@@ -208,31 +210,8 @@ class ReportController extends Controller
                 'team_members'    => $teamMembers,
                 'member_statuses' => $memberStatuses,
             ]),
-            'teams'       => Team::with([
-                    'members:id,name,team_id,is_on_duty',
-                    'leader:id,current_latitude,current_longitude,home_latitude,home_longitude',
-                ])
-                ->where('is_active', true)
-                ->withCount([
-                    'reports as active_assignments' => fn ($q) => $q->where('status', 'assigned'),
-                    'members as on_duty_count' => fn ($q) => $q->where('is_on_duty', true),
-                ])
-                ->get(['id', 'name', 'leader_id'])
-                ->map(function ($team) use ($report) {
-                    $leader = $team->leader;
-                    $lat = $leader->current_latitude ?? $leader->home_latitude ?? null;
-                    $lng = $leader->current_longitude ?? $leader->home_longitude ?? null;
-
-                    $team->distance_km = ($lat && $lng && $report->latitude && $report->longitude)
-                        ? round($this->haversine($report->latitude, $report->longitude, $lat, $lng), 1)
-                        : null;
-
-                    unset($team->leader); // don't leak leader location to frontend
-
-                    return $team;
-                })
-                ->sortBy('distance_km')
-                ->values(),
+            'teams'       => $this->getAvailableTeams($report),
+            'schedule_level' => Setting::getValue('schedule_level', 'white'),
         ]);
     }
 
@@ -615,6 +594,62 @@ class ReportController extends Controller
                 }
             }
         }
+    }
+
+    /**
+     * Get teams available for assignment.
+     * - Normal (white): only teams whose shift matches the current shift
+     * - Red alert: all active teams
+     * - Always includes the currently assigned team
+     */
+    private function getAvailableTeams(Report $report)
+    {
+        $level = Setting::getValue('schedule_level', 'white');
+        $currentShift = ScheduleController::currentShift();
+        $isRedAlert = $level === 'red';
+
+        $query = Team::with([
+                'members:id,name,team_id,is_on_duty',
+                'leader:id,current_latitude,current_longitude,home_latitude,home_longitude',
+            ])
+            ->where('is_active', true)
+            ->withCount([
+                'reports as active_assignments' => fn ($q) => $q->where('status', 'assigned'),
+                'members as on_duty_count',
+            ]);
+
+        // During normal operations, only show teams on the current shift
+        if (! $isRedAlert) {
+            $assignedTeamId = $report->assigned_team_id;
+            $query->where(function ($q) use ($currentShift, $assignedTeamId) {
+                $q->where('shift', $currentShift);
+                // Always keep the currently assigned team visible for reassignment
+                if ($assignedTeamId) {
+                    $q->orWhere('id', $assignedTeamId);
+                }
+            });
+        }
+
+        return $query
+            ->get(['id', 'name', 'leader_id', 'shift'])
+            ->map(function ($team) use ($report, $isRedAlert, $currentShift) {
+                $leader = $team->leader;
+                $lat = $leader->current_latitude ?? $leader->home_latitude ?? null;
+                $lng = $leader->current_longitude ?? $leader->home_longitude ?? null;
+
+                $team->distance_km = ($lat && $lng && $report->latitude && $report->longitude)
+                    ? round($this->haversine($report->latitude, $report->longitude, $lat, $lng), 1)
+                    : null;
+
+                // Indicate if this team is on the current shift
+                $team->is_on_shift = $isRedAlert || ($team->shift === $currentShift);
+
+                unset($team->leader);
+
+                return $team;
+            })
+            ->sortBy('distance_km')
+            ->values();
     }
 
     /** Haversine distance between two points in kilometres. */

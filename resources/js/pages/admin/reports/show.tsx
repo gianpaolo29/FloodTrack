@@ -2,6 +2,7 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
     ArrowLeft,
+    AlertTriangle,
     Bot,
     Calendar,
     Camera,
@@ -41,6 +42,7 @@ import { PageHeaderSkeleton, SettingsCardSkeleton } from '@/components/admin/ske
 interface Props {
     report: Report;
     teams: Team[];
+    schedule_level: 'white' | 'red';
 }
 
 const SEVERITY_OPTIONS = ['low', 'moderate', 'high', 'critical'] as const;
@@ -61,7 +63,7 @@ const ADVISORY_STATUS_FLOW: { status: ReportStatus; label: string; color: string
     { status: 'acknowledged', label: 'Advisory Issued', color: 'teal' },
 ];
 
-export default function AdminReportShow({ report, teams }: Props) {
+export default function AdminReportShow({ report, teams, schedule_level }: Props) {
     const breadcrumbs: BreadcrumbItem[] = [
         { title: 'Admin', href: '/admin' },
         { title: 'Reports', href: '/admin/reports' },
@@ -673,12 +675,19 @@ export default function AdminReportShow({ report, teams }: Props) {
                                         <label className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                                             {report.assigned_team ? 'Reassign team' : report.status === 'acknowledged' ? 'Escalate — Assign team' : 'Assign team'}
                                         </label>
+                                        {schedule_level === 'red' && (
+                                            <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:border-red-800/40 dark:bg-red-950/20">
+                                                <AlertTriangle className="size-3 shrink-0 text-red-500" />
+                                                <p className="text-[10px] font-semibold text-red-600 dark:text-red-400">RED ALERT — All teams available</p>
+                                            </div>
+                                        )}
                                         <div className="max-h-[220px] space-y-1.5 overflow-y-auto rounded-xl border border-neutral-200 bg-neutral-50/50 p-1.5 dark:border-neutral-700 dark:bg-neutral-800/50">
                                             {teams.filter((t) => {
                                                 const isCurrentTeam = report.assigned_team?.id === t.id;
                                                 return isCurrentTeam || (t.active_assignments ?? 0) === 0;
                                             }).map((t) => {
                                                 const selected = assignForm.data.team_id === String(t.id);
+                                                const onShift = (t as any).is_on_shift ?? true;
                                                 return (
                                                     <button
                                                         key={t.id}
@@ -692,16 +701,22 @@ export default function AdminReportShow({ report, teams }: Props) {
                                                     >
                                                         <div className="flex items-center justify-between gap-2">
                                                             <span className="truncate text-xs font-semibold text-neutral-800 dark:text-neutral-200">{t.name}</span>
-                                                            {selected && <div className="size-2 shrink-0 rounded-full bg-blue-500" />}
+                                                            <div className="flex items-center gap-1.5">
+                                                                {onShift && <span className="size-1.5 rounded-full bg-emerald-500" />}
+                                                                {selected && <div className="size-2 shrink-0 rounded-full bg-blue-500" />}
+                                                            </div>
                                                         </div>
                                                         <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">
                                                             <span className="flex items-center gap-1">
                                                                 <Users className="size-2.5" />
                                                                 {t.members.length} member{t.members.length !== 1 ? 's' : ''}
                                                             </span>
-                                                            <span className={`font-medium ${(t.on_duty_count ?? 0) > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-400'}`}>
-                                                                {t.on_duty_count ?? 0} on duty
+                                                            <span className={`font-medium ${onShift ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-400'}`}>
+                                                                {schedule_level === 'red' ? 'All on duty' : onShift ? 'On shift' : 'Off shift'}
                                                             </span>
+                                                            {(t as any).shift && (
+                                                                <span className="text-neutral-400">Shift {(t as any).shift}</span>
+                                                            )}
                                                             {t.distance_km != null && (
                                                                 <span className="flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400">
                                                                     <Navigation className="size-2.5" />
