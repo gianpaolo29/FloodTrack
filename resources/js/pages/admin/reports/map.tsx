@@ -253,6 +253,7 @@ function HeatmapLayer({ points }: { points: [number, number, number][] }) {
 
 /* ─── Dark mode tile switcher ─── */
 function DarkModeTileLayer() {
+    const map = useMap();
     const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
     useEffect(() => {
         const observer = new MutationObserver(() => {
@@ -261,16 +262,21 @@ function DarkModeTileLayer() {
         observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
         return () => observer.disconnect();
     }, []);
+
+    // Apply CSS filter to tile pane for dark mode — no API key needed
+    useEffect(() => {
+        const tilePane = map.getPane('tilePane');
+        if (tilePane) {
+            tilePane.style.filter = isDark
+                ? 'brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7)'
+                : '';
+        }
+    }, [isDark, map]);
+
     return (
         <TileLayer
-            url={isDark
-                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-                : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-            }
-            attribution={isDark
-                ? '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
-                : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
     );
 }
@@ -725,7 +731,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Map View" />
 
-            <div className="flex h-[calc(100vh-57px)] flex-col lg:flex-row-reverse">
+            <div className="relative z-0 flex h-[calc(100vh-57px)] flex-col lg:flex-row-reverse">
 
                 {/* ── Side panel ── */}
                 <div className="flex w-full flex-col overflow-visible border-b border-neutral-200/70 bg-white lg:w-[340px] lg:border-b-0 lg:border-l dark:border-neutral-800 dark:bg-neutral-900">

@@ -34,6 +34,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         Route::post('/{report}/assign',          [ReportController::class, 'assign'])->name('assign');
         Route::post('/{report}/reject',          [ReportController::class, 'reject'])->name('reject');
         Route::post('/{report}/reopen',          [ReportController::class, 'reopen'])->name('reopen');
+        Route::post('/{report}/resolve',         [ReportController::class, 'resolve'])->name('resolve');
     });
 
     // Hazards

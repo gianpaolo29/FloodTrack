@@ -79,6 +79,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
     const verifyForm  = useForm({});
     const rejectForm  = useForm({ notes: '' });
     const assignForm  = useForm({ team_id: '' });
+    const resolveForm = useForm({ notes: '' });
     const reopenForm  = useForm({});
     const editForm    = useForm({
         severity: report.severity,
@@ -90,6 +91,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
     const canVerify = report.status === 'pending';
     const canAssign = report.status === 'verified';
     const canReject = ['pending', 'verified'].includes(report.status);
+    const canResolve = ['verified', 'acknowledged', 'assigned'].includes(report.status);
     const canReopen = ['resolved', 'rejected', 'acknowledged'].includes(report.status);
 
     // Auto-reload when advisory is being generated in background
@@ -762,6 +764,41 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                     </form>
                                 )}
 
+                                {canResolve && (
+                                    <form
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            resolveForm.post(`/admin/reports/${report.id}/resolve`, {
+                                                preserveState: false,
+                                                onSuccess: () => swalSuccess('Resolved', 'Report has been marked as resolved.'),
+                                            });
+                                        }}
+                                        className="flex flex-col gap-3"
+                                    >
+                                        <label className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                                            Resolve report
+                                        </label>
+                                        <textarea
+                                            placeholder="Resolution notes (required) — e.g. Floodwaters receded, road cleared"
+                                            value={resolveForm.data.notes}
+                                            onChange={(e) => resolveForm.setData('notes', e.target.value)}
+                                            rows={2}
+                                            className={`${inputClass} resize-none`}
+                                        />
+                                        {resolveForm.errors.notes && (
+                                            <p className="text-[10px] font-medium text-red-500">{resolveForm.errors.notes}</p>
+                                        )}
+                                        <button
+                                            type="submit"
+                                            disabled={resolveForm.processing || !resolveForm.data.notes.trim()}
+                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 hover:shadow-md disabled:opacity-50"
+                                        >
+                                            <CheckCircle2 className="size-4" />
+                                            Mark as Resolved
+                                        </button>
+                                    </form>
+                                )}
+
                                 {canReopen && (
                                     <form onSubmit={(e) => { e.preventDefault(); reopenForm.post(`/admin/reports/${report.id}/reopen`, { preserveState: false, onSuccess: () => swalSuccess('Reopened', 'Report has been reopened.') }); }}>
                                         <button
@@ -775,7 +812,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                     </form>
                                 )}
 
-                                {!canVerify && !canAssign && !canReject && !canReopen && report.status !== 'assigned' && (
+                                {!canVerify && !canAssign && !canReject && !canResolve && !canReopen && (
                                     <div className="flex flex-col items-center gap-2 py-4">
                                         <div className="flex size-10 items-center justify-center rounded-full bg-neutral-100 dark:bg-neutral-800">
                                             <Clock className="size-5 text-neutral-400 dark:text-neutral-500" />

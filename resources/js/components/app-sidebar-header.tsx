@@ -280,7 +280,7 @@ export function AppSidebarHeader({
     }, [showNotifications]);
 
     return (
-        <header className="sticky top-0 z-20 flex h-14 shrink-0 items-center justify-between gap-2 sm:gap-4 rounded-tl-xl rounded-tr-xl sm:rounded-tl-2xl sm:rounded-tr-2xl border-b border-border/[0.35] bg-background/90 px-3 sm:px-6 shadow-sm shadow-black/[0.025] backdrop-blur-2xl">
+        <header className="sticky top-0 z-[40] flex h-14 shrink-0 items-center justify-between gap-2 sm:gap-4 rounded-tl-xl rounded-tr-xl sm:rounded-tl-2xl sm:rounded-tr-2xl border-b border-border/[0.35] bg-background/90 px-3 sm:px-6 shadow-sm shadow-black/[0.025] backdrop-blur-2xl">
             {/* Left — trigger + breadcrumbs */}
             <div className="flex items-center gap-3">
                 <SidebarTrigger className="-ml-1 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white transition-colors" />

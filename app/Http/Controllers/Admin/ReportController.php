@@ -285,12 +285,46 @@ class ReportController extends Controller
         return back();
     }
 
+    public function resolve(Report $report, Request $request): RedirectResponse
+    {
+        $request->validate([
+            'notes' => 'required|string|max:1000',
+        ]);
+
+        if (in_array($report->status, ['resolved', 'rejected'])) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => 'This report is already closed.']);
+            return back();
+        }
+
+        $oldStatus = $report->status;
+
+        $report->update([
+            'status'      => 'resolved',
+            'resolved_at' => now(),
+        ]);
+
+        ReportStatusUpdate::create([
+            'report_id' => $report->id,
+            'user_id'   => $request->user()->id,
+            'status'    => 'resolved',
+            'notes'     => $request->notes,
+        ]);
+
+        app(SlaService::class)->advanceStage($report, 'resolved');
+
+        $this->notifyStatusChange($report, $oldStatus, 'resolved', $request->user()->name);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => 'Report marked as resolved.']);
+
+        return back();
+    }
+
     public function bulkAction(Request $request): RedirectResponse
     {
         $request->validate([
             'ids'    => 'required|array|min:1',
             'ids.*'  => 'integer|exists:reports,id',
-            'action' => 'required|in:verify,reject,delete,reopen',
+            'action' => 'required|in:verify,reject,delete,reopen,resolve',
             'responder_id' => 'nullable|integer|exists:users,id',
             'notes'  => 'nullable|string|max:500',
         ]);
@@ -339,6 +373,21 @@ class ReportController extends Controller
                     $count++;
                     break;
 
+                case 'resolve':
+                    if (in_array($report->status, ['verified', 'acknowledged', 'assigned'])) {
+                        $report->update(['status' => 'resolved', 'resolved_at' => now()]);
+                        ReportStatusUpdate::create([
+                            'report_id' => $report->id,
+                            'user_id'   => $request->user()->id,
+                            'status'    => 'resolved',
+                            'notes'     => $request->notes ?? 'Bulk resolved by admin.',
+                        ]);
+                        app(SlaService::class)->advanceStage($report, 'resolved');
+                        $this->notifyStatusChange($report, $report->getOriginal('status'), 'resolved', $request->user()->name);
+                        $count++;
+                    }
+                    break;
+
                 case 'reopen':
                     if (in_array($report->status, ['resolved', 'rejected'])) {
                         $report->update(['status' => 'pending', 'resolved_at' => null]);
@@ -358,6 +407,7 @@ class ReportController extends Controller
         $actionLabel = match ($request->action) {
             'verify' => 'verified',
             'reject' => 'rejected',
+            'resolve' => 'resolved',
             'delete' => 'deleted',
             'reopen' => 'reopened',
         };
@@ -538,6 +588,7 @@ class ReportController extends Controller
             'rejected'     => "Report {$report->reference_number} Not Verified",
             'assigned'     => "Report {$report->reference_number} — Responder Assigned",
             'acknowledged' => "Report {$report->reference_number} — Safety Advisory",
+            'resolved'     => "Report {$report->reference_number} — Resolved",
         ];
 
         $bodies = [
@@ -547,6 +598,7 @@ class ReportController extends Controller
                 : 'Your report could not be verified.',
             'assigned'     => 'A responder has been assigned to your report. Help is on the way.',
             'acknowledged' => 'We\'ve reviewed your report and prepared safety guidance for you. Open the app for details.',
+            'resolved'     => 'Your flood report has been resolved. Thank you for helping keep your community safe.',
         ];
 
         if (isset($titles[$newStatus])) {

@@ -209,6 +209,13 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
     const hasExtraFilters = !!(filters.severity || filters.team_id || filters.status);
     const allOnPageSelected = filtered.length > 0 && filtered.every((r) => selected.includes(r.id));
 
+    // Determine which bulk actions are relevant based on selected reports' statuses
+    const selectedReports = filtered.filter((r) => selected.includes(r.id));
+    const canBulkVerify  = selectedReports.some((r) => r.status === 'pending');
+    const canBulkReject  = selectedReports.some((r) => ['pending', 'verified'].includes(r.status));
+    const canBulkResolve = selectedReports.some((r) => ['verified', 'acknowledged', 'assigned'].includes(r.status));
+    const canBulkReopen  = selectedReports.some((r) => ['resolved', 'rejected'].includes(r.status));
+
     const toggleAll = () => {
         if (allOnPageSelected) {
             setSelected(selected.filter((id) => !filtered.some((r) => r.id === id)));
@@ -359,11 +366,12 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                             <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">selected</span>
                             <div className="mx-1 h-4 w-px bg-neutral-200 dark:bg-neutral-700" />
                             {[
-                                { action: 'verify', label: 'Verify', icon: CheckCircle2, cls: 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 dark:border-emerald-800/40 dark:bg-neutral-900 dark:text-emerald-400' },
-                                { action: 'reject', label: 'Reject', icon: XCircle,     cls: 'border-amber-200 bg-white text-amber-700 hover:bg-amber-50 hover:border-amber-300 dark:border-amber-800/40 dark:bg-neutral-900 dark:text-amber-400' },
-                                { action: 'reopen', label: 'Reopen', icon: RefreshCw,   cls: 'border-blue-200 bg-white text-blue-700 hover:bg-blue-50 hover:border-blue-300 dark:border-blue-800/40 dark:bg-neutral-900 dark:text-blue-400' },
-                                { action: 'delete', label: 'Delete', icon: Trash2,      cls: 'border-red-200 bg-white text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-800/40 dark:bg-neutral-900 dark:text-red-400' },
-                            ].map(({ action, label, icon: Icon, cls }) => (
+                                { action: 'verify',  label: 'Verify',  icon: CheckCircle2, show: canBulkVerify,  cls: 'border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 dark:border-emerald-800/40 dark:bg-neutral-900 dark:text-emerald-400' },
+                                { action: 'reject',  label: 'Reject',  icon: XCircle,      show: canBulkReject,  cls: 'border-amber-200 bg-white text-amber-700 hover:bg-amber-50 hover:border-amber-300 dark:border-amber-800/40 dark:bg-neutral-900 dark:text-amber-400' },
+                                { action: 'resolve', label: 'Resolve', icon: CheckCircle2,  show: canBulkResolve, cls: 'border-teal-200 bg-white text-teal-700 hover:bg-teal-50 hover:border-teal-300 dark:border-teal-800/40 dark:bg-neutral-900 dark:text-teal-400' },
+                                { action: 'reopen',  label: 'Reopen',  icon: RefreshCw,     show: canBulkReopen,  cls: 'border-blue-200 bg-white text-blue-700 hover:bg-blue-50 hover:border-blue-300 dark:border-blue-800/40 dark:bg-neutral-900 dark:text-blue-400' },
+                                { action: 'delete',  label: 'Delete',  icon: Trash2,        show: true,           cls: 'border-red-200 bg-white text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-800/40 dark:bg-neutral-900 dark:text-red-400' },
+                            ].filter(({ show }) => show).map(({ action, label, icon: Icon, cls }) => (
                                 <button
                                     key={action}
                                     onClick={() => runBulkAction(action)}
