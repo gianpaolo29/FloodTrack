@@ -527,13 +527,19 @@ class ReportController extends Controller
             ['type' => 'assignment', 'reportId' => $report->id]
         );
 
-        // Real-time socket event to each team member
+        // Real-time socket events to each team member
         foreach ($team->members as $member) {
             SocketService::toUser($member->id, 'new-assignment', [
                 'reportId'  => $report->id,
                 'reference' => $report->reference_number,
                 'severity'  => $report->severity,
                 'address'   => $report->address,
+            ]);
+            SocketService::toUser($member->id, 'new-notification', [
+                'type'      => 'assignment',
+                'reportId'  => $report->id,
+                'reference' => $report->reference_number,
+                'status'    => 'assigned',
             ]);
         }
 

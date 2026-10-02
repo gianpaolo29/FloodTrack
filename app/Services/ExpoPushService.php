@@ -114,11 +114,28 @@ class ExpoPushService
     }
 
     /**
+     * Resolve the Android notification channel based on the data payload type.
+     */
+    private static function resolveChannel(array $data): string
+    {
+        $type = $data['type'] ?? '';
+
+        return match (true) {
+            in_array($type, ['critical_alert', 'emergency']) => 'floodtrack-critical',
+            in_array($type, ['advisory', 'weather_alert'])   => 'floodtrack-advisory',
+            in_array($type, ['new_message', 'chat'])         => 'floodtrack-messages',
+            default                                          => 'floodtrack-updates',
+        };
+    }
+
+    /**
      * Send push notifications to a list of Expo push tokens.
      * Batches in chunks of 100 as per Expo's recommendation.
      */
     private static function sendToTokens(array $tokens, string $title, string $body, array $data = []): void
     {
+        $channelId = static::resolveChannel($data);
+
         $messages = array_map(fn (string $token) => [
             'to'       => $token,
             'title'    => $title,
@@ -126,7 +143,7 @@ class ExpoPushService
             'sound'    => 'default',
             'data'     => $data,
             'priority' => 'high',
-            'channelId' => 'floodtrack',
+            'channelId' => $channelId,
         ], $tokens);
 
         // Expo recommends max 100 messages per request
