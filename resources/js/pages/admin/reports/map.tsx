@@ -2,12 +2,11 @@
 import { Head, Link, router } from '@inertiajs/react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { AlertTriangle, Building2, CalendarDays, ChevronDown, Clock, List, MapPin, Radio, Users, X } from 'lucide-react';
+import { AlertTriangle, Building2, CalendarDays, ChevronDown, Clock, Filter, List, MapPin, Radio, Users, X } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import 'leaflet.heat';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { io, type Socket } from 'socket.io-client';
-import { MultiSelectFilter } from '@/components/admin/MultiSelectFilter';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import type { EvacuationCenter, Hazard, MapResponder, Report, ReportStatus, Severity } from '@/types/admin';
@@ -38,7 +37,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 const STATUS_FILTER_OPTIONS = [
     { value: 'pending',      label: 'Pending' },
     { value: 'verified',     label: 'Verified' },
-    { value: 'acknowledged', label: 'Advisory Issued' },
     { value: 'assigned',     label: 'Assigned' },
     { value: 'resolved',     label: 'Resolved' },
     { value: 'rejected',     label: 'Rejected' },
@@ -209,11 +207,15 @@ function HeatmapLayer({ points }: { points: [number, number, number][] }) {
         if (layerRef.current) map.removeLayer(layerRef.current);
         if (points.length === 0) { layerRef.current = null; return; }
 
+        // Guard: skip if map container has no dimensions yet (prevents getImageData crash)
+        const size = map.getSize();
+        if (!size.x || !size.y) return;
+
         const zoom = map.getZoom();
         // Scale radius and blur with zoom — bigger at close zoom, smaller when zoomed out
         const scale = Math.max(0.08, Math.min(2.5, Math.pow(2, (zoom - 14) / 1.2)));
-        const radius = Math.round(14 * scale);
-        const blur = Math.round(10 * scale);
+        const radius = Math.max(1, Math.round(14 * scale));
+        const blur = Math.max(1, Math.round(10 * scale));
 
         // @ts-ignore
         const layer = L.heatLayer(points, {
@@ -238,8 +240,10 @@ function HeatmapLayer({ points }: { points: [number, number, number][] }) {
     useEffect(() => {
         buildLayer();
         map.on('zoomend', buildLayer);
+        map.on('resize', buildLayer);
         return () => {
             map.off('zoomend', buildLayer);
+            map.off('resize', buildLayer);
             if (layerRef.current) map.removeLayer(layerRef.current);
         };
     }, [map, points]);
@@ -290,6 +294,171 @@ function FilterSelect({ value, onChange, options, placeholder }: {
             ))}
             </select>
             <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+        </div>
+    );
+}
+
+/* ─── Combined map filter (single dropdown) ─── */
+function MapCombinedFilter({ filters, onFilter, hasFilters }: {
+    filters: Filters;
+    onFilter: (key: string, value: string) => void;
+    hasFilters: boolean;
+}) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    // Local draft state — only applied on "Apply"
+    const [localStatuses, setLocalStatuses] = useState<string[]>(filters.status ? filters.status.split(',') : []);
+    const [localSeverities, setLocalSeverities] = useState<string[]>(filters.severity ? filters.severity.split(',') : []);
+    const [localDateFrom, setLocalDateFrom] = useState(filters.date_from ?? '');
+    const [localDateTo, setLocalDateTo] = useState(filters.date_to ?? '');
+
+    // Sync local state when filters change externally
+    useEffect(() => {
+        setLocalStatuses(filters.status ? filters.status.split(',') : []);
+        setLocalSeverities(filters.severity ? filters.severity.split(',') : []);
+        setLocalDateFrom(filters.date_from ?? '');
+        setLocalDateTo(filters.date_to ?? '');
+    }, [filters.status, filters.severity, filters.date_from, filters.date_to]);
+
+    const activeCount = (filters.status ? filters.status.split(',').length : 0)
+        + (filters.severity ? filters.severity.split(',').length : 0)
+        + (filters.date_from ? 1 : 0)
+        + (filters.date_to ? 1 : 0);
+
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [open]);
+
+    const toggleStatus = (value: string) => {
+        setLocalStatuses(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+    };
+
+    const toggleSeverity = (value: string) => {
+        setLocalSeverities(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+    };
+
+    const apply = () => {
+        router.get('/admin/reports/map', {
+            status: localStatuses.join(',') || undefined,
+            severity: localSeverities.join(',') || undefined,
+            date_from: localDateFrom || undefined,
+            date_to: localDateTo || undefined,
+        }, { preserveState: true, replace: true });
+        setOpen(false);
+    };
+
+    const clearAll = () => {
+        setLocalStatuses([]);
+        setLocalSeverities([]);
+        setLocalDateFrom('');
+        setLocalDateTo('');
+        router.get('/admin/reports/map', {}, { preserveState: true, replace: true });
+        setOpen(false);
+    };
+
+    return (
+        <div ref={ref} className="relative border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
+            <button
+                onClick={() => setOpen(!open)}
+                className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-medium transition-all ${
+                    activeCount > 0
+                        ? 'border-neutral-900 bg-neutral-900 text-white shadow-sm dark:border-white dark:bg-white dark:text-neutral-900'
+                        : 'border-neutral-200 bg-white text-neutral-600 shadow-sm hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
+                }`}
+            >
+                <Filter className="size-3" />
+                Filters
+                {activeCount > 0 && (
+                    <span className="flex size-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-neutral-900 dark:bg-neutral-900 dark:text-white">
+                        {activeCount}
+                    </span>
+                )}
+                <ChevronDown className={`size-3 transition-transform ${open ? 'rotate-180' : ''}`} />
+            </button>
+
+            {open && (
+                <div className="absolute left-3 right-3 sm:left-5 sm:right-5 top-full z-50 mt-0 max-h-[60vh] overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
+                    {/* Status */}
+                    <div className="p-3 pb-0">
+                        <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">Status</p>
+                        <div className="flex flex-wrap gap-1">
+                            {STATUS_FILTER_OPTIONS.map(opt => (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => toggleStatus(opt.value)}
+                                    className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-all ${
+                                        localStatuses.includes(opt.value)
+                                            ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
+                                            : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
+                                    }`}
+                                >
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Severity */}
+                    <div className="mt-2.5 px-3">
+                        <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">Severity</p>
+                        <div className="flex flex-wrap gap-1">
+                            {SEVERITY_FILTER_OPTIONS.map(opt => (
+                                <button
+                                    key={opt.value}
+                                    onClick={() => toggleSeverity(opt.value)}
+                                    className={`flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-all ${
+                                        localSeverities.includes(opt.value)
+                                            ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
+                                            : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
+                                    }`}
+                                >
+                                    <span className="size-1.5 rounded-full" style={{ backgroundColor: opt.color }} />
+                                    {opt.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Date range */}
+                    <div className="mt-2.5 px-3">
+                        <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">Date Range</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="mb-0.5 block text-[9px] text-neutral-400">From</label>
+                                <input type="date" value={localDateFrom} onChange={(e) => setLocalDateFrom(e.target.value)}
+                                    className="h-7 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2 text-[10px] outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
+                            </div>
+                            <div>
+                                <label className="mb-0.5 block text-[9px] text-neutral-400">To</label>
+                                <input type="date" value={localDateTo} onChange={(e) => setLocalDateTo(e.target.value)} min={localDateFrom || undefined}
+                                    className="h-7 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2 text-[10px] outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Apply / Clear */}
+                    <div className="mt-2.5 flex items-center justify-between border-t border-neutral-100 px-3 py-2 dark:border-neutral-700">
+                        <button
+                            onClick={clearAll}
+                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                        >
+                            Reset
+                        </button>
+                        <button
+                            onClick={apply}
+                            className="rounded-lg bg-neutral-900 px-4 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                        >
+                            Apply
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -559,7 +728,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
             <div className="flex h-[calc(100vh-57px)] flex-col lg:flex-row-reverse">
 
                 {/* ── Side panel ── */}
-                <div className="flex w-full flex-col border-b border-neutral-200/70 bg-white lg:w-[340px] lg:border-b-0 lg:border-l dark:border-neutral-800 dark:bg-neutral-900">
+                <div className="flex w-full flex-col overflow-visible border-b border-neutral-200/70 bg-white lg:w-[340px] lg:border-b-0 lg:border-l dark:border-neutral-800 dark:bg-neutral-900">
 
                     {/* Header */}
                     <div className="flex items-center justify-between border-b border-neutral-100 px-3 sm:px-5 py-4 dark:border-neutral-800">
@@ -598,47 +767,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                     </div>
 
                     {/* Filters */}
-                    <div className="border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
-                        <div className="mb-2 flex items-center justify-between">
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Filters</p>
-                            {hasFilters && (
-                                <button
-                                    onClick={() => router.get('/admin/reports/map')}
-                                    className="flex items-center gap-1 text-[10px] font-medium text-red-500 hover:text-red-600"
-                                >
-                                    <X className="size-3" /> Clear
-                                </button>
-                            )}
-                        </div>
-                        <div className="space-y-2">
-                            <div className="flex flex-wrap gap-2">
-                                <MultiSelectFilter
-                                    label="Status"
-                                    options={STATUS_FILTER_OPTIONS}
-                                    selected={filters.status ? filters.status.split(',') : []}
-                                    onChange={(vals) => filter('status', vals.join(','))}
-                                />
-                                <MultiSelectFilter
-                                    label="Severity"
-                                    options={SEVERITY_FILTER_OPTIONS}
-                                    selected={filters.severity ? filters.severity.split(',') : []}
-                                    onChange={(vals) => filter('severity', vals.join(','))}
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label className="mb-1 block text-[10px] text-neutral-400">From</label>
-                                    <input type="date" value={filters.date_from ?? ''} onChange={(e) => filter('date_from', e.target.value)}
-                                        className="h-8 w-full rounded-lg border border-neutral-200 bg-white px-2 text-xs outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200" />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-[10px] text-neutral-400">To</label>
-                                    <input type="date" value={filters.date_to ?? ''} onChange={(e) => filter('date_to', e.target.value)} min={filters.date_from ?? undefined}
-                                        className="h-8 w-full rounded-lg border border-neutral-200 bg-white px-2 text-xs outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <MapCombinedFilter filters={filters} onFilter={filter} hasFilters={hasFilters} />
 
                     {/* Legend + Report list + Responder list */}
                     <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-3">

@@ -384,13 +384,13 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                 </AnimatePresence>
 
                 {/* ── Table card ── */}
-                <div className={`relative overflow-hidden rounded-2xl border border-neutral-200/70 bg-white hover:shadow-lg hover:border-neutral-300/80 transition-all duration-700 delay-300 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                <div className={`relative overflow-visible rounded-2xl border border-neutral-200/70 bg-white hover:shadow-lg hover:border-neutral-300/80 transition-all duration-700 delay-300 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
 
                     {/* Animated top border */}
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-neutral-300/50 to-transparent dark:via-neutral-600/50" />
 
                     {/* ── Toolbar ── */}
-                    <div className="flex flex-wrap items-center gap-1.5 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-4 py-2 dark:border-neutral-800 dark:bg-neutral-800/30">
+                    <div className="relative z-20 flex flex-wrap items-center gap-1.5 rounded-t-2xl border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-4 py-2 dark:border-neutral-800 dark:bg-neutral-800/30">
                         {/* Search — left */}
                         <div className="relative flex-1 min-w-[160px] max-w-xs">
                             <Search className="pointer-events-none absolute left-2 top-1/2 size-2.5 -translate-y-1/2 text-neutral-400" />

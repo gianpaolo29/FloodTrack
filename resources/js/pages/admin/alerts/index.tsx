@@ -521,13 +521,13 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                 </AnimatePresence>
 
                 {/* ── Table Card ── */}
-                <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                <div className="overflow-visible rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Animated top border */}
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-neutral-500/25 to-transparent" />
 
                     {/* ── Toolbar ── */}
-                    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
+                    <div className="relative z-20 flex flex-wrap items-center gap-2 rounded-t-2xl border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
                         {/* Search — left */}
                         <div className="relative flex-1 min-w-[180px] max-w-xs">
                             <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
