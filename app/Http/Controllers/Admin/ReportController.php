@@ -74,12 +74,26 @@ class ReportController extends Controller
             ->whereNotNull('longitude')
             ->get();
 
+        $floodZones = collect(config('barangays'))
+            ->filter(fn ($b) => $b['flood_prone'])
+            ->map(fn ($b) => [
+                'name'       => $b['name'],
+                'latitude'   => $b['latitude'],
+                'longitude'  => $b['longitude'],
+                'near_river' => $b['near_river'],
+                'coastal'    => $b['coastal'],
+                'elevation'  => $b['elevation_m'],
+            ])
+            ->values()
+            ->all();
+
         return Inertia::render('admin/reports/map', [
             'reports'            => $reports,
             'filters'            => $request->only(['status', 'severity', 'date_from', 'date_to']),
             'evacuation_centers' => $evacuationCenters,
             'responders'         => $responders,
             'hazards'            => $hazards,
+            'flood_zones'        => $floodZones,
         ]);
     }
 

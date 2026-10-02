@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
+import { CircleHelp } from 'lucide-react';
 import { useCountUp } from '@/hooks/use-count-up';
 import { KpiTooltip } from './KpiTooltip';
+import { useKpiTooltip } from '@/hooks/use-kpi-tooltip';
 import type { InsightRow } from '@/lib/kpi-utils';
 
 interface Props {
@@ -30,60 +32,44 @@ const ACCENT_STYLES = {
 
 export function PrimaryStatCard({ label, value, trend, trendLabel, desc, insights, icon: Icon, alert, accent, index, mounted, urgency, actionLink }: Props) {
     const count = useCountUp(value, mounted, index * 90);
-    const [showTooltip, setShowTooltip] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (!showTooltip) return;
-        const handler = (e: MouseEvent) => {
-            if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
-                setShowTooltip(false);
-            }
-        };
-        document.addEventListener('click', handler);
-        return () => document.removeEventListener('click', handler);
-    }, [showTooltip]);
+    const btnRef = useRef<HTMLButtonElement>(null);
+    const { open, toggle } = useKpiTooltip(btnRef);
 
     return (
         <div
             ref={cardRef}
-            className={`group relative overflow-hidden rounded-2xl border border-neutral-200/70 bg-white p-4 sm:p-5 transition-all duration-700 hover:shadow-lg hover:border-neutral-300/80 cursor-pointer dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+            className={`group relative overflow-hidden rounded-lg border border-neutral-200/70 bg-white px-3 py-2.5 transition-all duration-700 hover:shadow-md hover:border-neutral-300/80 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
             style={{ transitionDelay: `${index * 80}ms` }}
-            onClick={() => setShowTooltip(prev => !prev)}
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
         >
-            {accent && <div className={`absolute inset-x-0 top-0 h-[3px] ${ACCENT_STYLES[accent]}`} />}
-            <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} urgency={urgency} actionLink={actionLink} />
-            {alert && (
-                <span className="absolute right-3 top-3 flex size-2">
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-neutral-900 opacity-20 dark:bg-white dark:opacity-30" />
-                    <span className="relative inline-flex size-2 rounded-full bg-neutral-900 dark:bg-white" />
-                </span>
-            )}
-            <div className="relative flex items-start justify-between">
-                <div className="min-w-0 flex-1">
-                    <p className="truncate text-[10px] font-medium uppercase tracking-wider text-neutral-400 sm:text-[11px] dark:text-neutral-500">{label}</p>
-                    <p className="mt-1.5 text-xl font-bold tabular-nums tracking-tight text-neutral-900 sm:mt-2 sm:text-3xl dark:text-white">
-                        {count.toLocaleString()}
-                    </p>
-                    {trend !== undefined && (
-                        <p className="mt-1.5 flex items-center gap-1.5">
-                            <span className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
-                                trend >= 0
-                                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
-                                    : 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
-                            }`}>
-                                {trend >= 0 ? '\u2191' : '\u2193'} {Math.abs(trend)}%
-                            </span>
-                        </p>
-                    )}
-                    <p className="mt-1 truncate text-[9px] text-neutral-400 sm:text-[10px] dark:text-neutral-500">{trendLabel}</p>
-                </div>
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800 sm:size-11 transition-colors duration-300 group-hover:bg-neutral-200 dark:group-hover:bg-neutral-700">
-                    <Icon className="size-5 text-neutral-500 dark:text-neutral-400 sm:size-[22px]" />
-                </div>
+            {accent && <div className={`absolute inset-x-0 top-0 h-[2px] ${ACCENT_STYLES[accent]}`} />}
+            <KpiTooltip desc={desc} insights={insights} visible={open} parentRef={cardRef} urgency={urgency} actionLink={actionLink} />
+            <div className="flex items-start justify-between gap-2">
+                <p className="truncate text-[8px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{label}</p>
+                <button
+                    ref={btnRef}
+                    type="button"
+                    onClick={toggle}
+                    className={`z-10 flex size-4 shrink-0 items-center justify-center rounded transition-colors ${open ? 'bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300' : 'text-neutral-300 hover:text-neutral-500 dark:text-neutral-600 dark:hover:text-neutral-400'}`}
+                >
+                    <CircleHelp className="size-3 pointer-events-none" />
+                </button>
             </div>
+            <p className="mt-1 text-lg font-bold tabular-nums tracking-tight text-neutral-900 sm:text-xl dark:text-white">
+                {count.toLocaleString()}
+            </p>
+            {trend !== undefined && (
+                <p className="mt-1 flex items-center gap-1">
+                    <span className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[8px] font-semibold tabular-nums ${
+                        trend >= 0
+                            ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+                            : 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
+                    }`}>
+                        {trend >= 0 ? '\u2191' : '\u2193'} {Math.abs(trend)}%
+                    </span>
+                </p>
+            )}
+            <p className="mt-0.5 truncate text-[8px] text-neutral-400 dark:text-neutral-500">{trendLabel}</p>
         </div>
     );
 }

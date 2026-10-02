@@ -69,22 +69,17 @@ export default function AdminSettings({ settings }: Props) {
                                 System configuration and platform information.
                             </p>
                         </div>
-                        <button
-                            type="submit"
-                            disabled={form.processing || !form.isDirty}
-                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
-                        >
-                            <Save className="size-4" />
-                            {form.processing ? 'Saving…' : 'Save Changes'}
-                        </button>
+                        {form.isDirty && (
+                            <button
+                                type="submit"
+                                disabled={form.processing}
+                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                            >
+                                <Save className="size-4" />
+                                {form.processing ? 'Saving…' : 'Save Changes'}
+                            </button>
+                        )}
                     </div>
-
-                    {/* Dirty banner */}
-                    {form.isDirty && (
-                        <div className="rounded-xl border border-neutral-200/60 bg-neutral-50 px-4 py-3 text-sm font-medium text-neutral-800 dark:border-neutral-700/40 dark:bg-neutral-800/50 dark:text-neutral-200">
-                            You have unsaved changes.
-                        </div>
-                    )}
 
                     {/* ─── Grid ─── */}
                     <div className="grid gap-4 sm:gap-5 lg:grid-cols-2">
@@ -269,27 +264,6 @@ export default function AdminSettings({ settings }: Props) {
 
                     </div>
 
-                    {/* ─── Sticky save bar ─── */}
-                    {form.isDirty && (
-                        <div className="sticky bottom-4 flex items-center justify-end gap-3 rounded-2xl border border-neutral-200/60 bg-white/90 px-6 py-4 shadow-lg backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-900/90">
-                            <span className="text-sm text-neutral-500 dark:text-neutral-400">Unsaved changes</span>
-                            <button
-                                type="button"
-                                onClick={() => form.reset()}
-                                className="rounded-xl border border-neutral-200 px-4 py-2 text-sm font-medium text-neutral-600 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800"
-                            >
-                                Discard
-                            </button>
-                            <button
-                                type="submit"
-                                disabled={form.processing}
-                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
-                            >
-                                <Save className="size-4" />
-                                {form.processing ? 'Saving…' : 'Save Changes'}
-                            </button>
-                        </div>
-                    )}
                 </div>
             </form>
         </AppLayout>

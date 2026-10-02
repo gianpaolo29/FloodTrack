@@ -33,10 +33,10 @@ export interface MemberStatus {
 }
 
 export const RESPONDER_STATUS_COLORS: Record<ResponderStatus, string> = {
-    pending:  'bg-amber-50 text-amber-700 ring-1 ring-amber-600/10',
-    en_route: 'bg-blue-50 text-blue-700 ring-1 ring-blue-600/10',
-    on_scene: 'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/10',
-    resolved: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/10',
+    pending:  'text-amber-600 dark:text-amber-400',
+    en_route: 'text-blue-600 dark:text-blue-400',
+    on_scene: 'text-indigo-600 dark:text-indigo-400',
+    resolved: 'text-emerald-600 dark:text-emerald-400',
 };
 
 export const RESPONDER_STATUS_LABELS: Record<ResponderStatus, string> = {
@@ -175,10 +175,10 @@ export interface Responder {
 // ─── Premium color tokens ────────────────────────────────────────────────────
 
 export const SEVERITY_COLORS: Record<Severity, string> = {
-    low:      'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/10',
-    moderate: 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/10',
-    high:     'bg-orange-50 text-orange-700 ring-1 ring-orange-600/10',
-    critical: 'bg-red-50 text-red-700 ring-1 ring-red-600/10',
+    low:      'text-emerald-600 dark:text-emerald-400',
+    moderate: 'text-amber-600 dark:text-amber-400',
+    high:     'text-orange-600 dark:text-orange-400',
+    critical: 'text-red-600 dark:text-red-400',
 };
 
 /* ─── SLA Types ─── */
@@ -209,10 +209,10 @@ export interface SlaConfig {
 }
 
 export const SLA_STATUS_COLORS: Record<SlaStatus, string> = {
-    on_track: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/10',
-    at_risk:  'bg-amber-50 text-amber-700 ring-1 ring-amber-600/10',
-    breached: 'bg-red-50 text-red-700 ring-1 ring-red-600/10',
-    met:      'bg-blue-50 text-blue-700 ring-1 ring-blue-600/10',
+    on_track: 'text-emerald-600 dark:text-emerald-400',
+    at_risk:  'text-amber-600 dark:text-amber-400',
+    breached: 'text-red-600 dark:text-red-400',
+    met:      'text-blue-600 dark:text-blue-400',
 };
 
 export const SLA_STATUS_LABELS: Record<SlaStatus, string> = {
@@ -229,12 +229,12 @@ export const SLA_STAGE_LABELS: Record<SlaStage, string> = {
 };
 
 export const STATUS_COLORS: Record<ReportStatus, string> = {
-    pending:      'bg-amber-50 text-amber-700 ring-1 ring-amber-600/10',
-    verified:     'bg-blue-50 text-blue-700 ring-1 ring-blue-600/10',
-    acknowledged: 'bg-teal-50 text-teal-700 ring-1 ring-teal-600/10',
-    assigned:     'bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600/10',
-    resolved:     'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/10',
-    rejected:     'bg-zinc-100 text-zinc-500 ring-1 ring-zinc-500/10',
+    pending:      'text-amber-600 dark:text-amber-400',
+    verified:     'text-blue-600 dark:text-blue-400',
+    acknowledged: 'text-teal-600 dark:text-teal-400',
+    assigned:     'text-indigo-600 dark:text-indigo-400',
+    resolved:     'text-emerald-600 dark:text-emerald-400',
+    rejected:     'text-zinc-500 dark:text-zinc-400',
 };
 
 /* ─── Evacuation Center Management ─── */

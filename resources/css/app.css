@@ -148,6 +148,68 @@
     }
 }
 
+/* ─── Sidebar ─── */
+[data-sidebar] {
+    font-family: var(--font-sans) !important;
+    font-size: 10px;
+}
+[data-sidebar] [data-sidebar="group-label"] {
+    font-size: 8px;
+    letter-spacing: 0.06em;
+}
+[data-sidebar] [data-sidebar="menu-button"] {
+    font-size: 10px;
+    height: 28px;
+}
+[data-sidebar] [data-sidebar="menu-sub-button"] {
+    font-size: 9px;
+    height: 24px;
+}
+[data-sidebar] [data-sidebar="menu-badge"] {
+    font-size: 8px;
+}
+[data-sidebar] [data-sidebar="menu-button"] svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* ─── Font Scale ─── */
+h1, .text-2xl, .sm\:text-2xl { font-size: 16px !important; }
+h2, .text-xl, .sm\:text-xl   { font-size: 14px !important; }
+h3, .text-lg, .sm\:text-lg   { font-size: 12px !important; }
+.text-base                    { font-size: 10px !important; }
+.text-sm                      { font-size: 9px !important; }
+.text-xs                      { font-size: 8px !important; }
+
+/* KPI big numbers */
+.sm\:text-3xl { font-size: 20px !important; }
+
+/* Badges & pills */
+span[class*="rounded-full"][class*="px-"] {
+    font-size: 8px;
+    padding: 1px 5px;
+}
+
+/* ─── Tables ─── */
+table {
+    font-size: 12px;
+}
+table th {
+    font-size: 10px;
+    padding: 10px 14px;
+    letter-spacing: 0.05em;
+}
+table td {
+    padding: 10px 14px;
+}
+table td img[class*="rounded"],
+table td div[class*="rounded-full"][class*="size-"] {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+    font-size: 10px;
+}
+
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar {
     width: 6px;

@@ -40,13 +40,27 @@ function isHrefActive(href: string, fullPageUrl: string): boolean {
     return pageUrl.pathname === href && pageUrl.search === '';
 }
 
+const ACTIVE_CLASS = [
+    'h-8 border border-neutral-200 bg-white px-3 font-semibold text-neutral-900 shadow-sm',
+    'dark:border-neutral-700 dark:bg-neutral-800 dark:text-white',
+    '[&>svg]:text-neutral-900 dark:[&>svg]:text-white',
+].join(' ');
+
+const INACTIVE_CLASS = [
+    'h-8 border border-transparent px-3',
+    'font-medium text-sidebar-foreground/55',
+    'hover:border-neutral-200/60 hover:bg-white/60 hover:text-sidebar-foreground/90 hover:shadow-sm',
+    'dark:hover:border-neutral-700/60 dark:hover:bg-neutral-800/40',
+    '[&>svg]:text-sidebar-foreground/35 hover:[&>svg]:text-sidebar-foreground/70',
+].join(' ');
+
 export function NavSection({ label, items }: NavSectionProps) {
     const { isCurrentUrl } = useCurrentUrl();
     const { url: pageUrl } = usePage();
 
     return (
         <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel className="mb-1 px-2 text-[10px] font-bold uppercase tracking-[0.15em] text-sidebar-foreground/25">
+            <SidebarGroupLabel className="mb-1.5 px-2 text-[8px] font-bold uppercase tracking-[0.18em] text-sidebar-foreground/20">
                 {label}
             </SidebarGroupLabel>
             <SidebarMenu className="gap-0.5">
@@ -61,20 +75,18 @@ export function NavSection({ label, items }: NavSectionProps) {
                                         <SidebarMenuButton
                                             tooltip={{ children: item.title }}
                                             isActive={anyChildActive}
-                                            className={`h-9 w-full rounded-xl text-[13px] transition-all duration-150 group-data-[collapsible=icon]:justify-center ${
-                                                anyChildActive
-                                                    ? 'bg-primary/[0.08] font-semibold text-primary dark:bg-primary/[0.13] [&>svg]:text-primary [&>svg]:drop-shadow-[0_0_5px_rgba(99,102,241,0.45)]'
-                                                    : 'font-medium text-sidebar-foreground/55 hover:bg-sidebar-foreground/[0.05] hover:text-sidebar-foreground/90 [&>svg]:text-sidebar-foreground/40 hover:[&>svg]:text-sidebar-foreground/70'
+                                            className={`w-full rounded-lg text-[10px] transition-all duration-200 group-data-[collapsible=icon]:justify-center ${
+                                                anyChildActive ? ACTIVE_CLASS : INACTIVE_CLASS
                                             }`}
                                         >
-                                            {item.icon && <item.icon />}
-                                            <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
-                                            <ChevronRight className="ml-auto !size-3 opacity-40 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden" />
+                                            {item.icon && <item.icon className="size-3.5 shrink-0" />}
+                                            <span className="flex-1 group-data-[collapsible=icon]:hidden">{item.title}</span>
+                                            <ChevronRight className={`!size-2.5 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90 group-data-[collapsible=icon]:hidden ${anyChildActive ? 'opacity-40' : 'opacity-25'}`} />
                                         </SidebarMenuButton>
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
                                         <SidebarMenuSub className="mx-0 border-l-0 pl-0">
-                                            <div className="ml-[22px] mt-0.5 mb-1 space-y-0.5 border-l border-sidebar-foreground/10 pl-3 py-0.5">
+                                            <div className="ml-3 mt-0.5 mb-0.5 space-y-0.5 border-l border-neutral-200/60 pl-3 dark:border-neutral-700/60">
                                                 {item.children.map((child) => {
                                                     const childActive = isHrefActive(child.href as string, pageUrl);
                                                     const href = child.href as string;
@@ -95,16 +107,13 @@ export function NavSection({ label, items }: NavSectionProps) {
                                                             <SidebarMenuSubButton
                                                                 asChild
                                                                 isActive={childActive}
-                                                                className={`h-7 rounded-lg text-[12px] transition-all duration-150 ${
+                                                                className={`h-6 rounded-md text-[9px] transition-all duration-150 ${
                                                                     childActive
-                                                                        ? 'font-semibold text-primary'
-                                                                        : 'font-medium text-sidebar-foreground/45 hover:bg-sidebar-foreground/[0.04] hover:text-sidebar-foreground/80'
+                                                                        ? 'border border-neutral-200 bg-white font-semibold text-neutral-900 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-white'
+                                                                        : 'border border-transparent font-medium text-sidebar-foreground/40 hover:border-neutral-200/50 hover:bg-white/50 hover:text-sidebar-foreground/80 dark:hover:border-neutral-700/50 dark:hover:bg-neutral-800/30'
                                                                 }`}
                                                             >
                                                                 <a href={href} onClick={handleClick}>
-                                                                    {childActive && (
-                                                                        <span className="mr-1 inline-block size-1.5 shrink-0 rounded-full bg-primary" />
-                                                                    )}
                                                                     {child.title}
                                                                 </a>
                                                             </SidebarMenuSubButton>
@@ -126,14 +135,12 @@ export function NavSection({ label, items }: NavSectionProps) {
                                 asChild
                                 isActive={active}
                                 tooltip={{ children: item.title }}
-                                className={`h-9 rounded-xl text-[13px] transition-all duration-150 group-data-[collapsible=icon]:justify-center ${
-                                    active
-                                        ? 'bg-primary/[0.08] font-semibold text-primary dark:bg-primary/[0.13] [&>svg]:text-primary [&>svg]:drop-shadow-[0_0_5px_rgba(99,102,241,0.45)]'
-                                        : 'font-medium text-sidebar-foreground/55 hover:bg-sidebar-foreground/[0.05] hover:text-sidebar-foreground/90 [&>svg]:text-sidebar-foreground/40 hover:[&>svg]:text-sidebar-foreground/70'
+                                className={`rounded-lg text-[10px] transition-all duration-200 group-data-[collapsible=icon]:justify-center ${
+                                    active ? ACTIVE_CLASS : INACTIVE_CLASS
                                 }`}
                             >
                                 <Link href={item.href} prefetch>
-                                    {item.icon && <item.icon />}
+                                    {item.icon && <item.icon className="size-3.5 shrink-0" />}
                                     <span className="group-data-[collapsible=icon]:hidden">{item.title}</span>
                                 </Link>
                             </SidebarMenuButton>

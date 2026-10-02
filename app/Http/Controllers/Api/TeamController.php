@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Report;
 use App\Models\ReportResponder;
 use App\Models\ReportStatusUpdate;
+use App\Models\User;
 use App\Notifications\ReportStatusChanged;
+use App\Notifications\TeamResolvedReport;
 use App\Services\ExpoPushService;
 use App\Services\SocketService;
 use Illuminate\Http\JsonResponse;
@@ -200,6 +202,23 @@ class TeamController extends Controller
                     'type'     => 'status_update',
                     'reportId' => $report->id,
                     'status'   => $request->status,
+                ]);
+            }
+        }
+
+        // Notify all admins when a report is resolved
+        if ($request->status === 'resolved') {
+            $teamName = $user->team->name;
+            $address  = $report->address ?? 'unknown location';
+
+            $admins = User::where('role', 'admin')->get();
+            foreach ($admins as $admin) {
+                $admin->notify(new TeamResolvedReport($report, $teamName, $address));
+
+                SocketService::toUser($admin->id, 'new-notification', [
+                    'type'     => 'team_resolved',
+                    'reportId' => $report->id,
+                    'team'     => $teamName,
                 ]);
             }
         }

@@ -382,26 +382,26 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-neutral-300/50 to-transparent dark:via-neutral-600/50" />
 
                     {/* ── Toolbar ── */}
-                    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
+                    <div className="flex flex-wrap items-center gap-1.5 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-4 py-2 dark:border-neutral-800 dark:bg-neutral-800/30">
                         {/* Search — left */}
-                        <div className="relative flex-1 min-w-[180px] max-w-xs">
-                            <Search className="pointer-events-none absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
+                        <div className="relative flex-1 min-w-[160px] max-w-xs">
+                            <Search className="pointer-events-none absolute left-2 top-1/2 size-2.5 -translate-y-1/2 text-neutral-400" />
                             <input
                                 ref={searchRef}
                                 type="text"
                                 value={searchValue}
                                 onChange={(e) => setSearchValue(e.target.value)}
                                 placeholder={t('reports.search_placeholder')}
-                                className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
+                                className="h-6 w-full rounded-lg border border-neutral-200/80 bg-white pl-6 pr-6 text-[10px] shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
                             />
                             {searchValue && (
-                                <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
-                                    <X className="size-3.5" />
+                                <button onClick={() => setSearchValue('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                    <X className="size-2.5" />
                                 </button>
                             )}
                         </div>
                         {/* Filters — right */}
-                        <div className="ml-auto flex flex-wrap items-center gap-2">
+                        <div className="ml-auto flex flex-wrap items-center gap-1.5">
                             {teams.length > 0 && (
                                 <MultiSelectFilter
                                     label="Team"
@@ -450,10 +450,10 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                             {report.reference_number}
                                         </span>
                                         <div className="flex items-center gap-1.5">
-                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize ${SEVERITY_COLORS[report.severity as Severity]}`}>{report.severity}</span>
-                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold capitalize ${STATUS_COLORS[report.status as ReportStatus]}`}>{STATUS_LABEL[report.status] ?? report.status}</span>
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${SEVERITY_COLORS[report.severity as Severity]}`}>{report.severity}</span>
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${STATUS_COLORS[report.status as ReportStatus]}`}>{STATUS_LABEL[report.status] ?? report.status}</span>
                                             {report.sla_status && (
-                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-bold ${SLA_STATUS_COLORS[report.sla_status as SlaStatus]}`}>
+                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${SLA_STATUS_COLORS[report.sla_status as SlaStatus]}`}>
                                                     {SLA_STATUS_LABELS[report.sla_status as SlaStatus]}
                                                 </span>
                                             )}
@@ -471,7 +471,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                                 ? report.messenger_sender_name
                                                 : report.user?.name ?? 'Unknown'}
                                             {report.source && report.source !== 'app' && (
-                                                <span className="ml-1 text-[9px] text-neutral-300 dark:text-neutral-600">
+                                                <span className="ml-1 text-[10px] text-neutral-300 dark:text-neutral-600">
                                                     ({report.source === 'messenger' ? 'Messenger' : 'Facebook'})
                                                 </span>
                                             )}
@@ -597,25 +597,25 @@ function ReportRow({ report, isSelected, onToggle }: {
             )}
 
             {/* Checkbox */}
-            <td className="w-12 px-5 py-4 text-center">
+            <td className="w-10 px-3 py-2 text-center">
                 <input
                     type="checkbox"
                     checked={isSelected}
                     onChange={onToggle}
-                    className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
+                    className="size-3 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
                 />
             </td>
 
             {/* Reference + AI flags */}
-            <td className="px-4 py-4">
-                <span className="inline-block rounded-lg bg-neutral-100 px-2 py-0.5 font-mono text-xs font-bold tracking-wide text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+            <td className="px-3 py-2">
+                <span className="inline-block rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-wide text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
                     {report.reference_number}
                 </span>
                 {aiFlags.length > 0 && (
-                    <div className="mt-1.5 flex flex-wrap gap-1">
+                    <div className="mt-1 flex flex-wrap gap-0.5">
                         {aiFlags.map(({ icon: Icon, label, cls }) => (
-                            <span key={label} className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${cls}`}>
-                                <Icon className="size-2.5" />
+                            <span key={label} className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[8px] font-semibold ${cls}`}>
+                                <Icon className="size-2" />
                                 {label}
                             </span>
                         ))}
@@ -624,87 +624,73 @@ function ReportRow({ report, isSelected, onToggle }: {
             </td>
 
             {/* Location */}
-            <td className="px-4 py-4">
-                <div className="flex items-start gap-1.5">
-                    <MapPin className="mt-0.5 size-3.5 shrink-0 text-neutral-300 dark:text-neutral-600" />
-                    <span className="max-w-[180px] truncate text-xs text-neutral-500 dark:text-neutral-400" title={report.address ?? undefined}>
+            <td className="px-3 py-2">
+                <div className="flex items-start gap-1">
+                    <MapPin className="mt-0.5 size-2.5 shrink-0 text-neutral-300 dark:text-neutral-600" />
+                    <span className="max-w-[160px] truncate text-[10px] text-neutral-500 dark:text-neutral-400" title={report.address ?? undefined}>
                         {report.address ?? <span className="italic text-neutral-300 dark:text-neutral-600">No address</span>}
                     </span>
                 </div>
             </td>
 
             {/* Severity */}
-            <td className="px-4 py-4">
-                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold capitalize ${SEVERITY_COLORS[report.severity as Severity]}`}>
-                    <span className="size-1.5 rounded-full bg-current opacity-60" />
+            <td className="px-3 py-2">
+                <span className={`text-[10px] font-bold capitalize ${SEVERITY_COLORS[report.severity as Severity]}`}>
                     {report.severity}
                 </span>
             </td>
 
             {/* Status */}
-            <td className="px-4 py-4">
-                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold capitalize ${STATUS_COLORS[report.status as ReportStatus]}`}>
-                    <span className="size-1.5 rounded-full bg-current opacity-60" />
+            <td className="px-3 py-2">
+                <span className={`text-[10px] font-bold capitalize ${STATUS_COLORS[report.status as ReportStatus]}`}>
                     {STATUS_LABEL[report.status] ?? report.status}
                 </span>
             </td>
 
             {/* SLA */}
-            <td className="px-4 py-4">
+            <td className="px-3 py-2">
                 {report.sla_status ? (
-                    <span className={`relative inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${SLA_STATUS_COLORS[report.sla_status as SlaStatus]}`}>
-                        {report.sla_status === 'breached' && (
-                            <span className="absolute -right-0.5 -top-0.5 flex size-2">
-                                <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-400 opacity-60" />
-                                <span className="relative inline-flex size-2 rounded-full bg-red-500" />
-                            </span>
-                        )}
-                        <span className="size-1.5 rounded-full bg-current opacity-60" />
+                    <span className={`text-[10px] font-bold ${SLA_STATUS_COLORS[report.sla_status as SlaStatus]}`}>
                         {SLA_STATUS_LABELS[report.sla_status as SlaStatus]}
                     </span>
                 ) : (
-                    <span className="text-[11px] text-neutral-300 dark:text-neutral-600">—</span>
+                    <span className="text-[10px] text-neutral-300 dark:text-neutral-600">—</span>
                 )}
             </td>
 
             {/* Team */}
-            <td className="px-4 py-4">
+            <td className="px-3 py-2">
                 {report.assigned_team ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-semibold text-violet-700 ring-1 ring-violet-200/60 dark:bg-violet-950/30 dark:text-violet-400 dark:ring-violet-800/40">
+                    <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400">
                         {report.assigned_team.name}
                     </span>
                 ) : (
-                    <span className="text-[11px] text-neutral-300 dark:text-neutral-600">—</span>
+                    <span className="text-[10px] text-neutral-300 dark:text-neutral-600">—</span>
                 )}
             </td>
 
             {/* Reporter */}
-            <td className="px-4 py-4">
-                <div className="flex items-center gap-2">
-                    <div className="flex size-7 shrink-0 items-center justify-center rounded-full bg-neutral-900 dark:bg-white text-[10px] font-bold text-white dark:text-neutral-900 shadow-sm">
-                        {initials}
-                    </div>
-                    <span className="text-xs font-medium text-neutral-700 dark:text-neutral-300">
-                        {report.user?.name ?? 'Unknown'}
-                    </span>
-                </div>
+            <td className="px-3 py-2">
+                <span className="text-[10px] font-medium text-neutral-700 dark:text-neutral-300">
+                    {report.user?.name ?? 'Unknown'}
+                </span>
             </td>
 
             {/* Date */}
-            <td className="px-4 py-4">
-                <span className="text-[11px] tabular-nums text-neutral-400 dark:text-neutral-500">
+            <td className="px-3 py-2">
+                <span className="text-[10px] tabular-nums text-neutral-400 dark:text-neutral-500">
                     {new Date(report.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
             </td>
 
             {/* View button */}
-            <td className="px-4 py-4 text-right">
+            <td className="px-3 py-2 text-right">
                 <Link
                     href={`/admin/reports/${report.id}`}
-                    className="inline-flex translate-x-1 items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-600 opacity-0 shadow-sm transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-white"
+                    className="inline-flex translate-x-1 items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[10px] font-semibold text-neutral-600 opacity-0 shadow-sm transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-white"
                 >
                     View
-                    <ArrowUpRight className="size-3.5" />
+                    <ArrowUpRight className="size-2.5" />
                 </Link>
             </td>
         </tr>
