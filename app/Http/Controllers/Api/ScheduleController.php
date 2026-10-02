@@ -7,6 +7,7 @@ use App\Models\Setting;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\ExpoPushService;
+use App\Services\SocketService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -103,7 +104,13 @@ class ScheduleController extends Controller
 
         Setting::setValue('schedule_level', $newLevel);
 
-        // Notify all responders
+        // Broadcast real-time to all connected clients
+        SocketService::toAll('schedule-updated', [
+            'level'         => $newLevel,
+            'current_shift' => static::currentShift(),
+        ]);
+
+        // Notify all responders via push
         $responderIds = User::where('role', 'responder')->pluck('id')->toArray();
 
         if ($newLevel === 'red') {
