@@ -37,4 +37,9 @@ class SocketService
     {
         static::emit('alerts', $event, $data);
     }
+
+    public static function toResponderMap(string $event, mixed $data = null): void
+    {
+        static::emit('responder-locations', $event, $data);
+    }
 }

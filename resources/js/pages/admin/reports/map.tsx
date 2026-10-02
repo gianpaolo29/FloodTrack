@@ -354,16 +354,33 @@ function useMapSocket(initial: MapResponder[], onNewReport: () => void) {
                 ),
             },
         })
-            .then((res) => res.ok ? res.json() : null)
+            .then((res) => {
+                if (!res.ok) {
+                    console.warn('[map-socket] socket-token fetch failed:', res.status);
+                    return null;
+                }
+                return res.json();
+            })
             .then((data) => {
-                if (!data?.token) return;
+                if (!data?.token) {
+                    console.warn('[map-socket] no token received, socket will not connect');
+                    return;
+                }
 
                 socket = io(socketUrl, {
                     auth: { token: data.token },
-                    transports: ['websocket'],
+                    transports: ['websocket', 'polling'],
                     reconnection: true,
-                    reconnectionAttempts: 5,
+                    reconnectionAttempts: 10,
                     reconnectionDelay: 3000,
+                });
+
+                socket.on('connect', () => {
+                    console.log('[map-socket] connected', socket?.id);
+                });
+
+                socket.on('connect_error', (err) => {
+                    console.warn('[map-socket] connection error:', err.message);
                 });
 
                 // Live responder locations
@@ -388,7 +405,9 @@ function useMapSocket(initial: MapResponder[], onNewReport: () => void) {
                 socket.on('new-report', onNewReport);
                 socket.on('report-status', onNewReport);
             })
-            .catch(() => {});
+            .catch((err) => {
+                console.warn('[map-socket] setup failed:', err);
+            });
 
         return () => {
             socket?.disconnect();

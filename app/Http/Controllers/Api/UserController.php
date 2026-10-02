@@ -66,8 +66,8 @@ class UserController extends Controller
             'location_updated_at' => now(),
         ]);
 
-        // Broadcast to admin map in real-time
-        SocketService::toAll('responder-location', [
+        // Broadcast to admin map in real-time (responder-locations room, not alerts)
+        SocketService::toResponderMap('responder-location', [
             'user_id'   => $user->id,
             'name'      => $user->name,
             'latitude'  => $data['latitude'],
