@@ -118,6 +118,13 @@ export const fil: Record<string, string> = {
     'stats.reports_by_barangay': 'Report per Barangay',
     'stats.report_sources': 'Saan Galing ang Report',
     'stats.response_time': 'Bilis ng Response',
+    'stats.severity_sub': 'Hatian ayon sa severity level',
+    'stats.status_sub': 'Mga report ayon sa kasalukuyang status',
+    'stats.monthly_sub': 'Nakaraang 6 na buwan',
+    'stats.peak_hours_sub': 'Oras x Araw ng Linggo na heatmap',
+    'stats.barangay_sub': 'Mga lugar na may pinakamaraming report',
+    'stats.sources_sub': 'Saan nanggaling ang mga report',
+    'stats.response_sub': 'Average na oras bawat stage (resolved reports)',
 
     // Filters
     'filter.severity': 'Severity',

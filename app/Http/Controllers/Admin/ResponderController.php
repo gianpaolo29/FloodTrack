@@ -58,6 +58,47 @@ class ResponderController extends Controller
                 $q2->where('name', 'like', "%{$request->search}%")
                    ->orWhere('email', 'like', "%{$request->search}%");
             }))
+            ->when($request->status, function ($q) use ($request) {
+                $statuses = explode(',', $request->status);
+                if (count($statuses) === 1) {
+                    if ($statuses[0] === 'active') {
+                        $q->whereHas('assignedReports', fn ($r) => $r->where('status', 'assigned'));
+                    } else {
+                        $q->whereDoesntHave('assignedReports', fn ($r) => $r->where('status', 'assigned'));
+                    }
+                }
+            })
+            ->when($request->team, function ($q) use ($request) {
+                $teams = explode(',', $request->team);
+                if (count($teams) === 1) {
+                    if ($teams[0] === 'in_team') {
+                        $q->whereNotNull('team_id');
+                    } else {
+                        $q->whereNull('team_id');
+                    }
+                }
+            })
+            ->when($request->leader, function ($q) use ($request) {
+                $roles = explode(',', $request->leader);
+                if (count($roles) === 1) {
+                    if ($roles[0] === 'leader') {
+                        $q->whereHas('team', fn ($t) => $t->whereColumn('teams.leader_id', 'users.id'));
+                    } else {
+                        $q->where(function ($q2) {
+                            $q2->whereNull('team_id')
+                               ->orWhereDoesntHave('team', fn ($t) => $t->whereColumn('teams.leader_id', 'users.id'));
+                        });
+                    }
+                }
+            })
+            ->when($request->barangay, function ($q) use ($request) {
+                $barangays = explode(',', $request->barangay);
+                $q->where(function ($sub) use ($barangays) {
+                    foreach ($barangays as $b) {
+                        $sub->orWhere('home_address', 'like', "%{$b}%");
+                    }
+                });
+            })
             ->withCount([
                 'assignedReports as total_assigned',
                 'assignedReports as active_assignments' => fn ($q) => $q->where('status', 'assigned'),
@@ -80,7 +121,14 @@ class ResponderController extends Controller
 
         return Inertia::render('admin/responders/index', [
             'responders'   => $responders,
-            'filters'      => $request->only(['search']),
+            'filters'      => [
+                'search' => $request->search,
+                'status' => $request->status,
+                'team'   => $request->team,
+                'leader'   => $request->leader,
+                'barangay' => $request->barangay,
+            ],
+            'barangay_list' => collect(config('barangays', []))->pluck('name')->sort()->values(),
             'teams_count'  => Team::count(),
             'stats'        => $stats,
             'trends'       => $trends,

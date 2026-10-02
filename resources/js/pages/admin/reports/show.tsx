@@ -369,6 +369,11 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                     {report.severity}
                                                 </span>
                                             </DetailRow>
+                                            {report.depth_ft != null && (
+                                                <DetailRow icon={Navigation} label="Flood Depth">
+                                                    <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">{report.depth_ft} ft</span>
+                                                </DetailRow>
+                                            )}
                                             <DetailRow icon={CheckCircle2} label="Status">
                                                 <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_COLORS[report.status]}`}>
                                                     {report.status}

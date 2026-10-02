@@ -67,6 +67,7 @@ class ReportController extends Controller
     {
         $data = $request->validate([
             'severity'    => 'required|in:low,moderate,high,critical',
+            'depth_ft'    => 'nullable|numeric|min:0|max:99',
             'description' => 'nullable|string|max:1000',
             'latitude'    => 'required|numeric|between:-90,90',
             'longitude'   => 'required|numeric|between:-180,180',

@@ -118,6 +118,13 @@ export const en: Record<string, string> = {
     'stats.reports_by_barangay': 'Reports by Barangay',
     'stats.report_sources': 'Report Sources',
     'stats.response_time': 'Response Time Breakdown',
+    'stats.severity_sub': 'Distribution by severity level',
+    'stats.status_sub': 'Reports by current status',
+    'stats.monthly_sub': 'Last 6 months',
+    'stats.peak_hours_sub': 'Hour x Day-of-Week heatmap',
+    'stats.barangay_sub': 'Top areas by report volume',
+    'stats.sources_sub': 'Where reports come from',
+    'stats.response_sub': 'Average time per stage (resolved reports)',
 
     // Filters
     'filter.severity': 'Severity',

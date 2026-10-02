@@ -1,12 +1,10 @@
-import { Head, router } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import type { ApexOptions } from 'apexcharts';
 import {
     AlertCircle,
     AlertTriangle,
     BarChart3,
-    Calendar,
     CheckCircle2,
-    ChevronLeft,
     ChevronRight,
     Clock,
     ClipboardCopy,
@@ -20,16 +18,16 @@ import {
     Sparkles,
     TrendingUp,
     Users,
-    X,
     Zap,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import ReactDOM from 'react-dom';
 import ReactApexChart from 'react-apexcharts';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import { KpiTooltip } from '@/components/admin/kpi/KpiTooltip';
-import type { InsightRow } from '@/lib/kpi-utils';
+import { PERIODS } from '@/lib/kpi-utils';
+import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
+import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
+import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { useLocale } from '@/hooks/use-locale';
 import { StatisticsSkeleton } from '@/components/admin/skeletons';
 
@@ -112,14 +110,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const DONUT_COLORS  = ['#ef4444', '#f97316', '#f59e0b', '#10b981'];
 const STATUS_COLORS = ['#f59e0b', '#3b82f6', '#8b5cf6', '#10b981', '#94a3b8'];
-
-const PERIODS = [
-    { key: 'today', label: 'Today' },
-    { key: 'week',  label: 'This Week' },
-    { key: 'month', label: 'Monthly' },
-    { key: 'all',   label: 'All' },
-    { key: 'custom', label: 'Custom' },
-] as const;
 
 /* ─── Tooltip ─── */
 function tooltipHtml(label: string, rows: { color: string; name: string; value: number | string }[]) {
@@ -215,162 +205,6 @@ function InsightBar({ question, answers }: { question: string; answers: string[]
     );
 }
 
-/* ─── Calendar Date Range Picker (portal) ─── */
-function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
-    fromDate: string | null; toDate: string | null;
-    onApply: (from: string, to: string) => void; onClose: () => void;
-    anchorRef: React.RefObject<HTMLDivElement | null>;
-}) {
-    const [viewDate, setViewDate] = useState(() => {
-        if (fromDate) return new Date(fromDate + 'T00:00:00');
-        return new Date();
-    });
-    const [rangeStart, setRangeStart] = useState<string | null>(fromDate ?? null);
-    const [rangeEnd, setRangeEnd] = useState<string | null>(toDate ?? null);
-    const [selecting, setSelecting] = useState<'start' | 'end'>('start');
-    const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
-
-    const year = viewDate.getFullYear();
-    const month = viewDate.getMonth();
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const today = new Date();
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-
-    useEffect(() => {
-        if (!anchorRef.current) return;
-        const rect = anchorRef.current.getBoundingClientRect();
-        const calW = 320;
-        let left = rect.right - calW;
-        if (left < 8) left = 8;
-        if (left + calW > window.innerWidth - 8) left = window.innerWidth - calW - 8;
-        setPos({ top: rect.bottom + 8, left });
-    }, [anchorRef]);
-
-    const days: (number | null)[] = [];
-    for (let i = 0; i < firstDay; i++) days.push(null);
-    for (let d = 1; d <= daysInMonth; d++) days.push(d);
-
-    const fmt = (d: number) => `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-
-    const isInRange = (dateStr: string) => {
-        if (!rangeStart || !rangeEnd) return false;
-        return dateStr >= rangeStart && dateStr <= rangeEnd;
-    };
-
-    const handleDayClick = (d: number) => {
-        const dateStr = fmt(d);
-        if (selecting === 'start') {
-            setRangeStart(dateStr);
-            setRangeEnd(null);
-            setSelecting('end');
-        } else {
-            if (rangeStart && dateStr < rangeStart) {
-                setRangeStart(dateStr);
-                setRangeEnd(rangeStart);
-            } else {
-                setRangeEnd(dateStr);
-            }
-            setSelecting('start');
-        }
-    };
-
-    const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
-    const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
-    const monthName = viewDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-
-    const formatDisplay = (d: string | null) => {
-        if (!d) return '\u2014';
-        const dt = new Date(d + 'T00:00:00');
-        return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    };
-
-    return ReactDOM.createPortal(
-        <div
-            className="calendar-portal fixed z-[9999] w-[320px] rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xl shadow-black/15 dark:border-neutral-700 dark:bg-neutral-900 animate-in fade-in slide-in-from-top-2 duration-200"
-            style={{ top: pos?.top ?? -9999, left: pos?.left ?? -9999, opacity: pos ? 1 : 0 }}
-        >
-            <div className="mb-3 flex items-center justify-between">
-                <button onClick={prevMonth} className="flex size-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300">
-                    <ChevronLeft className="size-4" />
-                </button>
-                <span className="text-sm font-semibold text-neutral-800 dark:text-white">{monthName}</span>
-                <button onClick={nextMonth} className="flex size-7 items-center justify-center rounded-lg text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300">
-                    <ChevronRight className="size-4" />
-                </button>
-            </div>
-            <div className="mb-1 grid grid-cols-7 text-center">
-                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-                    <span key={d} className="py-1 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">{d}</span>
-                ))}
-            </div>
-            <div className="grid grid-cols-7 gap-y-0.5">
-                {days.map((d, i) => {
-                    if (d === null) return <span key={`e-${i}`} />;
-                    const dateStr = fmt(d);
-                    const isStart = dateStr === rangeStart;
-                    const isEnd = dateStr === rangeEnd;
-                    const inRange = isInRange(dateStr);
-                    const isToday = dateStr === todayStr;
-                    const isFuture = dateStr > todayStr;
-                    return (
-                        <button
-                            key={d}
-                            disabled={isFuture}
-                            onClick={() => handleDayClick(d)}
-                            className={`relative flex size-9 items-center justify-center text-xs font-medium transition-all mx-auto rounded-lg
-                                ${isFuture ? 'cursor-not-allowed text-neutral-200 dark:text-neutral-700' : 'cursor-pointer'}
-                                ${isStart || isEnd
-                                    ? 'bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900'
-                                    : inRange
-                                        ? 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
-                                        : isToday
-                                            ? 'ring-1 ring-neutral-300 text-neutral-600 dark:ring-neutral-600 dark:text-neutral-400'
-                                            : !isFuture ? 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800' : ''
-                                }
-                            `}
-                        >
-                            {d}
-                        </button>
-                    );
-                })}
-            </div>
-            <div className="mt-3 flex items-center gap-2 rounded-xl bg-neutral-50 p-2.5 dark:bg-neutral-800/60">
-                <div className="flex-1 text-center">
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">From</p>
-                    <p className={`mt-0.5 text-xs font-bold ${rangeStart ? 'text-neutral-900 dark:text-neutral-100' : 'text-neutral-300 dark:text-neutral-600'}`}>
-                        {formatDisplay(rangeStart)}
-                    </p>
-                </div>
-                <ChevronRight className="size-3 text-neutral-300 dark:text-neutral-600" />
-                <div className="flex-1 text-center">
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">To</p>
-                    <p className={`mt-0.5 text-xs font-bold ${rangeEnd ? 'text-neutral-900 dark:text-neutral-100' : 'text-neutral-300 dark:text-neutral-600'}`}>
-                        {formatDisplay(rangeEnd)}
-                    </p>
-                </div>
-            </div>
-            <div className="mt-3 flex items-center gap-2">
-                <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2 text-[11px] font-semibold text-neutral-500 transition-all hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800">
-                    Cancel
-                </button>
-                <button
-                    onClick={() => { if (rangeStart && rangeEnd) onApply(rangeStart, rangeEnd); }}
-                    disabled={!rangeStart || !rangeEnd}
-                    className={`flex-1 rounded-xl py-2 text-[11px] font-semibold transition-all ${
-                        rangeStart && rangeEnd
-                            ? 'bg-neutral-900 text-white shadow-sm hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200'
-                            : 'bg-neutral-100 text-neutral-300 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-600'
-                    }`}
-                >
-                    Apply
-                </button>
-            </div>
-        </div>,
-        document.body
-    );
-}
-
 /* ─── Urgency Logic ─── */
 function getUrgency(key: string, trends: Props['trends'], critical_count: number, resolution_rate: number): 'good' | 'warning' | 'urgent' | undefined {
     switch (key) {
@@ -396,81 +230,6 @@ const ACTION_LINKS: Record<string, { label: string; href: string }> = {
     resolution_rate: { label: 'View reports', href: '/admin/reports' },
     critical: { label: 'View critical reports', href: '/admin/reports?severity=critical' },
 };
-
-/* ─── Accent styles ─── */
-const ACCENT_STYLES = {
-    green: 'bg-emerald-500',
-    amber: 'bg-amber-500',
-    red: 'bg-red-500',
-    neutral: 'bg-neutral-300 dark:bg-neutral-600',
-} as const;
-
-/* ─── Stat KPI Card ─── */
-function StatKpiCard({ label, value, subtitle, icon: Icon, desc, insights, trend, trendLabel, urgency, actionLink, accent, alert, mounted = true, index = 0 }: {
-    label: string; value: string; subtitle: string; icon: React.ElementType;
-    grad?: string; shadow?: string; alert?: boolean; desc: string; insights: InsightRow[];
-    trend?: number; trendLabel?: string;
-    urgency?: 'good' | 'warning' | 'urgent';
-    actionLink?: { label: string; href: string };
-    accent?: 'green' | 'amber' | 'red' | 'neutral';
-    mounted?: boolean;
-    index?: number;
-}) {
-    const [showTooltip, setShowTooltip] = useState(false);
-    const cardRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (!showTooltip) return;
-        const handler = (e: MouseEvent) => {
-            if (cardRef.current && !cardRef.current.contains(e.target as Node)) {
-                setShowTooltip(false);
-            }
-        };
-        document.addEventListener('click', handler);
-        return () => document.removeEventListener('click', handler);
-    }, [showTooltip]);
-
-    return (
-        <div
-            ref={cardRef}
-            className={`group relative overflow-hidden rounded-2xl border border-neutral-200/70 bg-white p-4 sm:p-5 transition-all duration-700 hover:shadow-lg hover:border-neutral-300/80 cursor-pointer dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-            style={{ transitionDelay: `${index * 80}ms` }}
-            onClick={() => setShowTooltip(prev => !prev)}
-            onMouseEnter={() => setShowTooltip(true)}
-            onMouseLeave={() => setShowTooltip(false)}
-        >
-            {accent && <div className={`absolute inset-x-0 top-0 h-[3px] ${ACCENT_STYLES[accent]}`} />}
-            <KpiTooltip desc={desc} insights={insights} visible={showTooltip} parentRef={cardRef} urgency={urgency} actionLink={actionLink} />
-            {alert && (
-                <span className="absolute right-3 top-3 flex size-2">
-                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-neutral-900 opacity-20 dark:bg-white dark:opacity-30" />
-                    <span className="relative inline-flex size-2 rounded-full bg-neutral-900 dark:bg-white" />
-                </span>
-            )}
-            <div className="relative flex items-start justify-between">
-                <div className="min-w-0 flex-1">
-                    <p className="truncate text-[10px] font-medium uppercase tracking-wider text-neutral-400 sm:text-[11px] dark:text-neutral-500">{label}</p>
-                    <p className="mt-1.5 text-xl font-bold tabular-nums tracking-tight text-neutral-900 sm:mt-2 sm:text-3xl dark:text-white">{value}</p>
-                    {trend !== undefined && (
-                        <p className="mt-1.5 flex items-center gap-1.5">
-                            <span className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums ${
-                                trend >= 0
-                                    ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
-                                    : 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
-                            }`}>
-                                {trend >= 0 ? '\u2191' : '\u2193'} {Math.abs(trend)}%
-                            </span>
-                        </p>
-                    )}
-                    <p className="mt-1 truncate text-[9px] text-neutral-400 sm:text-[10px] dark:text-neutral-500">{trendLabel || subtitle}</p>
-                </div>
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800 sm:size-11 transition-colors duration-300 group-hover:bg-neutral-200 dark:group-hover:bg-neutral-700">
-                    <Icon className="size-5 text-neutral-500 dark:text-neutral-400 sm:size-[22px]" />
-                </div>
-            </div>
-        </div>
-    );
-}
 
 export default function StatisticsPage({
     severity_breakdown,
@@ -500,8 +259,6 @@ export default function StatisticsPage({
     const [showPrevious, setShowPrevious] = useState(false);
     const [copied, setCopied] = useState(false);
     const [typewriterReady, setTypewriterReady] = useState(false);
-    const [showCalendar, setShowCalendar] = useState(false);
-    const calendarRef = useRef<HTMLDivElement>(null);
     const aiAutoTriggered = useRef(false);
 
     // Cache key for localStorage
@@ -531,46 +288,6 @@ export default function StatisticsPage({
 
         generateInsights();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-    // Close calendar on outside click
-    useEffect(() => {
-        if (!showCalendar) return;
-        const handler = (e: MouseEvent) => {
-            const target = e.target as Node;
-            if (calendarRef.current?.contains(target)) return;
-            const portal = document.querySelector('.calendar-portal');
-            if (portal?.contains(target)) return;
-            setShowCalendar(false);
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [showCalendar]);
-
-    const setPeriod = (p: string) => {
-        setAiState('idle');
-        setAiData(null);
-        setTypewriterReady(false);
-        aiAutoTriggered.current = false;
-        if (p === 'custom') {
-            setShowCalendar(true);
-            return;
-        }
-        setShowCalendar(false);
-        router.get('/admin/statistics', { period: p }, { preserveState: true, preserveScroll: true });
-    };
-
-    const applyCustomRange = (from: string, to: string) => {
-        setAiState('idle');
-        setAiData(null);
-        setTypewriterReady(false);
-        aiAutoTriggered.current = false;
-        setShowCalendar(false);
-        router.get('/admin/statistics', { period: 'custom', from, to }, { preserveState: true, preserveScroll: true });
-    };
-
-    const customRangeLabel = custom_from && custom_to
-        ? `${new Date(custom_from + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} \u2013 ${new Date(custom_to + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
-        : null;
 
     async function generateInsights() {
         setAiState('loading');
@@ -1036,45 +753,7 @@ export default function StatisticsPage({
                         </div>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
-                        {/* Period pills */}
-                        <div className="relative flex items-center gap-1 rounded-xl border border-neutral-200 bg-neutral-100/80 p-1 dark:border-neutral-700 dark:bg-neutral-800/80" ref={calendarRef}>
-                            {PERIODS.map(p => (
-                                <button
-                                    key={p.key}
-                                    onClick={() => setPeriod(p.key)}
-                                    className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
-                                        period === p.key || (p.key === 'custom' && showCalendar)
-                                            ? 'bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900'
-                                            : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
-                                    }`}
-                                >
-                                    {p.key === 'custom' ? (
-                                        <span className="flex items-center gap-1">
-                                            <Calendar className="size-3" />
-                                            {period === 'custom' && customRangeLabel ? customRangeLabel : p.label}
-                                        </span>
-                                    ) : p.label}
-                                </button>
-                            ))}
-                            {period === 'custom' && customRangeLabel && !showCalendar && (
-                                <button
-                                    onClick={() => setPeriod('all')}
-                                    className="ml-0.5 flex size-5 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-neutral-200 hover:text-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-neutral-300"
-                                    title="Clear custom range"
-                                >
-                                    <X className="size-3" />
-                                </button>
-                            )}
-                            {showCalendar && (
-                                <CalendarPicker
-                                    fromDate={custom_from ?? null}
-                                    toDate={custom_to ?? null}
-                                    onApply={applyCustomRange}
-                                    onClose={() => setShowCalendar(false)}
-                                    anchorRef={calendarRef}
-                                />
-                            )}
-                        </div>
+                        <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/statistics" />
                         {/* Export button */}
                         <a
                             href="/admin/export"
@@ -1088,22 +767,64 @@ export default function StatisticsPage({
 
                 {/* ── 3 KPI Cards ── */}
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
-                    <StatKpiCard label={t('stats.total_reports')} value={total_reports.toLocaleString()} subtitle="All time" icon={FileText} trend={trends.reports} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('total_reports')} urgency={getUrgency('total_reports', trends, critical_count, resolution_rate)} actionLink={ACTION_LINKS.total_reports} accent="neutral" mounted={mounted} index={0} insights={[
-                        { label: 'Resolved', value: resolvedCount, color: '#10b981', max: total_reports || 1 },
-                        { label: 'Active', value: activeCount, color: '#3b82f6', max: total_reports || 1 },
-                        { label: 'Pending', value: pendingCount, color: '#f59e0b', max: total_reports || 1 },
-                        { label: 'Rejected', value: rejectedCount, color: '#94a3b8' },
-                    ]} />
-                    <StatKpiCard label={t('stats.resolution_rate')} value={`${resolution_rate}%`} subtitle="Resolved / total" icon={CheckCircle2} trend={trends.resolved} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('resolution_rate')} urgency={getUrgency('resolution_rate', trends, critical_count, resolution_rate)} actionLink={ACTION_LINKS.resolution_rate} accent={resolution_rate >= 80 ? 'green' : resolution_rate >= 50 ? 'amber' : 'red'} mounted={mounted} index={1} insights={[
-                        { label: 'Resolved', value: resolvedCount, color: '#10b981', max: total_reports || 1 },
-                        { label: 'Total reports', value: total_reports, color: '#6366f1' },
-                        { label: 'Still open', value: pendingCount + activeCount, color: '#f59e0b', max: total_reports || 1 },
-                    ]} />
-                    <StatKpiCard label={t('stats.critical_reports')} value={critical_count.toLocaleString()} subtitle="Highest severity" icon={AlertTriangle} trend={trends.critical} trendLabel={`${trends.label}, ${trends.period_label}`} desc={statDesc('critical')} urgency={getUrgency('critical', trends, critical_count, resolution_rate)} actionLink={ACTION_LINKS.critical} accent={critical_count > 5 ? 'red' : critical_count > 0 ? 'amber' : 'green'} alert={critical_count > 0} mounted={mounted} index={2} insights={[
-                        { label: 'Critical', value: critical_count, color: '#ef4444', max: total_reports || 1 },
-                        { label: 'High', value: highCount, color: '#f97316', max: total_reports || 1 },
-                        { label: '% of total', value: `${critPct}%`, color: '#ef4444' },
-                    ]} />
+                    <PrimaryStatCard
+                        label={t('stats.total_reports')}
+                        value={total_reports}
+                        trend={trends.reports}
+                        trendLabel={`${trends.label}, ${trends.period_label}`}
+                        desc={statDesc('total_reports')}
+                        urgency={getUrgency('total_reports', trends, critical_count, resolution_rate)}
+                        actionLink={ACTION_LINKS.total_reports}
+                        accent="neutral"
+                        icon={FileText}
+                        alert={false}
+                        mounted={mounted}
+                        index={0}
+                        insights={[
+                            { label: 'Resolved', value: resolvedCount, color: '#10b981', max: total_reports || 1 },
+                            { label: 'Active', value: activeCount, color: '#3b82f6', max: total_reports || 1 },
+                            { label: 'Pending', value: pendingCount, color: '#f59e0b', max: total_reports || 1 },
+                            { label: 'Rejected', value: rejectedCount, color: '#94a3b8' },
+                        ]}
+                    />
+                    <SecondaryStatCard
+                        label={t('stats.resolution_rate')}
+                        value={`${resolution_rate}%`}
+                        trend={trends.resolved}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        desc={statDesc('resolution_rate')}
+                        urgency={getUrgency('resolution_rate', trends, critical_count, resolution_rate)}
+                        actionLink={ACTION_LINKS.resolution_rate}
+                        accent={resolution_rate >= 80 ? 'green' : resolution_rate >= 50 ? 'amber' : 'red'}
+                        icon={CheckCircle2}
+                        mounted={mounted}
+                        delay={80}
+                        insights={[
+                            { label: 'Resolved', value: resolvedCount, color: '#10b981', max: total_reports || 1 },
+                            { label: 'Total reports', value: total_reports, color: '#6366f1' },
+                            { label: 'Still open', value: pendingCount + activeCount, color: '#f59e0b', max: total_reports || 1 },
+                        ]}
+                    />
+                    <SecondaryStatCard
+                        label={t('stats.critical_reports')}
+                        value={critical_count}
+                        trend={trends.critical}
+                        trendLabel={trends.label}
+                        periodLabel={trends.period_label}
+                        desc={statDesc('critical')}
+                        urgency={getUrgency('critical', trends, critical_count, resolution_rate)}
+                        actionLink={ACTION_LINKS.critical}
+                        accent={critical_count > 5 ? 'red' : critical_count > 0 ? 'amber' : 'green'}
+                        icon={AlertTriangle}
+                        mounted={mounted}
+                        delay={160}
+                        insights={[
+                            { label: 'Critical', value: critical_count, color: '#ef4444', max: total_reports || 1 },
+                            { label: 'High', value: highCount, color: '#f97316', max: total_reports || 1 },
+                            { label: '% of total', value: `${critPct}%`, color: '#ef4444' },
+                        ]}
+                    />
                 </div>
 
                 {/* ── AI Situation Analysis (hero) ── */}
@@ -1389,7 +1110,7 @@ export default function StatisticsPage({
 
                 {/* ── Response Time Breakdown ── */}
                 <Card>
-                    <CardHeader icon={Clock} title={t('stats.response_time')} subtitle="Average time per stage (resolved reports)">
+                    <CardHeader icon={Clock} title={t('stats.response_time')} subtitle={t('stats.response_sub')}>
                         <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
                             {STAGE_NAMES.map((name, i) => (
                                 <span key={name} className="flex items-center gap-1.5 text-neutral-400">
@@ -1447,7 +1168,7 @@ export default function StatisticsPage({
                 {/* ── Charts Row 1: Severity Donut + Status Bar ── */}
                 <div className="grid gap-5 lg:grid-cols-2">
                     <Card>
-                        <CardHeader icon={AlertTriangle} title={t('stats.severity_breakdown')} subtitle="Distribution by severity level" />
+                        <CardHeader icon={AlertTriangle} title={t('stats.severity_breakdown')} subtitle={t('stats.severity_sub')} />
                         {totalSeverity > 0 && (() => {
                             const maxIdx = severityValues.indexOf(Math.max(...severityValues));
                             const maxLabel = severityLabels[maxIdx];
@@ -1478,7 +1199,7 @@ export default function StatisticsPage({
                     </Card>
 
                     <Card>
-                        <CardHeader icon={BarChart3} title={t('stats.status_distribution')} subtitle="Reports by current status" />
+                        <CardHeader icon={BarChart3} title={t('stats.status_distribution')} subtitle={t('stats.status_sub')} />
                         {(() => {
                             const statusNames = ['Pending', 'Verified', 'Assigned', 'Resolved', 'Rejected'];
                             const totalStatus = statusValues.reduce((a, b) => a + b, 0);
@@ -1505,7 +1226,7 @@ export default function StatisticsPage({
 
                 {/* ── Charts Row 2: Monthly Trend (full width) ── */}
                 <Card>
-                    <CardHeader icon={TrendingUp} title={t('stats.monthly_trend')} subtitle="Last 6 months">
+                    <CardHeader icon={TrendingUp} title={t('stats.monthly_trend')} subtitle={t('stats.monthly_sub')}>
                         <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
                             <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-indigo-500" />Total</span>
                             <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-rose-500" />Critical</span>
@@ -1540,7 +1261,7 @@ export default function StatisticsPage({
                 {/* ── Charts Row 3: Peak Hours + Month-over-Month ── */}
                 <div className="grid gap-5 lg:grid-cols-2">
                     <Card>
-                        <CardHeader icon={Clock} title={t('stats.peak_hours')} subtitle="Hour x Day-of-Week heatmap" />
+                        <CardHeader icon={Clock} title={t('stats.peak_hours')} subtitle={t('stats.peak_hours_sub')} />
                         {(() => {
                             const hours = Array.from({ length: 24 }, (_, h) => peak_hours[h] ?? 0);
                             const maxHour = hours.indexOf(Math.max(...hours));
@@ -1609,7 +1330,7 @@ export default function StatisticsPage({
                 <div className="grid gap-5 lg:grid-cols-2">
                     {barangay_reports.length > 0 && (
                         <Card>
-                            <CardHeader icon={MapPin} title={t('stats.reports_by_barangay')} subtitle="Top areas by report volume" />
+                            <CardHeader icon={MapPin} title={t('stats.reports_by_barangay')} subtitle={t('stats.barangay_sub')} />
                             {(() => {
                                 const totalBrgy = sortedBarangays.reduce((a, b) => a + b.count, 0);
                                 const top3Count = sortedBarangays.slice(0, 3).reduce((a, b) => a + b.count, 0);
@@ -1632,7 +1353,7 @@ export default function StatisticsPage({
                     )}
 
                     <Card>
-                        <CardHeader icon={PieChart} title={t('stats.report_sources')} subtitle="Where reports come from" />
+                        <CardHeader icon={PieChart} title={t('stats.report_sources')} subtitle={t('stats.sources_sub')} />
                         {totalSources > 0 && (() => {
                             const maxSrcIdx = sourceValues.indexOf(Math.max(...sourceValues));
                             const maxSrcPct = Math.round((sourceValues[maxSrcIdx] / totalSources) * 100);

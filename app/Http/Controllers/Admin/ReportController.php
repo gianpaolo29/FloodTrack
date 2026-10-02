@@ -130,9 +130,11 @@ class ReportController extends Controller
                 $q2->where('address', 'like', "%{$request->search}%")
                    ->orWhere('reference_number', 'like', "%{$request->search}%");
             }))
-            ->orderByRaw("{$statusOrder} DESC")
+            ->orderByRaw("DATE(created_at) DESC")
             ->orderByRaw("{$severityOrder} DESC")
-            ->orderBy('created_at', 'asc')
+            ->orderByRaw("COALESCE(depth_ft, 0) DESC")
+            ->orderByRaw("{$statusOrder} DESC")
+            ->orderBy('created_at', 'desc')
             ->paginate(20)
             ->withQueryString();
         [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);

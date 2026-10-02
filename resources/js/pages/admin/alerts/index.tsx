@@ -1052,7 +1052,7 @@ function AlertRow({
     const deleteForm = useForm({});
 
     const published = new Date(alert.created_at);
-    const publishedDate = published.toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const publishedDate = published.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
     const publishedTime = published.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }).toLowerCase();
 
     return (

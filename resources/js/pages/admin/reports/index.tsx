@@ -654,6 +654,9 @@ function ReportRow({ report, isSelected, onToggle }: {
                 <span className={`text-[10px] font-bold capitalize ${SEVERITY_COLORS[report.severity as Severity]}`}>
                     {report.severity}
                 </span>
+                {report.depth_ft != null && (
+                    <span className="ml-1 text-[9px] font-medium text-blue-600 dark:text-blue-400">{report.depth_ft}ft</span>
+                )}
             </td>
 
             {/* Status */}

@@ -12,6 +12,7 @@ import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
 import type { InsightRow } from '@/lib/kpi-utils';
 import type { BreadcrumbItem } from '@/types';
 import { ManagementListSkeleton } from '@/components/admin/skeletons';
+import { MultiSelectFilter } from '@/components/admin/MultiSelectFilter';
 
 const modalSpring = { type: 'spring' as const, stiffness: 400, damping: 28 };
 const NASUGBU_BOUNDS = { north: 14.115, south: 14.010, east: 120.680, west: 120.565 };
@@ -50,7 +51,8 @@ interface Paginated<T> {
 
 interface Props {
     responders: Paginated<Responder>;
-    filters: { search?: string };
+    filters: { search?: string; status?: string; team?: string; leader?: string; barangay?: string };
+    barangay_list: string[];
     teams_count: number;
     stats: { total: number; active_assignments: number; total_resolved: number; in_teams: number };
     trends: { total: number; active_assignments: number; total_resolved: number; label: string; period_label: string };
@@ -64,7 +66,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Rescue Personnel', href: '/admin/responders' },
 ];
 
-export default function AdminRespondersIndex({ responders, filters, teams_count, stats, trends, period, custom_from, custom_to }: Props) {
+export default function AdminRespondersIndex({ responders, filters, barangay_list, teams_count, stats, trends, period, custom_from, custom_to }: Props) {
     const { t } = useLocale();
     const [mounted, setMounted] = useState(false);
     useEffect(() => { const tm = setTimeout(() => setMounted(true), 80); return () => clearTimeout(tm); }, []);
@@ -72,6 +74,12 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
     const [showCreate, setShowCreate] = useState(false);
     const [editingResponder, setEditingResponder] = useState<Responder | null>(null);
     const [searchValue, setSearchValue] = useState('');
+
+    const filter = useCallback((key: string, value: string) => {
+        router.get('/admin/responders', { ...filters, [key]: value || undefined, page: undefined }, {
+            preserveState: false, replace: true,
+        });
+    }, [filters]);
 
     const handleDelete = async (r: Responder) => {
         const confirmed = await swalDelete(r.name);
@@ -85,7 +93,7 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
         return r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q) || (r.contact_number ?? '').toLowerCase().includes(q) || (r.home_address ?? '').toLowerCase().includes(q) || (r.team_name ?? '').toLowerCase().includes(q);
     });
 
-    const hasFilters = false;
+    const hasFilters = !!(searchValue || filters.status || filters.team || filters.leader);
 
     const tl = trends.label;
     const inTeamsPct = stats.total > 0 ? Math.round((stats.in_teams / stats.total) * 100) : 0;
@@ -245,10 +253,10 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                 </div>
 
                 {/* Table card */}
-                <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                <div className="overflow-visible rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Toolbar */}
-                    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
+                    <div className="relative z-20 rounded-t-2xl flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
                         <div className="relative flex-1 min-w-[180px] max-w-xs">
                             <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                             <input
@@ -264,6 +272,39 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
                                 </button>
                             )}
                         </div>
+                        <MultiSelectFilter
+                            label="Status"
+                            options={[
+                                { value: 'active', label: 'Active' },
+                                { value: 'idle', label: 'Idle' },
+                            ]}
+                            selected={filters.status ? filters.status.split(',') : []}
+                            onChange={(vals) => filter('status', vals.join(','))}
+                        />
+                        <MultiSelectFilter
+                            label="Team"
+                            options={[
+                                { value: 'in_team', label: 'In a Team' },
+                                { value: 'unassigned', label: 'Unassigned' },
+                            ]}
+                            selected={filters.team ? filters.team.split(',') : []}
+                            onChange={(vals) => filter('team', vals.join(','))}
+                        />
+                        <MultiSelectFilter
+                            label="Role"
+                            options={[
+                                { value: 'leader', label: 'Team Leader' },
+                                { value: 'member', label: 'Member' },
+                            ]}
+                            selected={filters.leader ? filters.leader.split(',') : []}
+                            onChange={(vals) => filter('leader', vals.join(','))}
+                        />
+                        <MultiSelectFilter
+                            label="Barangay"
+                            options={barangay_list.map(b => ({ value: b, label: b }))}
+                            selected={filters.barangay ? filters.barangay.split(',') : []}
+                            onChange={(vals) => filter('barangay', vals.join(','))}
+                        />
                     </div>
 
                     {/* Mobile card view */}

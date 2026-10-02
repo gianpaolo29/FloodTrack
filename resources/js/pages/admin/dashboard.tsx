@@ -668,7 +668,7 @@ export default function AdminDashboard({
                     ))}
 
                     {/* Inline Verification Gauge */}
-                    <VerificationGauge rate={verification_rate} color={vrColor} label={vrLabel} bg={vrBg} mounted={mounted} />
+                    <VerificationGauge rate={verification_rate} color={vrColor} label={vrLabel} bg={vrBg} mounted={mounted} locale={locale} />
                 </div>
 
                 {/* ━━━ Flood Incident Trend (full width) ━━━ */}
@@ -1172,18 +1172,27 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
     );
 }
 
-function VerificationGauge({ rate, color, label, bg, mounted }: { rate: number; color: string; label: string; bg: string; mounted: boolean }) {
+function VerificationGauge({ rate, color, label, bg, mounted, locale }: { rate: number; color: string; label: string; bg: string; mounted: boolean; locale: string }) {
     const cardRef = useRef<HTMLDivElement>(null);
     const btnRef = useRef<HTMLButtonElement>(null);
     const { open, toggle } = useKpiTooltip(btnRef);
 
+    const isFil = locale === 'fil';
     const desc = rate >= 90
-        ? `${rate}% of submitted reports have been verified — outstanding review performance. The verification pipeline is running efficiently.`
+        ? isFil
+            ? `${rate}% ng mga report ay na-verify na — napakagaling ng verification, halos lahat na-review na. Maayos ang takbo ng verification pipeline.`
+            : `${rate}% of submitted reports have been verified — outstanding review performance. The verification pipeline is running efficiently.`
         : rate >= 70
-        ? `${rate}% verification rate — good progress but there's room to speed up reviews. Check for any pending reports that need attention.`
+        ? isFil
+            ? `${rate}% verification rate — maganda ang takbo pero may pwede pa i-improve. Tingnan kung may pending reports na kailangan pang i-check.`
+            : `${rate}% verification rate — good progress but there's room to speed up reviews. Check for any pending reports that need attention.`
         : rate >= 50
-        ? `Only ${rate}% of reports verified — the review queue is falling behind. Allocate more reviewers to prevent bottlenecks.`
-        : `${rate}% verification rate is critically low — most reports are stuck unreviewed. Immediate action needed to clear the backlog.`;
+        ? isFil
+            ? `${rate}% lang ng reports ang na-verify — nahuhuli na ang pag-review, kailangan dagdagan ng reviewer. Dagdagan ang reviewers para maiwasan ang bottleneck.`
+            : `Only ${rate}% of reports verified — the review queue is falling behind. Allocate more reviewers to prevent bottlenecks.`
+        : isFil
+            ? `${rate}% verification rate — kritikal na baba, kailangan agad na aksyon. Karamihan ng reports nakatengga pa at hindi pa nare-review.`
+            : `${rate}% verification rate is critically low — most reports are stuck unreviewed. Immediate action needed to clear the backlog.`;
 
     return (
         <div

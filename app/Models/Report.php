@@ -14,6 +14,7 @@ class Report extends Model
         'user_id',
         'reference_number',
         'severity',
+        'depth_ft',
         'status',
         'description',
         'latitude',
@@ -46,6 +47,7 @@ class Report extends Model
         return [
             'latitude'          => 'float',
             'longitude'         => 'float',
+            'depth_ft'          => 'float',
             'verified_at'       => 'datetime',
             'assigned_at'       => 'datetime',
             'resolved_at'       => 'datetime',

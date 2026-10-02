@@ -19,6 +19,7 @@ import {
     XCircle,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { MultiSelectFilter } from '@/components/admin/MultiSelectFilter';
 import AppLayout from '@/layouts/app-layout';
 import { useLocale } from '@/hooks/use-locale';
 import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
@@ -40,11 +41,15 @@ interface Paginated<T> {
 
 interface Filters {
     search?: string;
+    verified?: string;
+    has_address?: string;
+    barangay?: string;
 }
 
 interface Props {
     users: Paginated<AdminUser>;
     filters: Filters;
+    barangay_list: string[];
     stats: { total: number; new: number; with_address: number; verified: number };
     trends: { total: number; new: number; label: string; period_label: string };
     period: string;
@@ -67,7 +72,7 @@ function cleanAddress(raw: string): string {
 
 const PLUS_CODE_RE = /^[0-9A-Z]{4,8}\+[0-9A-Z]{2,3}$/i;
 
-export default function AdminUsersIndex({ users, filters, stats, trends, period, custom_from, custom_to }: Props) {
+export default function AdminUsersIndex({ users, filters, barangay_list, stats, trends, period, custom_from, custom_to }: Props) {
     const { t } = useLocale();
     const [mounted, setMounted] = useState(false);
     useEffect(() => { const tm = setTimeout(() => setMounted(true), 80); return () => clearTimeout(tm); }, []);
@@ -84,7 +89,13 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
         return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.contact_number ?? '').toLowerCase().includes(q) || (u.home_address ?? '').toLowerCase().includes(q);
     });
 
-    const hasFilters = false;
+    const filter = useCallback((key: string, value: string) => {
+        router.get('/admin/users', { ...filters, [key]: value || undefined, page: undefined }, {
+            preserveState: false, replace: true,
+        });
+    }, [filters]);
+
+    const hasFilters = !!(filters.search || filters.verified || filters.has_address);
 
     const allOnPageSelected = filtered.length > 0 && filtered.every((u) => selected.includes(u.id));
     const toggleAll = () => {
@@ -313,10 +324,10 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                 </AnimatePresence>
 
                 {/* ── Table Card ── */}
-                <div className="overflow-hidden rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                <div className="overflow-visible rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
 
                     {/* Toolbar */}
-                    <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
+                    <div className="relative z-20 rounded-t-2xl flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
                         <div className="relative flex-1 min-w-[180px] max-w-xs">
                             <Search className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400" />
                             <input
@@ -331,6 +342,32 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
                                     <X className="size-3.5" />
                                 </button>
                             )}
+                        </div>
+                        <div className="ml-auto flex flex-wrap items-center gap-1.5">
+                            <MultiSelectFilter
+                                label="Verified"
+                                options={[
+                                    { value: 'verified', label: 'Verified' },
+                                    { value: 'unverified', label: 'Unverified' },
+                                ]}
+                                selected={filters.verified ? filters.verified.split(',') : []}
+                                onChange={(vals) => filter('verified', vals.join(','))}
+                            />
+                            <MultiSelectFilter
+                                label="Address"
+                                options={[
+                                    { value: 'yes', label: 'With Address' },
+                                    { value: 'no', label: 'Without Address' },
+                                ]}
+                                selected={filters.has_address ? filters.has_address.split(',') : []}
+                                onChange={(vals) => filter('has_address', vals.join(','))}
+                            />
+                            <MultiSelectFilter
+                                label="Barangay"
+                                options={barangay_list.map(b => ({ value: b, label: b }))}
+                                selected={filters.barangay ? filters.barangay.split(',') : []}
+                                onChange={(vals) => filter('barangay', vals.join(','))}
+                            />
                         </div>
                     </div>
 

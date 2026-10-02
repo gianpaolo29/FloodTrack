@@ -48,6 +48,28 @@ class UserController extends Controller
                 $q2->where('name', 'like', "%{$request->search}%")
                    ->orWhere('email', 'like', "%{$request->search}%");
             }))
+            ->when($request->verified, function ($q) use ($request) {
+                $vals = explode(',', $request->verified);
+                $q->where(function ($q2) use ($vals) {
+                    if (in_array('verified', $vals))   $q2->orWhereNotNull('email_verified_at');
+                    if (in_array('unverified', $vals)) $q2->orWhereNull('email_verified_at');
+                });
+            })
+            ->when($request->has_address, function ($q) use ($request) {
+                $vals = explode(',', $request->has_address);
+                $q->where(function ($q2) use ($vals) {
+                    if (in_array('yes', $vals)) $q2->orWhereNotNull('home_address');
+                    if (in_array('no', $vals))  $q2->orWhereNull('home_address');
+                });
+            })
+            ->when($request->barangay, function ($q) use ($request) {
+                $barangays = explode(',', $request->barangay);
+                $q->where(function ($sub) use ($barangays) {
+                    foreach ($barangays as $b) {
+                        $sub->orWhere('home_address', 'like', "%{$b}%");
+                    }
+                });
+            })
             ->withCount([
                 'reports',
                 'assignedReports as active_assignments' => fn ($q) => $q->whereIn('status', ['assigned']),
@@ -58,7 +80,13 @@ class UserController extends Controller
 
         return Inertia::render('admin/users/index', [
             'users'       => $users,
-            'filters'     => $request->only(['search']),
+            'filters'     => [
+                'search'      => $request->search,
+                'verified'    => $request->verified,
+                'has_address' => $request->has_address,
+                'barangay'    => $request->barangay,
+            ],
+            'barangay_list' => collect(config('barangays', []))->pluck('name')->sort()->values(),
             'stats'       => $stats,
             'trends'      => $trends,
             'period'      => $period,

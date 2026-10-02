@@ -81,6 +81,7 @@ export interface Report {
     id: number;
     reference_number: string;
     severity: Severity;
+    depth_ft: number | null;
     status: ReportStatus;
     description: string | null;
     latitude: number;

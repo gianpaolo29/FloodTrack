@@ -267,22 +267,23 @@ class ReportsExport
         $columns = [
             'A' => ['title' => 'Reference',          'width' => 20],
             'B' => ['title' => 'Severity',            'width' => 12],
-            'C' => ['title' => 'Status',              'width' => 12],
-            'D' => ['title' => 'Description',         'width' => 40],
-            'E' => ['title' => 'Address',             'width' => 35],
-            'F' => ['title' => 'Lat',                 'width' => 14],
-            'G' => ['title' => 'Lon',                 'width' => 14],
-            'H' => ['title' => 'Reporter',            'width' => 18],
-            'I' => ['title' => 'Assigned To',         'width' => 18],
-            'J' => ['title' => 'Team',                'width' => 18],
-            'K' => ['title' => 'Created At',          'width' => 22],
-            'L' => ['title' => 'Verified At',         'width' => 22],
-            'M' => ['title' => 'Assigned At',         'width' => 22],
-            'N' => ['title' => 'Resolved At',         'width' => 22],
-            'O' => ['title' => 'Response Time (min)',  'width' => 20],
-            'P' => ['title' => 'Resolution Time (min)','width' => 22],
-            'Q' => ['title' => 'SLA Status',          'width' => 14],
-            'R' => ['title' => 'Source',               'width' => 12],
+            'C' => ['title' => 'Depth (ft)',            'width' => 12],
+            'D' => ['title' => 'Status',               'width' => 12],
+            'E' => ['title' => 'Description',          'width' => 40],
+            'F' => ['title' => 'Address',              'width' => 35],
+            'G' => ['title' => 'Lat',                  'width' => 14],
+            'H' => ['title' => 'Lon',                  'width' => 14],
+            'I' => ['title' => 'Reporter',             'width' => 18],
+            'J' => ['title' => 'Assigned To',          'width' => 18],
+            'K' => ['title' => 'Team',                 'width' => 18],
+            'L' => ['title' => 'Created At',           'width' => 22],
+            'M' => ['title' => 'Verified At',          'width' => 22],
+            'N' => ['title' => 'Assigned At',          'width' => 22],
+            'O' => ['title' => 'Resolved At',          'width' => 22],
+            'P' => ['title' => 'Response Time (min)',   'width' => 20],
+            'Q' => ['title' => 'Resolution Time (min)', 'width' => 22],
+            'R' => ['title' => 'SLA Status',           'width' => 14],
+            'S' => ['title' => 'Source',               'width' => 12],
         ];
 
         // ── Header row ──
@@ -292,7 +293,7 @@ class ReportsExport
             $sheet->getColumnDimension($col)->setWidth($meta['width']);
         }
 
-        $lastCol = 'R';
+        $lastCol = 'S';
         $this->applyStyle($sheet, "A{$headerRow}:{$lastCol}{$headerRow}", [
             'font'      => ['bold' => true, 'size' => 10, 'color' => ['argb' => 'FFFFFFFF']],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => "FF{$this->brandBlue}"]],
@@ -314,42 +315,46 @@ class ReportsExport
             $sheet->getCell("A{$row}")->setValueExplicit($report->reference_number, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
 
             $sheet->setCellValue("B{$row}", ucfirst($report->severity));
-            $sheet->setCellValue("C{$row}", ucfirst($report->status));
-            $sheet->setCellValue("D{$row}", $report->description);
-            $sheet->setCellValue("E{$row}", $report->address);
+            $sheet->setCellValue("C{$row}", $report->depth_ft !== null ? (float) $report->depth_ft : '');
+            if ($report->depth_ft !== null) {
+                $sheet->getStyle("C{$row}")->getNumberFormat()->setFormatCode('0.0');
+            }
+            $sheet->setCellValue("D{$row}", ucfirst($report->status));
+            $sheet->setCellValue("E{$row}", $report->description);
+            $sheet->setCellValue("F{$row}", $report->address);
 
             // Lat/Lon as numbers
             if ($report->latitude !== null) {
-                $sheet->setCellValue("F{$row}", (float) $report->latitude);
-                $sheet->getStyle("F{$row}")->getNumberFormat()->setFormatCode('0.000000');
-            }
-            if ($report->longitude !== null) {
-                $sheet->setCellValue("G{$row}", (float) $report->longitude);
+                $sheet->setCellValue("G{$row}", (float) $report->latitude);
                 $sheet->getStyle("G{$row}")->getNumberFormat()->setFormatCode('0.000000');
             }
+            if ($report->longitude !== null) {
+                $sheet->setCellValue("H{$row}", (float) $report->longitude);
+                $sheet->getStyle("H{$row}")->getNumberFormat()->setFormatCode('0.000000');
+            }
 
-            $sheet->setCellValue("H{$row}", $report->user?->name ?? '');
-            $sheet->setCellValue("I{$row}", $report->assignedResponder?->name ?? '');
-            $sheet->setCellValue("J{$row}", $report->assignedTeam?->name ?? '');
+            $sheet->setCellValue("I{$row}", $report->user?->name ?? '');
+            $sheet->setCellValue("J{$row}", $report->assignedResponder?->name ?? '');
+            $sheet->setCellValue("K{$row}", $report->assignedTeam?->name ?? '');
 
             // Dates as Excel date values
-            $this->setDateCell($sheet, "K{$row}", $report->created_at, $dateFormat);
-            $this->setDateCell($sheet, "L{$row}", $report->verified_at, $dateFormat);
-            $this->setDateCell($sheet, "M{$row}", $report->assigned_at, $dateFormat);
-            $this->setDateCell($sheet, "N{$row}", $report->resolved_at, $dateFormat);
+            $this->setDateCell($sheet, "L{$row}", $report->created_at, $dateFormat);
+            $this->setDateCell($sheet, "M{$row}", $report->verified_at, $dateFormat);
+            $this->setDateCell($sheet, "N{$row}", $report->assigned_at, $dateFormat);
+            $this->setDateCell($sheet, "O{$row}", $report->resolved_at, $dateFormat);
 
             // Response time: created → assigned (minutes)
             if ($report->created_at && $report->assigned_at) {
                 $responseMin = round($report->created_at->diffInMinutes($report->assigned_at), 1);
-                $sheet->setCellValue("O{$row}", $responseMin);
-                $sheet->getStyle("O{$row}")->getNumberFormat()->setFormatCode('0.0');
+                $sheet->setCellValue("P{$row}", $responseMin);
+                $sheet->getStyle("P{$row}")->getNumberFormat()->setFormatCode('0.0');
             }
 
             // Resolution time: created → resolved (minutes)
             if ($report->created_at && $report->resolved_at) {
                 $resolutionMin = round($report->created_at->diffInMinutes($report->resolved_at), 1);
-                $sheet->setCellValue("P{$row}", $resolutionMin);
-                $sheet->getStyle("P{$row}")->getNumberFormat()->setFormatCode('0.0');
+                $sheet->setCellValue("Q{$row}", $resolutionMin);
+                $sheet->getStyle("Q{$row}")->getNumberFormat()->setFormatCode('0.0');
             }
 
             // SLA status from tracking
@@ -362,7 +367,7 @@ class ReportsExport
                     'breached' => 'Breached',
                     default    => ucfirst($slaStatus),
                 };
-                $sheet->setCellValue("Q{$row}", $slaLabel);
+                $sheet->setCellValue("R{$row}", $slaLabel);
 
                 $slaColors = [
                     'met'      => 'D1FAE5',
@@ -371,7 +376,7 @@ class ReportsExport
                     'breached' => 'FEE2E2',
                 ];
                 if (isset($slaColors[$slaStatus])) {
-                    $this->applyStyle($sheet, "Q{$row}", [
+                    $this->applyStyle($sheet, "R{$row}", [
                         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => "FF{$slaColors[$slaStatus]}"]],
                         'font' => ['bold' => true],
                     ]);
@@ -384,7 +389,7 @@ class ReportsExport
                 'facebook'  => 'Facebook',
                 default     => 'App',
             };
-            $sheet->setCellValue("R{$row}", $sourceLabel);
+            $sheet->setCellValue("S{$row}", $sourceLabel);
 
             // ── Alternating row color ──
             $rowBg = $idx % 2 === 0 ? 'FFFFFFFF' : "FF{$this->lightGray}";
@@ -405,7 +410,7 @@ class ReportsExport
             // ── Status conditional color ──
             $statKey = strtolower($report->status);
             if (isset($this->statusColors[$statKey])) {
-                $this->applyStyle($sheet, "C{$row}", [
+                $this->applyStyle($sheet, "D{$row}", [
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => "FF{$this->statusColors[$statKey]}"]],
                     'font' => ['bold' => true],
                 ]);
