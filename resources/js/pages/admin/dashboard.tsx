@@ -1,5 +1,6 @@
-import { Head, Link } from '@inertiajs/react';
-import { useEffect, useMemo, useState } from 'react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Popover, PopoverButton, PopoverPanel, Transition } from '@headlessui/react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import type { ApexOptions } from 'apexcharts';
 import {
     AlertTriangle,
@@ -20,6 +21,10 @@ import {
     BarChart3,
     Target,
     Activity,
+    CircleHelp,
+    Filter,
+    ChevronDown,
+    X,
 } from 'lucide-react';
 import ReactApexChart from 'react-apexcharts';
 import AppLayout from '@/layouts/app-layout';
@@ -31,6 +36,8 @@ import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
 import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
 import { useLocale } from '@/hooks/use-locale';
+import { useKpiTooltip } from '@/hooks/use-kpi-tooltip';
+import { KpiTooltip } from '@/components/admin/kpi/KpiTooltip';
 import { DashboardSkeleton } from '@/components/admin/skeletons';
 
 /* ─── Types ─── */
@@ -62,6 +69,8 @@ interface Props {
     period: string;
     custom_from?: string | null;
     custom_to?: string | null;
+    filters: { severity?: string | null; status?: string | null; barangay?: string | null };
+    barangay_list: string[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -125,6 +134,7 @@ export default function AdminDashboard({
     affected_areas, map_reports, team_stats,
     verification_rate, barangay_breakdown, flood_risk_scores,
     period, custom_from, custom_to,
+    filters, barangay_list,
 }: Props) {
     const { t, locale } = useLocale();
     const [mounted, setMounted] = useState(false);
@@ -438,9 +448,9 @@ export default function AdminDashboard({
     }
 
     /* ── Verification Rate color ── */
-    const vrColor = verification_rate >= 80 ? '#10b981' : verification_rate >= 50 ? '#f59e0b' : '#ef4444';
-    const vrLabel = verification_rate >= 80 ? t('dashboard.on_track') : verification_rate >= 50 ? t('dashboard.needs_attention') : t('dashboard.critical');
-    const vrBg    = verification_rate >= 80 ? 'bg-emerald-500' : verification_rate >= 50 ? 'bg-amber-500' : 'bg-red-500';
+    const vrColor = verification_rate >= 90 ? '#10b981' : verification_rate >= 70 ? '#3b82f6' : verification_rate >= 50 ? '#f59e0b' : '#ef4444';
+    const vrLabel = verification_rate >= 90 ? 'Excellent' : verification_rate >= 70 ? 'Good' : verification_rate >= 50 ? t('dashboard.needs_attention') : t('dashboard.critical');
+    const vrBg    = verification_rate >= 90 ? 'bg-emerald-500' : verification_rate >= 70 ? 'bg-blue-500' : verification_rate >= 50 ? 'bg-amber-500' : 'bg-red-500';
 
     /* ── Area Chart (enhanced) ── */
     const SERIES_COLORS: Record<string, string> = { Reports: '#6366f1', Resolved: '#10b981' };
@@ -563,24 +573,34 @@ export default function AdminDashboard({
             <div className="mx-auto flex max-w-[1600px] flex-col gap-6 p-4 sm:p-6 lg:gap-7 lg:p-8">
 
                 {/* ━━━ Header ━━━ */}
-                <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
-                    <div className="flex items-center gap-3.5">
-                        <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-neutral-900 shadow-lg shadow-neutral-900/20 dark:bg-white dark:shadow-white/10">
-                            <LayoutDashboard className="size-5 text-white dark:text-neutral-900" />
+                <div className={`flex flex-col gap-3 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3.5">
+                            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-neutral-900 shadow-lg shadow-neutral-900/20 dark:bg-white dark:shadow-white/10">
+                                <LayoutDashboard className="size-5 text-white dark:text-neutral-900" />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold tracking-tight text-neutral-900 sm:text-2xl dark:text-white">
+                                    {t('dashboard.title')}
+                                </h1>
+                                <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">{t('dashboard.subtitle')}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h1 className="text-xl font-bold tracking-tight text-neutral-900 sm:text-2xl dark:text-white">
-                                {t('dashboard.title')}
-                            </h1>
-                            <p className="mt-0.5 text-xs text-neutral-500 sm:text-sm dark:text-neutral-400">{t('dashboard.subtitle')}</p>
+                        <div className="relative z-30 flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/60">
+                            <DashboardFilters filters={filters} barangayList={barangay_list} period={period} customFrom={custom_from} customTo={custom_to} />
+                            <div className="h-5 w-px bg-neutral-200/80 dark:bg-neutral-700/60" />
+                            <PeriodToggle bare period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin" extraParams={{
+                                ...(filters.severity ? { severity: filters.severity } : {}),
+                                ...(filters.status ? { status: filters.status } : {}),
+                                ...(filters.barangay ? { barangay: filters.barangay } : {}),
+                            }} />
                         </div>
                     </div>
-                    <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin" />
                 </div>
 
                 {/* ━━━ Primary KPI Cards ━━━ */}
                 <div>
-                    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-5">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-5">
                         {([
                             { key: 'total_reports', label: t('dashboard.total_flood_reports'), value: stats.total_reports, trend: trends.reports, trendLabel: `${tl}, ${trends.period_label}`, desc: smartDesc('total_reports'), icon: FileText, grad: 'from-indigo-500 via-blue-500 to-cyan-500', shadow: 'shadow-indigo-500/40', alert: false, accent: 'neutral' as const, insights: [
                                 { label: 'Resolved cases', value: resolvedCount, color: '#10b981', max: stats.total_reports, trend: trendDir(trends.resolved) },
@@ -621,7 +641,7 @@ export default function AdminDashboard({
                 </div>
 
                 {/* ━━━ Secondary KPI + Verification Gauge Row ━━━ */}
-                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+                <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-5">
                     {([
                         { key: 'resolved_today', icon: CheckCircle2, grad: 'from-emerald-500 to-teal-600', shadow: 'shadow-emerald-500/20', value: stats.resolved_today, label: t('dashboard.resolved_today'), trend: trends.resolved, accent: kpiAccent('resolved'), desc: smartDesc('resolved_today'), insights: [
                             { label: 'Awaiting verification', value: stats.pending, color: '#f59e0b', max: stats.total_reports, trend: trendDir(trends.pending) },
@@ -648,28 +668,7 @@ export default function AdminDashboard({
                     ))}
 
                     {/* Inline Verification Gauge */}
-                    <div className={`group relative overflow-hidden rounded-2xl border border-neutral-200/60 bg-white/80 backdrop-blur-sm p-4 sm:p-5 transition-all duration-700 hover:shadow-xl hover:shadow-neutral-900/[0.04] hover:border-neutral-300/70 dark:border-neutral-800/80 dark:bg-neutral-900/80 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`} style={{ transitionDelay: '800ms' }}>
-                        <div className={`absolute inset-x-0 top-0 h-[3px] ${vrBg}`} />
-                        <p className="truncate text-[10px] font-medium uppercase tracking-wider text-neutral-400 sm:text-[11px] dark:text-neutral-500">{t('dashboard.verification_rate')}</p>
-                        <div className="mt-2 flex items-center gap-3">
-                            <div className="relative flex size-14 shrink-0 items-center justify-center">
-                                <svg className="size-full -rotate-90" viewBox="0 0 56 56">
-                                    <circle cx="28" cy="28" r="23" fill="none" stroke="#f1f5f9" strokeWidth="5" className="dark:stroke-neutral-800" />
-                                    <circle cx="28" cy="28" r="23" fill="none"
-                                        stroke={vrColor} strokeWidth="5" strokeLinecap="round"
-                                        strokeDasharray={`${(verification_rate / 100) * 144.5} 144.5`}
-                                    />
-                                </svg>
-                                <span className="absolute text-sm font-bold tabular-nums text-neutral-900 dark:text-white">{verification_rate}%</span>
-                            </div>
-                            <div className="min-w-0 flex-1">
-                                <span className="flex items-center gap-1.5 text-[10px]">
-                                    <span className={`size-1.5 rounded-full ${vrBg}`} />
-                                    <span className="text-neutral-500 dark:text-neutral-400">{vrLabel}</span>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+                    <VerificationGauge rate={verification_rate} color={vrColor} label={vrLabel} bg={vrBg} mounted={mounted} />
                 </div>
 
                 {/* ━━━ Flood Incident Trend (full width) ━━━ */}
@@ -949,6 +948,281 @@ export default function AdminDashboard({
             </div>
             </div>
         </AppLayout>
+    );
+}
+
+/* ─── Dashboard Filters ─── */
+const SEVERITY_OPTIONS = [
+    { value: 'critical', label: 'Critical', color: '#ef4444' },
+    { value: 'high',     label: 'High',     color: '#f97316' },
+    { value: 'moderate', label: 'Moderate', color: '#fbbf24' },
+    { value: 'low',      label: 'Low',      color: '#22c55e' },
+];
+const STATUS_OPTIONS = [
+    { value: 'pending',  label: 'Pending' },
+    { value: 'verified', label: 'Verified' },
+    { value: 'assigned', label: 'Assigned' },
+    { value: 'resolved', label: 'Resolved' },
+    { value: 'rejected', label: 'Rejected' },
+];
+
+function DashboardFilters({ filters, barangayList, period, customFrom, customTo }: {
+    filters: { severity?: string | null; status?: string | null; barangay?: string | null };
+    barangayList: string[];
+    period: string;
+    customFrom?: string | null;
+    customTo?: string | null;
+}) {
+    const selectedSeverities = filters.severity ? filters.severity.split(',') : [];
+    const selectedStatuses = filters.status ? filters.status.split(',') : [];
+    const selectedBarangays = filters.barangay ? filters.barangay.split(',') : [];
+    const activeCount = selectedSeverities.length + selectedStatuses.length + selectedBarangays.length;
+
+    const [localSev, setLocalSev] = useState(selectedSeverities);
+    const [localStatus, setLocalStatus] = useState(selectedStatuses);
+    const [localBarangays, setLocalBarangays] = useState(selectedBarangays);
+    const [brgySearch, setBrgySearch] = useState('');
+
+    useEffect(() => {
+        setLocalSev(filters.severity ? filters.severity.split(',') : []);
+        setLocalStatus(filters.status ? filters.status.split(',') : []);
+        setLocalBarangays(filters.barangay ? filters.barangay.split(',') : []);
+    }, [filters.severity, filters.status, filters.barangay]);
+
+    const toggleSev = (v: string) => setLocalSev(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
+    const toggleStatus = (v: string) => setLocalStatus(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
+    const toggleBarangay = (v: string) => setLocalBarangays(prev => prev.includes(v) ? prev.filter(x => x !== v) : [...prev, v]);
+
+    const filteredBarangays = brgySearch
+        ? barangayList.filter(b => b.toLowerCase().includes(brgySearch.toLowerCase()))
+        : barangayList;
+
+    const apply = (close: () => void) => {
+        const params: Record<string, string> = { period };
+        if (customFrom) params.from = customFrom;
+        if (customTo) params.to = customTo;
+        if (localSev.length) params.severity = localSev.join(',');
+        if (localStatus.length) params.status = localStatus.join(',');
+        if (localBarangays.length) params.barangay = localBarangays.join(',');
+        router.get('/admin', params, { preserveState: true, preserveScroll: true });
+        close();
+    };
+
+    const clearAll = (close: () => void) => {
+        setLocalSev([]);
+        setLocalStatus([]);
+        setLocalBarangays([]);
+        setBrgySearch('');
+        const params: Record<string, string> = { period };
+        if (customFrom) params.from = customFrom;
+        if (customTo) params.to = customTo;
+        router.get('/admin', params, { preserveState: true, preserveScroll: true });
+        close();
+    };
+
+    return (
+        <Popover className="relative">
+            {({ open }) => (
+                <>
+                    <PopoverButton
+                        className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold outline-none transition-all sm:text-xs ${
+                            activeCount > 0
+                                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                                : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
+                        }`}
+                    >
+                        <Filter className="size-3.5" />
+                        Filters
+                        {activeCount > 0 && (
+                            <span className="flex size-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-neutral-900 dark:bg-neutral-900 dark:text-white">
+                                {activeCount}
+                            </span>
+                        )}
+                        <ChevronDown className={`size-3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                    </PopoverButton>
+
+                    <Transition
+                        as={Fragment}
+                        enter="transition ease-out duration-200"
+                        enterFrom="opacity-0 translate-y-1"
+                        enterTo="opacity-100 translate-y-0"
+                        leave="transition ease-in duration-150"
+                        leaveFrom="opacity-100 translate-y-0"
+                        leaveTo="opacity-0 translate-y-1"
+                    >
+                        <PopoverPanel
+                            anchor="bottom end"
+                            className="z-[9999] mt-2 w-80 rounded-2xl border border-neutral-200/80 bg-white/95 shadow-2xl shadow-black/15 backdrop-blur-xl dark:border-neutral-700/80 dark:bg-neutral-900/95 [--anchor-gap:6px]"
+                        >
+                            {({ close }) => (
+                                <>
+                                    {/* Header */}
+                                    <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-2.5 dark:border-neutral-800">
+                                        <p className="text-xs font-bold text-neutral-800 dark:text-neutral-200">Filters</p>
+                                        {(localSev.length > 0 || localStatus.length > 0 || localBarangays.length > 0) && (
+                                            <button onClick={() => { setLocalSev([]); setLocalStatus([]); setLocalBarangays([]); setBrgySearch(''); }}
+                                                className="text-[10px] font-medium text-red-500 hover:text-red-600">
+                                                Clear all
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="max-h-[60vh] overflow-y-auto">
+                                        {/* Severity */}
+                                        <div className="px-4 pt-3 pb-2">
+                                            <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Severity</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {SEVERITY_OPTIONS.map(opt => (
+                                                    <button
+                                                        key={opt.value}
+                                                        onClick={() => toggleSev(opt.value)}
+                                                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-medium transition-all ${
+                                                            localSev.includes(opt.value)
+                                                                ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
+                                                                : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
+                                                        }`}
+                                                    >
+                                                        <span className="size-2 rounded-full" style={{ backgroundColor: opt.color }} />
+                                                        {opt.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Status */}
+                                        <div className="border-t border-neutral-100 px-4 pt-3 pb-2 dark:border-neutral-800">
+                                            <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Status</p>
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {STATUS_OPTIONS.map(opt => (
+                                                    <button
+                                                        key={opt.value}
+                                                        onClick={() => toggleStatus(opt.value)}
+                                                        className={`rounded-lg border px-2.5 py-1 text-[10px] font-medium transition-all ${
+                                                            localStatus.includes(opt.value)
+                                                                ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
+                                                                : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
+                                                        }`}
+                                                    >
+                                                        {opt.label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {/* Barangay */}
+                                        <div className="border-t border-neutral-100 px-4 pt-3 pb-1 dark:border-neutral-800">
+                                            <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                                                Barangay
+                                                {localBarangays.length > 0 && (
+                                                    <span className="ml-1.5 rounded-full bg-neutral-900 px-1.5 py-0.5 text-[8px] font-bold text-white dark:bg-white dark:text-neutral-900">{localBarangays.length}</span>
+                                                )}
+                                            </p>
+                                            <input
+                                                type="text"
+                                                value={brgySearch}
+                                                onChange={(e) => setBrgySearch(e.target.value)}
+                                                placeholder="Search barangay..."
+                                                className="mb-2 h-7 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-[10px] outline-none transition placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:placeholder:text-neutral-500 dark:focus:border-neutral-600"
+                                            />
+                                            <div className="max-h-36 overflow-y-auto rounded-lg border border-neutral-100 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                                {filteredBarangays.length === 0 ? (
+                                                    <p className="px-2.5 py-3 text-center text-[10px] text-neutral-400">No barangays found</p>
+                                                ) : (
+                                                    filteredBarangays.map(b => (
+                                                        <label
+                                                            key={b}
+                                                            className="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-[10px] transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
+                                                        >
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={localBarangays.includes(b)}
+                                                                onChange={() => toggleBarangay(b)}
+                                                                className="size-3 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
+                                                            />
+                                                            <span className="text-neutral-700 dark:text-neutral-300">{b}</span>
+                                                        </label>
+                                                    ))
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Footer */}
+                                    <div className="flex items-center justify-between border-t border-neutral-100 px-4 py-2.5 dark:border-neutral-800">
+                                        <button
+                                            onClick={() => clearAll(close)}
+                                            className="rounded-lg px-3 py-1.5 text-[10px] font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                                        >
+                                            Reset
+                                        </button>
+                                        <button
+                                            onClick={() => apply(close)}
+                                            className="rounded-lg bg-neutral-900 px-5 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                                        >
+                                            Apply
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </PopoverPanel>
+                    </Transition>
+                </>
+            )}
+        </Popover>
+    );
+}
+
+function VerificationGauge({ rate, color, label, bg, mounted }: { rate: number; color: string; label: string; bg: string; mounted: boolean }) {
+    const cardRef = useRef<HTMLDivElement>(null);
+    const btnRef = useRef<HTMLButtonElement>(null);
+    const { open, toggle } = useKpiTooltip(btnRef);
+
+    const desc = rate >= 90
+        ? `${rate}% of submitted reports have been verified — outstanding review performance. The verification pipeline is running efficiently.`
+        : rate >= 70
+        ? `${rate}% verification rate — good progress but there's room to speed up reviews. Check for any pending reports that need attention.`
+        : rate >= 50
+        ? `Only ${rate}% of reports verified — the review queue is falling behind. Allocate more reviewers to prevent bottlenecks.`
+        : `${rate}% verification rate is critically low — most reports are stuck unreviewed. Immediate action needed to clear the backlog.`;
+
+    return (
+        <div
+            ref={cardRef}
+            className={`group relative overflow-hidden rounded-lg border border-neutral-200/70 bg-white px-3 py-2.5 transition-all duration-700 hover:shadow-md hover:border-neutral-300/80 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+            style={{ transitionDelay: '800ms' }}
+        >
+            <div className={`absolute inset-x-0 top-0 h-[2px] ${bg}`} />
+            <KpiTooltip desc={desc} insights={[]} visible={open} parentRef={cardRef} urgency={rate >= 70 ? 'good' : rate >= 50 ? 'warning' : 'urgent'} />
+            <div className="flex items-start justify-between">
+                <p className="truncate text-[8px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Verification Rate</p>
+                <button
+                    ref={btnRef}
+                    type="button"
+                    onClick={toggle}
+                    className={`z-10 flex size-4 shrink-0 items-center justify-center rounded transition-colors ${open ? 'bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300' : 'text-neutral-300 hover:text-neutral-500 dark:text-neutral-600 dark:hover:text-neutral-400'}`}
+                >
+                    <CircleHelp className="size-3 pointer-events-none" />
+                </button>
+            </div>
+            <div className="mt-1.5 flex items-center gap-2.5">
+                <div className="relative flex size-11 shrink-0 items-center justify-center">
+                    <svg className="size-full -rotate-90" viewBox="0 0 56 56">
+                        <circle cx="28" cy="28" r="23" fill="none" stroke="#f1f5f9" strokeWidth="5" className="dark:stroke-neutral-800" />
+                        <circle cx="28" cy="28" r="23" fill="none"
+                            stroke={color} strokeWidth="5" strokeLinecap="round"
+                            strokeDasharray={`${(rate / 100) * 144.5} 144.5`}
+                        />
+                    </svg>
+                    <span className="absolute text-[10px] font-bold tabular-nums text-neutral-900 dark:text-white">{rate}%</span>
+                </div>
+                <div className="min-w-0 flex-1">
+                    <span className="flex items-center gap-1.5 text-[9px]">
+                        <span className={`size-1.5 rounded-full ${bg}`} />
+                        <span className="font-medium text-neutral-500 dark:text-neutral-400">{label}</span>
+                    </span>
+                </div>
+            </div>
+        </div>
     );
 }
 

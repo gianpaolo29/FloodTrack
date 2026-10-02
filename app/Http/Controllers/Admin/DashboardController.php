@@ -95,8 +95,23 @@ class DashboardController extends Controller
     {
         [$from, $to, $period] = $this->parsePeriod($request);
 
-        // Base query scoped by period
-        $reportQuery = $this->scopeByPeriod(Report::query(), $from, $to);
+        // Filters
+        $filterSeverity  = $request->get('severity');
+        $filterStatus    = $request->get('status');
+        $filterBarangay  = $request->get('barangay');
+
+        // Base query scoped by period + filters
+        $reportQuery = $this->scopeByPeriod(Report::query(), $from, $to)
+            ->when($filterSeverity, fn ($q) => $q->whereIn('severity', explode(',', $filterSeverity)))
+            ->when($filterStatus, fn ($q) => $q->whereIn('status', explode(',', $filterStatus)))
+            ->when($filterBarangay, function ($q) use ($filterBarangay) {
+                $barangays = explode(',', $filterBarangay);
+                $q->where(function ($sub) use ($barangays) {
+                    foreach ($barangays as $b) {
+                        $sub->orWhere('address', 'like', "%{$b}%");
+                    }
+                });
+            });
 
         $stats = [
             'total_reports'    => (clone $reportQuery)->count(),
@@ -112,21 +127,34 @@ class DashboardController extends Controller
         // Comparison period via trait
         [$prevFrom, $prevTo, $trendLabel, $trendPeriodLabel] = $this->comparisonPeriod($period, $from, $to);
 
+        // Shared filter closure for trend queries
+        $applyFilters = fn ($q) => $q
+            ->when($filterSeverity, fn ($q2) => $q2->whereIn('severity', explode(',', $filterSeverity)))
+            ->when($filterStatus, fn ($q2) => $q2->whereIn('status', explode(',', $filterStatus)))
+            ->when($filterBarangay, function ($q2) use ($filterBarangay) {
+                $barangays = explode(',', $filterBarangay);
+                $q2->where(function ($sub) use ($barangays) {
+                    foreach ($barangays as $b) {
+                        $sub->orWhere('address', 'like', "%{$b}%");
+                    }
+                });
+            });
+
         // Trends
-        $curReports  = $this->scopeByPeriod(Report::query(), $from, $to)->count();
-        $prevReports = Report::whereBetween('created_at', [$prevFrom, $prevTo])->count();
+        $curReports  = $this->scopeByPeriod($applyFilters(Report::query()), $from, $to)->count();
+        $prevReports = $applyFilters(Report::query())->whereBetween('created_at', [$prevFrom, $prevTo])->count();
         $reportsTrend = $this->calcTrend($curReports, $prevReports);
 
-        $curResolved  = $this->scopeByPeriod(Report::where('status', 'resolved'), $from, $to, 'resolved_at')->count();
-        $prevResolved = Report::where('status', 'resolved')->whereBetween('resolved_at', [$prevFrom, $prevTo])->count();
+        $curResolved  = $this->scopeByPeriod($applyFilters(Report::where('status', 'resolved')), $from, $to, 'resolved_at')->count();
+        $prevResolved = $applyFilters(Report::where('status', 'resolved'))->whereBetween('resolved_at', [$prevFrom, $prevTo])->count();
         $resolvedTrend = $this->calcTrend($curResolved, $prevResolved);
 
-        $curActive  = $this->scopeByPeriod(Report::whereIn('status', ['verified', 'assigned']), $from, $to)->count();
-        $prevActive = Report::whereIn('status', ['verified', 'assigned'])->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+        $curActive  = $this->scopeByPeriod($applyFilters(Report::whereIn('status', ['verified', 'assigned'])), $from, $to)->count();
+        $prevActive = $applyFilters(Report::whereIn('status', ['verified', 'assigned']))->whereBetween('created_at', [$prevFrom, $prevTo])->count();
         $activeTrend = $this->calcTrend($curActive, $prevActive);
 
-        $curPending  = $this->scopeByPeriod(Report::where('status', 'pending'), $from, $to)->count();
-        $prevPending = Report::where('status', 'pending')->whereBetween('created_at', [$prevFrom, $prevTo])->count();
+        $curPending  = $this->scopeByPeriod($applyFilters(Report::where('status', 'pending')), $from, $to)->count();
+        $prevPending = $applyFilters(Report::where('status', 'pending'))->whereBetween('created_at', [$prevFrom, $prevTo])->count();
         $pendingTrend = $this->calcTrend($curPending, $prevPending);
 
         $curAlerts  = $this->scopeByPeriod(Alert::query(), $from, $to)->count();
@@ -134,11 +162,11 @@ class DashboardController extends Controller
         $alertsTrend = $this->calcTrend($curAlerts, $prevAlerts);
 
         // Daily reports for the last 90 days (frontend slices to 7/14/30/90)
-        $dailyReports = Report::select(
+        $dailyReports = $applyFilters(Report::select(
                 DB::raw("DATE(created_at) as date"),
                 DB::raw("COUNT(*) as total"),
                 DB::raw("SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved")
-            )
+            ))
             ->where('created_at', '>=', now()->subDays(90))
             ->groupBy(DB::raw("DATE(created_at)"))
             ->orderBy('date')
@@ -318,6 +346,12 @@ class DashboardController extends Controller
             'period'             => $period,
             'custom_from'        => $request->get('from'),
             'custom_to'          => $request->get('to'),
+            'filters'            => [
+                'severity'  => $filterSeverity,
+                'status'    => $filterStatus,
+                'barangay'  => $filterBarangay,
+            ],
+            'barangay_list'      => collect(config('barangays', []))->pluck('name')->sort()->values(),
         ]);
     }
 }

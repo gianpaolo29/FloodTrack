@@ -3,7 +3,8 @@ import { Head, Link, router } from '@inertiajs/react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { AlertTriangle, Building2, CalendarDays, ChevronDown, Clock, Filter, List, MapPin, Radio, Users, X } from 'lucide-react';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Popover, PopoverButton, PopoverPanel, Transition } from '@headlessui/react';
 import 'leaflet.heat';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { io, type Socket } from 'socket.io-client';
@@ -310,16 +311,11 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
     onFilter: (key: string, value: string) => void;
     hasFilters: boolean;
 }) {
-    const [open, setOpen] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
-
-    // Local draft state — only applied on "Apply"
     const [localStatuses, setLocalStatuses] = useState<string[]>(filters.status ? filters.status.split(',') : []);
     const [localSeverities, setLocalSeverities] = useState<string[]>(filters.severity ? filters.severity.split(',') : []);
     const [localDateFrom, setLocalDateFrom] = useState(filters.date_from ?? '');
     const [localDateTo, setLocalDateTo] = useState(filters.date_to ?? '');
 
-    // Sync local state when filters change externally
     useEffect(() => {
         setLocalStatuses(filters.status ? filters.status.split(',') : []);
         setLocalSeverities(filters.severity ? filters.severity.split(',') : []);
@@ -332,140 +328,141 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
         + (filters.date_from ? 1 : 0)
         + (filters.date_to ? 1 : 0);
 
-    useEffect(() => {
-        if (!open) return;
-        const handler = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [open]);
+    const toggleStatus = (value: string) => setLocalStatuses(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
+    const toggleSeverity = (value: string) => setLocalSeverities(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
 
-    const toggleStatus = (value: string) => {
-        setLocalStatuses(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
-    };
-
-    const toggleSeverity = (value: string) => {
-        setLocalSeverities(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
-    };
-
-    const apply = () => {
+    const apply = (close: () => void) => {
         router.get('/admin/reports/map', {
             status: localStatuses.join(',') || undefined,
             severity: localSeverities.join(',') || undefined,
             date_from: localDateFrom || undefined,
             date_to: localDateTo || undefined,
         }, { preserveState: true, replace: true });
-        setOpen(false);
+        close();
     };
 
-    const clearAll = () => {
+    const clearAll = (close: () => void) => {
         setLocalStatuses([]);
         setLocalSeverities([]);
         setLocalDateFrom('');
         setLocalDateTo('');
         router.get('/admin/reports/map', {}, { preserveState: true, replace: true });
-        setOpen(false);
+        close();
     };
 
     return (
-        <div ref={ref} className="relative border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
-            <button
-                onClick={() => setOpen(!open)}
-                className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-medium transition-all ${
-                    activeCount > 0
-                        ? 'border-neutral-900 bg-neutral-900 text-white shadow-sm dark:border-white dark:bg-white dark:text-neutral-900'
-                        : 'border-neutral-200 bg-white text-neutral-600 shadow-sm hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
-                }`}
-            >
-                <Filter className="size-3" />
-                Filters
-                {activeCount > 0 && (
-                    <span className="flex size-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-neutral-900 dark:bg-neutral-900 dark:text-white">
-                        {activeCount}
-                    </span>
-                )}
-                <ChevronDown className={`size-3 transition-transform ${open ? 'rotate-180' : ''}`} />
-            </button>
+        <Popover className="relative border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
+            {({ open }) => (
+                <>
+                    <PopoverButton
+                        className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-medium outline-none transition-all ${
+                            activeCount > 0
+                                ? 'border-neutral-900 bg-neutral-900 text-white shadow-sm dark:border-white dark:bg-white dark:text-neutral-900'
+                                : 'border-neutral-200 bg-white text-neutral-600 shadow-sm hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
+                        }`}
+                    >
+                        <Filter className="size-3" />
+                        Filters
+                        {activeCount > 0 && (
+                            <span className="flex size-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-neutral-900 dark:bg-neutral-900 dark:text-white">
+                                {activeCount}
+                            </span>
+                        )}
+                        <ChevronDown className={`size-3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+                    </PopoverButton>
 
-            {open && (
-                <div className="absolute left-3 right-3 sm:left-5 sm:right-5 top-full z-50 mt-0 max-h-[60vh] overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
-                    {/* Status */}
-                    <div className="p-3 pb-0">
-                        <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">Status</p>
-                        <div className="flex flex-wrap gap-1">
-                            {STATUS_FILTER_OPTIONS.map(opt => (
-                                <button
-                                    key={opt.value}
-                                    onClick={() => toggleStatus(opt.value)}
-                                    className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-all ${
-                                        localStatuses.includes(opt.value)
-                                            ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
-                                            : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
-                                    }`}
-                                >
-                                    {opt.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    <Transition
+                        as={Fragment}
+                        enter="transition ease-out duration-200"
+                        enterFrom="opacity-0 translate-y-1"
+                        enterTo="opacity-100 translate-y-0"
+                        leave="transition ease-in duration-150"
+                        leaveFrom="opacity-100 translate-y-0"
+                        leaveTo="opacity-0 translate-y-1"
+                    >
+                        <PopoverPanel className="absolute left-3 right-3 sm:left-5 sm:right-5 top-full z-50 mt-0 max-h-[60vh] overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
+                            {({ close }) => (
+                                <>
+                                    {/* Status */}
+                                    <div className="p-3 pb-0">
+                                        <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">Status</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {STATUS_FILTER_OPTIONS.map(opt => (
+                                                <button
+                                                    key={opt.value}
+                                                    onClick={() => toggleStatus(opt.value)}
+                                                    className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-all ${
+                                                        localStatuses.includes(opt.value)
+                                                            ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
+                                                            : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
+                                                    }`}
+                                                >
+                                                    {opt.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
 
-                    {/* Severity */}
-                    <div className="mt-2.5 px-3">
-                        <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">Severity</p>
-                        <div className="flex flex-wrap gap-1">
-                            {SEVERITY_FILTER_OPTIONS.map(opt => (
-                                <button
-                                    key={opt.value}
-                                    onClick={() => toggleSeverity(opt.value)}
-                                    className={`flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-all ${
-                                        localSeverities.includes(opt.value)
-                                            ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
-                                            : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
-                                    }`}
-                                >
-                                    <span className="size-1.5 rounded-full" style={{ backgroundColor: opt.color }} />
-                                    {opt.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                                    {/* Severity */}
+                                    <div className="mt-2.5 px-3">
+                                        <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">Severity</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {SEVERITY_FILTER_OPTIONS.map(opt => (
+                                                <button
+                                                    key={opt.value}
+                                                    onClick={() => toggleSeverity(opt.value)}
+                                                    className={`flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-all ${
+                                                        localSeverities.includes(opt.value)
+                                                            ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
+                                                            : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
+                                                    }`}
+                                                >
+                                                    <span className="size-1.5 rounded-full" style={{ backgroundColor: opt.color }} />
+                                                    {opt.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
 
-                    {/* Date range */}
-                    <div className="mt-2.5 px-3">
-                        <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">Date Range</p>
-                        <div className="grid grid-cols-2 gap-2">
-                            <div>
-                                <label className="mb-0.5 block text-[9px] text-neutral-400">From</label>
-                                <input type="date" value={localDateFrom} onChange={(e) => setLocalDateFrom(e.target.value)}
-                                    className="h-7 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2 text-[10px] outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
-                            </div>
-                            <div>
-                                <label className="mb-0.5 block text-[9px] text-neutral-400">To</label>
-                                <input type="date" value={localDateTo} onChange={(e) => setLocalDateTo(e.target.value)} min={localDateFrom || undefined}
-                                    className="h-7 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2 text-[10px] outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
-                            </div>
-                        </div>
-                    </div>
+                                    {/* Date range */}
+                                    <div className="mt-2.5 px-3">
+                                        <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">Date Range</p>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="mb-0.5 block text-[9px] text-neutral-400">From</label>
+                                                <input type="date" value={localDateFrom} onChange={(e) => setLocalDateFrom(e.target.value)}
+                                                    className="h-7 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2 text-[10px] outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
+                                            </div>
+                                            <div>
+                                                <label className="mb-0.5 block text-[9px] text-neutral-400">To</label>
+                                                <input type="date" value={localDateTo} onChange={(e) => setLocalDateTo(e.target.value)} min={localDateFrom || undefined}
+                                                    className="h-7 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2 text-[10px] outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
+                                            </div>
+                                        </div>
+                                    </div>
 
-                    {/* Apply / Clear */}
-                    <div className="mt-2.5 flex items-center justify-between border-t border-neutral-100 px-3 py-2 dark:border-neutral-700">
-                        <button
-                            onClick={clearAll}
-                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
-                        >
-                            Reset
-                        </button>
-                        <button
-                            onClick={apply}
-                            className="rounded-lg bg-neutral-900 px-4 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
-                        >
-                            Apply
-                        </button>
-                    </div>
-                </div>
+                                    {/* Apply / Clear */}
+                                    <div className="mt-2.5 flex items-center justify-between border-t border-neutral-100 px-3 py-2 dark:border-neutral-700">
+                                        <button
+                                            onClick={() => clearAll(close)}
+                                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                                        >
+                                            Reset
+                                        </button>
+                                        <button
+                                            onClick={() => apply(close)}
+                                            className="rounded-lg bg-neutral-900 px-4 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                                        >
+                                            Apply
+                                        </button>
+                                    </div>
+                                </>
+                            )}
+                        </PopoverPanel>
+                    </Transition>
+                </>
             )}
-        </div>
+        </Popover>
     );
 }
 

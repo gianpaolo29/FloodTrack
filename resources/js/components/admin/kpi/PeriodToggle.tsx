@@ -161,12 +161,13 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
 }
 
 /* ─── Period Toggle ─── */
-export function PeriodToggle({ period, customFrom, customTo, baseUrl, extraParams = {} }: {
+export function PeriodToggle({ period, customFrom, customTo, baseUrl, extraParams = {}, bare = false }: {
     period: string;
     customFrom?: string | null;
     customTo?: string | null;
     baseUrl: string;
     extraParams?: Record<string, string>;
+    bare?: boolean;
 }) {
     const [showCalendar, setShowCalendar] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
@@ -215,7 +216,7 @@ export function PeriodToggle({ period, customFrom, customTo, baseUrl, extraParam
     };
 
     return (
-        <div className="relative flex flex-wrap items-center rounded-xl border border-neutral-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/60" ref={calendarRef}>
+        <div className={`relative flex flex-wrap items-center ${bare ? '' : 'rounded-xl border border-neutral-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/60'}`} ref={calendarRef}>
             {PERIODS.map(({ key, label }) => (
                 <button
                     key={key}

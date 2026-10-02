@@ -16,7 +16,8 @@ import {
     UsersRound,
     X,
 } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { Popover, PopoverButton, PopoverPanel, Transition } from '@headlessui/react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import {
@@ -64,45 +65,48 @@ interface AppNotification {
 
 function LanguageDropdown() {
     const { locale, setLocale } = useLocale();
-    const [open, setOpen] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (!open) return;
-        const handler = (e: MouseEvent) => {
-            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, [open]);
 
     return (
-        <div ref={ref} className="relative">
-            <button
-                onClick={() => setOpen(!open)}
-                className="flex size-9 items-center justify-center rounded-xl text-[11px] font-bold text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
+        <Popover className="relative">
+            <PopoverButton
+                className="flex size-9 items-center justify-center rounded-xl text-[11px] font-bold text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95 focus:outline-none"
             >
                 {locale === 'en' ? 'EN' : 'FIL'}
-            </button>
-            {open && (
-                <div className="absolute right-0 top-full z-50 mt-1.5 w-36 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
-                    <button
-                        onClick={() => { setLocale('en'); setOpen(false); }}
-                        className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-xs font-medium transition-colors ${locale === 'en' ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-700 dark:text-white' : 'text-neutral-500 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-700/50'}`}
-                    >
-                        English
-                        {locale === 'en' && <CheckCheck className="ml-auto size-3.5 text-emerald-500" />}
-                    </button>
-                    <button
-                        onClick={() => { setLocale('fil'); setOpen(false); }}
-                        className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-xs font-medium transition-colors ${locale === 'fil' ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-700 dark:text-white' : 'text-neutral-500 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-700/50'}`}
-                    >
-                        Filipino
-                        {locale === 'fil' && <CheckCheck className="ml-auto size-3.5 text-emerald-500" />}
-                    </button>
-                </div>
-            )}
-        </div>
+            </PopoverButton>
+            <Transition
+                as={Fragment}
+                enter="transition ease-out duration-150"
+                enterFrom="opacity-0 translate-y-1"
+                enterTo="opacity-100 translate-y-0"
+                leave="transition ease-in duration-100"
+                leaveFrom="opacity-100 translate-y-0"
+                leaveTo="opacity-0 translate-y-1"
+            >
+                <PopoverPanel
+                    anchor="bottom end"
+                    className="z-50 mt-1.5 w-36 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800"
+                >
+                    {({ close }) => (
+                        <>
+                            <button
+                                onClick={() => { setLocale('en'); close(); }}
+                                className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-xs font-medium transition-colors ${locale === 'en' ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-700 dark:text-white' : 'text-neutral-500 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-700/50'}`}
+                            >
+                                English
+                                {locale === 'en' && <CheckCheck className="ml-auto size-3.5 text-emerald-500" />}
+                            </button>
+                            <button
+                                onClick={() => { setLocale('fil'); close(); }}
+                                className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-xs font-medium transition-colors ${locale === 'fil' ? 'bg-neutral-100 text-neutral-900 dark:bg-neutral-700 dark:text-white' : 'text-neutral-500 hover:bg-neutral-50 dark:text-neutral-400 dark:hover:bg-neutral-700/50'}`}
+                            >
+                                Filipino
+                                {locale === 'fil' && <CheckCheck className="ml-auto size-3.5 text-emerald-500" />}
+                            </button>
+                        </>
+                    )}
+                </PopoverPanel>
+            </Transition>
+        </Popover>
     );
 }
 
@@ -123,11 +127,10 @@ export function AppSidebarHeader({
     const searchRef   = useRef<HTMLDivElement>(null);
     const searchInput = useRef<HTMLInputElement>(null);
     const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const [showNotifications, setShowNotifications] = useState(false);
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
     const [loading, setLoading] = useState(false);
     const [localUnread, setLocalUnread] = useState(unreadNotifications as number);
-    const dropdownRef  = useRef<HTMLDivElement>(null);
+    const [notificationsOpen, setNotificationsOpen] = useState(false);
 
     // Sync from server prop
     useEffect(() => {
@@ -159,19 +162,6 @@ export function AppSidebarHeader({
         }, 300);
         return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
     }, [searchQuery, searchOpen]);
-
-    // Close dropdown on outside click
-    useEffect(() => {
-        function handleClick(e: MouseEvent) {
-            if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-                setShowNotifications(false);
-            }
-        }
-        if (showNotifications) {
-            document.addEventListener('mousedown', handleClick);
-            return () => document.removeEventListener('mousedown', handleClick);
-        }
-    }, [showNotifications]);
 
     const closeSearch = useCallback(() => {
         setSearchOpen(false);
@@ -229,13 +219,6 @@ export function AppSidebarHeader({
         }
     }, []);
 
-    const toggleDropdown = () => {
-        if (!showNotifications) {
-            fetchNotifications();
-        }
-        setShowNotifications(!showNotifications);
-    };
-
     const markAsRead = async (id: string) => {
         try {
             await apiFetch(`/admin/notifications/${id}/read`, { method: 'POST' });
@@ -252,12 +235,12 @@ export function AppSidebarHeader({
         } catch {}
     };
 
-    const handleNotificationClick = (notification: AppNotification) => {
+    const handleNotificationClick = (notification: AppNotification, close?: () => void) => {
         if (!notification.read_at) {
             markAsRead(notification.id);
         }
         if (notification.data.url) {
-            setShowNotifications(false);
+            close?.();
             router.visit(notification.data.url);
         }
     };
@@ -270,14 +253,14 @@ export function AppSidebarHeader({
                 if (res.ok) {
                     const data = await res.json();
                     setLocalUnread(data.unread_count);
-                    if (showNotifications) {
+                    if (notificationsOpen) {
                         setNotifications(data.notifications);
                     }
                 }
             } catch {}
         }, 30000);
         return () => clearInterval(interval);
-    }, [showNotifications]);
+    }, [notificationsOpen]);
 
     return (
         <header className="sticky top-0 z-[40] flex h-14 shrink-0 items-center justify-between gap-2 sm:gap-4 rounded-tl-xl rounded-tr-xl sm:rounded-tl-2xl sm:rounded-tr-2xl border-b border-border/[0.35] bg-background/90 px-3 sm:px-6 shadow-sm shadow-black/[0.025] backdrop-blur-2xl">
@@ -379,63 +362,83 @@ export function AppSidebarHeader({
                 <div className="hidden h-5 w-px bg-border/40 md:block" />
 
                 {/* Notification bell */}
-                <div className="relative" ref={dropdownRef}>
-                    <button
-                        onClick={toggleDropdown}
-                        className="group relative flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
-                    >
-                        <Bell className={`size-[18px] transition-transform group-hover:scale-105 ${showNotifications ? 'text-foreground' : ''}`} />
-                        {localUnread > 0 && (
-                            <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center">
-                                <span className="absolute inline-flex size-full animate-ping rounded-full bg-rose-400 opacity-75" />
-                                <span className="relative inline-flex size-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-card">
-                                    {localUnread > 9 ? '9+' : localUnread}
-                                </span>
-                            </span>
-                        )}
-                    </button>
-
-                    {/* Dropdown */}
-                    {showNotifications && (
-                        <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] max-w-96 max-h-[28rem] overflow-hidden rounded-2xl border border-border/50 bg-card shadow-xl shadow-black/10 z-50 animate-in slide-in-from-top-2 fade-in duration-200 sm:w-96">
-                            {/* Header */}
-                            <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
-                                <h3 className="text-sm font-semibold">{t('nav.notifications')}</h3>
-                                {localUnread > 0 && (
-                                    <button
-                                        onClick={markAllAsRead}
-                                        className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary hover:bg-primary/5 transition-colors"
+                <Popover className="relative">
+                    {({ open: popoverOpen, close }) => {
+                        // Track open state for polling
+                        if (popoverOpen !== notificationsOpen) {
+                            // Use setTimeout to avoid setState during render
+                            setTimeout(() => setNotificationsOpen(popoverOpen), 0);
+                        }
+                        return (
+                            <>
+                                <PopoverButton
+                                    onClick={() => { if (!popoverOpen) fetchNotifications(); }}
+                                    className="group relative flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95 focus:outline-none"
+                                >
+                                    <Bell className={`size-[18px] transition-transform group-hover:scale-105 ${popoverOpen ? 'text-foreground' : ''}`} />
+                                    {localUnread > 0 && (
+                                        <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center">
+                                            <span className="absolute inline-flex size-full animate-ping rounded-full bg-rose-400 opacity-75" />
+                                            <span className="relative inline-flex size-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-card">
+                                                {localUnread > 9 ? '9+' : localUnread}
+                                            </span>
+                                        </span>
+                                    )}
+                                </PopoverButton>
+                                <Transition
+                                    as={Fragment}
+                                    enter="transition ease-out duration-200"
+                                    enterFrom="opacity-0 translate-y-1"
+                                    enterTo="opacity-100 translate-y-0"
+                                    leave="transition ease-in duration-150"
+                                    leaveFrom="opacity-100 translate-y-0"
+                                    leaveTo="opacity-0 translate-y-1"
+                                >
+                                    <PopoverPanel
+                                        anchor="bottom end"
+                                        className="z-50 mt-2 w-[calc(100vw-2rem)] max-w-96 max-h-[28rem] overflow-hidden rounded-2xl border border-border/50 bg-card shadow-xl shadow-black/10 sm:w-96"
                                     >
-                                        <CheckCheck className="size-3.5" />
-                                        {t('nav.mark_all_read')}
-                                    </button>
-                                )}
-                            </div>
+                                        {/* Header */}
+                                        <div className="flex items-center justify-between border-b border-border/40 px-4 py-3">
+                                            <h3 className="text-sm font-semibold">{t('nav.notifications')}</h3>
+                                            {localUnread > 0 && (
+                                                <button
+                                                    onClick={markAllAsRead}
+                                                    className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-primary hover:bg-primary/5 transition-colors"
+                                                >
+                                                    <CheckCheck className="size-3.5" />
+                                                    {t('nav.mark_all_read')}
+                                                </button>
+                                            )}
+                                        </div>
 
-                            {/* List */}
-                            <div className="max-h-[22rem] overflow-y-auto">
-                                {loading && notifications.length === 0 ? (
-                                    <div className="flex items-center justify-center py-12">
-                                        <div className="size-5 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground" />
-                                    </div>
-                                ) : notifications.length === 0 ? (
-                                    <div className="flex flex-col items-center gap-2 py-12">
-                                        <Bell className="size-8 text-muted-foreground/30" />
-                                        <p className="text-sm text-muted-foreground">{t('nav.no_notifications')}</p>
-                                    </div>
-                                ) : (
-                                    notifications.map((notification) => (
-                                        <NotificationItem
-                                            key={notification.id}
-                                            notification={notification}
-                                            onClick={() => handleNotificationClick(notification)}
-                                        />
-                                    ))
-                                )}
-                            </div>
-                        </div>
-                    )}
-                </div>
+                                        {/* List */}
+                                        <div className="max-h-[22rem] overflow-y-auto">
+                                            {loading && notifications.length === 0 ? (
+                                                <div className="flex items-center justify-center py-12">
+                                                    <div className="size-5 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground" />
+                                                </div>
+                                            ) : notifications.length === 0 ? (
+                                                <div className="flex flex-col items-center gap-2 py-12">
+                                                    <Bell className="size-8 text-muted-foreground/30" />
+                                                    <p className="text-sm text-muted-foreground">{t('nav.no_notifications')}</p>
+                                                </div>
+                                            ) : (
+                                                notifications.map((notification) => (
+                                                    <NotificationItem
+                                                        key={notification.id}
+                                                        notification={notification}
+                                                        onClick={() => handleNotificationClick(notification, close)}
+                                                    />
+                                                ))
+                                            )}
+                                        </div>
+                                    </PopoverPanel>
+                                </Transition>
+                            </>
+                        );
+                    }}
+                </Popover>
 
                 {/* Language dropdown */}
                 <LanguageDropdown />
