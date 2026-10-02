@@ -474,7 +474,7 @@ class ReportController extends Controller
             'team_id' => 'required|exists:teams,id',
         ]);
 
-        $team = Team::with('members:id,name')->findOrFail($request->team_id);
+        $team = Team::with('members:id,name,team_id')->findOrFail($request->team_id);
 
         // Enforce one-to-one: a team can only be assigned to one active report at a time
         $activeReport = $team->activeReport()->where('id', '!=', $report->id)->first();
