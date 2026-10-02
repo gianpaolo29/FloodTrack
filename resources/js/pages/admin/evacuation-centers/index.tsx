@@ -34,6 +34,7 @@ import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 import type { EvacuationCenter, EvacuationCenterType } from '@/types/admin';
 import { EVACUATION_CENTER_TYPE_LABELS } from '@/types/admin';
+import { ManagementListSkeleton } from '@/components/admin/skeletons';
 
 /* ─── Paginated wrapper ─── */
 
@@ -240,6 +241,13 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
             default: return '';
         }
     }
+
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Evacuation Centers" />
+            <ManagementListSkeleton />
+        </AppLayout>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

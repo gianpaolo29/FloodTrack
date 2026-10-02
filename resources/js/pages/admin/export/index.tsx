@@ -21,6 +21,7 @@ import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
 import type { InsightRow } from '@/lib/kpi-utils';
 import type { BreadcrumbItem } from '@/types';
+import { SettingsCardSkeleton } from '@/components/admin/skeletons';
 
 interface Props {
     stats: { total: number; pending: number; verified: number; assigned: number; resolved: number; rejected: number };
@@ -175,6 +176,16 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
             default: return '';
         }
     }
+
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Export" />
+            <div className="flex flex-col gap-4 p-3 sm:gap-5 sm:p-6 lg:p-8">
+                <SettingsCardSkeleton />
+                <SettingsCardSkeleton />
+            </div>
+        </AppLayout>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

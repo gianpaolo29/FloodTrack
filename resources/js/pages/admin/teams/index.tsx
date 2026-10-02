@@ -25,6 +25,7 @@ import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
 import type { InsightRow } from '@/lib/kpi-utils';
 import type { BreadcrumbItem } from '@/types';
+import { ManagementListSkeleton } from '@/components/admin/skeletons';
 
 const modalSpring = { type: 'spring' as const, stiffness: 400, damping: 28 };
 
@@ -189,6 +190,13 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
             default: return '';
         }
     }
+
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Response Teams" />
+            <ManagementListSkeleton />
+        </AppLayout>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

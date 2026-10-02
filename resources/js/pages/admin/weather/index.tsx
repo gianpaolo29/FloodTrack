@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
+import { WeatherSkeleton } from '@/components/admin/skeletons';
 
 /* ─── Types ─── */
 
@@ -196,6 +197,9 @@ function Metric({ icon, value, label, iconBg }: { icon: React.ReactNode; value: 
 /* ─── Main ─── */
 
 export default function AdminWeather({ barangay_data }: Props) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+
     const [expandedBrgy, setExpandedBrgy] = useState<string | null>(null);
     const [aiState, setAiState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
     const [aiData, setAiData] = useState<AiWeatherInsight | null>(null);
@@ -329,6 +333,13 @@ export default function AdminWeather({ barangay_data }: Props) {
 
     // Auto-load AI insights on mount
     useEffect(() => { generateWeatherInsights(); }, []);
+
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Weather" />
+            <WeatherSkeleton />
+        </AppLayout>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

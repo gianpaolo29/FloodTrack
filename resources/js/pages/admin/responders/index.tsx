@@ -11,6 +11,7 @@ import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
 import type { InsightRow } from '@/lib/kpi-utils';
 import type { BreadcrumbItem } from '@/types';
+import { ManagementListSkeleton } from '@/components/admin/skeletons';
 
 const modalSpring = { type: 'spring' as const, stiffness: 400, damping: 28 };
 const NASUGBU_BOUNDS = { north: 14.115, south: 14.010, east: 120.680, west: 120.565 };
@@ -144,6 +145,13 @@ export default function AdminRespondersIndex({ responders, filters, teams_count,
             default: return '';
         }
     }
+
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Rescue Personnel" />
+            <ManagementListSkeleton />
+        </AppLayout>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

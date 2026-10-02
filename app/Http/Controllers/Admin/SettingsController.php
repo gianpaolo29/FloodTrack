@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ReportSlaConfig;
 use App\Models\Setting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,9 @@ class SettingsController extends Controller
     public function index(): Response
     {
         return Inertia::render('admin/settings/index', [
-            'settings' => Setting::allGrouped(),
+            'settings'    => Setting::allGrouped(),
+            'sla_configs' => ReportSlaConfig::allGroupedBySeverity(),
+            'sla_enabled' => (bool) Setting::getValue('sla_enabled'),
         ]);
     }
 

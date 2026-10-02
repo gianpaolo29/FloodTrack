@@ -101,6 +101,20 @@ class ReportController extends Controller
     {
         [$from, $to, $period] = $this->parsePeriod($request);
 
+        // Priority triage sort: severity weight + time waiting (oldest first as tiebreaker)
+        $severityOrder = "CASE severity
+            WHEN 'critical' THEN 4
+            WHEN 'high'     THEN 3
+            WHEN 'moderate' THEN 2
+            WHEN 'low'      THEN 1
+            ELSE 0 END";
+
+        $statusOrder = "CASE status
+            WHEN 'pending'  THEN 3
+            WHEN 'verified' THEN 2
+            WHEN 'assigned' THEN 1
+            ELSE 0 END";
+
         $reports = Report::with(['user:id,name', 'assignedResponder:id,name', 'assignedTeam:id,name', 'slaTracking'])
             ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
             ->when($request->status, fn ($q) => str_contains($request->status, ',')
@@ -114,7 +128,9 @@ class ReportController extends Controller
                 $q2->where('address', 'like', "%{$request->search}%")
                    ->orWhere('reference_number', 'like', "%{$request->search}%");
             }))
-            ->latest()
+            ->orderByRaw("{$statusOrder} DESC")
+            ->orderByRaw("{$severityOrder} DESC")
+            ->orderBy('created_at', 'asc')
             ->paginate(20)
             ->withQueryString();
         [$prevFrom, $prevTo, $trendLabel, $periodLabel] = $this->comparisonPeriod($period, $from, $to);

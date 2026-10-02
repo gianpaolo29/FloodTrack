@@ -1,4 +1,5 @@
 import { Head, router, useForm } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import {
     CheckCircle2,
     Clock,
@@ -9,6 +10,7 @@ import { swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 import type { Severity, SlaConfig, SlaStage } from '@/types/admin';
 import { SLA_STAGE_LABELS } from '@/types/admin';
+import { StatisticsSkeleton } from '@/components/admin/skeletons';
 
 /* ─── Types ─── */
 interface Props {
@@ -42,6 +44,9 @@ const SEV_DOT: Record<Severity, string> = {
 
 /* ─── Main page ─── */
 export default function SlaIndex({ configs, sla_enabled }: Props) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+
     const buildConfigArray = () => {
         const items: {
             severity: Severity;
@@ -89,6 +94,13 @@ export default function SlaIndex({ configs, sla_enabled }: Props) {
     const handleToggle = () => {
         router.post('/admin/sla/toggle', {}, { preserveState: false });
     };
+
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="SLA Rules" />
+            <StatisticsSkeleton />
+        </AppLayout>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

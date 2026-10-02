@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Report;
 use App\Models\ReportSlaConfig;
 use App\Models\ReportSlaTracking;
+use App\Models\ReportStatusUpdate;
 use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\SlaBreachNotification;
@@ -180,6 +181,34 @@ class SlaService
                     ],
                     'critical'
                 );
+
+                // Auto-escalate severity: high → critical on breach
+                $report = $tracking->report;
+                $escalationMap = [
+                    'low'      => 'moderate',
+                    'moderate' => 'high',
+                    'high'     => 'critical',
+                ];
+
+                if (isset($escalationMap[$report->severity])) {
+                    $oldSeverity = $report->severity;
+                    $newSeverity = $escalationMap[$oldSeverity];
+
+                    $report->update(['severity' => $newSeverity]);
+
+                    ReportStatusUpdate::create([
+                        'report_id' => $report->id,
+                        'user_id'   => null,
+                        'status'    => $report->status,
+                        'notes'     => "Severity auto-escalated from {$oldSeverity} to {$newSeverity} due to SLA breach at " . self::stageLabel($tracking->stage) . ".",
+                    ]);
+
+                    SocketService::toReport($report->id, 'report-status', [
+                        'reportId' => $report->id,
+                        'status'   => $report->status,
+                        'severity' => $newSeverity,
+                    ]);
+                }
             }
 
             $count++;

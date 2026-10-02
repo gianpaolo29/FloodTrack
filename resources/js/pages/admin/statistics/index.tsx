@@ -31,6 +31,7 @@ import type { BreadcrumbItem } from '@/types';
 import { KpiTooltip } from '@/components/admin/kpi/KpiTooltip';
 import type { InsightRow } from '@/lib/kpi-utils';
 import { useLocale } from '@/hooks/use-locale';
+import { StatisticsSkeleton } from '@/components/admin/skeletons';
 
 /* ─── Types ─── */
 interface AiBottleneck {
@@ -1004,6 +1005,13 @@ export default function StatisticsPage({
         { label: 'Verified → Assigned',  value: response_breakdown.overall.avg_verified_to_assigned, color: STAGE_COLORS[1] },
         { label: 'Assigned → Resolved',  value: response_breakdown.overall.avg_assigned_to_resolved, color: STAGE_COLORS[2] },
     ];
+
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Statistics" />
+            <StatisticsSkeleton />
+        </AppLayout>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

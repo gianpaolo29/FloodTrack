@@ -36,6 +36,7 @@ import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 import type { MemberStatus, Report, ReportStatus, ResponderStatus, Severity, SlaStage, SlaStatus, SlaTracking, Team } from '@/types/admin';
 import { RESPONDER_STATUS_COLORS, RESPONDER_STATUS_LABELS, SEVERITY_COLORS, SLA_STAGE_LABELS, SLA_STATUS_COLORS, SLA_STATUS_LABELS, STATUS_COLORS } from '@/types/admin';
+import { PageHeaderSkeleton, SettingsCardSkeleton } from '@/components/admin/skeletons';
 
 interface Props {
     report: Report;
@@ -66,6 +67,9 @@ export default function AdminReportShow({ report, teams }: Props) {
         { title: 'Reports', href: '/admin/reports' },
         { title: report.reference_number, href: `/admin/reports/${report.id}` },
     ];
+
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
 
     const [editing, setEditing] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -120,6 +124,19 @@ export default function AdminReportShow({ report, teams }: Props) {
 
     const statusFlow = (isLowModerate && !report.assigned_team) ? ADVISORY_STATUS_FLOW : STATUS_FLOW;
     const currentStep = statusFlow.findIndex((s) => s.status === report.status);
+
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title={report.reference_number} />
+            <div className="flex flex-col gap-4 p-3 sm:gap-5 sm:p-6 lg:p-8">
+                <PageHeaderSkeleton />
+                <SettingsCardSkeleton />
+                <SettingsCardSkeleton />
+                <SettingsCardSkeleton />
+                <SettingsCardSkeleton />
+            </div>
+        </AppLayout>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

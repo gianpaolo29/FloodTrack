@@ -15,6 +15,7 @@ import type { InsightRow } from '@/lib/kpi-utils';
 import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 import type { Alert } from '@/types/admin';
+import { ManagementListSkeleton } from '@/components/admin/skeletons';
 
 /* ─── Types ─── */
 
@@ -375,6 +376,13 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
             default: return '';
         }
     }
+
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Announcements" />
+            <ManagementListSkeleton />
+        </AppLayout>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

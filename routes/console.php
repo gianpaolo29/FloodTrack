@@ -8,7 +8,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('hazards:sync-weather')->everyThirtyMinutes();
 Schedule::command('sla:check-breaches')->everyMinute()->withoutOverlapping();
 Schedule::command('facebook:import-reports')->everyFifteenMinutes()->withoutOverlapping();
 Schedule::command('schedule:shift-reminders')->everyMinute()->withoutOverlapping();

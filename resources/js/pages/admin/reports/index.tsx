@@ -32,6 +32,7 @@ import { useLocale } from '@/hooks/use-locale';
 import type { BreadcrumbItem } from '@/types';
 import type { Report, ReportStatus, Severity, SlaStatus } from '@/types/admin';
 import { SEVERITY_COLORS, SLA_STATUS_COLORS, SLA_STATUS_LABELS, STATUS_COLORS } from '@/types/admin';
+import { ReportsListSkeleton } from '@/components/admin/skeletons';
 
 interface Paginated<T> {
     data: T[];
@@ -238,6 +239,13 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
             ? `${filters.status.split(',').length} statuses`
             : (STATUS_LABEL[filters.status] ?? filters.status))
         : 'All Reports';
+
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Reports" />
+            <ReportsListSkeleton />
+        </AppLayout>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

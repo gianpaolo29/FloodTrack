@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Services\SocketService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
@@ -57,10 +58,21 @@ class UserController extends Controller
             'longitude' => 'required|numeric|between:-180,180',
         ]);
 
-        $request->user()->update([
+        $user = $request->user();
+
+        $user->update([
             'current_latitude'    => $data['latitude'],
             'current_longitude'   => $data['longitude'],
             'location_updated_at' => now(),
+        ]);
+
+        // Broadcast to admin map in real-time
+        SocketService::toAll('responder-location', [
+            'user_id'   => $user->id,
+            'name'      => $user->name,
+            'latitude'  => $data['latitude'],
+            'longitude' => $data['longitude'],
+            'timestamp' => now()->toIso8601String(),
         ]);
 
         return response()->json(['message' => 'Location updated.']);

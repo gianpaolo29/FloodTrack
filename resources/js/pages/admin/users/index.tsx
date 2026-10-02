@@ -27,6 +27,7 @@ import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
 import type { InsightRow } from '@/lib/kpi-utils';
 import type { BreadcrumbItem } from '@/types';
 import type { AdminUser } from '@/types/admin';
+import { ManagementListSkeleton } from '@/components/admin/skeletons';
 
 interface Paginated<T> {
     data: T[];
@@ -177,6 +178,13 @@ export default function AdminUsersIndex({ users, filters, stats, trends, period,
             default: return '';
         }
     }
+
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Residents" />
+            <ManagementListSkeleton />
+        </AppLayout>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

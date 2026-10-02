@@ -11,6 +11,7 @@ import type { InsightRow } from '@/lib/kpi-utils';
 import type { BreadcrumbItem } from '@/types';
 import type { ReportStatus, Severity } from '@/types/admin';
 import { SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
+import { TableSkeleton, PageHeaderSkeleton } from '@/components/admin/skeletons';
 
 interface Activity {
     id: number;
@@ -161,6 +162,16 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
             default: return '';
         }
     }
+
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Activity Log" />
+            <div className="flex flex-col gap-4 p-3 sm:gap-5 sm:p-6 lg:p-8">
+                <PageHeaderSkeleton />
+                <TableSkeleton />
+            </div>
+        </AppLayout>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>

@@ -71,7 +71,6 @@ export function AppSidebar() {
 
     const analyticsItems: NavItem[] = useMemo(() => [
         { title: t('sidebar.statistics'), href: '/admin/statistics', icon: BarChart3 },
-        { title: t('sidebar.sla_rules'), href: '/admin/sla', icon: Clock },
         { title: t('sidebar.export'), href: '/admin/export', icon: Download },
     ], [t]);
 

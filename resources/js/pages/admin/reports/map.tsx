@@ -1,14 +1,18 @@
 'use no memo';
 import { Head, Link, router } from '@inertiajs/react';
-import { GoogleMap, InfoWindowF, MarkerF, OverlayViewF, PolylineF, useJsApiLoader } from '@react-google-maps/api';
-import { AlertTriangle, Building2, CalendarDays, ChevronDown, Clock, Flame, List, MapPin, Radio, SlidersHorizontal, Users, X } from 'lucide-react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { AlertTriangle, Building2, CalendarDays, ChevronDown, Clock, List, MapPin, Radio, Users, X } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import 'leaflet.heat';
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { io, type Socket } from 'socket.io-client';
 import { MultiSelectFilter } from '@/components/admin/MultiSelectFilter';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
 import type { EvacuationCenter, Hazard, MapResponder, Report, ReportStatus, Severity } from '@/types/admin';
 import { EVACUATION_CENTER_TYPE_LABELS, HAZARD_TYPE_OPTIONS, SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
+import { MapSkeleton } from '@/components/admin/skeletons';
 
 interface Filters {
     status?: string;
@@ -54,20 +58,6 @@ const SEVERITY_META: Record<Severity, { color: string; hex: string; rgb: string;
 };
 
 const SEVERITY_WEIGHT: Record<Severity, number> = { critical: 4, high: 3, moderate: 2, low: 1 };
-const STATUS_MULTIPLIER: Record<ReportStatus, number> = {
-    verified: 1.5, acknowledged: 1.5, assigned: 1.5, resolved: 1.2, pending: 0.8, rejected: 0.0,
-};
-
-/** Custom teardrop SVG pin per severity */
-function createSvgMarker(severity: Severity): string {
-    const hex = SEVERITY_META[severity].hex;
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36">
-        <filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.3"/></filter>
-        <path filter="url(#s)" d="M14 1C6.82 1 1 6.82 1 14c0 9.8 13 21 13 21s13-11.2 13-21C27 6.82 21.18 1 14 1z" fill="${hex}"/>
-        <circle cx="14" cy="14" r="5.5" fill="white" opacity="0.9"/>
-    </svg>`;
-    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
-}
 
 /** Teal square pin with a cross for evacuation centers */
 function createEvacMarker(isFull: boolean): string {
@@ -93,95 +83,191 @@ function createResponderMarker(): string {
 
 const RESPONDER_MARKER_URL = createResponderMarker();
 
-/** Diamond marker for hazards */
-function createHazardMarker(severity: Severity, category: 'flood' | 'road'): string {
+/** Per-type hazard icons */
+const HAZARD_ICONS: Record<string, string> = {
+    // Flood types — water/wave themed
+    flash_flood:   `<path d="M17 8l-3 5h6l-3 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                     <path d="M11 21c1-1 2-1 3 0s2 1 3 0s2-1 3 0" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>`,
+    river_flood:   `<path d="M9 14c2-2 4-2 6 0s4 2 6 0" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+                     <path d="M9 18c2-2 4-2 6 0s4 2 6 0" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+                     <path d="M15 8v3" stroke="white" stroke-width="2" stroke-linecap="round"/>`,
+    coastal_flood: `<path d="M9 16c2-2 4-2 6 0s4 2 6 0" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+                     <path d="M9 20c2-2 4-2 6 0s4 2 6 0" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/>
+                     <path d="M15 8l-2 5h4z" fill="white" opacity="0.9"/>`,
+    urban_flood:   `<rect x="11" y="10" width="8" height="10" rx="1" fill="none" stroke="white" stroke-width="1.8"/>
+                     <path d="M13 14h4M13 17h4" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+                     <path d="M9 22c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>`,
+    // Road types — road/warning themed
+    closed_road:   `<circle cx="15" cy="15" r="6" fill="none" stroke="white" stroke-width="2"/>
+                     <path d="M12 12l6 6M18 12l-6 6" stroke="white" stroke-width="2" stroke-linecap="round"/>`,
+    debris:        `<path d="M10 20l3-5 2 3 3-7 3 9" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                     <circle cx="12" cy="12" r="1.5" fill="white" opacity="0.8"/>
+                     <circle cx="18" cy="10" r="1" fill="white" opacity="0.6"/>`,
+    landslide:     `<path d="M8 22l7-14 7 14z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/>
+                     <path d="M12 22l3-6 3 6" fill="white" opacity="0.3"/>
+                     <path d="M10 18l2-2 2 1 2-3" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>`,
+    flooded_road:  `<path d="M8 15h14" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+                     <path d="M8 15l2-5h10l2 5" fill="none" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+                     <path d="M9 19c2-1.5 3-1.5 5 0s3 1.5 5 0" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>`,
+    slow_zone:     `<circle cx="15" cy="14" r="6" fill="none" stroke="white" stroke-width="2"/>
+                     <path d="M15 11v3.5l2.5 1.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+};
+
+const HAZARD_DEFAULT_ICON = `<circle cx="15" cy="12" r="1.5" fill="white"/>
+    <path d="M15 15v4" stroke="white" stroke-width="2" stroke-linecap="round"/>`;
+
+function createHazardMarker(severity: Severity, type: string): string {
     const hex = SEVERITY_META[severity].hex;
-    const icon = category === 'flood'
-        ? '<path d="M15 8c0 0-5 6-5 9a5 5 0 0 0 10 0c0-3-5-9-5-9z" fill="white" opacity="0.9"/>'
-        : '<path d="M9 19h12M15 5l6 14H9z" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30">
-        <filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.25"/></filter>
-        <rect filter="url(#s)" x="2" y="2" width="26" height="26" rx="6" fill="${hex}" transform="rotate(0 15 15)"/>
-        ${icon}
+    const icon = HAZARD_ICONS[type] ?? HAZARD_DEFAULT_ICON;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="40" viewBox="0 0 36 40">
+        <defs>
+            <filter id="hs" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000" flood-opacity="0.25"/>
+            </filter>
+            <linearGradient id="hg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="white" stop-opacity="0.2"/>
+                <stop offset="100%" stop-color="white" stop-opacity="0"/>
+            </linearGradient>
+        </defs>
+        <path filter="url(#hs)" d="M16.27 3.5a2 2 0 0 1 3.46 0L33.05 28.5a2 2 0 0 1-1.73 3H4.68a2 2 0 0 1-1.73-3z" fill="${hex}"/>
+        <path d="M16.27 3.5a2 2 0 0 1 3.46 0L33.05 28.5a2 2 0 0 1-1.73 3H4.68a2 2 0 0 1-1.73-3z" fill="url(#hg)"/>
+        <path d="M16.27 3.5a2 2 0 0 1 3.46 0L33.05 28.5a2 2 0 0 1-1.73 3H4.68a2 2 0 0 1-1.73-3z" fill="none" stroke="white" stroke-width="1.2" opacity="0.6"/>
+        <g transform="translate(3, 3)">
+            ${icon}
+        </g>
     </svg>`;
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-const mapContainerStyle = { width: '100%', height: '100%' };
-
-const MAP_STYLES: google.maps.MapTypeStyle[] = [
-    { elementType: 'geometry',           stylers: [{ color: '#f0f4f8' }] },
-    { elementType: 'labels.icon',        stylers: [{ visibility: 'off' }] },
-    { elementType: 'labels.text.fill',   stylers: [{ color: '#6b7280' }] },
-    { elementType: 'labels.text.stroke', stylers: [{ color: '#f0f4f8' }] },
-    { featureType: 'poi',                stylers: [{ visibility: 'off' }] },
-    { featureType: 'transit',            stylers: [{ visibility: 'off' }] },
-    { featureType: 'road',               elementType: 'geometry',         stylers: [{ color: '#ffffff' }] },
-    { featureType: 'road.arterial',      elementType: 'geometry',         stylers: [{ color: '#e5e7eb' }] },
-    { featureType: 'road.highway',       elementType: 'geometry',         stylers: [{ color: '#d1d5db' }] },
-    { featureType: 'road.highway',       elementType: 'labels.text.fill', stylers: [{ color: '#9ca3af' }] },
-    { featureType: 'administrative',     elementType: 'geometry.stroke',  stylers: [{ color: '#d1d5db' }] },
-    { featureType: 'administrative.locality', elementType: 'labels.text.fill', stylers: [{ color: '#374151' }] },
-    { featureType: 'water',              elementType: 'geometry',         stylers: [{ color: '#bfdbfe' }] },
-    { featureType: 'water',              elementType: 'labels.text.fill', stylers: [{ color: '#93c5fd' }] },
-    { featureType: 'landscape.natural',  elementType: 'geometry',         stylers: [{ color: '#ecfdf5' }] },
-];
-
-const mapOptions: google.maps.MapOptions = {
-    disableDefaultUI: true,
-    zoomControl: true,
-    fullscreenControl: true,
-    mapTypeControl: true,
-    mapTypeControlOptions: {
-        style: 1, // google.maps.MapTypeControlStyle.HORIZONTAL_BAR
-        position: 3, // google.maps.ControlPosition.TOP_RIGHT
-        mapTypeIds: ['roadmap', 'satellite', 'hybrid', 'terrain'],
-    },
-    gestureHandling: 'greedy',
-    styles: MAP_STYLES,
-};
-
-type ViewMode = 'markers' | 'heatmap' | 'both';
-
-interface HeatPoint { lat: number; lng: number; weight: number; }
-
-/* ─── Heatmap dots — zoom-aware ─── */
-function intensityRgb(intensity: number): string {
-    if (intensity < 0.25) return '34,197,94';
-    if (intensity < 0.5)  return '251,191,36';
-    if (intensity < 0.75) return '249,115,22';
-    return '239,68,68';
+function hazardTypeLabel(category: 'flood' | 'road', type: string): string {
+    return HAZARD_TYPE_OPTIONS[category]?.find(o => o.value === type)?.label ?? type;
 }
 
-function HeatmapOverlay({ points, visible, zoom }: { points: HeatPoint[]; visible: boolean; zoom: number }) {
-    if (!visible || points.length === 0) return null;
+const DEFAULT_CENTER = [14.0681, 120.6236] as L.LatLngExpression;
+const NASUGBU_BOUNDS: L.LatLngBoundsExpression = [
+    [13.95, 120.50], // southwest
+    [14.18, 120.75], // northeast
+];
 
-    const maxWeight = Math.max(...points.map((p) => p.weight), 1);
-    // Scale dots with zoom: reference zoom=12, gentle linear scale clamped
-    const zoomFactor = Math.max(0.3, Math.min(2.5, (zoom - 8) / 4));
+/* ─── Helper: create a Leaflet DivIcon from an image URL ─── */
+function makeDivIcon(url: string, width: number, height: number, anchorX: number, anchorY: number): L.DivIcon {
+    return L.divIcon({
+        html: `<img src="${url}" width="${width}" height="${height}" style="display:block;" />`,
+        className: '',
+        iconSize: [width, height],
+        iconAnchor: [anchorX, anchorY],
+        popupAnchor: [0, -anchorY],
+    });
+}
 
+/* ─── MapEventHandlers child component ─── */
+function MapEventHandlers({ onZoomChange, onClick, mapRef }: {
+    onZoomChange: (zoom: number) => void;
+    onClick: () => void;
+    mapRef: React.MutableRefObject<L.Map | null>;
+}) {
+    const map = useMap();
+    mapRef.current = map;
+    useMapEvents({
+        zoomend: () => onZoomChange(map.getZoom()),
+        click: () => onClick(),
+    });
+    return null;
+}
+
+/* ─── MapFitBounds child component ─── */
+function MapFitBounds({ reports, evacuation_centers }: { reports: Report[]; evacuation_centers: EvacuationCenter[] }) {
+    const map = useMap();
+    const fitted = useRef(false);
+    useEffect(() => {
+        if (fitted.current) return;
+        fitted.current = true;
+        const allPoints = [
+            ...reports.map((r) => [r.latitude, r.longitude] as [number, number]),
+            ...evacuation_centers.map((e) => [e.latitude, e.longitude] as [number, number]),
+        ];
+        if (allPoints.length === 0) {
+            map.setView(DEFAULT_CENTER, 13);
+            return;
+        }
+        const bounds = L.latLngBounds(allPoints.map(([lat, lng]) => L.latLng(lat, lng)));
+        map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
+        // Re-enforce bounds after fitBounds
+        map.setMaxBounds(L.latLngBounds(NASUGBU_BOUNDS));
+        map.setMinZoom(11);
+    }, [map, reports, evacuation_centers]);
+    return null;
+}
+
+
+/* ─── Heatmap layer using leaflet.heat ─── */
+function HeatmapLayer({ points }: { points: [number, number, number][] }) {
+    const map = useMap();
+    const layerRef = useRef<L.Layer | null>(null);
+
+    const buildLayer = useCallback(() => {
+        if (layerRef.current) map.removeLayer(layerRef.current);
+        if (points.length === 0) { layerRef.current = null; return; }
+
+        const zoom = map.getZoom();
+        // Scale radius and blur with zoom — bigger at close zoom, smaller when zoomed out
+        const scale = Math.max(0.08, Math.min(2.5, Math.pow(2, (zoom - 14) / 1.2)));
+        const radius = Math.round(14 * scale);
+        const blur = Math.round(10 * scale);
+
+        // @ts-ignore
+        const layer = L.heatLayer(points, {
+            radius,
+            blur,
+            maxZoom: 18,
+            minOpacity: 0.35,
+            max: Math.max(...points.map(p => p[2]), 1),
+            gradient: {
+                0.0: '#22c55e',
+                0.25: '#fbbf24',
+                0.5: '#f97316',
+                0.75: '#ef4444',
+                1.0: '#991b1b',
+            },
+        });
+
+        layer.addTo(map);
+        layerRef.current = layer;
+    }, [map, points]);
+
+    useEffect(() => {
+        buildLayer();
+        map.on('zoomend', buildLayer);
+        return () => {
+            map.off('zoomend', buildLayer);
+            if (layerRef.current) map.removeLayer(layerRef.current);
+        };
+    }, [map, points]);
+
+    return null;
+}
+
+/* ─── Dark mode tile switcher ─── */
+function DarkModeTileLayer() {
+    const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+    useEffect(() => {
+        const observer = new MutationObserver(() => {
+            setIsDark(document.documentElement.classList.contains('dark'));
+        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
     return (
-        <>
-            {points.filter((p) => p.weight > 0).map((p, i) => {
-                const intensity = p.weight / maxWeight;
-                const size   = (14 + intensity * 16) * zoomFactor;
-                const blur   = (3  + intensity * 4)  * zoomFactor;
-                const rgb    = intensityRgb(intensity);
-                const alpha1 = (0.45 + intensity * 0.35).toFixed(2);
-                return (
-                    <OverlayViewF key={i} position={{ lat: p.lat, lng: p.lng }} mapPaneName="overlayLayer">
-                        <div style={{
-                            width: size, height: size,
-                            borderRadius: '50%',
-                            pointerEvents: 'none',
-                            background: `radial-gradient(circle, rgba(${rgb},${alpha1}) 0%, rgba(${rgb},0.08) 60%, rgba(${rgb},0) 100%)`,
-                            filter: `blur(${blur}px)`,
-                            transform: 'translate(-50%, -50%)',
-                        }} />
-                    </OverlayViewF>
-                );
-            })}
-        </>
+        <TileLayer
+            url={isDark
+                ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+                : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+            }
+            attribution={isDark
+                ? '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>'
+                : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }
+        />
     );
 }
 
@@ -312,18 +398,8 @@ function useMapSocket(initial: MapResponder[], onNewReport: () => void) {
     return useMemo(() => Array.from(responders.values()), [responders]);
 }
 
-/* ─── Hazard type label helper ─── */
-function hazardTypeLabel(category: 'flood' | 'road', type: string): string {
-    return HAZARD_TYPE_OPTIONS[category]?.find(o => o.value === type)?.label ?? type;
-}
-
 /* ─── Main page ─── */
 export default function AdminReportsMap({ reports, filters, evacuation_centers, responders: initialResponders, hazards }: Props) {
-    const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_KEY ?? '',
-        libraries: ['places'] as ('places')[],
-    });
-
     // Auto-refresh: silently reload Inertia page data when socket fires new-report/report-status
     const refreshDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handleReportEvent = useCallback(() => {
@@ -335,14 +411,14 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
 
     const liveResponders = useMapSocket(initialResponders, handleReportEvent);
 
-    const [selectedReport, setSelectedReport]           = useState<Report | null>(null);
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+
     const [selectedEvacCenter, setSelectedEvacCenter]   = useState<EvacuationCenter | null>(null);
     const [selectedResponder, setSelectedResponder]     = useState<LiveResponder | null>(null);
     const [selectedHazard, setSelectedHazard]           = useState<Hazard | null>(null);
-    const [viewMode, setViewMode]                       = useState<ViewMode>('heatmap');
     const [showEvacCenters, setShowEvacCenters]         = useState(false);
     const [showResponders, setShowResponders]           = useState(true);
-    const [showHazards, setShowHazards]                 = useState(true);
     const [showAssignmentLines, setShowAssignmentLines] = useState(true);
     const [zoom, setZoom]                               = useState(12);
 
@@ -354,8 +430,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
         return () => clearInterval(id);
     }, [showResponders, liveResponders.length]);
 
-    const showMarkers = viewMode === 'markers' || viewMode === 'both';
-    const showHeatmap = viewMode === 'heatmap' || viewMode === 'both';
     const hasFilters  = !!(filters.status || filters.severity || filters.date_from || filters.date_to);
 
     const filter = useCallback((key: string, value: string) => {
@@ -364,20 +438,46 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
         });
     }, [filters]);
 
-    const DEFAULT_CENTER = { lat: 14.0681, lng: 120.6236 }; // Nasugbu, Batangas — fallback
-
-    const mapRef = useRef<google.maps.Map | null>(null);
+    const mapRef = useRef<L.Map | null>(null);
 
     const focusOnLocation = useCallback((lat: number, lng: number) => {
         if (!mapRef.current) return;
-        mapRef.current.panTo({ lat, lng });
+        mapRef.current.panTo([lat, lng]);
     }, []);
 
     const clearSelection = useCallback(() => {
-        setSelectedReport(null);
         setSelectedEvacCenter(null);
         setSelectedResponder(null);
         setSelectedHazard(null);
+    }, []);
+
+    // Memoized icons
+    const evacIcons = useMemo(() => ({
+        available: makeDivIcon(createEvacMarker(false), 30, 30, 15, 15),
+        full: makeDivIcon(createEvacMarker(true), 30, 30, 15, 15),
+    }), []);
+
+    const responderIcon = useMemo(() => makeDivIcon(RESPONDER_MARKER_URL, 32, 32, 16, 16), []);
+
+    const staleResponderIcon = useMemo(() => {
+        return L.divIcon({
+            html: `<img src="${RESPONDER_MARKER_URL}" width="32" height="32" style="display:block;opacity:0.45;" />`,
+            className: '',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+            popupAnchor: [0, -16],
+        });
+    }, []);
+
+    const hazardIcons = useMemo(() => {
+        const icons: Record<string, L.DivIcon> = {};
+        const allTypes = ['flash_flood', 'river_flood', 'coastal_flood', 'urban_flood', 'closed_road', 'debris', 'landslide', 'flooded_road', 'slow_zone'];
+        for (const s of ['critical', 'high', 'moderate', 'low'] as Severity[]) {
+            for (const t of allTypes) {
+                icons[`${s}-${t}`] = makeDivIcon(createHazardMarker(s, t), 36, 40, 18, 40);
+            }
+        }
+        return icons;
     }, []);
 
     // Compute assignment lines: assigned reports → their responder's live location
@@ -391,36 +491,14 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                 return {
                     reportId: r.id,
                     path: [
-                        { lat: resp.latitude, lng: resp.longitude },
-                        { lat: r.latitude, lng: r.longitude },
+                        [resp.latitude, resp.longitude] as L.LatLngExpression,
+                        [r.latitude, r.longitude] as L.LatLngExpression,
                     ],
                 };
             })
-            .filter(Boolean) as { reportId: number; path: google.maps.LatLngLiteral[] }[];
+            .filter(Boolean) as { reportId: number; path: L.LatLngExpression[] }[];
     }, [reports, liveResponders, showAssignmentLines, showResponders]);
 
-    const onMapLoad = useCallback((map: google.maps.Map) => {
-        mapRef.current = map;
-        const allPoints = [
-            ...reports.map((r) => ({ lat: r.latitude, lng: r.longitude })),
-            ...evacuation_centers.map((e) => ({ lat: e.latitude, lng: e.longitude })),
-        ];
-        if (allPoints.length === 0) {
-            map.setCenter(DEFAULT_CENTER);
-            map.setZoom(13);
-            return;
-        }
-        const bounds = new google.maps.LatLngBounds();
-        allPoints.forEach((p) => bounds.extend(p));
-        map.fitBounds(bounds, 60);
-    }, [reports, evacuation_centers]);
-
-    const heatPoints = useMemo((): HeatPoint[] => {
-        return reports.flatMap((r) => {
-            const weight = Math.round(SEVERITY_WEIGHT[r.severity] * STATUS_MULTIPLIER[r.status]);
-            return weight > 0 ? [{ lat: r.latitude, lng: r.longitude, weight }] : [];
-        });
-    }, [reports]);
 
     // Severity counts for stat pills
     const counts = useMemo(() => ({
@@ -430,10 +508,30 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
         low:      reports.filter((r) => r.severity === 'low').length,
     }), [reports]);
 
+    // Heatmap data from reports
+    const heatPoints = useMemo(() =>
+        reports
+            .filter(r => r.latitude && r.longitude)
+            .map(r => [r.latitude, r.longitude, SEVERITY_WEIGHT[r.severity]] as [number, number, number]),
+        [reports],
+    );
+
     // Sort reports: critical first
     const sortedReports = useMemo(() =>
-        [...reports].sort((a, b) => SEVERITY_WEIGHT[b.severity] - SEVERITY_WEIGHT[a.severity]),
+        [...reports].sort((a, b) => {
+            const sevDiff = SEVERITY_WEIGHT[b.severity] - SEVERITY_WEIGHT[a.severity];
+            if (sevDiff !== 0) return sevDiff;
+            // Oldest first as tiebreaker
+            return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        }),
     [reports]);
+
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Map View" />
+            <MapSkeleton />
+        </AppLayout>
+    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -478,87 +576,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                 <span className="mt-1 text-[9px] font-medium text-neutral-400">{SEVERITY_META[s].label}</span>
                             </button>
                         ))}
-                    </div>
-
-                    {/* View mode toggle */}
-                    <div className="border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
-                        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">View mode</p>
-                        <div className="grid grid-cols-3 gap-1.5">
-                            {([
-                                { value: 'markers', label: 'Markers', icon: MapPin },
-                                { value: 'both',    label: 'Both',    icon: SlidersHorizontal },
-                                { value: 'heatmap', label: 'Heat map',icon: Flame },
-                            ] as { value: ViewMode; label: string; icon: React.ElementType }[]).map(({ value, label, icon: Icon }) => (
-                                <button
-                                    key={value}
-                                    onClick={() => setViewMode(value)}
-                                    className={`flex items-center justify-center gap-1.5 rounded-lg border py-1.5 text-[11px] font-semibold transition-all ${
-                                        viewMode === value
-                                            ? 'border-neutral-900 bg-neutral-100 text-neutral-900 dark:border-white dark:bg-neutral-800 dark:text-white'
-                                            : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400'
-                                    }`}
-                                >
-                                    <Icon className="size-3" />{label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Layers */}
-                    <div className="border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
-                        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Layers</p>
-                        <div className="space-y-2">
-                            <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                                <input
-                                    type="checkbox"
-                                    checked={showEvacCenters}
-                                    onChange={(e) => setShowEvacCenters(e.target.checked)}
-                                    className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500 dark:border-neutral-600 dark:text-white"
-                                />
-                                Evacuation Centers
-                            </label>
-                            <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                                <input
-                                    type="checkbox"
-                                    checked={showResponders}
-                                    onChange={(e) => setShowResponders(e.target.checked)}
-                                    className="size-3.5 rounded border-neutral-300 text-blue-600 focus:ring-blue-500 dark:border-neutral-600"
-                                />
-                                <span className="flex items-center gap-1">
-                                    Duty Responders
-                                    {liveResponders.length > 0 && (
-                                        <span className="rounded-full bg-blue-50 px-1.5 py-0.5 text-[9px] font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                                            {liveResponders.length}
-                                        </span>
-                                    )}
-                                </span>
-                            </label>
-                            <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                                <input
-                                    type="checkbox"
-                                    checked={showHazards}
-                                    onChange={(e) => setShowHazards(e.target.checked)}
-                                    className="size-3.5 rounded border-neutral-300 text-amber-600 focus:ring-amber-500 dark:border-neutral-600"
-                                />
-                                <span className="flex items-center gap-1">
-                                    Hazard Zones
-                                    {hazards.length > 0 && (
-                                        <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-bold text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-                                            {hazards.length}
-                                        </span>
-                                    )}
-                                </span>
-                            </label>
-                            <label className="flex cursor-pointer items-center gap-2 text-xs text-neutral-600 dark:text-neutral-400">
-                                <input
-                                    type="checkbox"
-                                    checked={showAssignmentLines}
-                                    onChange={(e) => setShowAssignmentLines(e.target.checked)}
-                                    className="size-3.5 rounded border-neutral-300 text-violet-600 focus:ring-violet-500 dark:border-neutral-600"
-                                />
-                                Assignment Lines
-                            </label>
-                        </div>
                     </div>
 
                     {/* Filters */}
@@ -608,39 +625,15 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                     <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-3">
                         {/* Legend */}
                         <div className="mb-3">
-                            {showMarkers && (
-                                <>
-                                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Marker legend</p>
-                                    <div className="flex flex-wrap gap-3">
-                                        {(['critical', 'high', 'moderate', 'low'] as Severity[]).map((s) => (
-                                            <span key={s} className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                                                <span className={`h-2.5 w-2.5 rounded-full ${SEVERITY_META[s].color}`} />
-                                                {SEVERITY_META[s].label}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </>
-                            )}
-                            {showHeatmap && (
-                                <>
-                                    <p className={`mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400 ${showMarkers ? 'mt-2' : ''}`}>Density legend</p>
-                                    <div className="flex flex-wrap gap-3">
-                                        {[
-                                            { label: 'Low',      cls: 'bg-emerald-500' },
-                                            { label: 'Moderate', cls: 'bg-amber-400'   },
-                                            { label: 'High',     cls: 'bg-orange-500'  },
-                                            { label: 'Critical', cls: 'bg-red-500'     },
-                                        ].map(({ label, cls }) => (
-                                            <span key={label} className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                                                <span className={`h-2.5 w-2.5 rounded-full ${cls} opacity-70`} />
-                                                {label}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </>
-                            )}
+                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Heatmap</p>
+                            <div className="flex flex-wrap gap-3">
+                                <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />Low</span>
+                                <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400"><span className="h-2.5 w-2.5 rounded-full bg-amber-400" />Moderate</span>
+                                <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400"><span className="h-2.5 w-2.5 rounded-full bg-orange-500" />High</span>
+                                <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400"><span className="h-2.5 w-2.5 rounded-full bg-red-600" />Critical</span>
+                            </div>
                             {showEvacCenters && (
-                                <div className={`flex flex-wrap gap-3 ${showMarkers || showHeatmap ? 'mt-2' : ''}`}>
+                                <div className="flex flex-wrap gap-3 mt-2">
                                     <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
                                         <span className="h-2.5 w-2.5 rounded-sm bg-teal-600" />
                                         Evac Center
@@ -652,7 +645,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                 </div>
                             )}
                             {showResponders && (
-                                <div className={`flex flex-wrap gap-3 ${showMarkers || showHeatmap || showEvacCenters ? 'mt-2' : ''}`}>
+                                <div className="flex flex-wrap gap-3 mt-2">
                                     <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
                                         <span className="h-2.5 w-2.5 rounded-full bg-blue-600" />
                                         Responder
@@ -660,14 +653,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                     <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
                                         <span className="h-2.5 w-2.5 rounded-full bg-blue-600 opacity-40" />
                                         Stale ({'>'}10m)
-                                    </span>
-                                </div>
-                            )}
-                            {showHazards && (
-                                <div className={`flex flex-wrap gap-3 ${showMarkers || showHeatmap || showEvacCenters || showResponders ? 'mt-2' : ''}`}>
-                                    <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                                        <span className="h-2.5 w-2.5 rounded-sm bg-amber-500" />
-                                        Hazard
                                     </span>
                                 </div>
                             )}
@@ -743,17 +728,8 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                             {sortedReports.map((r) => (
                                 <button
                                     key={r.id}
-                                    onClick={() => {
-                                        clearSelection();
-                                        const isDeselecting = selectedReport?.id === r.id;
-                                        setSelectedReport(isDeselecting ? null : r);
-                                        if (!isDeselecting) focusOnLocation(r.latitude, r.longitude);
-                                    }}
-                                    className={`w-full rounded-xl border p-2.5 text-left transition-all ${
-                                        selectedReport?.id === r.id
-                                            ? 'border-neutral-400 bg-neutral-100 ring-1 ring-neutral-300 dark:border-neutral-600 dark:bg-neutral-800/60'
-                                            : 'border-neutral-100 bg-neutral-50/50 hover:border-neutral-200 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-800/40 dark:hover:border-neutral-700'
-                                    }`}
+                                    onClick={() => focusOnLocation(r.latitude, r.longitude)}
+                                    className="w-full rounded-xl border border-neutral-100 bg-neutral-50/50 p-2.5 text-left transition-all hover:border-neutral-200 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-800/40 dark:hover:border-neutral-700"
                                 >
                                     <div className="flex items-center justify-between gap-2">
                                         <div className="flex items-center gap-2 min-w-0">
@@ -792,279 +768,289 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
 
                 {/* ── Map ── */}
                 <div className="relative flex-1">
-                    {isLoaded ? (
-                        <GoogleMap
-                            mapContainerStyle={mapContainerStyle}
-                            center={DEFAULT_CENTER}
-                            zoom={zoom}
-                            options={mapOptions}
-                            onLoad={onMapLoad}
-                            onZoomChanged={function (this: google.maps.Map) { setZoom(this.getZoom() ?? 12); }}
-                            onClick={clearSelection}
-                        >
-                            {showMarkers && reports.map((report) => (
-                                <MarkerF
-                                    key={report.id}
-                                    position={{ lat: report.latitude, lng: report.longitude }}
-                                    icon={{
-                                        url: createSvgMarker(report.severity),
-                                        scaledSize: new google.maps.Size(28, 36),
-                                        anchor: new google.maps.Point(14, 36),
-                                    }}
-                                    zIndex={SEVERITY_WEIGHT[report.severity]}
-                                    onClick={() => { clearSelection(); setSelectedReport(report); focusOnLocation(report.latitude, report.longitude); }}
-                                />
-                            ))}
+                    <MapContainer
+                        center={DEFAULT_CENTER}
+                        zoom={13}
+                        minZoom={11}
+                        maxZoom={18}
+                        maxBounds={NASUGBU_BOUNDS}
+                        maxBoundsViscosity={1.0}
+                        zoomControl={true}
+                        style={{ width: '100%', height: '100%' }}
+                    >
+                        <DarkModeTileLayer />
+                        <MapEventHandlers onZoomChange={setZoom} onClick={clearSelection} mapRef={mapRef} />
+                        <MapFitBounds reports={reports} evacuation_centers={evacuation_centers} />
+                        <HeatmapLayer points={heatPoints} />
 
-                            {selectedReport && (
-                                <InfoWindowF
-                                    position={{ lat: selectedReport.latitude, lng: selectedReport.longitude }}
-                                    onCloseClick={() => setSelectedReport(null)}
-                                    options={{ maxWidth: 300, minWidth: 220, pixelOffset: new google.maps.Size(0, -36) }}
-                                >
-                                    <div className="flex flex-col gap-2 p-3 pr-8" style={{ minWidth: 200 }}>
-                                        <div>
-                                            <div className="flex items-center gap-1.5 mb-1">
-                                                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${SEVERITY_COLORS[selectedReport.severity]}`}>
-                                                    {selectedReport.severity}
-                                                </span>
-                                                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[selectedReport.status]}`}>
-                                                    {selectedReport.status}
-                                                </span>
-                                            </div>
-                                            <span className="font-mono text-xs font-bold text-neutral-900">
-                                                {selectedReport.reference_number}
-                                            </span>
-                                        </div>
-
-                                        {selectedReport.address && (
-                                            <p className="text-[11px] text-gray-500 leading-snug">{selectedReport.address}</p>
-                                        )}
-
-                                        <div className="flex items-center justify-between text-[11px] text-gray-400">
-                                            <span>{selectedReport.user?.name ?? 'Unknown'}</span>
-                                            <span>{new Date(selectedReport.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                                        </div>
-
-                                        <Link
-                                            href={`/admin/reports/${selectedReport.id}`}
-                                            className="mt-0.5 block rounded-lg bg-neutral-900 px-3 py-2 text-center text-[11px] font-semibold text-white transition hover:bg-neutral-800"
-                                        >
-                                            View full report →
-                                        </Link>
-                                    </div>
-                                </InfoWindowF>
-                            )}
-
-                            {/* Evacuation center markers */}
-                            {showEvacCenters && evacuation_centers.map((ec) => {
-                                const isFull = ec.current_occupancy >= ec.capacity;
-                                return (
-                                    <MarkerF
-                                        key={`evac-${ec.id}`}
-                                        position={{ lat: ec.latitude, lng: ec.longitude }}
-                                        icon={{
-                                            url: createEvacMarker(isFull),
-                                            scaledSize: new google.maps.Size(30, 30),
-                                            anchor: new google.maps.Point(15, 15),
-                                        }}
-                                        zIndex={10}
-                                        onClick={() => {
+                        {/* Evacuation center markers */}
+                        {showEvacCenters && evacuation_centers.map((ec) => {
+                            const isFull = ec.current_occupancy >= ec.capacity;
+                            return (
+                                <Marker
+                                    key={`evac-${ec.id}`}
+                                    position={[ec.latitude, ec.longitude]}
+                                    icon={isFull ? evacIcons.full : evacIcons.available}
+                                    zIndexOffset={10}
+                                    eventHandlers={{
+                                        click: () => {
                                             clearSelection();
                                             setSelectedEvacCenter(selectedEvacCenter?.id === ec.id ? null : ec);
                                             if (selectedEvacCenter?.id !== ec.id) focusOnLocation(ec.latitude, ec.longitude);
-                                        }}
-                                    />
-                                );
-                            })}
-
-                            {/* Evacuation center info window */}
-                            {showEvacCenters && selectedEvacCenter && (
-                                <InfoWindowF
-                                    position={{ lat: selectedEvacCenter.latitude, lng: selectedEvacCenter.longitude }}
-                                    onCloseClick={() => setSelectedEvacCenter(null)}
-                                    options={{ maxWidth: 280, minWidth: 240, pixelOffset: new google.maps.Size(0, -18) }}
-                                >
-                                    <div className="flex flex-col gap-2 p-3 pt-3">
-                                        <div className="flex items-start justify-between gap-2">
-                                            <p className="text-xs font-bold text-neutral-900 leading-snug">{selectedEvacCenter.name}</p>
-                                            <span className="shrink-0 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700 ring-1 ring-teal-200">
-                                                {EVACUATION_CENTER_TYPE_LABELS[selectedEvacCenter.type]}
-                                            </span>
-                                        </div>
-
-                                        {selectedEvacCenter.address && (
-                                            <p className="text-[11px] text-gray-500 leading-snug">{selectedEvacCenter.address}</p>
-                                        )}
-
-                                        {/* Occupancy bar */}
-                                        <div>
-                                            <div className="mb-1 flex items-center justify-between text-[10px] text-gray-500">
-                                                <span>Occupancy</span>
-                                                <span className="font-semibold">
-                                                    {selectedEvacCenter.current_occupancy} / {selectedEvacCenter.capacity}
-                                                </span>
-                                            </div>
-                                            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                                                <div
-                                                    className={`h-full rounded-full transition-all ${
-                                                        selectedEvacCenter.current_occupancy >= selectedEvacCenter.capacity
-                                                            ? 'bg-red-500'
-                                                            : selectedEvacCenter.current_occupancy / selectedEvacCenter.capacity > 0.8
-                                                            ? 'bg-amber-400'
-                                                            : 'bg-teal-500'
-                                                    }`}
-                                                    style={{ width: `${Math.min(100, Math.round(selectedEvacCenter.current_occupancy / selectedEvacCenter.capacity * 100))}%` }}
-                                                />
-                                            </div>
-                                            <p className={`mt-1 text-[10px] font-semibold ${
-                                                selectedEvacCenter.current_occupancy >= selectedEvacCenter.capacity
-                                                    ? 'text-red-600' : 'text-teal-600'
-                                            }`}>
-                                                {selectedEvacCenter.current_occupancy >= selectedEvacCenter.capacity
-                                                    ? 'Full — no available space'
-                                                    : `${selectedEvacCenter.capacity - selectedEvacCenter.current_occupancy} slots available`}
-                                            </p>
-                                        </div>
-
-                                        <Link
-                                            href="/admin/evacuation-centers"
-                                            className="mt-0.5 block rounded-lg bg-neutral-900 px-3 py-2 text-center text-[11px] font-semibold text-white transition hover:bg-neutral-800"
-                                        >
-                                            Manage centers →
-                                        </Link>
-                                    </div>
-                                </InfoWindowF>
-                            )}
-
-                            {/* Responder markers */}
-                            {showResponders && liveResponders.map((r) => (
-                                <MarkerF
-                                    key={`resp-${r.id}`}
-                                    position={{ lat: r.latitude, lng: r.longitude }}
-                                    icon={{
-                                        url: RESPONDER_MARKER_URL,
-                                        scaledSize: new google.maps.Size(32, 32),
-                                        anchor: new google.maps.Point(16, 16),
+                                        },
                                     }}
-                                    opacity={isStale(r.location_updated_at) ? 0.45 : 1}
-                                    zIndex={20}
-                                    onClick={() => {
+                                >
+                                    {selectedEvacCenter?.id === ec.id && (
+                                        <Popup
+                                            maxWidth={280}
+                                            minWidth={240}
+                                            eventHandlers={{ remove: () => setSelectedEvacCenter(null) }}
+                                        >
+                                            <div className="flex flex-col gap-2 p-3 pt-3">
+                                                <div className="flex items-start justify-between gap-2">
+                                                    <p className="text-xs font-bold text-neutral-900 leading-snug">{selectedEvacCenter.name}</p>
+                                                    <span className="shrink-0 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700 ring-1 ring-teal-200">
+                                                        {EVACUATION_CENTER_TYPE_LABELS[selectedEvacCenter.type]}
+                                                    </span>
+                                                </div>
+
+                                                {selectedEvacCenter.address && (
+                                                    <p className="text-[11px] text-gray-500 leading-snug">{selectedEvacCenter.address}</p>
+                                                )}
+
+                                                {/* Occupancy bar */}
+                                                <div>
+                                                    <div className="mb-1 flex items-center justify-between text-[10px] text-gray-500">
+                                                        <span>Occupancy</span>
+                                                        <span className="font-semibold">
+                                                            {selectedEvacCenter.current_occupancy} / {selectedEvacCenter.capacity}
+                                                        </span>
+                                                    </div>
+                                                    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                                                        <div
+                                                            className={`h-full rounded-full transition-all ${
+                                                                selectedEvacCenter.current_occupancy >= selectedEvacCenter.capacity
+                                                                    ? 'bg-red-500'
+                                                                    : selectedEvacCenter.current_occupancy / selectedEvacCenter.capacity > 0.8
+                                                                    ? 'bg-amber-400'
+                                                                    : 'bg-teal-500'
+                                                            }`}
+                                                            style={{ width: `${Math.min(100, Math.round(selectedEvacCenter.current_occupancy / selectedEvacCenter.capacity * 100))}%` }}
+                                                        />
+                                                    </div>
+                                                    <p className={`mt-1 text-[10px] font-semibold ${
+                                                        selectedEvacCenter.current_occupancy >= selectedEvacCenter.capacity
+                                                            ? 'text-red-600' : 'text-teal-600'
+                                                    }`}>
+                                                        {selectedEvacCenter.current_occupancy >= selectedEvacCenter.capacity
+                                                            ? 'Full — no available space'
+                                                            : `${selectedEvacCenter.capacity - selectedEvacCenter.current_occupancy} slots available`}
+                                                    </p>
+                                                </div>
+
+                                                <Link
+                                                    href="/admin/evacuation-centers"
+                                                    className="mt-0.5 block rounded-lg bg-neutral-900 px-3 py-2 text-center text-[11px] font-semibold text-white transition hover:bg-neutral-800"
+                                                >
+                                                    Manage centers →
+                                                </Link>
+                                            </div>
+                                        </Popup>
+                                    )}
+                                </Marker>
+                            );
+                        })}
+
+                        {/* Responder markers */}
+                        {showResponders && liveResponders.map((r) => (
+                            <Marker
+                                key={`resp-${r.id}`}
+                                position={[r.latitude, r.longitude]}
+                                icon={isStale(r.location_updated_at) ? staleResponderIcon : responderIcon}
+                                zIndexOffset={20}
+                                eventHandlers={{
+                                    click: () => {
                                         clearSelection();
                                         setSelectedResponder(selectedResponder?.id === r.id ? null : r);
                                         if (selectedResponder?.id !== r.id) focusOnLocation(r.latitude, r.longitude);
-                                    }}
-                                />
-                            ))}
-
-                            {/* Responder info window */}
-                            {showResponders && selectedResponder && (
-                                <InfoWindowF
-                                    position={{ lat: selectedResponder.latitude, lng: selectedResponder.longitude }}
-                                    onCloseClick={() => setSelectedResponder(null)}
-                                    options={{ maxWidth: 260, minWidth: 200, pixelOffset: new google.maps.Size(0, -18) }}
-                                >
-                                    <div className="flex flex-col gap-2 p-3 pt-3">
-                                        <div className="flex items-center gap-2">
-                                            <div className="flex size-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
-                                                {selectedResponder.name.charAt(0).toUpperCase()}
+                                    },
+                                }}
+                            >
+                                {selectedResponder?.id === r.id && (
+                                    <Popup
+                                        maxWidth={260}
+                                        minWidth={200}
+                                        eventHandlers={{ remove: () => setSelectedResponder(null) }}
+                                    >
+                                        <div className="flex flex-col gap-2 p-3 pt-3">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex size-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
+                                                    {selectedResponder.name.charAt(0).toUpperCase()}
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs font-bold text-neutral-900">{selectedResponder.name}</p>
+                                                    {selectedResponder.team_name && (
+                                                        <p className="text-[10px] text-gray-500">{selectedResponder.team_name}</p>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-xs font-bold text-neutral-900">{selectedResponder.name}</p>
-                                                {selectedResponder.team_name && (
-                                                    <p className="text-[10px] text-gray-500">{selectedResponder.team_name}</p>
-                                                )}
+                                            <div className="flex items-center gap-1.5 rounded-lg bg-gray-50 px-2.5 py-1.5">
+                                                <Clock className="size-3 text-gray-400" />
+                                                <span className="text-[11px] text-gray-500">Last seen:</span>
+                                                <span className={`text-[11px] font-semibold ${isStale(selectedResponder.location_updated_at) ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                    {formatLastSeen(selectedResponder.location_updated_at)}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <Radio className={`size-3 ${isStale(selectedResponder.location_updated_at) ? 'text-amber-500' : 'text-emerald-500'}`} />
+                                                <span className={`text-[11px] font-semibold ${isStale(selectedResponder.location_updated_at) ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                    {isStale(selectedResponder.location_updated_at) ? 'Signal lost' : 'Active'}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-1.5 rounded-lg bg-gray-50 px-2.5 py-1.5">
-                                            <Clock className="size-3 text-gray-400" />
-                                            <span className="text-[11px] text-gray-500">Last seen:</span>
-                                            <span className={`text-[11px] font-semibold ${isStale(selectedResponder.location_updated_at) ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                                {formatLastSeen(selectedResponder.location_updated_at)}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1.5">
-                                            <Radio className={`size-3 ${isStale(selectedResponder.location_updated_at) ? 'text-amber-500' : 'text-emerald-500'}`} />
-                                            <span className={`text-[11px] font-semibold ${isStale(selectedResponder.location_updated_at) ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                                {isStale(selectedResponder.location_updated_at) ? 'Signal lost' : 'Active'}
-                                            </span>
-                                        </div>
-                                    </div>
-                                </InfoWindowF>
-                            )}
+                                    </Popup>
+                                )}
+                            </Marker>
+                        ))}
 
-                            {/* Hazard markers */}
-                            {showHazards && hazards.map((h) => (
-                                <MarkerF
-                                    key={`haz-${h.id}`}
-                                    position={{ lat: h.latitude, lng: h.longitude }}
-                                    icon={{
-                                        url: createHazardMarker(h.severity, h.category),
-                                        scaledSize: new google.maps.Size(30, 30),
-                                        anchor: new google.maps.Point(15, 15),
-                                    }}
-                                    zIndex={5}
-                                    onClick={() => {
+                        {/* Hazard markers (active only) */}
+                        {hazards.map((h) => (
+                            <Marker
+                                key={`haz-${h.id}`}
+                                position={[h.latitude, h.longitude]}
+                                icon={hazardIcons[`${h.severity}-${h.type}`] ?? hazardIcons[`${h.severity}-flash_flood`]}
+                                zIndexOffset={500}
+                                eventHandlers={{
+                                    click: () => {
                                         clearSelection();
                                         setSelectedHazard(selectedHazard?.id === h.id ? null : h);
                                         if (selectedHazard?.id !== h.id) focusOnLocation(h.latitude, h.longitude);
-                                    }}
-                                />
-                            ))}
-
-                            {/* Hazard info window */}
-                            {showHazards && selectedHazard && (
-                                <InfoWindowF
-                                    position={{ lat: selectedHazard.latitude, lng: selectedHazard.longitude }}
-                                    onCloseClick={() => setSelectedHazard(null)}
-                                    options={{ maxWidth: 260, minWidth: 200, pixelOffset: new google.maps.Size(0, -18) }}
-                                >
-                                    <div className="flex flex-col gap-2 p-3 pt-3" style={{ minWidth: 180 }}>
-                                        <div className="flex items-center gap-1.5 mb-0.5">
-                                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${SEVERITY_COLORS[selectedHazard.severity]}`}>
-                                                {selectedHazard.severity}
-                                            </span>
-                                            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">
-                                                {selectedHazard.category === 'flood' ? 'Flood' : 'Road'}
-                                            </span>
+                                    },
+                                }}
+                            >
+                                {selectedHazard?.id === h.id && (
+                                    <Popup
+                                        maxWidth={260}
+                                        minWidth={200}
+                                        eventHandlers={{ remove: () => setSelectedHazard(null) }}
+                                    >
+                                        <div className="flex flex-col gap-2 p-1" style={{ minWidth: 180 }}>
+                                            <div className="flex items-center gap-1.5 mb-0.5">
+                                                <span className={`text-[10px] font-bold capitalize ${SEVERITY_COLORS[selectedHazard.severity]}`}>
+                                                    {selectedHazard.severity}
+                                                </span>
+                                                <span className="text-[10px] font-semibold text-neutral-500">
+                                                    {selectedHazard.category === 'flood' ? 'Flood' : 'Road'}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs font-bold text-neutral-900">{selectedHazard.title}</p>
+                                            <p className="text-[11px] text-gray-500">
+                                                {hazardTypeLabel(selectedHazard.category, selectedHazard.type)}
+                                            </p>
+                                            {selectedHazard.address && (
+                                                <p className="text-[10px] text-gray-400">{selectedHazard.address}</p>
+                                            )}
                                         </div>
-                                        <p className="text-xs font-bold text-neutral-900">{selectedHazard.title}</p>
-                                        <p className="text-[11px] text-gray-500">
-                                            {hazardTypeLabel(selectedHazard.category, selectedHazard.type)}
-                                        </p>
-                                    </div>
-                                </InfoWindowF>
-                            )}
+                                    </Popup>
+                                )}
+                            </Marker>
+                        ))}
 
-                            {/* Assignment lines: responder → report */}
-                            {showAssignmentLines && assignmentLines.map((line) => (
-                                <PolylineF
-                                    key={`line-${line.reportId}`}
-                                    path={line.path}
-                                    options={{
-                                        strokeColor: '#8b5cf6',
-                                        strokeOpacity: 0,
-                                        strokeWeight: 2,
-                                        icons: [{
-                                            icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.7, strokeWeight: 2, scale: 3 },
-                                            offset: '0',
-                                            repeat: '14px',
-                                        }],
-                                        zIndex: 2,
-                                    }}
-                                />
-                            ))}
+                        {/* Assignment lines: responder → report */}
+                        {showAssignmentLines && assignmentLines.map((line) => (
+                            <Polyline
+                                key={`line-${line.reportId}`}
+                                positions={line.path}
+                                pathOptions={{
+                                    color: '#8b5cf6',
+                                    weight: 2,
+                                    opacity: 0.7,
+                                    dashArray: '8 6',
+                                }}
+                            />
+                        ))}
 
-                            <HeatmapOverlay points={heatPoints} visible={showHeatmap} zoom={zoom} />
-                        </GoogleMap>
-                    ) : (
-                        <div className="flex h-full items-center justify-center bg-neutral-50 dark:bg-neutral-900">
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="size-8 animate-spin rounded-full border-2 border-neutral-200 border-t-neutral-900 dark:border-neutral-700 dark:border-t-white" />
-                                <p className="text-xs text-neutral-400">Loading map…</p>
+                    </MapContainer>
+
+                    {/* Map Legend */}
+                    <div className="absolute bottom-4 left-4 z-[1000] w-[200px] overflow-hidden rounded-xl border border-white/20 bg-white/90 shadow-2xl shadow-black/10 backdrop-blur-xl dark:border-neutral-700/40 dark:bg-neutral-900/90 dark:shadow-black/30">
+                        {/* Header */}
+                        <div className="border-b border-neutral-100/80 px-3.5 py-2 dark:border-neutral-800/60">
+                            <p className="text-[9px] font-bold tracking-wide text-neutral-800 dark:text-neutral-200">Map Legend</p>
+                        </div>
+
+                        {/* Heatmap Intensity */}
+                        <div className="border-b border-neutral-100/60 px-3.5 py-2.5 dark:border-neutral-800/40">
+                            <p className="mb-2 text-[7px] font-bold uppercase tracking-[0.15em] text-neutral-400 dark:text-neutral-500">Report Density</p>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-[7px] text-neutral-400">Low</span>
+                                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{
+                                    background: 'linear-gradient(to right, #22c55e, #fbbf24, #f97316, #ef4444, #991b1b)',
+                                }} />
+                                <span className="text-[7px] text-neutral-400">High</span>
                             </div>
                         </div>
-                    )}
+
+                        {/* Severity */}
+                        <div className="border-b border-neutral-100/60 px-3.5 py-2.5 dark:border-neutral-800/40">
+                            <p className="mb-2 text-[7px] font-bold uppercase tracking-[0.15em] text-neutral-400 dark:text-neutral-500">Severity</p>
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                                {[
+                                    { label: 'Critical', color: '#991b1b' },
+                                    { label: 'High', color: '#ef4444' },
+                                    { label: 'Moderate', color: '#f97316' },
+                                    { label: 'Low', color: '#fbbf24' },
+                                ].map(({ label, color }) => (
+                                    <div key={label} className="flex items-center gap-1.5">
+                                        <span className="size-2 rounded-full ring-1 ring-black/5" style={{ backgroundColor: color }} />
+                                        <span className="text-[8px] font-medium text-neutral-600 dark:text-neutral-400">{label}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Hazards */}
+                        {hazards.length > 0 && (() => {
+                            const floodTypes = [...new Set(hazards.filter(h => h.category === 'flood').map(h => h.type))];
+                            const roadTypes = [...new Set(hazards.filter(h => h.category === 'road').map(h => h.type))];
+                            return (
+                                <div className="px-3.5 py-2.5">
+                                    <div className="mb-2 flex items-center justify-between">
+                                        <p className="text-[7px] font-bold uppercase tracking-[0.15em] text-neutral-400 dark:text-neutral-500">Hazards</p>
+                                        <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[7px] font-bold tabular-nums text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">{hazards.length}</span>
+                                    </div>
+                                    <div className="flex flex-col gap-1.5">
+                                        {floodTypes.length > 0 && (
+                                            <div>
+                                                <div className="mb-1 flex items-center gap-1.5">
+                                                    <svg width="8" height="8" viewBox="0 0 8 8"><path d="M4 0L8 8H0z" fill="#3b82f6" /></svg>
+                                                    <span className="text-[8px] font-semibold text-blue-600 dark:text-blue-400">Flood</span>
+                                                </div>
+                                                <div className="ml-3.5 flex flex-col gap-0.5 border-l border-blue-200/60 pl-2 dark:border-blue-800/40">
+                                                    {floodTypes.map(t => (
+                                                        <span key={t} className="text-[7px] text-neutral-500 dark:text-neutral-400">{hazardTypeLabel('flood', t)}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {roadTypes.length > 0 && (
+                                            <div>
+                                                <div className="mb-1 flex items-center gap-1.5">
+                                                    <svg width="8" height="8" viewBox="0 0 8 8"><path d="M4 0L8 8H0z" fill="#f97316" /></svg>
+                                                    <span className="text-[8px] font-semibold text-orange-600 dark:text-orange-400">Road</span>
+                                                </div>
+                                                <div className="ml-3.5 flex flex-col gap-0.5 border-l border-orange-200/60 pl-2 dark:border-orange-800/40">
+                                                    {roadTypes.map(t => (
+                                                        <span key={t} className="text-[7px] text-neutral-500 dark:text-neutral-400">{hazardTypeLabel('road', t)}</span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+                    </div>
                 </div>
             </div>
         </AppLayout>

@@ -31,6 +31,7 @@ import { PrimaryStatCard } from '@/components/admin/kpi/PrimaryStatCard';
 import { SecondaryStatCard } from '@/components/admin/kpi/SecondaryStatCard';
 import { PeriodToggle } from '@/components/admin/kpi/PeriodToggle';
 import { useLocale } from '@/hooks/use-locale';
+import { DashboardSkeleton } from '@/components/admin/skeletons';
 
 /* ─── Types ─── */
 interface Stats { total_reports: number; pending: number; active: number; resolved_today: number; total_users: number; total_responders: number }
@@ -547,6 +548,13 @@ export default function AdminDashboard({
     }, [filteredDays, areaSeries, avgValue, alertDates]);
 
     /* ── Donut Chart ── */
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Dashboard" />
+            <DashboardSkeleton />
+        </AppLayout>
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard" />

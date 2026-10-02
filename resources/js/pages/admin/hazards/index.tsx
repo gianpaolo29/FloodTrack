@@ -33,6 +33,7 @@ import { swalDelete, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 import type { Hazard, HazardCategory, Severity } from '@/types/admin';
 import { HAZARD_CATEGORY_LABELS, HAZARD_TYPE_OPTIONS } from '@/types/admin';
+import { ManagementListSkeleton } from '@/components/admin/skeletons';
 
 interface Paginated<T> {
     data: T[];
@@ -267,6 +268,13 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
         }
     }
 
+    if (!mounted) return (
+        <AppLayout breadcrumbs={breadcrumbs}>
+            <Head title="Hazards" />
+            <ManagementListSkeleton />
+        </AppLayout>
+    );
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Hazards" />
@@ -293,20 +301,6 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/hazards" />
-                        <button
-                            onClick={() => {
-                                setSyncing(true);
-                                router.post('/admin/hazards/sync-weather', {}, {
-                                    preserveState: false,
-                                    onFinish: () => setSyncing(false),
-                                });
-                            }}
-                            disabled={syncing}
-                            className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition-all hover:bg-neutral-100 hover:shadow-md active:scale-[0.97] disabled:opacity-60 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                        >
-                            <CloudRain className={`size-4 ${syncing ? 'animate-pulse' : ''}`} />
-                            {syncing ? 'Syncing…' : 'Sync Weather Alerts'}
-                        </button>
                         <button
                             onClick={() => setShowCreateModal(true)}
                             className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 active:scale-[0.97] dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
