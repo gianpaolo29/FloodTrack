@@ -35,11 +35,12 @@ class ReportsExport
     ];
 
     private array $statusColors = [
-        'pending'  => 'FEF3C7',
-        'verified' => 'E0F2FE',
-        'assigned' => 'EDE9FE',
-        'resolved' => 'D1FAE5',
-        'rejected' => 'FEE2E2',
+        'pending'      => 'FEF3C7',
+        'verified'     => 'E0F2FE',
+        'acknowledged' => 'CCFBF1',
+        'assigned'     => 'EDE9FE',
+        'resolved'     => 'D1FAE5',
+        'rejected'     => 'FEE2E2',
     ];
 
     public function __construct(
@@ -130,22 +131,42 @@ class ReportsExport
         }
         $row += 3;
 
-        // ── Status breakdown ──
+        // ── Status breakdown (left: A-C) + Bar chart (right: E-H) ──
+        $statusTableStart = $row;
         $row = $this->writeBreakdownTable($sheet, $row, 'Status Breakdown', $this->statusBreakdown, $this->statusColors);
-        $row++;
+        $statusTableEnd = $row;
 
-        // ── Severity breakdown ──
-        $sevTableStartRow = $row;
+        if ($this->statusBreakdown->isNotEmpty()) {
+            $dataStart = $statusTableStart + 1;
+            $dataEnd   = $dataStart + $this->statusBreakdown->count() - 1;
+
+            $labels = [new DataSeriesValues('String', "Summary!\$A\${$dataStart}:\$A\${$dataEnd}", null, $this->statusBreakdown->count())];
+            $values = [new DataSeriesValues('Number', "Summary!\$B\${$dataStart}:\$B\${$dataEnd}", null, $this->statusBreakdown->count())];
+
+            $series   = new DataSeries(DataSeries::TYPE_BARCHART, DataSeries::GROUPING_CLUSTERED, range(0, 0), [], $labels, $values);
+            $plotArea = new PlotArea(null, [$series]);
+            $legend   = new Legend(Legend::POSITION_BOTTOM, null, false);
+            $title    = new Title('Status Distribution');
+
+            $chart = new Chart('status_chart', $title, $legend, $plotArea);
+            $chart->setTopLeftPosition('E' . $statusTableStart);
+            $chart->setBottomRightPosition('H' . ($statusTableStart + 10));
+            $sheet->addChart($chart);
+        }
+
+        // Ensure row advances past the chart height
+        $row = max($row, $statusTableStart + 11) + 1;
+
+        // ── Severity breakdown (left: A-C) + Pie chart (right: E-H) ──
+        $sevTableStart = $row;
         $row = $this->writeBreakdownTable($sheet, $row, 'Severity Breakdown', $this->severityBreakdown, $this->sevColors);
-        $row++;
 
-        // ── Pie chart: Severity ──
         if ($this->severityBreakdown->isNotEmpty()) {
-            $dataStartRow = $sevTableStartRow + 1; // first data row after header
-            $dataEndRow   = $dataStartRow + $this->severityBreakdown->count() - 1;
+            $dataStart = $sevTableStart + 1;
+            $dataEnd   = $dataStart + $this->severityBreakdown->count() - 1;
 
-            $labels = [new DataSeriesValues('String', "Summary!\$A\${$dataStartRow}:\$A\${$dataEndRow}", null, $this->severityBreakdown->count())];
-            $values = [new DataSeriesValues('Number', "Summary!\$B\${$dataStartRow}:\$B\${$dataEndRow}", null, $this->severityBreakdown->count())];
+            $labels = [new DataSeriesValues('String', "Summary!\$A\${$dataStart}:\$A\${$dataEnd}", null, $this->severityBreakdown->count())];
+            $values = [new DataSeriesValues('Number', "Summary!\$B\${$dataStart}:\$B\${$dataEnd}", null, $this->severityBreakdown->count())];
 
             $series   = new DataSeries(DataSeries::TYPE_PIECHART, null, range(0, 0), [], $labels, $values);
             $plotArea = new PlotArea(null, [$series]);
@@ -153,44 +174,13 @@ class ReportsExport
             $title    = new Title('Severity Distribution');
 
             $chart = new Chart('severity_chart', $title, $legend, $plotArea);
-            $chart->setTopLeftPosition('D' . ($sevTableStartRow));
-            $chart->setBottomRightPosition('H' . ($sevTableStartRow + 12));
+            $chart->setTopLeftPosition('E' . $sevTableStart);
+            $chart->setBottomRightPosition('H' . ($sevTableStart + 10));
             $sheet->addChart($chart);
         }
 
-        // ── Bar chart: Status ──
-        // We need to know where the status table data starts; it was written earlier.
-        // Re-scan to find it — it started right after the stats grid.
-        $statusDataStart = 8; // row after "Status Breakdown" header (approximate)
-        // Actually let's compute it properly. Stats grid ends at row 6 originally + 3 = row ~7. Let's use a stored value.
-        // We'll refactor: store row refs.
-
-        // For simplicity, write status chart data in a hidden area
-        $chartDataRow = $row + 1;
-        $i = 0;
-        foreach ($this->statusBreakdown as $status => $count) {
-            $sheet->setCellValue('A' . ($chartDataRow + $i), ucfirst($status));
-            $sheet->setCellValue('B' . ($chartDataRow + $i), $count);
-            $i++;
-        }
-        $statusChartEnd = $chartDataRow + $i - 1;
-
-        if ($this->statusBreakdown->isNotEmpty()) {
-            $labels2 = [new DataSeriesValues('String', "Summary!\$A\${$chartDataRow}:\$A\${$statusChartEnd}", null, $this->statusBreakdown->count())];
-            $values2 = [new DataSeriesValues('Number', "Summary!\$B\${$chartDataRow}:\$B\${$statusChartEnd}", null, $this->statusBreakdown->count())];
-
-            $series2   = new DataSeries(DataSeries::TYPE_BARCHART, DataSeries::GROUPING_CLUSTERED, range(0, 0), [], $labels2, $values2);
-            $plotArea2 = new PlotArea(null, [$series2]);
-            $legend2   = new Legend(Legend::POSITION_BOTTOM, null, false);
-            $title2    = new Title('Status Distribution');
-
-            $chart2 = new Chart('status_chart', $title2, $legend2, $plotArea2);
-            $chart2->setTopLeftPosition('D' . $chartDataRow);
-            $chart2->setBottomRightPosition('H' . ($chartDataRow + 12));
-            $sheet->addChart($chart2);
-        }
-
-        $row = $chartDataRow + max($i, 13) + 2;
+        // Ensure row advances past the chart height
+        $row = max($row, $sevTableStart + 11) + 1;
 
         // ── Top 5 responders ──
         $sheet->mergeCells("A{$row}:D{$row}");
@@ -275,19 +265,24 @@ class ReportsExport
         $spreadsheet->addSheet($sheet, 1);
 
         $columns = [
-            'A' => ['title' => 'Reference',   'width' => 20],
-            'B' => ['title' => 'Severity',     'width' => 12],
-            'C' => ['title' => 'Status',       'width' => 12],
-            'D' => ['title' => 'Description',  'width' => 40],
-            'E' => ['title' => 'Address',      'width' => 35],
-            'F' => ['title' => 'Lat',          'width' => 14],
-            'G' => ['title' => 'Lon',          'width' => 14],
-            'H' => ['title' => 'Reporter',     'width' => 18],
-            'I' => ['title' => 'Assigned To',  'width' => 18],
-            'J' => ['title' => 'Team',         'width' => 18],
-            'K' => ['title' => 'Created At',   'width' => 22],
-            'L' => ['title' => 'Verified At',  'width' => 22],
-            'M' => ['title' => 'Resolved At',  'width' => 22],
+            'A' => ['title' => 'Reference',          'width' => 20],
+            'B' => ['title' => 'Severity',            'width' => 12],
+            'C' => ['title' => 'Status',              'width' => 12],
+            'D' => ['title' => 'Description',         'width' => 40],
+            'E' => ['title' => 'Address',             'width' => 35],
+            'F' => ['title' => 'Lat',                 'width' => 14],
+            'G' => ['title' => 'Lon',                 'width' => 14],
+            'H' => ['title' => 'Reporter',            'width' => 18],
+            'I' => ['title' => 'Assigned To',         'width' => 18],
+            'J' => ['title' => 'Team',                'width' => 18],
+            'K' => ['title' => 'Created At',          'width' => 22],
+            'L' => ['title' => 'Verified At',         'width' => 22],
+            'M' => ['title' => 'Assigned At',         'width' => 22],
+            'N' => ['title' => 'Resolved At',         'width' => 22],
+            'O' => ['title' => 'Response Time (min)',  'width' => 20],
+            'P' => ['title' => 'Resolution Time (min)','width' => 22],
+            'Q' => ['title' => 'SLA Status',          'width' => 14],
+            'R' => ['title' => 'Source',               'width' => 12],
         ];
 
         // ── Header row ──
@@ -297,7 +292,7 @@ class ReportsExport
             $sheet->getColumnDimension($col)->setWidth($meta['width']);
         }
 
-        $lastCol = 'M';
+        $lastCol = 'R';
         $this->applyStyle($sheet, "A{$headerRow}:{$lastCol}{$headerRow}", [
             'font'      => ['bold' => true, 'size' => 10, 'color' => ['argb' => 'FFFFFFFF']],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => "FF{$this->brandBlue}"]],
@@ -340,7 +335,56 @@ class ReportsExport
             // Dates as Excel date values
             $this->setDateCell($sheet, "K{$row}", $report->created_at, $dateFormat);
             $this->setDateCell($sheet, "L{$row}", $report->verified_at, $dateFormat);
-            $this->setDateCell($sheet, "M{$row}", $report->resolved_at, $dateFormat);
+            $this->setDateCell($sheet, "M{$row}", $report->assigned_at, $dateFormat);
+            $this->setDateCell($sheet, "N{$row}", $report->resolved_at, $dateFormat);
+
+            // Response time: created → assigned (minutes)
+            if ($report->created_at && $report->assigned_at) {
+                $responseMin = round($report->created_at->diffInMinutes($report->assigned_at), 1);
+                $sheet->setCellValue("O{$row}", $responseMin);
+                $sheet->getStyle("O{$row}")->getNumberFormat()->setFormatCode('0.0');
+            }
+
+            // Resolution time: created → resolved (minutes)
+            if ($report->created_at && $report->resolved_at) {
+                $resolutionMin = round($report->created_at->diffInMinutes($report->resolved_at), 1);
+                $sheet->setCellValue("P{$row}", $resolutionMin);
+                $sheet->getStyle("P{$row}")->getNumberFormat()->setFormatCode('0.0');
+            }
+
+            // SLA status from tracking
+            $slaStatus = $report->sla_status;
+            if ($slaStatus) {
+                $slaLabel = match ($slaStatus) {
+                    'met'      => 'Met',
+                    'on_track' => 'On Track',
+                    'at_risk'  => 'At Risk',
+                    'breached' => 'Breached',
+                    default    => ucfirst($slaStatus),
+                };
+                $sheet->setCellValue("Q{$row}", $slaLabel);
+
+                $slaColors = [
+                    'met'      => 'D1FAE5',
+                    'on_track' => 'D1FAE5',
+                    'at_risk'  => 'FEF3C7',
+                    'breached' => 'FEE2E2',
+                ];
+                if (isset($slaColors[$slaStatus])) {
+                    $this->applyStyle($sheet, "Q{$row}", [
+                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['argb' => "FF{$slaColors[$slaStatus]}"]],
+                        'font' => ['bold' => true],
+                    ]);
+                }
+            }
+
+            // Source
+            $sourceLabel = match ($report->source) {
+                'messenger' => 'Messenger',
+                'facebook'  => 'Facebook',
+                default     => 'App',
+            };
+            $sheet->setCellValue("R{$row}", $sourceLabel);
 
             // ── Alternating row color ──
             $rowBg = $idx % 2 === 0 ? 'FFFFFFFF' : "FF{$this->lightGray}";

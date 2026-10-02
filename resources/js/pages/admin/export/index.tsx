@@ -297,148 +297,143 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                     />
                 </div>
 
-                {/* ─── PDF Export ─── */}
-                <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                    <div className="flex items-center gap-2.5 border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
-                        <div className="flex size-8 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
-                            <Printer className="size-3.5 text-white dark:text-neutral-900" />
-                        </div>
-                        <div>
-                            <h2 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Dashboard PDF Report</h2>
-                            <p className="text-[11px] text-neutral-400">Download a formatted PDF summary of the dashboard</p>
-                        </div>
-                    </div>
-                    <div className="flex flex-col gap-4 p-3 sm:p-6">
-                        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                            Includes summary stats, status &amp; severity breakdowns, top responders, and the latest 20 reports.
-                            Choose a period to scope the data.
-                        </p>
-                        <div className="flex flex-wrap gap-3">
-                            {(['all', 'month', 'week', 'today'] as const).map((p) => (
-                                <a
-                                    key={p}
-                                    href={`/admin/export/pdf${p !== 'all' ? `?period=${p}` : ''}`}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2 text-sm font-medium text-neutral-700 transition-all hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-white"
-                                >
-                                    <Printer className="size-3.5" />
-                                    {{ all: 'All Time', month: 'This Month', week: 'This Week', today: 'Today' }[p]}
-                                </a>
-                            ))}
-                        </div>
-                    </div>
-                </div>
+                {/* ─── Export Cards ─── */}
+                <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
 
-                {/* ─── Filter & Download ─── */}
-                <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
-                    {/* Card header */}
-                    <div className="flex items-center gap-2.5 border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
-                        <div className="flex size-8 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
-                            <Download className="size-3.5 text-white dark:text-neutral-900" />
-                        </div>
-                        <div>
-                            <h2 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">
-                                Excel Export
-                            </h2>
-                            <p className="text-[11px] text-neutral-400">Filter by status, severity, or date range · All filters optional</p>
-                        </div>
-                    </div>
-
-                    {/* Card body */}
-                    <div className="flex flex-col gap-4 sm:gap-5 p-3 sm:p-6">
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <FilterField label="Status">
-                                <div className="relative">
-                                    <select
-                                        value={status}
-                                        onChange={(e) => setStatus(e.target.value)}
-                                        className={`${selectCls} appearance-none pr-8`}
-                                    >
-                                        <option value="">All statuses</option>
-                                        {STATUS_OPTIONS.filter(Boolean).map((opt) => (
-                                            <option key={opt} value={opt}>
-                                                {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
-                                </div>
-                            </FilterField>
-
-                            <FilterField label="Severity">
-                                <div className="relative">
-                                    <select
-                                        value={severity}
-                                        onChange={(e) => setSeverity(e.target.value)}
-                                        className={`${selectCls} appearance-none pr-8`}
-                                    >
-                                        <option value="">All severities</option>
-                                        {SEVERITY_OPTIONS.filter(Boolean).map((opt) => (
-                                            <option key={opt} value={opt}>
-                                                {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
-                                </div>
-                            </FilterField>
-
-                            <FilterField label="From date" error={errors.dateFrom}>
-                                <input
-                                    type="date"
-                                    value={dateFrom}
-                                    max={dateTo || today}
-                                    onChange={(e) => {
-                                        setDateFrom(e.target.value);
-                                        setErrors(({ dateFrom: _, general: __, ...rest }) => rest);
-                                    }}
-                                    className={`${selectCls} ${errors.dateFrom ? '!border-red-400 !ring-red-500/10' : ''}`}
-                                />
-                            </FilterField>
-
-                            <FilterField label="To date" error={errors.dateTo}>
-                                <input
-                                    type="date"
-                                    value={dateTo}
-                                    min={dateFrom || undefined}
-                                    max={today}
-                                    onChange={(e) => {
-                                        setDateTo(e.target.value);
-                                        setErrors(({ dateTo: _, general: __, ...rest }) => rest);
-                                    }}
-                                    className={`${selectCls} ${errors.dateTo ? '!border-red-400 !ring-red-500/10' : ''}`}
-                                />
-                            </FilterField>
-                        </div>
-
-                        {/* General validation error */}
-                        {errors.general && (
-                            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
-                                <AlertCircle className="size-4 shrink-0" />
-                                {errors.general}
+                    {/* PDF Export */}
+                    <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <div className="flex items-center gap-2.5 border-b border-neutral-100 px-5 py-3.5 dark:border-neutral-800">
+                            <div className="flex size-8 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                                <Printer className="size-3.5 text-white dark:text-neutral-900" />
                             </div>
-                        )}
+                            <div>
+                                <h2 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">PDF Report</h2>
+                                <p className="text-[11px] text-neutral-400">Dashboard summary with charts</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-3 p-4 sm:p-5">
+                            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                                Stats, status &amp; severity breakdowns, top responders, and the latest 20 reports.
+                            </p>
+                            <div className="flex flex-wrap gap-2">
+                                {(['all', 'month', 'week', 'today'] as const).map((p) => (
+                                    <a
+                                        key={p}
+                                        href={`/admin/export/pdf${p !== 'all' ? `?period=${p}` : ''}`}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-all hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-700"
+                                    >
+                                        <Printer className="size-3" />
+                                        {{ all: 'All Time', month: 'This Month', week: 'This Week', today: 'Today' }[p]}
+                                    </a>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
 
-                        {/* Actions */}
-                        <div className="flex items-center gap-3 border-t border-neutral-100 pt-5 dark:border-neutral-800">
-                            <a
-                                href={buildUrl()}
-                                onClick={handleDownload}
-                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
-                            >
-                                <FileDown className="size-4" />
-                                Download Excel
-                            </a>
+                    {/* Excel Export */}
+                    <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <div className="flex items-center gap-2.5 border-b border-neutral-100 px-5 py-3.5 dark:border-neutral-800">
+                            <div className="flex size-8 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
+                                <Download className="size-3.5 text-white dark:text-neutral-900" />
+                            </div>
+                            <div>
+                                <h2 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Excel Export</h2>
+                                <p className="text-[11px] text-neutral-400">Reports with SLA &amp; response time data</p>
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-3 p-4 sm:p-5">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                                <FilterField label="Status">
+                                    <div className="relative">
+                                        <select
+                                            value={status}
+                                            onChange={(e) => setStatus(e.target.value)}
+                                            className={`${selectCls} appearance-none pr-8`}
+                                        >
+                                            <option value="">All statuses</option>
+                                            {STATUS_OPTIONS.filter(Boolean).map((opt) => (
+                                                <option key={opt} value={opt}>
+                                                    {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+                                    </div>
+                                </FilterField>
 
-                            {hasFilters && (
-                                <button
-                                    type="button"
-                                    onClick={clearFilters}
-                                    className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-                                >
-                                    <X className="size-3.5" />
-                                    Clear filters
-                                </button>
+                                <FilterField label="Severity">
+                                    <div className="relative">
+                                        <select
+                                            value={severity}
+                                            onChange={(e) => setSeverity(e.target.value)}
+                                            className={`${selectCls} appearance-none pr-8`}
+                                        >
+                                            <option value="">All severities</option>
+                                            {SEVERITY_OPTIONS.filter(Boolean).map((opt) => (
+                                                <option key={opt} value={opt}>
+                                                    {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                                                </option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+                                    </div>
+                                </FilterField>
+
+                                <FilterField label="From" error={errors.dateFrom}>
+                                    <input
+                                        type="date"
+                                        value={dateFrom}
+                                        max={dateTo || today}
+                                        onChange={(e) => {
+                                            setDateFrom(e.target.value);
+                                            setErrors(({ dateFrom: _, general: __, ...rest }) => rest);
+                                        }}
+                                        className={`${selectCls} ${errors.dateFrom ? '!border-red-400 !ring-red-500/10' : ''}`}
+                                    />
+                                </FilterField>
+
+                                <FilterField label="To" error={errors.dateTo}>
+                                    <input
+                                        type="date"
+                                        value={dateTo}
+                                        min={dateFrom || undefined}
+                                        max={today}
+                                        onChange={(e) => {
+                                            setDateTo(e.target.value);
+                                            setErrors(({ dateTo: _, general: __, ...rest }) => rest);
+                                        }}
+                                        className={`${selectCls} ${errors.dateTo ? '!border-red-400 !ring-red-500/10' : ''}`}
+                                    />
+                                </FilterField>
+                            </div>
+
+                            {errors.general && (
+                                <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-400">
+                                    <AlertCircle className="size-3.5 shrink-0" />
+                                    {errors.general}
+                                </div>
                             )}
+
+                            <div className="flex items-center justify-between border-t border-neutral-100 pt-3 dark:border-neutral-800">
+                                <a
+                                    href={buildUrl()}
+                                    onClick={handleDownload}
+                                    className="inline-flex items-center gap-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2 text-xs font-semibold shadow-sm transition-all active:scale-[0.97]"
+                                >
+                                    <FileDown className="size-3.5" />
+                                    Download Excel
+                                </a>
+                                {hasFilters && (
+                                    <button
+                                        type="button"
+                                        onClick={clearFilters}
+                                        className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                                    >
+                                        <X className="size-3" />
+                                        Clear
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -129,7 +129,7 @@ class ExportController extends Controller
             ->when($request->date_to, fn ($q) => $q->whereDate('created_at', '<=', $request->date_to));
 
         $reports = (clone $reportQuery)
-            ->with(['user:id,name', 'assignedResponder:id,name', 'assignedTeam:id,name'])
+            ->with(['user:id,name', 'assignedResponder:id,name', 'assignedTeam:id,name', 'slaTracking'])
             ->latest()
             ->limit(10000)
             ->get();
