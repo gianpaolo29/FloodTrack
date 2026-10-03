@@ -804,7 +804,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             </button>
 
                             <a
-                                href="/downloads/FloodTrackv1.1.apk"
+                                href="/storage/downloads/FloodTrackv1.1.apk"
                                 className={`group flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all duration-300 hover:scale-105 active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm ${isDark ? 'bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-400 hover:from-cyan-500/20 hover:to-blue-500/20' : 'bg-gradient-to-r from-cyan-50 to-blue-50 text-blue-600 hover:from-cyan-100 hover:to-blue-100'}`}
                             >
                                 <Download className="size-4 transition-transform duration-300 group-hover:translate-y-0.5" />
