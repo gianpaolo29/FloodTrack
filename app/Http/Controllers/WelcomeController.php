@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EvacuationCenter;
 use App\Models\Report;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -31,6 +32,8 @@ class WelcomeController extends Controller
             'canRegister' => Features::enabled(Features::registration()),
             'stats' => $stats,
             'evacuationCenters' => $evacuationCenters,
+            'contactNumber' => Setting::getValue('contact_number', ''),
+            'fbPageUrl' => Setting::getValue('fb_page_url', ''),
         ]);
     }
 }

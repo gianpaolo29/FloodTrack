@@ -9,6 +9,7 @@ import {
     ChevronDown,
     Download,
     Droplets,
+    Facebook,
     Map,
     MapPin,
     Navigation,
@@ -490,10 +491,12 @@ function MarqueeTicker({ isDark }: { isDark: boolean }) {
 
 /* ─── Page ───────────────────────────────────────────────────────────────── */
 
-export default function Welcome({ canRegister = true, stats, evacuationCenters = [] }: {
+export default function Welcome({ canRegister = true, stats, evacuationCenters = [], contactNumber = '', fbPageUrl = '' }: {
     canRegister?: boolean;
     stats?: WelcomeStats;
     evacuationCenters?: EvacuationCenterData[];
+    contactNumber?: string;
+    fbPageUrl?: string;
 }) {
     const { auth } = usePage().props;
     const scrolled = useScrolled();
@@ -801,7 +804,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             </button>
 
                             <a
-                                href="https://expo.dev/artifacts/eas/t5gy1gi0K96Ltczy4xeLlMcLFCZ8k7X0en-YrTqccoo.apk"
+                                href="/downloads/FloodTrackv1.1.apk"
                                 className={`group flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all duration-300 hover:scale-105 active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm ${isDark ? 'bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-400 hover:from-cyan-500/20 hover:to-blue-500/20' : 'bg-gradient-to-r from-cyan-50 to-blue-50 text-blue-600 hover:from-cyan-100 hover:to-blue-100'}`}
                             >
                                 <Download className="size-4 transition-transform duration-300 group-hover:translate-y-0.5" />
@@ -1407,13 +1410,33 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 </ul>
                             </div>
 
-                            {/* Emergency */}
+                            {/* Contact & Emergency */}
                             <div>
-                                <h4 className={`text-[11px] font-bold tracking-[0.15em] uppercase mb-5 ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Emergency</h4>
+                                <h4 className={`text-[11px] font-bold tracking-[0.15em] uppercase mb-5 ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Contact</h4>
                                 <ul className="space-y-3">
+                                    {contactNumber ? (
+                                        <li className="flex items-center justify-center gap-2.5 sm:justify-start">
+                                            <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/[0.08]">
+                                                <PhoneCall className="size-3.5 text-emerald-400/60" />
+                                            </div>
+                                            <a href={`tel:${contactNumber.replace(/[^0-9+]/g, '')}`} className={`text-[13px] transition-colors hover:underline ${isDark ? 'text-white/30 hover:text-white/50' : 'text-neutral-400 hover:text-neutral-600'}`}>
+                                                <span className={`font-bold ${isDark ? 'text-white/50' : 'text-neutral-600'}`}>{contactNumber}</span>
+                                            </a>
+                                        </li>
+                                    ) : null}
+                                    {fbPageUrl ? (
+                                        <li className="flex items-center justify-center gap-2.5 sm:justify-start">
+                                            <div className="flex size-7 items-center justify-center rounded-lg bg-blue-500/[0.08]">
+                                                <Facebook className="size-3.5 text-blue-400/60" />
+                                            </div>
+                                            <a href={fbPageUrl} target="_blank" rel="noopener noreferrer" className={`text-[13px] transition-colors hover:underline ${isDark ? 'text-white/30 hover:text-white/50' : 'text-neutral-400 hover:text-neutral-600'}`}>
+                                                Facebook Page
+                                            </a>
+                                        </li>
+                                    ) : null}
                                     <li className="flex items-center justify-center gap-2.5 sm:justify-start">
                                         <div className="flex size-7 items-center justify-center rounded-lg bg-red-500/[0.08]">
-                                            <PhoneCall className="size-3.5 text-red-400/60" />
+                                            <Siren className="size-3.5 text-red-400/60" />
                                         </div>
                                         <span className={`text-[13px] ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Emergency: <span className={`font-bold ${isDark ? 'text-white/50' : 'text-neutral-600'}`}>911</span></span>
                                     </li>

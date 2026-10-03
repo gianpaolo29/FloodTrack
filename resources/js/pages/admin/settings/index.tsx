@@ -5,8 +5,10 @@ import {
     Bot,
     CheckCircle2,
     Clock,
+    Facebook,
     Globe,
     Moon,
+    Phone,
     Save,
     Shield,
     Sun,
@@ -155,11 +157,13 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
 
                     {/* ─── Row 1: General + Notifications ─── */}
                     <div className="grid gap-4 lg:grid-cols-2">
-                        <SettingsCard icon={Globe} title="General" sub="Platform identity and map defaults">
+                        <SettingsCard icon={Globe} title="General" sub="Platform identity, map defaults, and contact info">
                             <SettingInput title="System Name" description="Name displayed across the platform" value={get('system_name')} onChange={(v) => set('system_name', v)} />
                             <SettingInput title="Default Region" description="Default map center label" value={get('default_region')} onChange={(v) => set('default_region', v)} />
                             <SettingInput title="Default Latitude" description="Map center latitude" value={get('default_latitude')} onChange={(v) => set('default_latitude', v)} type="number" />
                             <SettingInput title="Default Longitude" description="Map center longitude" value={get('default_longitude')} onChange={(v) => set('default_longitude', v)} type="number" />
+                            <SettingInput title="Contact Number" description="Shown in landing page footer" value={get('contact_number')} onChange={(v) => set('contact_number', v)} placeholder="e.g. 0917-123-4567" />
+                            <SettingInput title="Facebook Page URL" description="Shown in landing page footer" value={get('fb_page_url')} onChange={(v) => set('fb_page_url', v)} placeholder="e.g. https://facebook.com/FloodTrack" />
                         </SettingsCard>
 
                         <SettingsCard icon={Bell} title="Notifications" sub="Alert behaviour and push settings">
@@ -330,13 +334,14 @@ const inputCls =
     'h-9 w-full shrink-0 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm text-right outline-none transition-all focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 sm:w-44 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-neutral-500 dark:focus:bg-neutral-800';
 
 function SettingInput({
-    title, description, value, onChange, type = 'text',
+    title, description, value, onChange, type = 'text', placeholder,
 }: {
     title: string;
     description: string;
     value: string;
     onChange: (v: string) => void;
     type?: 'text' | 'number';
+    placeholder?: string;
 }) {
     return (
         <div className="flex items-center justify-between gap-4 px-6 py-4">
@@ -348,6 +353,7 @@ function SettingInput({
                 type={type}
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
                 className={inputCls}
             />
         </div>
