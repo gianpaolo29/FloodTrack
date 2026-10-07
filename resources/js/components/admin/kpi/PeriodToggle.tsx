@@ -3,12 +3,14 @@ import ReactDOM from 'react-dom';
 import { router } from '@inertiajs/react';
 import { Calendar, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { PERIODS } from '@/lib/kpi-utils';
+import { useLocale } from '@/hooks/use-locale';
 
 /* ─── Calendar Date Range Picker (portal) ─── */
-function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
+function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef, t }: {
     fromDate: string | null; toDate: string | null;
     onApply: (from: string, to: string) => void; onClose: () => void;
     anchorRef: React.RefObject<HTMLDivElement | null>;
+    t: (key: string) => string;
 }) {
     const [viewDate, setViewDate] = useState(() => {
         if (fromDate) return new Date(fromDate + 'T00:00:00');
@@ -126,14 +128,14 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
             </div>
             <div className="mt-3 flex items-center gap-2 rounded-xl bg-neutral-50 p-2.5 dark:bg-neutral-800/60">
                 <div className="flex-1 text-center">
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">From</p>
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">{t('filter.from')}</p>
                     <p className={`mt-0.5 text-xs font-bold ${rangeStart ? 'text-neutral-800 dark:text-neutral-200' : 'text-neutral-300 dark:text-neutral-600'}`}>
                         {formatDisplay(rangeStart)}
                     </p>
                 </div>
                 <ChevronRight className="size-3 text-neutral-300 dark:text-neutral-600" />
                 <div className="flex-1 text-center">
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">To</p>
+                    <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">{t('filter.to')}</p>
                     <p className={`mt-0.5 text-xs font-bold ${rangeEnd ? 'text-neutral-800 dark:text-neutral-200' : 'text-neutral-300 dark:text-neutral-600'}`}>
                         {formatDisplay(rangeEnd)}
                     </p>
@@ -141,7 +143,7 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
             </div>
             <div className="mt-3 flex items-center gap-2">
                 <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2 text-[11px] font-semibold text-neutral-500 transition-all hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800">
-                    Cancel
+                    {t('filter.cancel')}
                 </button>
                 <button
                     onClick={() => { if (rangeStart && rangeEnd) onApply(rangeStart, rangeEnd); }}
@@ -152,7 +154,7 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef }: {
                             : 'bg-neutral-100 text-neutral-300 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-600'
                     }`}
                 >
-                    Apply
+                    {t('filter.apply')}
                 </button>
             </div>
         </div>,
@@ -169,6 +171,7 @@ export function PeriodToggle({ period, customFrom, customTo, baseUrl, extraParam
     extraParams?: Record<string, string>;
     bare?: boolean;
 }) {
+    const { t } = useLocale();
     const [showCalendar, setShowCalendar] = useState(false);
     const calendarRef = useRef<HTMLDivElement>(null);
 
@@ -217,7 +220,7 @@ export function PeriodToggle({ period, customFrom, customTo, baseUrl, extraParam
 
     return (
         <div className={`relative flex flex-wrap items-center ${bare ? '' : 'rounded-xl border border-neutral-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/60'}`} ref={calendarRef}>
-            {PERIODS.map(({ key, label }) => (
+            {PERIODS.map(({ key, labelKey }) => (
                 <button
                     key={key}
                     onClick={() => setPeriod(key)}
@@ -230,9 +233,9 @@ export function PeriodToggle({ period, customFrom, customTo, baseUrl, extraParam
                     {key === 'custom' ? (
                         <span className="flex items-center gap-1">
                             <Calendar className="size-3" />
-                            {period === 'custom' && customRangeLabel ? customRangeLabel : label}
+                            {period === 'custom' && customRangeLabel ? customRangeLabel : t(labelKey)}
                         </span>
-                    ) : label}
+                    ) : t(labelKey)}
                 </button>
             ))}
             {period === 'custom' && customRangeLabel && !showCalendar && (
@@ -251,6 +254,7 @@ export function PeriodToggle({ period, customFrom, customTo, baseUrl, extraParam
                     onApply={applyCustomRange}
                     onClose={() => setShowCalendar(false)}
                     anchorRef={calendarRef}
+                    t={t}
                 />
             )}
         </div>

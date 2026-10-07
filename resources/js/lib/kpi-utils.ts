@@ -14,11 +14,11 @@ export interface TrendData {
 }
 
 export const PERIODS = [
-    { key: 'today', label: 'Today' },
-    { key: 'week',  label: 'This Week' },
-    { key: 'month', label: 'Monthly' },
-    { key: 'all',   label: 'All' },
-    { key: 'custom', label: 'Custom' },
+    { key: 'today', labelKey: 'filter.today' },
+    { key: 'week',  labelKey: 'filter.this_week' },
+    { key: 'month', labelKey: 'filter.monthly' },
+    { key: 'all',   labelKey: 'filter.all' },
+    { key: 'custom', labelKey: 'filter.custom' },
 ] as const;
 
 export type PeriodKey = (typeof PERIODS)[number]['key'];

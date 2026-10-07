@@ -323,7 +323,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                                         className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-all hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-700"
                                     >
                                         <Printer className="size-3" />
-                                        {{ all: 'All Time', month: 'This Month', week: 'This Week', today: 'Today' }[p]}
+                                        {{ all: t('filter.all_time'), month: t('filter.this_month'), week: t('filter.this_week'), today: t('filter.today') }[p]}
                                     </a>
                                 ))}
                             </div>
@@ -343,14 +343,14 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                         </div>
                         <div className="flex flex-col gap-3 p-4 sm:p-5">
                             <div className="grid gap-3 sm:grid-cols-2">
-                                <FilterField label="Status">
+                                <FilterField label={t('filter.status')}>
                                     <div className="relative">
                                         <select
                                             value={status}
                                             onChange={(e) => setStatus(e.target.value)}
                                             className={`${selectCls} appearance-none pr-8`}
                                         >
-                                            <option value="">All statuses</option>
+                                            <option value="">{t('filter.all_statuses')}</option>
                                             {STATUS_OPTIONS.filter(Boolean).map((opt) => (
                                                 <option key={opt} value={opt}>
                                                     {opt.charAt(0).toUpperCase() + opt.slice(1)}
@@ -361,14 +361,14 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                                     </div>
                                 </FilterField>
 
-                                <FilterField label="Severity">
+                                <FilterField label={t('filter.severity')}>
                                     <div className="relative">
                                         <select
                                             value={severity}
                                             onChange={(e) => setSeverity(e.target.value)}
                                             className={`${selectCls} appearance-none pr-8`}
                                         >
-                                            <option value="">All severities</option>
+                                            <option value="">{t('filter.all_severities')}</option>
                                             {SEVERITY_OPTIONS.filter(Boolean).map((opt) => (
                                                 <option key={opt} value={opt}>
                                                     {opt.charAt(0).toUpperCase() + opt.slice(1)}
@@ -379,7 +379,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                                     </div>
                                 </FilterField>
 
-                                <FilterField label="From" error={errors.dateFrom}>
+                                <FilterField label={t('filter.from')} error={errors.dateFrom}>
                                     <input
                                         type="date"
                                         value={dateFrom}
@@ -392,7 +392,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                                     />
                                 </FilterField>
 
-                                <FilterField label="To" error={errors.dateTo}>
+                                <FilterField label={t('filter.to')} error={errors.dateTo}>
                                     <input
                                         type="date"
                                         value={dateTo}

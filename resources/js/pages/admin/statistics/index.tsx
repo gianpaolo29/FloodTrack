@@ -833,7 +833,7 @@ export default function StatisticsPage({
 
                 {/* ── AI Situation Analysis (hero) ── */}
                 <Card>
-                    <CardHeader icon={Sparkles} title={t('stats.ai_analysis')} subtitle={`Analyzing: ${PERIODS.find(p => p.key === period)?.label ?? 'All'} \u00B7 GPT-4o mini`}>
+                    <CardHeader icon={Sparkles} title={t('stats.ai_analysis')} subtitle={`Analyzing: ${t(PERIODS.find(p => p.key === period)?.labelKey ?? 'filter.all')} \u00B7 GPT-4o mini`}>
                         {aiState === 'done' && (
                             <div className="ml-auto flex items-center gap-1.5">
                                 {previousAi && (

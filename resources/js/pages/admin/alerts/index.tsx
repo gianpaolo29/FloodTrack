@@ -67,16 +67,16 @@ const TYPE_COLORS: Record<string, { active: string; dot: string }> = {
     critical: { active: 'border-red-400 bg-red-50 dark:border-red-500 dark:bg-red-950/30', dot: 'bg-red-500' },
 };
 
-const TYPE_FILTER_OPTIONS = [
-    { value: 'critical', label: 'Critical' },
-    { value: 'advisory', label: 'Advisory' },
-    { value: 'update',   label: 'Update'   },
+const TYPE_FILTER_KEYS = [
+    { value: 'critical', key: 'severity.critical' },
+    { value: 'advisory', key: 'filter.advisory' },
+    { value: 'update',   key: 'filter.update'   },
 ];
 
-const SORT_OPTIONS = [
-    { value: 'created_at', label: 'Date Published' },
-    { value: 'title',      label: 'Title'          },
-    { value: 'type',       label: 'Type'           },
+const SORT_KEYS = [
+    { value: 'created_at', key: 'filter.date_published' },
+    { value: 'title',      key: 'filter.title'          },
+    { value: 'type',       key: 'filter.type'           },
 ];
 
 const inputClass =
@@ -548,8 +548,8 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                         {/* Filters — right */}
                         <div className="ml-auto flex flex-wrap items-center gap-2">
                             <MultiSelectFilter
-                                label="Type"
-                                options={TYPE_FILTER_OPTIONS}
+                                label={t('filter.type')}
+                                options={TYPE_FILTER_KEYS.map(o => ({ value: o.value, label: t(o.key) }))}
                                 selected={filters.type ? filters.type.split(',') : []}
                                 onChange={(vals) => applyFilter('type', vals.join(','))}
                             />

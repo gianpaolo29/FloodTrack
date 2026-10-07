@@ -83,20 +83,20 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Reports', href: '/admin/reports' },
 ];
 
-const SEVERITY_FILTER_OPTIONS = [
-    { value: 'critical', label: 'Critical', color: '#ef4444' },
-    { value: 'high',     label: 'High',     color: '#f97316' },
-    { value: 'moderate', label: 'Moderate', color: '#fbbf24' },
-    { value: 'low',      label: 'Low',      color: '#22c55e' },
+const SEVERITY_FILTER_KEYS = [
+    { value: 'critical', key: 'severity.critical', color: '#ef4444' },
+    { value: 'high',     key: 'severity.high',     color: '#f97316' },
+    { value: 'moderate', key: 'severity.moderate', color: '#fbbf24' },
+    { value: 'low',      key: 'severity.low',      color: '#22c55e' },
 ];
 
-const STATUS_FILTER_OPTIONS = [
-    { value: 'pending',      label: 'Pending' },
-    { value: 'verified',     label: 'Verified' },
-    { value: 'acknowledged', label: 'Advisory Issued' },
-    { value: 'assigned',     label: 'Assigned' },
-    { value: 'resolved',     label: 'Resolved' },
-    { value: 'rejected',     label: 'Rejected' },
+const STATUS_FILTER_KEYS = [
+    { value: 'pending',      key: 'status.pending' },
+    { value: 'verified',     key: 'status.verified' },
+    { value: 'acknowledged', key: 'status.advisory_issued' },
+    { value: 'assigned',     key: 'status.assigned' },
+    { value: 'resolved',     key: 'status.resolved' },
+    { value: 'rejected',     key: 'status.rejected' },
 ];
 
 const STATUS_LABEL: Record<string, string> = {
@@ -460,21 +460,21 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                         <div className="ml-auto flex flex-wrap items-center gap-1.5">
                             {teams.length > 0 && (
                                 <MultiSelectFilter
-                                    label="Team"
+                                    label={t('filter.team')}
                                     options={teams.map((t) => ({ value: String(t.id), label: t.name }))}
                                     selected={filters.team_id ? filters.team_id.split(',') : []}
                                     onChange={(vals) => filter('team_id', vals.join(','))}
                                 />
                             )}
                             <MultiSelectFilter
-                                label="Severity"
-                                options={SEVERITY_FILTER_OPTIONS}
+                                label={t('filter.severity')}
+                                options={SEVERITY_FILTER_KEYS.map(o => ({ value: o.value, label: t(o.key), color: o.color }))}
                                 selected={filters.severity ? filters.severity.split(',') : []}
                                 onChange={(vals) => filter('severity', vals.join(','))}
                             />
                             <MultiSelectFilter
-                                label="Status"
-                                options={STATUS_FILTER_OPTIONS}
+                                label={t('filter.status')}
+                                options={STATUS_FILTER_KEYS.map(o => ({ value: o.value, label: t(o.key) }))}
                                 selected={filters.status ? filters.status.split(',') : []}
                                 onChange={(vals) => filter('status', vals.join(','))}
                             />

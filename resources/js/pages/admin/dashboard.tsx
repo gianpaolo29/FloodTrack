@@ -992,18 +992,18 @@ export default function AdminDashboard({
 }
 
 /* ─── Dashboard Filters ─── */
-const SEVERITY_OPTIONS = [
-    { value: 'critical', label: 'Critical', color: '#ef4444' },
-    { value: 'high',     label: 'High',     color: '#f97316' },
-    { value: 'moderate', label: 'Moderate', color: '#fbbf24' },
-    { value: 'low',      label: 'Low',      color: '#22c55e' },
+const SEVERITY_KEYS = [
+    { value: 'critical', key: 'severity.critical', color: '#ef4444' },
+    { value: 'high',     key: 'severity.high',     color: '#f97316' },
+    { value: 'moderate', key: 'severity.moderate', color: '#fbbf24' },
+    { value: 'low',      key: 'severity.low',      color: '#22c55e' },
 ];
-const STATUS_OPTIONS = [
-    { value: 'pending',  label: 'Pending' },
-    { value: 'verified', label: 'Verified' },
-    { value: 'assigned', label: 'Assigned' },
-    { value: 'resolved', label: 'Resolved' },
-    { value: 'rejected', label: 'Rejected' },
+const STATUS_KEYS = [
+    { value: 'pending',  key: 'status.pending' },
+    { value: 'verified', key: 'status.verified' },
+    { value: 'assigned', key: 'status.assigned' },
+    { value: 'resolved', key: 'status.resolved' },
+    { value: 'rejected', key: 'status.rejected' },
 ];
 
 function DashboardFilters({ filters, barangayList, period, customFrom, customTo }: {
@@ -1013,6 +1013,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
     customFrom?: string | null;
     customTo?: string | null;
 }) {
+    const { t } = useLocale();
     const selectedSeverities = filters.severity ? filters.severity.split(',') : [];
     const selectedStatuses = filters.status ? filters.status.split(',') : [];
     const selectedBarangays = filters.barangay ? filters.barangay.split(',') : [];
@@ -1072,7 +1073,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                         }`}
                     >
                         <Filter className="size-3.5" />
-                        Filters
+                        {t('filter.filters')}
                         {activeCount > 0 && (
                             <span className="flex size-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-neutral-900 dark:bg-neutral-900 dark:text-white">
                                 {activeCount}
@@ -1098,11 +1099,11 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                 <>
                                     {/* Header */}
                                     <div className="flex items-center justify-between border-b border-neutral-100 px-4 py-2.5 dark:border-neutral-800">
-                                        <p className="text-xs font-bold text-neutral-800 dark:text-neutral-200">Filters</p>
+                                        <p className="text-xs font-bold text-neutral-800 dark:text-neutral-200">{t('filter.filters')}</p>
                                         {(localSev.length > 0 || localStatus.length > 0 || localBarangays.length > 0) && (
                                             <button onClick={() => { setLocalSev([]); setLocalStatus([]); setLocalBarangays([]); setBrgySearch(''); }}
                                                 className="text-[10px] font-medium text-red-500 hover:text-red-600">
-                                                Clear all
+                                                {t('filter.clear_all')}
                                             </button>
                                         )}
                                     </div>
@@ -1110,9 +1111,9 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                     <div className="max-h-[60vh] overflow-y-auto">
                                         {/* Severity */}
                                         <div className="px-4 pt-3 pb-2">
-                                            <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Severity</p>
+                                            <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{t('filter.severity')}</p>
                                             <div className="flex flex-wrap gap-1.5">
-                                                {SEVERITY_OPTIONS.map(opt => (
+                                                {SEVERITY_KEYS.map(opt => (
                                                     <button
                                                         key={opt.value}
                                                         onClick={() => toggleSev(opt.value)}
@@ -1123,7 +1124,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                                         }`}
                                                     >
                                                         <span className="size-2 rounded-full" style={{ backgroundColor: opt.color }} />
-                                                        {opt.label}
+                                                        {t(opt.key)}
                                                     </button>
                                                 ))}
                                             </div>
@@ -1131,9 +1132,9 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
 
                                         {/* Status */}
                                         <div className="border-t border-neutral-100 px-4 pt-3 pb-2 dark:border-neutral-800">
-                                            <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Status</p>
+                                            <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{t('filter.status')}</p>
                                             <div className="flex flex-wrap gap-1.5">
-                                                {STATUS_OPTIONS.map(opt => (
+                                                {STATUS_KEYS.map(opt => (
                                                     <button
                                                         key={opt.value}
                                                         onClick={() => toggleStatus(opt.value)}
@@ -1143,7 +1144,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                                                 : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
                                                         }`}
                                                     >
-                                                        {opt.label}
+                                                        {t(opt.key)}
                                                     </button>
                                                 ))}
                                             </div>
@@ -1152,7 +1153,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                         {/* Barangay */}
                                         <div className="border-t border-neutral-100 px-4 pt-3 pb-1 dark:border-neutral-800">
                                             <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
-                                                Barangay
+                                                {t('filter.barangay')}
                                                 {localBarangays.length > 0 && (
                                                     <span className="ml-1.5 rounded-full bg-neutral-900 px-1.5 py-0.5 text-[8px] font-bold text-white dark:bg-white dark:text-neutral-900">{localBarangays.length}</span>
                                                 )}
@@ -1161,12 +1162,12 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                                 type="text"
                                                 value={brgySearch}
                                                 onChange={(e) => setBrgySearch(e.target.value)}
-                                                placeholder="Search barangay..."
+                                                placeholder={t('filter.search_barangay')}
                                                 className="mb-2 h-7 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-[10px] outline-none transition placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:placeholder:text-neutral-500 dark:focus:border-neutral-600"
                                             />
                                             <div className="max-h-36 overflow-y-auto rounded-lg border border-neutral-100 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-800/30">
                                                 {filteredBarangays.length === 0 ? (
-                                                    <p className="px-2.5 py-3 text-center text-[10px] text-neutral-400">No barangays found</p>
+                                                    <p className="px-2.5 py-3 text-center text-[10px] text-neutral-400">{t('filter.no_barangays')}</p>
                                                 ) : (
                                                     filteredBarangays.map(b => (
                                                         <label
@@ -1193,13 +1194,13 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                             onClick={() => clearAll(close)}
                                             className="rounded-lg px-3 py-1.5 text-[10px] font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
                                         >
-                                            Reset
+                                            {t('filter.reset')}
                                         </button>
                                         <button
                                             onClick={() => apply(close)}
                                             className="rounded-lg bg-neutral-900 px-5 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                                         >
-                                            Apply
+                                            {t('filter.apply')}
                                         </button>
                                     </div>
                                 </>
