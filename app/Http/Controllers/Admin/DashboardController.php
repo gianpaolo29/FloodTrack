@@ -9,6 +9,7 @@ use App\Models\Report;
 use App\Models\ReportStatusUpdate;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\WeatherService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -117,7 +118,7 @@ class DashboardController extends Controller
             'total_reports'    => (clone $reportQuery)->count(),
             'pending'          => (clone $reportQuery)->where('status', 'pending')->count(),
             'active'           => (clone $reportQuery)->whereIn('status', ['verified', 'assigned'])->count(),
-            'resolved_today'   => Report::where('status', 'resolved')
+            'resolved_today'   => Report::whereIn('status', ['resolved', 'acknowledged'])
                                         ->whereDate('resolved_at', today())
                                         ->count(),
             'total_users'      => User::where('role', '!=', 'admin')->count(),
@@ -145,8 +146,8 @@ class DashboardController extends Controller
         $prevReports = $applyFilters(Report::query())->whereBetween('created_at', [$prevFrom, $prevTo])->count();
         $reportsTrend = $this->calcTrend($curReports, $prevReports);
 
-        $curResolved  = $this->scopeByPeriod($applyFilters(Report::where('status', 'resolved')), $from, $to, 'resolved_at')->count();
-        $prevResolved = $applyFilters(Report::where('status', 'resolved'))->whereBetween('resolved_at', [$prevFrom, $prevTo])->count();
+        $curResolved  = $this->scopeByPeriod($applyFilters(Report::whereIn('status', ['resolved', 'acknowledged'])), $from, $to, 'resolved_at')->count();
+        $prevResolved = $applyFilters(Report::whereIn('status', ['resolved', 'acknowledged']))->whereBetween('resolved_at', [$prevFrom, $prevTo])->count();
         $resolvedTrend = $this->calcTrend($curResolved, $prevResolved);
 
         $curActive  = $this->scopeByPeriod($applyFilters(Report::whereIn('status', ['verified', 'assigned'])), $from, $to)->count();
@@ -165,7 +166,7 @@ class DashboardController extends Controller
         $dailyReports = $applyFilters(Report::select(
                 DB::raw("DATE(created_at) as date"),
                 DB::raw("COUNT(*) as total"),
-                DB::raw("SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved")
+                DB::raw("SUM(CASE WHEN status IN ('resolved', 'acknowledged') THEN 1 ELSE 0 END) as resolved")
             ))
             ->where('created_at', '>=', now()->subDays(90))
             ->groupBy(DB::raw("DATE(created_at)"))
@@ -182,9 +183,9 @@ class DashboardController extends Controller
             ->groupBy('severity')
             ->pluck('count', 'severity');
 
-        $status_breakdown = (clone $reportQuery)->selectRaw('status, count(*) as count')
-            ->groupBy('status')
-            ->pluck('count', 'status');
+        $status_breakdown = (clone $reportQuery)->selectRaw("CASE WHEN status = 'acknowledged' THEN 'resolved' ELSE status END as merged_status, count(*) as count")
+            ->groupBy('merged_status')
+            ->pluck('count', 'merged_status');
 
         // Recent reports
         $recent_reports = Report::with('user:id,name')
@@ -204,7 +205,7 @@ class DashboardController extends Controller
             ->get(['id', 'title', 'body', 'type', 'created_at']);
 
         // Average response time (minutes from created_at to resolved_at)
-        $avgResponseQuery = Report::where('status', 'resolved')
+        $avgResponseQuery = Report::whereIn('status', ['resolved', 'acknowledged'])
             ->whereNotNull('resolved_at');
         if ($from) {
             $avgResponseQuery = $avgResponseQuery->where('created_at', '>=', $from);
@@ -252,7 +253,7 @@ class DashboardController extends Controller
 
         // ── Verification Rate ──
         $totalReports = (clone $reportQuery)->count();
-        $verifiedReports = (clone $reportQuery)->whereIn('status', ['verified', 'assigned', 'resolved', 'rejected'])->count();
+        $verifiedReports = (clone $reportQuery)->whereIn('status', ['verified', 'assigned', 'resolved', 'acknowledged', 'rejected'])->count();
         $verification_rate = $totalReports > 0 ? round(($verifiedReports / $totalReports) * 100) : 0;
 
         // ── Barangay Breakdown (top 8 by report count, normalized via coordinates) ──
@@ -271,9 +272,11 @@ class DashboardController extends Controller
             ->map(fn ($count, $brgy) => ['barangay' => $brgy, 'count' => $count])
             ->values();
 
-        // ── Flood Risk Score (all-time analysis per barangay, normalized) ──
+        // ── Flood Risk Score (multi-factor: reports + weather + terrain) ──
         $severityWeight = ['critical' => 4, 'high' => 3, 'moderate' => 2, 'low' => 1];
         $currentMonth = now()->month;
+        $barangayConfig = collect(config('barangays'));
+        $barangayConfigByName = $barangayConfig->keyBy('name');
 
         $allReportsForRisk = Report::select('address', 'severity', 'created_at', 'latitude', 'longitude')
             ->get();
@@ -290,6 +293,20 @@ class DashboardController extends Controller
             $barangayGroups[$brgy]['months'][] = $month;
         }
 
+        // Fetch current weather & forecast (single API call, cached)
+        $weather = app(WeatherService::class);
+        $nasugbuLat = 14.0735;
+        $nasugbuLon = 120.6318;
+        $currentWeather = $weather->current($nasugbuLat, $nasugbuLon);
+        $dailyForecast = $weather->dailyForecast($nasugbuLat, $nasugbuLon);
+        $rain1h = $currentWeather['rain_1h'] ?? 0;
+        $forecastRainTotal = collect($dailyForecast)->take(2)->sum('rain_total');
+
+        // Rainfall score (0–1): current rain_1h + next-2-day forecast
+        $rainCurrentNorm = min($rain1h / 7.5, 1.0);           // 7.5 mm/h = max
+        $rainForecastNorm = min($forecastRainTotal / 50, 1.0); // 50 mm/2d = max
+        $rainfallScore = ($rainCurrentNorm * 0.6) + ($rainForecastNorm * 0.4);
+
         $riskScores = [];
         $maxCount = max(array_map(fn ($g) => count($g['severities']), $barangayGroups) ?: [1]);
 
@@ -304,7 +321,28 @@ class DashboardController extends Controller
             $freqNorm = $maxCount > 0 ? $totalCount / $maxCount : 0;
             $sevNorm = $avgSeverity / 4;
 
-            $score = round(($freqNorm * 40) + ($sevNorm * 30) + ($seasonalMatch * 30));
+            // Terrain factors from config/barangays.php
+            $cfg = $barangayConfigByName->get($brgy);
+            $elevationM = $cfg['elevation_m'] ?? 50;
+            $floodProne = $cfg['flood_prone'] ?? false;
+            $nearRiver = $cfg['near_river'] ?? false;
+            $coastal = $cfg['coastal'] ?? false;
+
+            // Elevation score (0–1): lower = riskier
+            $elevationScore = $elevationM <= 5 ? 1.0 : ($elevationM <= 10 ? 0.75 : ($elevationM <= 20 ? 0.4 : 0.0));
+
+            // Terrain score (0–1): flood_prone + near_river + coastal
+            $terrainScore = (($floodProne ? 0.5 : 0) + ($nearRiver ? 0.35 : 0) + ($coastal ? 0.15 : 0));
+
+            // Composite score (100 pts): 6 factors
+            $score = round(
+                ($freqNorm * 25) +          // Report frequency: 25 pts
+                ($sevNorm * 20) +            // Avg severity: 20 pts
+                ($seasonalMatch * 15) +      // Seasonality: 15 pts
+                ($rainfallScore * 20) +      // Rainfall (current + forecast): 20 pts
+                ($elevationScore * 12) +     // Elevation: 12 pts
+                ($terrainScore * 8)          // Terrain (flood_prone, near_river, coastal): 8 pts
+            );
             $level = $score >= 60 ? 'High' : ($score >= 30 ? 'Moderate' : 'Low');
 
             $riskScores[] = [

@@ -16,7 +16,7 @@ class AdminStatsController extends Controller
             'total_reports'    => Report::count(),
             'pending'          => Report::where('status', 'pending')->count(),
             'active'           => Report::whereIn('status', ['verified', 'acknowledged', 'assigned'])->count(),
-            'resolved_today'   => Report::where('status', 'resolved')
+            'resolved_today'   => Report::whereIn('status', ['resolved', 'acknowledged'])
                                         ->whereDate('resolved_at', today())
                                         ->count(),
             'total_users'      => User::where('role', '!=', 'admin')->count(),
@@ -30,8 +30,8 @@ class AdminStatsController extends Controller
             ? round((($thisWeekReports - $lastWeekReports) / $lastWeekReports) * 100, 1)
             : 0;
 
-        $thisWeekResolved = Report::where('status', 'resolved')->where('resolved_at', '>=', now()->startOfWeek())->count();
-        $lastWeekResolved = Report::where('status', 'resolved')->whereBetween('resolved_at', [now()->subWeek()->startOfWeek(), now()->startOfWeek()])->count();
+        $thisWeekResolved = Report::whereIn('status', ['resolved', 'acknowledged'])->where('resolved_at', '>=', now()->startOfWeek())->count();
+        $lastWeekResolved = Report::whereIn('status', ['resolved', 'acknowledged'])->whereBetween('resolved_at', [now()->subWeek()->startOfWeek(), now()->startOfWeek()])->count();
         $resolvedTrend = $lastWeekResolved > 0
             ? round((($thisWeekResolved - $lastWeekResolved) / $lastWeekResolved) * 100, 1)
             : 0;

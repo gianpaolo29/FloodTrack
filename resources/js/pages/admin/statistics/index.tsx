@@ -66,7 +66,7 @@ interface AiInsight {
     priority_action: string;
 }
 
-interface MonthlyPoint { month: string; total: number; critical: number; high: number; }
+interface MonthlyPoint { month: string; total: number; critical: number; high: number; moderate: number; low: number; }
 interface BarangayReport { area: string; count: number }
 interface MonthComparisonSide { label: string; critical: number; high: number; moderate: number; low: number }
 interface ResponseBreakdownOverall { avg_report_to_verified: number; avg_verified_to_assigned: number; avg_assigned_to_resolved: number; total_resolved: number }
@@ -385,6 +385,8 @@ export default function StatisticsPage({
         { name: 'Total',    data: monthly_trend.map(m => m.total) },
         { name: 'Critical', data: monthly_trend.map(m => m.critical) },
         { name: 'High',     data: monthly_trend.map(m => m.high) },
+        { name: 'Moderate', data: monthly_trend.map(m => m.moderate) },
+        { name: 'Low',      data: monthly_trend.map(m => m.low) },
     ];
 
     // Peak hours labels and series
@@ -513,7 +515,7 @@ export default function StatisticsPage({
         chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 }, selection: { enabled: false } },
         plotOptions: { bar: { borderRadius: 4, borderRadiusApplication: 'end', columnWidth: '60%' } },
         dataLabels: { enabled: false },
-        colors: ['#6366f1', '#f43f5e', '#f97316'],
+        colors: ['#6366f1', '#f43f5e', '#f97316', '#eab308', '#22c55e'],
         fill: { type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 0.3, opacityFrom: 1, opacityTo: 0.75, stops: [0, 100] } },
         legend: { show: false },
         xaxis: { categories: monthlyLabels, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
@@ -528,6 +530,8 @@ export default function StatisticsPage({
                     { color: '#6366f1', name: 'Total',    value: series[0][dataPointIndex] },
                     { color: '#f43f5e', name: 'Critical', value: series[1][dataPointIndex] },
                     { color: '#f97316', name: 'High',     value: series[2][dataPointIndex] },
+                    { color: '#eab308', name: 'Moderate', value: series[3][dataPointIndex] },
+                    { color: '#22c55e', name: 'Low',      value: series[4][dataPointIndex] },
                 ]);
             },
         },
@@ -1231,6 +1235,8 @@ export default function StatisticsPage({
                             <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-indigo-500" />Total</span>
                             <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-rose-500" />Critical</span>
                             <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-orange-500" />High</span>
+                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-yellow-500" />Moderate</span>
+                            <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-green-500" />Low</span>
                         </div>
                     </CardHeader>
                     {monthly_trend.length >= 2 && (() => {

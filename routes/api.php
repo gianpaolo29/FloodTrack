@@ -25,13 +25,13 @@ use Illuminate\Support\Facades\Route;
 | All routes return JSON. Auth routes use Sanctum token (Bearer).
 */
 
-// ── Facebook Webhook (no auth required) ────────────────────────────────
-Route::get('/webhooks/facebook',  [FacebookWebhookController::class, 'verify']);
-Route::post('/webhooks/facebook', [FacebookWebhookController::class, 'handle']);
-
-// ── Messenger Chatbot Webhook (no auth required) ──────────────────────
-Route::get('/webhooks/messenger',  [MessengerWebhookController::class, 'verify']);
-Route::post('/webhooks/messenger', [MessengerWebhookController::class, 'handle']);
+// ── Facebook & Messenger Webhooks (no auth, no throttle) ─────────────
+Route::withoutMiddleware('throttle:api')->group(function () {
+    Route::get('/webhooks/facebook',  [FacebookWebhookController::class, 'verify']);
+    Route::post('/webhooks/facebook', [FacebookWebhookController::class, 'handle']);
+    Route::get('/webhooks/messenger',  [MessengerWebhookController::class, 'verify']);
+    Route::post('/webhooks/messenger', [MessengerWebhookController::class, 'handle']);
+});
 
 // Temporary: check recent logs (REMOVE after debugging)
 Route::get('/debug/messenger-logs', function () {

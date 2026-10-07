@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Storage;
 /**
  * DumpSeeder — comprehensive demo data
  *
- * • 100 reports (95% verified, ~88% resolved)
+ * • 100 reports (95 resolved, 5 rejected)
  * • Images attached to ~60% of reports
  * • 10 announcements/alerts
  * • 5 hazards
@@ -294,11 +294,8 @@ class DumpSeeder extends Seeder
     {
         $totalReports    = 100;
         $rejectedCount   = 5;    // 5 rejected (95% verification rate)
-        $resolvedCount   = 83;   // 83 resolved (high resolution rate)
-        $assignedCount   = 5;    // 5 currently assigned (active)
-        $verifiedCount   = 2;    // 2 verified but not yet assigned
-        $pendingCount    = 5;    // 5 pending (recent submissions)
-        // Total: 5 + 83 + 5 + 2 + 5 = 100
+        $resolvedCount   = 95;   // 95 resolved
+        // Total: 5 + 95 = 100
 
         $severityDist = ['critical' => 12, 'high' => 25, 'moderate' => 38, 'low' => 25];
 
@@ -320,17 +317,11 @@ class DumpSeeder extends Seeder
                 $lat = $loc['lat'] + (rand(-50, 50) / 100000);
                 $lng = $loc['lng'] + (rand(-50, 50) / 100000);
 
-                // Determine status
+                // Determine status (only resolved or rejected)
                 if ($reportIndex < $rejectedCount) {
                     $status = 'rejected';
-                } elseif ($reportIndex < $rejectedCount + $resolvedCount) {
-                    $status = 'resolved';
-                } elseif ($reportIndex < $rejectedCount + $resolvedCount + $assignedCount) {
-                    $status = 'assigned';
-                } elseif ($reportIndex < $rejectedCount + $resolvedCount + $assignedCount + $verifiedCount) {
-                    $status = 'verified';
                 } else {
-                    $status = 'pending';
+                    $status = 'resolved';
                 }
 
                 // Assign team for resolved/assigned reports
@@ -374,13 +365,20 @@ class DumpSeeder extends Seeder
 
             $createdAt  = $r['date'];
             $verifiedAt = in_array($r['status'], ['verified', 'assigned', 'resolved', 'rejected'])
-                ? $createdAt->copy()->addMinutes(rand(2, 4))
+                ? $createdAt->copy()->addMinutes(rand(3, 6))
                 : null;
             $assignedAt = in_array($r['status'], ['assigned', 'resolved']) && $team
-                ? ($verifiedAt ?? $createdAt)->copy()->addMinutes(rand(1, 3))
+                ? ($verifiedAt ?? $createdAt)->copy()->addMinutes(rand(2, 5))
                 : null;
+            // Severity-based resolve time: critical/high take longer, low/moderate resolve faster
+            $resolveRange = match ($r['severity']) {
+                'critical' => [20, 30],
+                'high'     => [15, 25],
+                'moderate' => [8, 15],
+                'low'      => [5, 10],
+            };
             $resolvedAt = $r['status'] === 'resolved'
-                ? ($assignedAt ?? $createdAt)->copy()->addMinutes(rand(10, 15))
+                ? ($assignedAt ?? $createdAt)->copy()->addMinutes(rand($resolveRange[0], $resolveRange[1]))
                 : null;
 
             $report = Report::create([
@@ -391,7 +389,7 @@ class DumpSeeder extends Seeder
                 'latitude'             => $r['lat'],
                 'longitude'            => $r['lng'],
                 'address'              => $r['address'],
-                'source'               => $i < 70 ? 'mobile' : 'messenger',
+                'source'               => $i < 70 ? 'app' : 'messenger',
                 'messenger_sender_name'=> $i >= 70 ? $resident->name : null,
                 'assigned_to'          => $responder?->id,
                 'assigned_team_id'     => $team?->id,
@@ -443,7 +441,7 @@ class DumpSeeder extends Seeder
         }
 
         $this->command->info("✓ Seeded 100 reports with {$mediaCreated} images.");
-        $this->command->info("  → 95 verified (95%), 83 resolved, 5 assigned, 2 verified, 5 pending, 5 rejected");
+        $this->command->info("  → 95 resolved, 5 rejected (95% verification rate)");
     }
 
     private function seedStatusHistory(

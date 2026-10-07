@@ -803,7 +803,7 @@ export default function AdminDashboard({
                                         tooltip: {
                                             theme: 'light',
                                             style: { fontSize: '11px' },
-                                            y: { formatter: (val: number, opt: any) => `${val} pts · ${flood_risk_scores[opt.dataPointIndex].incidents} incidents · ${flood_risk_scores[opt.dataPointIndex].level}` },
+                                            y: { formatter: (val: number, opt: any) => `${val}/100 pts · ${flood_risk_scores[opt.dataPointIndex].incidents} incidents · ${flood_risk_scores[opt.dataPointIndex].level} risk` },
                                         },
                                     } as ApexOptions}
                                 />

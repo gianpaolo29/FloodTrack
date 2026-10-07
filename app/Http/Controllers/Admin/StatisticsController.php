@@ -72,7 +72,7 @@ class StatisticsController extends Controller
             ? 'AVG((julianday(resolved_at) - julianday(created_at)) * 1440)'
             : 'AVG(TIMESTAMPDIFF(MINUTE, created_at, resolved_at))';
 
-        $avg_response_time = Report::where('status', 'resolved')
+        $avg_response_time = Report::whereIn('status', ['resolved', 'acknowledged'])
             ->whereNotNull('resolved_at')
             ->selectRaw("$avgExpr as avg_minutes")
             ->value('avg_minutes');
@@ -83,11 +83,11 @@ class StatisticsController extends Controller
             ->groupBy('severity')
             ->pluck('count', 'severity');
 
-        // Reports by status — scoped by period
+        // Reports by status — scoped by period (acknowledged merged into resolved)
         $status_breakdown = (clone $reportQuery)
-            ->selectRaw('status, count(*) as count')
-            ->groupBy('status')
-            ->pluck('count', 'status');
+            ->selectRaw("CASE WHEN status = 'acknowledged' THEN 'resolved' ELSE status END as merged_status, count(*) as count")
+            ->groupBy('merged_status')
+            ->pluck('count', 'merged_status');
 
         // All-time totals — scoped by period
         $total_reports = (clone $reportQuery)->count();
@@ -102,7 +102,7 @@ class StatisticsController extends Controller
             ? "strftime('%Y-%m', created_at)"
             : "DATE_FORMAT(created_at, '%Y-%m')";
 
-        $monthly_trend = Report::selectRaw("$monthExpr as month, count(*) as total, SUM(CASE WHEN severity='critical' THEN 1 ELSE 0 END) as critical, SUM(CASE WHEN severity='high' THEN 1 ELSE 0 END) as high")
+        $monthly_trend = Report::selectRaw("$monthExpr as month, count(*) as total, SUM(CASE WHEN severity='critical' THEN 1 ELSE 0 END) as critical, SUM(CASE WHEN severity='high' THEN 1 ELSE 0 END) as high, SUM(CASE WHEN severity='moderate' THEN 1 ELSE 0 END) as moderate, SUM(CASE WHEN severity='low' THEN 1 ELSE 0 END) as low")
             ->where('created_at', '>=', now()->subMonths(6))
             ->groupBy(DB::raw($monthExpr))
             ->orderBy('month')
@@ -112,6 +112,8 @@ class StatisticsController extends Controller
                 'total'    => (int) $r->total,
                 'critical' => (int) $r->critical,
                 'high'     => (int) $r->high,
+                'moderate' => (int) $r->moderate,
+                'low'      => (int) $r->low,
             ]);
 
         // Peak hours (all-time)
@@ -143,14 +145,14 @@ class StatisticsController extends Controller
 
         // Top 5 responders — with efficiency and avg response time
         $top_responders = User::where('role', 'responder')
-            ->withCount(['assignedReports as resolved_count' => fn($q) => $q->where('status', 'resolved')])
+            ->withCount(['assignedReports as resolved_count' => fn($q) => $q->whereIn('status', ['resolved', 'acknowledged'])])
             ->withCount('assignedReports as total_assigned')
             ->orderByDesc('resolved_count')
             ->limit(5)
             ->get(['id', 'name'])
             ->map(function($r) use ($avgExpr) {
                 $avg = Report::where('assigned_to', $r->id)
-                    ->where('status', 'resolved')
+                    ->whereIn('status', ['resolved', 'acknowledged'])
                     ->whereNotNull('resolved_at')
                     ->selectRaw("$avgExpr as avg_minutes")
                     ->value('avg_minutes');
@@ -201,13 +203,13 @@ class StatisticsController extends Controller
         $previousReports = Report::whereBetween('created_at', [$trendPreviousFrom, $trendPreviousTo])->count();
 
         // Resolution rate trend
-        $currentResolved = $this->scopeByPeriod(Report::where('status', 'resolved'), $from, $to, 'resolved_at')->count();
-        $previousResolved = Report::where('status', 'resolved')->whereBetween('resolved_at', [$trendPreviousFrom, $trendPreviousTo])->count();
+        $currentResolved = $this->scopeByPeriod(Report::whereIn('status', ['resolved', 'acknowledged']), $from, $to, 'resolved_at')->count();
+        $previousResolved = Report::whereIn('status', ['resolved', 'acknowledged'])->whereBetween('resolved_at', [$trendPreviousFrom, $trendPreviousTo])->count();
 
         // Avg response time trend
-        $currentAvgResp = $this->scopeByPeriod(Report::where('status', 'resolved')->whereNotNull('resolved_at'), $from, $to, 'resolved_at')
+        $currentAvgResp = $this->scopeByPeriod(Report::whereIn('status', ['resolved', 'acknowledged'])->whereNotNull('resolved_at'), $from, $to, 'resolved_at')
             ->selectRaw("$avgExpr as avg_minutes")->value('avg_minutes');
-        $previousAvgResp = Report::where('status', 'resolved')->whereNotNull('resolved_at')
+        $previousAvgResp = Report::whereIn('status', ['resolved', 'acknowledged'])->whereNotNull('resolved_at')
             ->whereBetween('resolved_at', [$trendPreviousFrom, $trendPreviousTo])
             ->selectRaw("$avgExpr as avg_minutes")->value('avg_minutes');
 
@@ -243,7 +245,7 @@ class StatisticsController extends Controller
             : "TIMESTAMPDIFF(MINUTE, created_at, resolved_at)";
 
         // Response Time Trend — avg response time per day (last 30 days)
-        $responseTimeTrend = Report::where('status', 'resolved')
+        $responseTimeTrend = Report::whereIn('status', ['resolved', 'acknowledged'])
             ->whereNotNull('resolved_at')
             ->where('resolved_at', '>=', now()->subDays(30))
             ->select(
@@ -309,7 +311,7 @@ class StatisticsController extends Controller
             ->values();
 
         // Severity vs Response Time — scatter data
-        $severityVsResponse = Report::where('status', 'resolved')
+        $severityVsResponse = Report::whereIn('status', ['resolved', 'acknowledged'])
             ->whereNotNull('resolved_at')
             ->select(
                 'severity',
@@ -381,7 +383,7 @@ class StatisticsController extends Controller
 
         // Overall averages per stage
         $responseBreakdown = DB::table('reports')
-            ->where('status', 'resolved')
+            ->whereIn('status', ['resolved', 'acknowledged'])
             ->whereNotNull('resolved_at')
             ->selectRaw("
                 ROUND(AVG(CASE WHEN verified_at IS NOT NULL THEN {$stageDiffExprs['report_to_verified']} END), 1) as avg_report_to_verified,
@@ -393,7 +395,7 @@ class StatisticsController extends Controller
 
         // Per-severity breakdown
         $responseBreakdownBySeverity = DB::table('reports')
-            ->where('status', 'resolved')
+            ->whereIn('status', ['resolved', 'acknowledged'])
             ->whereNotNull('resolved_at')
             ->groupBy('severity')
             ->selectRaw("
@@ -423,8 +425,8 @@ class StatisticsController extends Controller
         ];
 
         // Report Source Breakdown — donut
-        $sourceBreakdown = Report::selectRaw("COALESCE(source, 'mobile') as source, COUNT(*) as count")
-            ->groupBy(DB::raw("COALESCE(source, 'mobile')"))
+        $sourceBreakdown = Report::selectRaw("COALESCE(source, 'app') as source, COUNT(*) as count")
+            ->groupBy(DB::raw("COALESCE(source, 'app')"))
             ->pluck('count', 'source');
 
         // Evacuation Centers by Type — pie
@@ -491,18 +493,18 @@ class StatisticsController extends Controller
             $total_reports = (clone $reportQuery)->count();
             $pending       = (clone $reportQuery)->where('status', 'pending')->count();
             $active        = (clone $reportQuery)->whereIn('status', ['verified', 'assigned'])->count();
-            $resolved      = (clone $reportQuery)->where('status', 'resolved')->count();
+            $resolved      = (clone $reportQuery)->whereIn('status', ['resolved', 'acknowledged'])->count();
 
             $severity_breakdown = (clone $reportQuery)
                 ->selectRaw('severity, count(*) as count')
                 ->groupBy('severity')
                 ->pluck('count', 'severity');
 
-            $resolvedQuery = (clone $reportQuery)->where('status', 'resolved')->whereNotNull('resolved_at');
+            $resolvedQuery = (clone $reportQuery)->whereIn('status', ['resolved', 'acknowledged'])->whereNotNull('resolved_at');
             $avg_response_time_raw = $resolvedQuery->selectRaw("$avgExpr as avg_minutes")->value('avg_minutes');
 
             $top_responder = User::where('role', 'responder')
-                ->withCount(['assignedReports as resolved_count' => fn ($q) => $q->where('status', 'resolved')])
+                ->withCount(['assignedReports as resolved_count' => fn ($q) => $q->whereIn('status', ['resolved', 'acknowledged'])])
                 ->orderByDesc('resolved_count')
                 ->first(['id', 'name']);
 
@@ -520,7 +522,7 @@ class StatisticsController extends Controller
                 ];
 
             $stageAvgs = DB::table('reports')
-                ->where('status', 'resolved')
+                ->whereIn('status', ['resolved', 'acknowledged'])
                 ->whereNotNull('resolved_at')
                 ->selectRaw("
                     ROUND(AVG(CASE WHEN verified_at IS NOT NULL THEN {$stageDiffExprs['r2v']} END), 1) as avg_report_to_verified,
@@ -589,8 +591,8 @@ class StatisticsController extends Controller
 
             // ── NEW: Report source distribution ──
             $sources = (clone $reportQuery)
-                ->selectRaw("COALESCE(source, 'mobile') as source, COUNT(*) as count")
-                ->groupBy(DB::raw("COALESCE(source, 'mobile')"))
+                ->selectRaw("COALESCE(source, 'app') as source, COUNT(*) as count")
+                ->groupBy(DB::raw("COALESCE(source, 'app')"))
                 ->pluck('count', 'source');
 
             $sourceLines = $sources->map(function ($count, $source) {
@@ -617,7 +619,7 @@ class StatisticsController extends Controller
             })->implode("\n");
 
             // Daily trend — last 7 days
-            $dailyTrend = Report::selectRaw("DATE(created_at) as date, count(*) as new_reports, SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) as resolved")
+            $dailyTrend = Report::selectRaw("DATE(created_at) as date, count(*) as new_reports, SUM(CASE WHEN status IN ('resolved', 'acknowledged') THEN 1 ELSE 0 END) as resolved")
                 ->where('created_at', '>=', now()->subDays(7))
                 ->groupBy(DB::raw('DATE(created_at)'))
                 ->orderBy('date')

@@ -276,9 +276,9 @@ class MainSeeder extends Seeder
             ['address' => 'Barangay 4, Poblacion, Nasugbu, Batangas',        'lat' => 14.07600, 'lng' => 120.63310, 'severity' => 'low',      'status' => 'rejected',  'desc' => 'Photo is from a previous flood event (August). Image metadata shows date August 16. Not current situation.',                                                             'date' => '2026-09-14 09:30:00', 'team_idx' => null],
 
             // ═══════════════════════════════════════════════════════════════════
-            // EVENT 5: Current flooding — September 27-30, 2026 (ongoing)
-            // Mix of severities, 5 pending reports from latest days
-            // 12 reports (4 resolved, 3 rejected, 5 pending)
+            // EVENT 5: Current flooding — September 27-30, 2026
+            // Mix of severities
+            // 12 reports (9 resolved, 3 rejected)
             // ═══════════════════════════════════════════════════════════════════
             ['address' => 'Brgy. Pantalan, Nasugbu, Batangas',               'lat' => 14.08580, 'lng' => 120.62950, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Habagat-driven flooding sa riverside. MDRRMO responded within 15 minutes. 5 families evacuated. Water level stabilized after 4 hours. Sandbag walls held this time.',     'date' => '2026-09-27 14:00:00', 'team_idx' => 0],
             ['address' => 'Brgy. Bucana, Nasugbu, Batangas',                 'lat' => 14.08070, 'lng' => 120.62420, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Moderate coastal flooding during high tide. Residents self-evacuated before team arrived — they learned from the September 12 experience. FloodTrack alerts worked.',      'date' => '2026-09-27 16:30:00', 'team_idx' => 1],
@@ -287,11 +287,11 @@ class MainSeeder extends Seeder
             ['address' => 'Brgy. Latag, Nasugbu, Batangas',                  'lat' => 14.09980, 'lng' => 120.63040, 'severity' => 'low',      'status' => 'rejected',  'desc' => 'Upon verification, flooding reported is in adjacent municipality of Lian, not Nasugbu. Location is outside Nasugbu municipality boundaries.',                             'date' => '2026-09-27 17:00:00', 'team_idx' => null],
             ['address' => 'Barangay 3, Poblacion, Nasugbu, Batangas',        'lat' => 14.07680, 'lng' => 120.63380, 'severity' => 'low',      'status' => 'rejected',  'desc' => 'Report is a duplicate of FT-20260928-0004 submitted 15 minutes earlier by same user. Duplicate entry.',                                                                  'date' => '2026-09-28 06:15:00', 'team_idx' => null],
             ['address' => 'Brgy. Kaylaway, Nasugbu, Batangas',               'lat' => 14.05800, 'lng' => 120.64100, 'severity' => 'low',      'status' => 'rejected',  'desc' => 'Upon verification, water was from a clogged irrigation canal, not natural flooding. Referred to municipal agriculture office.',                                           'date' => '2026-09-28 08:00:00', 'team_idx' => null],
-            ['address' => 'Brgy. Pantalan, Nasugbu, Batangas',               'lat' => 14.08560, 'lng' => 120.62990, 'severity' => 'high',     'status' => 'pending',   'desc' => 'Tubig tumataas ulit sa riverside area. Mga 2 feet na sa kalsada. May mga bata at matanda na kailangan i-evacuate. Paki-dispatch po ng rescue team.',                     'date' => '2026-09-28 22:00:00', 'team_idx' => null],
-            ['address' => 'Brgy. Bucana, Nasugbu, Batangas',                 'lat' => 14.08080, 'lng' => 120.62390, 'severity' => 'high',     'status' => 'pending',   'desc' => 'Storm surge warning from PAGASA. Coastal area flooding na. 3 families requesting evacuation assistance. Water entering homes.',                                           'date' => '2026-09-29 01:30:00', 'team_idx' => null],
-            ['address' => 'Brgy. Wawa, Nasugbu, Batangas',                   'lat' => 14.07200, 'lng' => 120.62750, 'severity' => 'moderate', 'status' => 'pending',   'desc' => 'Creek level approaching overflow point. Sandbag wall may not hold. Requesting preemptive evacuation order for 4 families nearest the creek.',                              'date' => '2026-09-29 05:00:00', 'team_idx' => null],
-            ['address' => 'Brgy. Lumbangan, Nasugbu, Batangas',              'lat' => 14.06170, 'lng' => 120.64040, 'severity' => 'moderate', 'status' => 'pending',   'desc' => 'Road flooding again at the usual low point. Hindi pa naman malalim pero tumataas. Requesting barangay volunteers to post warning signs.',                                'date' => '2026-09-29 06:30:00', 'team_idx' => null],
-            ['address' => 'Brgy. Bilaran, Nasugbu, Batangas',                'lat' => 14.06880, 'lng' => 120.63570, 'severity' => 'low',      'status' => 'pending',   'desc' => 'Nag-start na mag-baha sa lower portion. Hindi pa malalim pero based sa experience, tataas pa ito. Nag-report agad para ma-monitor ng MDRRMO.',                            'date' => '2026-09-29 07:45:00', 'team_idx' => null],
+            ['address' => 'Brgy. Pantalan, Nasugbu, Batangas',               'lat' => 14.08560, 'lng' => 120.62990, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Tubig tumataas ulit sa riverside area. Mga 2 feet na sa kalsada. May mga bata at matanda na kailangan i-evacuate. Rescue team dispatched and 6 families evacuated safely.',  'date' => '2026-09-28 22:00:00', 'team_idx' => 0],
+            ['address' => 'Brgy. Bucana, Nasugbu, Batangas',                 'lat' => 14.08080, 'lng' => 120.62390, 'severity' => 'high',     'status' => 'resolved',  'desc' => 'Storm surge warning from PAGASA. Coastal area flooding na. 3 families evacuated to gymnasium. Water receded after 4 hours.',                                               'date' => '2026-09-29 01:30:00', 'team_idx' => 1],
+            ['address' => 'Brgy. Wawa, Nasugbu, Batangas',                   'lat' => 14.07200, 'lng' => 120.62750, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Creek level approaching overflow point. Sandbag wall reinforced by BRT. 4 families preemptively evacuated. Water stabilized after 3 hours.',                               'date' => '2026-09-29 05:00:00', 'team_idx' => 3],
+            ['address' => 'Brgy. Lumbangan, Nasugbu, Batangas',              'lat' => 14.06170, 'lng' => 120.64040, 'severity' => 'moderate', 'status' => 'resolved',  'desc' => 'Road flooding again at the usual low point. Barangay volunteers posted warning signs. Water drained within 2 hours after rain stopped.',                                  'date' => '2026-09-29 06:30:00', 'team_idx' => null],
+            ['address' => 'Brgy. Bilaran, Nasugbu, Batangas',                'lat' => 14.06880, 'lng' => 120.63570, 'severity' => 'low',      'status' => 'resolved',  'desc' => 'Nag-start na mag-baha sa lower portion. Hindi pa malalim. MDRRMO monitored via FloodTrack. Water receded naturally by afternoon.',                                        'date' => '2026-09-29 07:45:00', 'team_idx' => null],
         ];
 
         $residentCount = count($residents);
@@ -303,20 +303,26 @@ class MainSeeder extends Seeder
 
             $createdAt  = Carbon::parse($r['date']);
             $verifiedAt = in_array($r['status'], ['verified', 'assigned', 'resolved', 'rejected'])
-                ? $createdAt->copy()->addMinutes(rand(3, 8))
+                ? $createdAt->copy()->addMinutes(rand(3, 6))
                 : null;
             $assignedAt = in_array($r['status'], ['assigned', 'resolved']) && $team
                 ? ($verifiedAt ?? $createdAt)->copy()->addMinutes(rand(2, 5))
                 : null;
+            $resolveRange = match ($r['severity']) {
+                'critical' => [20, 30],
+                'high'     => [15, 25],
+                'moderate' => [8, 15],
+                'low'      => [5, 10],
+            };
             $resolvedAt = $r['status'] === 'resolved'
-                ? ($assignedAt ?? $createdAt)->copy()->addMinutes(rand(8, 20))
+                ? ($assignedAt ?? $createdAt)->copy()->addMinutes(rand($resolveRange[0], $resolveRange[1]))
                 : null;
 
             // Normalize address to nearest barangay
             $normalizedAddress = $this->resolveBarangay($r['address'], $r['lat'], $r['lng']);
 
             // First 30 from mobile app, rest from messenger
-            $source = $i < 30 ? 'mobile' : 'messenger';
+            $source = $i < 30 ? 'app' : 'messenger';
             $messengerName = $source === 'messenger' ? $resident->name : null;
 
             $report = Report::firstOrCreate(
