@@ -26,7 +26,7 @@ class FacebookService
      */
     public function getRecentPosts(int $limit = 25): array
     {
-        $response = Http::get("{$this->baseUrl}/{$this->pageId}/feed", [
+        $response = Http::withoutVerifying()->get("{$this->baseUrl}/{$this->pageId}/feed", [
             'access_token' => $this->pageAccessToken,
             'fields'       => 'id,message,created_time,full_picture,attachments{media,subattachments},place,from',
             'limit'        => $limit,
@@ -193,7 +193,7 @@ class FacebookService
      */
     public function sendTypingOn(string $recipientId): void
     {
-        Http::post("{$this->baseUrl}/me/messages", [
+        Http::withoutVerifying()->post("{$this->baseUrl}/me/messages", [
             'access_token'   => $this->pageAccessToken,
             'recipient'      => ['id' => $recipientId],
             'sender_action'  => 'typing_on',
@@ -258,7 +258,7 @@ class FacebookService
     public function getUserProfile(string $psid): ?array
     {
         try {
-            $response = Http::get("{$this->baseUrl}/{$psid}", [
+            $response = Http::withoutVerifying()->get("{$this->baseUrl}/{$psid}", [
                 'access_token' => $this->pageAccessToken,
                 'fields'       => 'first_name,last_name,name',
             ]);
@@ -271,7 +271,7 @@ class FacebookService
 
     private function sendRaw(string $recipientId, array $message): bool
     {
-        $response = Http::post("{$this->baseUrl}/me/messages", [
+        $response = Http::withoutVerifying()->post("{$this->baseUrl}/me/messages", [
             'access_token' => $this->pageAccessToken,
             'recipient'    => ['id' => $recipientId],
             'message'      => $message,
