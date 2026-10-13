@@ -61,7 +61,20 @@ class ReportAnalysisService
                 $result['ai_flag_reason']         = trim(($result['ai_flag_reason'] ?? '') . ' ' . 'Possible duplicate report detected.');
             }
 
-            // --- 2. Image & video analysis ---
+            // --- 2. Audio transcription + verification ---
+            $audioFiles = array_filter($mediaFiles, fn ($f) => static::isAudio($f));
+            if (! empty($audioFiles)) {
+                $audioResult = static::analyzeAudio(array_values($audioFiles), $report);
+                if ($audioResult['transcription']) {
+                    $report->update(['voice_transcription' => $audioResult['transcription']]);
+                }
+                if (! $audioResult['verified']) {
+                    $result['ai_flagged']     = true;
+                    $result['ai_flag_reason'] = trim(($result['ai_flag_reason'] ?? '') . ' Voice note: ' . $audioResult['notes']);
+                }
+            }
+
+            // --- 3. Image & video analysis ---
             $imageFiles = array_filter($mediaFiles, fn ($f) => static::isImage($f));
             $videoFiles = array_filter($mediaFiles, fn ($f) => static::isVideo($f));
 
@@ -432,6 +445,84 @@ PROMPT,
         }
 
         return $frames;
+    }
+
+    /**
+     * Transcribe audio with Whisper and verify content is flood-related.
+     */
+    private static function analyzeAudio(array $audioFiles, Report $report): array
+    {
+        $transcription = null;
+        $verified = true;
+        $notes = null;
+
+        try {
+            $file = $audioFiles[0];
+            $path = $file instanceof UploadedFile ? $file->getRealPath() : $file->getPathname();
+
+            // Transcribe with Whisper
+            $response = static::client()->audio()->transcribe([
+                'model'    => 'whisper-1',
+                'file'     => fopen($path, 'r'),
+                'language' => 'tl',
+            ]);
+
+            $transcription = trim($response->text ?? '');
+
+            if (empty($transcription)) {
+                return ['transcription' => null, 'verified' => true, 'notes' => 'No speech detected.'];
+            }
+
+            // Verify transcription content with GPT
+            $prompt = <<<PROMPT
+You are verifying a voice note submitted with a flood report in the Philippines.
+
+Report severity: {$report->severity}
+Report address: {$report->address}
+Voice transcription: "{$transcription}"
+
+NOTE: The transcription may be in Tagalog, Filipino, Taglish, or English — all are valid.
+
+Determine:
+1. Is the voice note about flooding, water levels, rescue needs, or weather conditions?
+2. Does the content match the reported severity?
+3. Does it seem genuine (not nonsensical, spam, or unrelated)?
+
+Respond ONLY with valid JSON:
+{
+  "verified": true or false,
+  "notes": "brief explanation"
+}
+PROMPT;
+
+            $chatResponse = static::client()->chat()->create([
+                'model'           => 'gpt-4o-mini',
+                'messages'        => [['role' => 'user', 'content' => $prompt]],
+                'response_format' => ['type' => 'json_object'],
+                'max_tokens'      => 200,
+            ]);
+
+            $data = json_decode($chatResponse->choices[0]->message->content, true);
+            $verified = (bool) ($data['verified'] ?? true);
+            $notes = $data['notes'] ?? null;
+        } catch (\Throwable $e) {
+            Log::warning('[ReportAnalysis] Audio analysis failed', ['error' => $e->getMessage()]);
+            $notes = 'Audio analysis unavailable.';
+        }
+
+        return compact('transcription', 'verified', 'notes');
+    }
+
+    /**
+     * Determine if a file is audio.
+     */
+    private static function isAudio($file): bool
+    {
+        if ($file instanceof UploadedFile) {
+            return str_starts_with($file->getMimeType(), 'audio');
+        }
+        $ext = strtolower(pathinfo($file->getPathname(), PATHINFO_EXTENSION));
+        return in_array($ext, ['m4a', 'mp3', 'wav', 'ogg', 'webm', 'aac']);
     }
 
     /**

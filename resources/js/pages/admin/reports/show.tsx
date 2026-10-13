@@ -28,6 +28,7 @@ import {
     UserCheck,
     Users,
     Video,
+    Volume2,
     X,
     XCircle,
 } from 'lucide-react';
@@ -504,6 +505,24 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                         <ExternalLink className="size-5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
                                                     </div>
                                                 </a>
+                                            ) : m.file_type === 'audio' ? (
+                                                <div key={m.id} className="col-span-full overflow-hidden rounded-xl ring-1 ring-neutral-200/60 dark:ring-neutral-700/60">
+                                                    <div className="flex items-center gap-3 bg-neutral-50 px-4 py-3 dark:bg-neutral-800">
+                                                        <Volume2 className="size-4 text-neutral-400" />
+                                                        <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">Voice Note</span>
+                                                    </div>
+                                                    <div className="px-4 py-3">
+                                                        <audio src={m.url} controls className="w-full" preload="metadata" />
+                                                    </div>
+                                                    {report.voice_transcription && (
+                                                        <div className="border-t border-neutral-200/60 px-4 py-3 dark:border-neutral-700/60">
+                                                            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">Transcription</p>
+                                                            <p className="mt-1 text-xs leading-relaxed text-neutral-600 dark:text-neutral-300">
+                                                                {report.voice_transcription}
+                                                            </p>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             ) : (
                                                 <div key={m.id} className="relative overflow-hidden rounded-xl ring-1 ring-neutral-200/60 dark:ring-neutral-700/60">
                                                     <video

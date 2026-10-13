@@ -132,15 +132,26 @@ class ExpoPushService
      * Send push notifications to a list of Expo push tokens.
      * Batches in chunks of 100 as per Expo's recommendation.
      */
+    private static function resolveSound(string $channelId): string
+    {
+        return match ($channelId) {
+            'floodtrack-critical' => 'critical.wav',
+            'floodtrack-advisory' => 'alert.wav',
+            'floodtrack-messages' => 'message.wav',
+            default               => 'notification.wav',
+        };
+    }
+
     private static function sendToTokens(array $tokens, string $title, string $body, array $data = []): void
     {
         $channelId = static::resolveChannel($data);
+        $sound     = static::resolveSound($channelId);
 
         $messages = array_map(fn (string $token) => [
             'to'       => $token,
             'title'    => $title,
             'body'     => $body,
-            'sound'    => 'default',
+            'sound'    => $sound,
             'data'     => $data,
             'priority' => 'high',
             'channelId' => $channelId,

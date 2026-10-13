@@ -74,6 +74,7 @@ class ReportController extends Controller
             'address'     => 'nullable|string|max:255',
             'media'       => 'nullable|array|max:5',
             'media.*'     => 'file|mimes:jpg,jpeg,png,mp4,mov,avi,mkv,webm|max:51200',
+            'voice_note'  => 'nullable|file|mimes:m4a,mp4,webm,ogg,wav,mp3|max:5120',
         ]);
 
         // Normalize address to nearest barangay using coordinates
@@ -104,6 +105,17 @@ class ReportController extends Controller
                         : $file->getSize(),
                 ]);
             }
+        }
+
+        // Store voice note
+        if ($request->hasFile('voice_note')) {
+            $voiceFile = $request->file('voice_note');
+            $voicePath = $voiceFile->store('reports/' . $report->id, 'public');
+            $report->media()->create([
+                'file_path' => $voicePath,
+                'file_type' => 'audio',
+                'file_size' => $voiceFile->getSize(),
+            ]);
         }
 
         ReportStatusUpdate::create([

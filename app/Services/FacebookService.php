@@ -189,29 +189,6 @@ class FacebookService
     }
 
     /**
-     * Send a message with quick-reply buttons including a location pin.
-     */
-    public function sendLocationRequest(string $recipientId, string $text, array $textOptions = []): bool
-    {
-        $quickReplies = [
-            ['content_type' => 'location'],
-        ];
-
-        foreach ($textOptions as $label) {
-            $quickReplies[] = [
-                'content_type' => 'text',
-                'title'        => $label,
-                'payload'      => $label,
-            ];
-        }
-
-        return $this->sendRaw($recipientId, [
-            'text'          => $text,
-            'quick_replies' => $quickReplies,
-        ]);
-    }
-
-    /**
      * Send a typing indicator.
      */
     public function sendTypingOn(string $recipientId): void

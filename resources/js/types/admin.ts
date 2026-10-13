@@ -65,7 +65,7 @@ export interface AdminUser {
 export interface ReportMedia {
     id: number;
     file_path: string;
-    file_type: 'image' | 'video';
+    file_type: 'image' | 'video' | 'audio';
     url: string;
 }
 
@@ -111,6 +111,7 @@ export interface Report {
     ai_exif_status: 'pass' | 'fail' | 'no_data' | null;
     ai_exif_notes: string | null;
     potential_duplicate_of: number | null;
+    voice_transcription: string | null;
     advisory?: {
         nearby_centers: Array<{
             id: number; name: string; address: string; type: string;

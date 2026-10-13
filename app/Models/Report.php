@@ -38,6 +38,7 @@ class Report extends Model
         'messenger_sender_id',
         'messenger_sender_name',
         'advisory',
+        'voice_transcription',
     ];
 
     protected $appends = ['sla_status', 'member_statuses'];

@@ -305,32 +305,84 @@ class MessengerWebhookController extends Controller
     {
         $this->setSession($senderId, ['step' => 'awaiting_location', 'retries' => []]);
 
-        $fb->sendLocationRequest($senderId,
+        $fb->sendMessage($senderId,
             "New Flood Report\n\n"
             . "Step 1/4 — Location\n\n"
             . "Saan ang baha?\n\n"
-            . "Tap the location pin button below to share your location.\n\n"
+            . "I-type ang barangay name o landmark\n"
+            . "(e.g. \"Wawa\", \"Pantalan\", \"sa may palengke\")\n\n"
             . "Send \"cancel\" anytime to stop."
         );
     }
 
     private function stepLocation(FacebookService $fb, string $senderId, string $text, array $session): void
     {
-        $retries = $this->incrementRetry($session, 'location');
-        $this->setSession($senderId, $session);
+        $trimmed = trim($text);
 
-        if ($retries >= self::MAX_RETRIES) {
-            $this->clearSession($senderId);
-            $fb->sendQuickReplies($senderId,
-                "Too many invalid attempts. Report cancelled.\n\nSend \"Report\" to try again.",
-                ['Report Flood']
+        if (mb_strlen($trimmed) < 3) {
+            $retries = $this->incrementRetry($session, 'location');
+            $this->setSession($senderId, $session);
+
+            if ($retries >= self::MAX_RETRIES) {
+                $this->clearSession($senderId);
+                $fb->sendQuickReplies($senderId,
+                    "Too many invalid attempts. Report cancelled.\n\nSend \"Report\" to try again.",
+                    ['Report Flood']
+                );
+                return;
+            }
+
+            $fb->sendMessage($senderId, "Masyadong maikli. I-type ang barangay name o landmark.\n(e.g. \"Wawa\", \"Pantalan\")");
+            return;
+        }
+
+        // Try to parse coordinates
+        if (preg_match('/(-?\d+\.?\d*)\s*[,\s]\s*(-?\d+\.?\d*)/', $trimmed, $m)) {
+            $lat = (float) $m[1];
+            $lng = (float) $m[2];
+
+            if ($lat >= self::MIN_LAT && $lat <= self::MAX_LAT && $lng >= self::MIN_LNG && $lng <= self::MAX_LNG) {
+                $this->handleLocation($fb, $senderId, $lat, $lng);
+                return;
+            }
+
+            $retries = $this->incrementRetry($session, 'location');
+            $this->setSession($senderId, $session);
+            $fb->sendMessage($senderId, "Ang coordinates ay nasa labas ng Nasugbu, Batangas.\n\nI-type ang barangay name instead.");
+            return;
+        }
+
+        // AI-powered geocoding
+        $geocoded = $this->geocodeAddress($trimmed);
+
+        if (! $geocoded) {
+            $retries = $this->incrementRetry($session, 'location');
+            $this->setSession($senderId, $session);
+
+            if ($retries >= self::MAX_RETRIES) {
+                $this->clearSession($senderId);
+                $fb->sendQuickReplies($senderId,
+                    "Too many invalid attempts. Report cancelled.\n\nSend \"Report\" to try again.",
+                    ['Report Flood']
+                );
+                return;
+            }
+
+            $fb->sendMessage($senderId,
+                "Hindi ma-locate ang \"{$trimmed}\" sa Nasugbu, Batangas.\n\n"
+                . "I-type ang barangay name (e.g. \"Wawa\", \"Bucana\", \"Pantalan\")"
             );
             return;
         }
 
-        $fb->sendLocationRequest($senderId,
-            "Please tap the location pin button below to share your location.",
-        );
+        $session['step']      = 'awaiting_severity';
+        $session['address']   = $geocoded['address'] ?? mb_substr($trimmed, 0, 255);
+        $session['latitude']  = $geocoded['lat'];
+        $session['longitude'] = $geocoded['lng'];
+        $this->setSession($senderId, $session);
+
+        $fb->sendMessage($senderId, "Location: {$session['address']}\nCoordinates: {$geocoded['lat']}, {$geocoded['lng']}");
+        $this->askSeverity($fb, $senderId);
     }
 
     private function handleLocation(FacebookService $fb, string $senderId, float $lat, float $lng): void
