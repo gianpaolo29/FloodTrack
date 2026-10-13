@@ -305,98 +305,32 @@ class MessengerWebhookController extends Controller
     {
         $this->setSession($senderId, ['step' => 'awaiting_location', 'retries' => []]);
 
-        $fb->sendMessage($senderId,
+        $fb->sendLocationRequest($senderId,
             "New Flood Report\n\n"
             . "Step 1/4 — Location\n\n"
             . "Saan ang baha?\n\n"
-            . "- I-type ang address o barangay name\n"
-            . "   (e.g. \"Wawa\", \"near the bridge sa Pantalan\")\n\n"
-            . "- O i-paste ang coordinates\n"
-            . "   (e.g. \"14.0681, 120.6236\")\n\n"
+            . "Tap the location pin button below to share your location.\n\n"
             . "Send \"cancel\" anytime to stop."
         );
     }
 
     private function stepLocation(FacebookService $fb, string $senderId, string $text, array $session): void
     {
-        $trimmed = trim($text);
+        $retries = $this->incrementRetry($session, 'location');
+        $this->setSession($senderId, $session);
 
-        // Validate not too short
-        if (mb_strlen($trimmed) < 3) {
-            $retries = $this->incrementRetry($session, 'location');
-            $this->setSession($senderId, $session);
-
-            if ($retries >= self::MAX_RETRIES) {
-                $this->clearSession($senderId);
-                $fb->sendQuickReplies($senderId,
-                    "Too many invalid attempts. Report cancelled.\n\nSend \"Report\" to try again.",
-                    ['Report Flood']
-                );
-                return;
-            }
-
-            $fb->sendMessage($senderId,
-                "Location is too short. Please provide a more specific address.\n\n"
-                . "Examples:\n"
-                . "- \"Wawa\" or \"Pantalan\"\n"
-                . "- \"near the bridge sa Bucana\"\n"
-                . "- \"14.0681, 120.6236\""
+        if ($retries >= self::MAX_RETRIES) {
+            $this->clearSession($senderId);
+            $fb->sendQuickReplies($senderId,
+                "Too many invalid attempts. Report cancelled.\n\nSend \"Report\" to try again.",
+                ['Report Flood']
             );
             return;
         }
 
-        // Try to parse coordinates
-        if (preg_match('/(-?\d+\.?\d*)\s*[,\s]\s*(-?\d+\.?\d*)/', $trimmed, $m)) {
-            $lat = (float) $m[1];
-            $lng = (float) $m[2];
-
-            if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
-                $retries = $this->incrementRetry($session, 'location');
-                $this->setSession($senderId, $session);
-                $fb->sendMessage($senderId, "Invalid coordinates. Latitude must be -90 to 90, longitude -180 to 180.\n\nPlease try again.");
-                return;
-            }
-
-            if ($lat < self::MIN_LAT || $lat > self::MAX_LAT || $lng < self::MIN_LNG || $lng > self::MAX_LNG) {
-                $retries = $this->incrementRetry($session, 'location');
-                $this->setSession($senderId, $session);
-                $fb->sendMessage($senderId,
-                    "Ang coordinates na \"{$lat}, {$lng}\" ay nasa labas ng service area (Nasugbu, Batangas).\n\n"
-                    . "Please provide coordinates within Nasugbu, or type the barangay name instead."
-                );
-                return;
-            }
-
-            $this->handleLocation($fb, $senderId, $lat, $lng);
-            return;
-        }
-
-        // AI-powered geocoding
-        $geocoded = $this->geocodeAddress($trimmed);
-
-        $session['step'] = 'awaiting_severity';
-
-        if ($geocoded) {
-            $session['address']   = $geocoded['address'] ?? mb_substr($trimmed, 0, 255);
-            $session['latitude']  = $geocoded['lat'];
-            $session['longitude'] = $geocoded['lng'];
-            $this->setSession($senderId, $session);
-
-            $fb->sendMessage($senderId, "Location found: {$session['address']}\nCoordinates: {$geocoded['lat']}, {$geocoded['lng']}");
-        } else {
-            $session['address']   = mb_substr($trimmed, 0, 255);
-            $session['latitude']  = (float) config('services.openweather.lat', 14.0656);
-            $session['longitude'] = (float) config('services.openweather.lon', 120.6278);
-            $this->setSession($senderId, $session);
-
-            $fb->sendMessage($senderId,
-                "Address saved: {$trimmed}\n"
-                . "Note: Hindi ma-pinpoint ang exact coordinates. Default Nasugbu coordinates ang gagamitin.\n"
-                . "Para mas accurate, i-type ang barangay name (e.g. \"Wawa\") o paste ang Google Maps coordinates."
-            );
-        }
-
-        $this->askSeverity($fb, $senderId);
+        $fb->sendLocationRequest($senderId,
+            "Please tap the location pin button below to share your location.",
+        );
     }
 
     private function handleLocation(FacebookService $fb, string $senderId, float $lat, float $lng): void
@@ -429,34 +363,40 @@ class MessengerWebhookController extends Controller
     {
         $fb->sendQuickReplies(
             $senderId,
-            "Step 2/4 — Severity\n\n"
-            . "Gaano kalala ang baha?\n\n"
-            . "Low — Bukong-bukong / Ankle level\n"
-            . "Moderate — Tuhod / Knee level\n"
-            . "High — Baywang / Waist level or higher\n"
-            . "Critical — Banta sa buhay / Life-threatening",
-            ['Low', 'Moderate', 'High', 'Critical']
+            "Step 2/4 — Flood Depth\n\n"
+            . "Gaano kalalim ang baha? (in feet)\n\n"
+            . "1 ft — Bukong-bukong / Ankle\n"
+            . "2 ft — Tuhod / Knee\n"
+            . "3 ft — Baywang / Waist\n"
+            . "4 ft — Dibdib / Chest\n"
+            . "5+ ft — Sobrang lalim / Life-threatening\n\n"
+            . "Type the depth in feet (e.g. \"2\" or \"3.5\")",
+            ['1', '2', '3', '4', '5']
         );
+    }
+
+    private function depthToSeverity(float $depth): string
+    {
+        if ($depth < 1) {
+            return 'low';
+        } elseif ($depth < 3) {
+            return 'moderate';
+        } elseif ($depth < 5) {
+            return 'high';
+        }
+        return 'critical';
     }
 
     private function stepSeverity(FacebookService $fb, string $senderId, string $text, array $session): void
     {
-        $severityMap = [
-            // English
-            'low' => 'low', '1' => 'low', 'ankle' => 'low', 'light' => 'low', 'minor' => 'low',
-            'moderate' => 'moderate', '2' => 'moderate', 'knee' => 'moderate', 'medium' => 'moderate',
-            'high' => 'high', '3' => 'high', 'waist' => 'high', 'severe' => 'high', 'major' => 'high',
-            'critical' => 'critical', '4' => 'critical', 'extreme' => 'critical', 'emergency' => 'critical', 'danger' => 'critical',
-            // Tagalog
-            'mababa' => 'low', 'konti' => 'low', 'kaunti' => 'low',
-            'katamtaman' => 'moderate', 'medium' => 'moderate',
-            'mataas' => 'high', 'malakas' => 'high',
-            'malala' => 'critical', 'delikado' => 'critical', 'grabe' => 'critical', 'sobra' => 'critical',
-        ];
+        // Extract numeric depth from input
+        $depth = null;
+        $cleaned = preg_replace('/[^0-9.]/', '', trim($text));
+        if (is_numeric($cleaned) && (float) $cleaned >= 0 && (float) $cleaned <= 99) {
+            $depth = round((float) $cleaned, 1);
+        }
 
-        $severity = $severityMap[$text] ?? null;
-
-        if (! $severity) {
+        if ($depth === null) {
             $retries = $this->incrementRetry($session, 'severity');
             $this->setSession($senderId, $session);
 
@@ -471,21 +411,27 @@ class MessengerWebhookController extends Controller
 
             $fb->sendQuickReplies(
                 $senderId,
-                "Hindi valid ang \"{$text}\".\n\nPiliin ang severity level, or type: Low, Moderate, High, or Critical.",
-                ['Low', 'Moderate', 'High', 'Critical']
+                "Hindi valid ang \"{$text}\".\n\nI-type ang depth ng baha in feet (e.g. \"2\" or \"3.5\").",
+                ['1', '2', '3', '4', '5']
             );
             return;
         }
 
+        $severity = $this->depthToSeverity($depth);
+
         $session['step']     = 'awaiting_media';
+        $session['depth_ft'] = $depth;
         $session['severity'] = $severity;
         $this->setSession($senderId, $session);
 
+        $severityLabel = ucfirst($severity);
         $fb->sendQuickReplies(
             $senderId,
-            "Step 3/4 — Photo / Video\n\n"
+            "Depth: {$depth} ft — Severity: {$severityLabel}\n\n"
+            . "Step 3/4 — Photo / Video\n\n"
             . "Mag-send ng photo o video ng baha para ma-verify ng AI.\n\n"
-            . "Pwede kang mag-send ng hanggang 5 files (photo o video, max 15 min).\n"
+            . "Pwede kang mag-send ng hanggang 5 files.\n"
+            . "Video: max 15 seconds lang po.\n"
             . "Pwede ring i-skip.",
             ['Skip']
         );
@@ -626,9 +572,11 @@ class MessengerWebhookController extends Controller
         $session['step'] = 'awaiting_confirm';
         $this->setSession($senderId, $session);
 
+        $depthLabel = isset($session['depth_ft']) ? "{$session['depth_ft']} ft" : 'N/A';
         $summary = "Report Summary — Please confirm\n\n"
             . "Location: " . ($session['address'] ?? "{$session['latitude']}, {$session['longitude']}") . "\n"
             . "Coordinates: {$session['latitude']}, {$session['longitude']}\n"
+            . "Flood Depth: {$depthLabel}\n"
             . "Severity: " . ucfirst($session['severity'] ?? 'moderate') . "\n"
             . "Media: " . (! empty($session['media']) ? count($session['media']) . ' file(s)' : 'None') . "\n"
             . "Description: " . ($session['description'] ?? 'None') . "\n\n"
@@ -802,6 +750,7 @@ PROMPT;
         $report = Report::create([
             'user_id'              => $adminUser?->id ?? 1,
             'severity'             => $session['severity'] ?? 'moderate',
+            'depth_ft'             => $session['depth_ft'] ?? null,
             'status'               => 'pending',
             'description'          => mb_substr($description, 0, 1000),
             'latitude'             => $lat,
@@ -824,17 +773,42 @@ PROMPT;
         foreach ($session['media'] ?? [] as $item) {
             try {
                 $result = $fb->downloadMessengerAttachment($item['url'], $report->id, $item['type']);
-                if ($result) {
-                    $report->media()->create([
-                        'file_path' => $result['path'],
-                        'file_type' => $result['file_type'],
-                        'file_size' => Storage::disk('public')->size($result['path']),
-                    ]);
-                    if ($result['file_type'] === 'image') {
-                        $fullPath = Storage::disk('public')->path($result['path']);
-                        $mediaFiles[] = new \Illuminate\Http\UploadedFile($fullPath, basename($result['path']), 'image/jpeg', null, true);
+                if (! $result) {
+                    continue;
+                }
+
+                $fullPath = Storage::disk('public')->path($result['path']);
+
+                // Trim videos to 15 seconds max
+                if ($result['file_type'] === 'video') {
+                    try {
+                        $ffmpeg = \FFMpeg\FFMpeg::create();
+                        $video = $ffmpeg->open($fullPath);
+                        $duration = (float) $video->getStreams()->videos()->first()->get('duration', 0);
+
+                        if ($duration > 15) {
+                            $clip = $video->clip(\FFMpeg\Coordinate\TimeCode::fromSeconds(0), \FFMpeg\Coordinate\TimeCode::fromSeconds(15));
+                            $trimmedPath = $fullPath . '.trimmed.mp4';
+                            $clip->save(new \FFMpeg\Format\Video\X264('aac'), $trimmedPath);
+
+                            // Replace original with trimmed version
+                            @unlink($fullPath);
+                            rename($trimmedPath, $fullPath);
+                            Log::info('[Messenger] Video trimmed to 15s', ['original_duration' => $duration]);
+                        }
+                    } catch (\Throwable $e) {
+                        Log::warning('[Messenger] Could not trim video', ['error' => $e->getMessage()]);
                     }
                 }
+
+                $report->media()->create([
+                    'file_path' => $result['path'],
+                    'file_type' => $result['file_type'],
+                    'file_size' => Storage::disk('public')->size($result['path']),
+                ]);
+
+                $mime = $result['file_type'] === 'video' ? 'video/mp4' : 'image/jpeg';
+                $mediaFiles[] = new \Illuminate\Http\UploadedFile($fullPath, basename($result['path']), $mime, null, true);
             } catch (\Throwable $e) {
                 Log::warning('[Messenger] Media download failed', ['error' => $e->getMessage()]);
             }
