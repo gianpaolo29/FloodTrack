@@ -58,16 +58,14 @@ class MessengerWebhookController extends Controller
             return response()->json(['status' => 'ignored']);
         }
 
-        dispatch(function () use ($payload) {
-            try {
-                $this->processEntries($payload['entry'] ?? []);
-            } catch (\Throwable $e) {
-                Log::error('[Messenger] Processing failed', [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
-        })->afterResponse();
+        try {
+            $this->processEntries($payload['entry'] ?? []);
+        } catch (\Throwable $e) {
+            Log::error('[Messenger] Processing failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
 
         return response()->json(['status' => 'ok']);
     }
