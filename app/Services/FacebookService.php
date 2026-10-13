@@ -193,11 +193,12 @@ class FacebookService
      */
     public function sendTypingOn(string $recipientId): void
     {
-        Http::withoutVerifying()->post("{$this->baseUrl}/{$this->pageId}/messages", [
-            'access_token'   => $this->pageAccessToken,
-            'recipient'      => ['id' => $recipientId],
-            'sender_action'  => 'typing_on',
-        ]);
+        Http::withoutVerifying()
+            ->withQueryParameters(['access_token' => $this->pageAccessToken])
+            ->post("{$this->baseUrl}/{$this->pageId}/messages", [
+                'recipient'     => ['id' => $recipientId],
+                'sender_action' => 'typing_on',
+            ]);
     }
 
     /**
@@ -271,12 +272,13 @@ class FacebookService
 
     private function sendRaw(string $recipientId, array $message): bool
     {
-        $response = Http::withoutVerifying()->post("{$this->baseUrl}/{$this->pageId}/messages", [
-            'access_token'   => $this->pageAccessToken,
-            'recipient'      => ['id' => $recipientId],
-            'messaging_type' => 'RESPONSE',
-            'message'        => $message,
-        ]);
+        $response = Http::withoutVerifying()
+            ->withQueryParameters(['access_token' => $this->pageAccessToken])
+            ->post("{$this->baseUrl}/{$this->pageId}/messages", [
+                'recipient'      => ['id' => $recipientId],
+                'messaging_type' => 'RESPONSE',
+                'message'        => $message,
+            ]);
 
         if ($response->failed()) {
             Log::error('[FacebookService] Messenger send failed', [
