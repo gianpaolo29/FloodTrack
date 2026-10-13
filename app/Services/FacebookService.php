@@ -193,12 +193,12 @@ class FacebookService
      */
     public function sendTypingOn(string $recipientId): void
     {
-        Http::withoutVerifying()
-            ->withQueryParameters(['access_token' => $this->pageAccessToken])
-            ->post("{$this->baseUrl}/{$this->pageId}/messages", [
-                'recipient'     => ['id' => $recipientId],
-                'sender_action' => 'typing_on',
-            ]);
+        $url = "{$this->baseUrl}/{$this->pageId}/messages?access_token=" . urlencode($this->pageAccessToken);
+
+        Http::withoutVerifying()->asJson()->post($url, [
+            'recipient'     => ['id' => $recipientId],
+            'sender_action' => 'typing_on',
+        ]);
     }
 
     /**
@@ -272,13 +272,25 @@ class FacebookService
 
     private function sendRaw(string $recipientId, array $message): bool
     {
-        $response = Http::withoutVerifying()
-            ->withQueryParameters(['access_token' => $this->pageAccessToken])
-            ->post("{$this->baseUrl}/{$this->pageId}/messages", [
-                'recipient'      => ['id' => $recipientId],
-                'messaging_type' => 'RESPONSE',
-                'message'        => $message,
-            ]);
+        $url = "{$this->baseUrl}/{$this->pageId}/messages?access_token=" . urlencode($this->pageAccessToken);
+
+        $payload = [
+            'recipient'      => ['id' => $recipientId],
+            'messaging_type' => 'RESPONSE',
+            'message'        => $message,
+        ];
+
+        Log::info('[FacebookService] Sending message', [
+            'url'     => preg_replace('/access_token=[^&]+/', 'access_token=***', $url),
+            'payload' => $payload,
+        ]);
+
+        $response = Http::withoutVerifying()->asJson()->post($url, $payload);
+
+        Log::info('[FacebookService] Facebook response', [
+            'status' => $response->status(),
+            'body'   => $response->body(),
+        ]);
 
         if ($response->failed()) {
             Log::error('[FacebookService] Messenger send failed', [

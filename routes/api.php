@@ -37,8 +37,46 @@ Route::withoutMiddleware('throttle:api')->group(function () {
 Route::get('/debug/messenger-logs', function () {
     $logFile = storage_path('logs/laravel.log');
     if (!file_exists($logFile)) return response('No log file', 404);
-    $lines = array_filter(explode("\n", file_get_contents($logFile)), fn($l) => str_contains(strtolower($l), 'messenger'));
-    return response()->json(array_values(array_slice($lines, -20)));
+    $lines = array_filter(explode("\n", file_get_contents($logFile)), fn($l) => str_contains(strtolower($l), 'messenger') || str_contains(strtolower($l), 'facebook'));
+    return response()->json(array_values(array_slice($lines, -30)));
+});
+
+// Temporary: diagnose Messenger config (REMOVE after debugging)
+Route::get('/debug/messenger-check', function () {
+    $pageId    = config('services.facebook.page_id');
+    $token     = config('services.facebook.page_access_token');
+    $version   = config('services.facebook.graph_version', 'v21.0');
+    $verifyTok = config('services.facebook.webhook_verify_token');
+
+    $config = [
+        'page_id_set'       => ! empty($pageId),
+        'token_set'         => ! empty($token),
+        'token_length'      => strlen($token ?? ''),
+        'token_starts_with' => substr($token ?? '', 0, 4),
+        'graph_version'     => $version,
+        'verify_token_set'  => ! empty($verifyTok),
+    ];
+
+    // Test if token is valid by calling Facebook API
+    $tokenValid = null;
+    if (! empty($token) && ! empty($pageId)) {
+        try {
+            $url = "https://graph.facebook.com/{$version}/{$pageId}?access_token=" . urlencode($token) . "&fields=id,name";
+            $response = \Illuminate\Support\Facades\Http::withoutVerifying()->get($url);
+            $tokenValid = [
+                'status'   => $response->status(),
+                'response' => $response->json(),
+            ];
+        } catch (\Throwable $e) {
+            $tokenValid = ['error' => $e->getMessage()];
+        }
+    }
+
+    return response()->json([
+        'config'      => $config,
+        'token_check' => $tokenValid,
+        'webhook_url' => url('/api/webhooks/messenger'),
+    ]);
 });
 
 // ── Public ──────────────────────────────────────────────────────────────
