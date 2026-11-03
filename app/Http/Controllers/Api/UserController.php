@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Report;
 use App\Services\SocketService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -67,13 +68,26 @@ class UserController extends Controller
         ]);
 
         // Broadcast to admin map in real-time (responder-locations room, not alerts)
-        SocketService::toResponderMap('responder-location', [
+        $locationPayload = [
             'user_id'   => $user->id,
             'name'      => $user->name,
             'latitude'  => $data['latitude'],
             'longitude' => $data['longitude'],
             'timestamp' => now()->toIso8601String(),
-        ]);
+        ];
+
+        SocketService::toResponderMap('responder-location', $locationPayload);
+
+        // Also broadcast to report rooms so residents can track the assigned responder
+        if ($user->isResponder()) {
+            $assignedReportIds = Report::where('assigned_to', $user->id)
+                ->where('status', 'assigned')
+                ->pluck('id');
+
+            foreach ($assignedReportIds as $reportId) {
+                SocketService::toReport($reportId, 'responder-location', $locationPayload);
+            }
+        }
 
         return response()->json(['message' => 'Location updated.']);
     }

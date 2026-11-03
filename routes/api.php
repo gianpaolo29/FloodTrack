@@ -110,6 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Reports (read access for all authenticated users)
     Route::get('/reports',          [ReportController::class, 'index']);
     Route::get('/reports/{report}', [ReportController::class, 'show']);
+    Route::get('/reports/{report}/responder-location', [ReportController::class, 'responderLocation']);
 
     // Weather
     Route::get('/weather', [WeatherController::class, 'current']);

@@ -141,6 +141,37 @@ class ReportController extends Controller
         );
     }
 
+    /**
+     * Return the assigned responder's current location for a report.
+     * Only the report owner can access this, and only when the report is assigned.
+     */
+    public function responderLocation(Request $request, Report $report)
+    {
+        // Only the report owner can track the responder
+        if ((int) $report->user_id !== (int) $request->user()->id) {
+            return response()->json(['message' => 'Unauthorized.'], 403);
+        }
+
+        // Only available when a responder is assigned
+        if (! $report->assigned_to || $report->status === 'resolved') {
+            return response()->json(['message' => 'No active responder assigned.'], 404);
+        }
+
+        $responder = $report->assignedResponder;
+
+        if (! $responder || ! $responder->current_latitude || ! $responder->current_longitude) {
+            return response()->json(['message' => 'Responder location not available.'], 404);
+        }
+
+        return response()->json([
+            'responder_id'   => $responder->id,
+            'name'           => $responder->name,
+            'latitude'       => (float) $responder->current_latitude,
+            'longitude'      => (float) $responder->current_longitude,
+            'updated_at'     => $responder->location_updated_at?->toIso8601String(),
+        ]);
+    }
+
     public function updateStatus(Request $request, Report $report)
     {
         // Only the assigned responder or an admin can update status
@@ -265,6 +296,9 @@ class ReportController extends Controller
         SocketService::toUser($data['responder_id'], 'new-notification', ['type' => 'incident_assigned', 'reportId' => $report->id]);
         SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'assigned']);
         SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'assigned']);
+
+        // Refresh the socket server's assignment cache for this responder
+        SocketService::refreshAssignments($data['responder_id']);
 
         return response()->json($report->fresh()->load('assignedResponder:id,name,contact_number'));
     }

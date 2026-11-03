@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Report;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -41,5 +42,32 @@ class SocketService
     public static function toResponderMap(string $event, mixed $data = null): void
     {
         static::emit('responder-locations', $event, $data);
+    }
+
+    /**
+     * Refresh the socket server's assignment cache for a responder.
+     */
+    public static function refreshAssignments(int|string $responderId): void
+    {
+        $url    = rtrim(config('services.socket.url'), '/') . '/internal/refresh-assignments';
+        $secret = config('services.socket.secret');
+
+        if (! $url || ! $secret) return;
+
+        $reportIds = Report::where('assigned_to', $responderId)
+            ->where('status', 'assigned')
+            ->pluck('id')
+            ->toArray();
+
+        try {
+            Http::timeout(3)
+                ->withHeaders(['x-internal-secret' => $secret])
+                ->post($url, [
+                    'responder_id' => (int) $responderId,
+                    'report_ids'   => $reportIds,
+                ]);
+        } catch (\Throwable $e) {
+            Log::warning('[SocketService] refreshAssignments failed', ['responder_id' => $responderId, 'error' => $e->getMessage()]);
+        }
     }
 }
