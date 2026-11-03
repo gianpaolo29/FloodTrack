@@ -17,6 +17,7 @@ use App\Notifications\ReportStatusChanged;
 use App\Services\ExpoPushService;
 use App\Services\FacebookService;
 use App\Services\SlaService;
+use App\Services\SmsService;
 use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,8 +31,8 @@ class ReportController extends Controller
     public function map(Request $request): Response
     {
         $request->validate([
-            'status'      => 'nullable|in:pending,verified,assigned,resolved,rejected',
-            'severity'    => 'nullable|in:low,moderate,high,critical',
+            'status'      => ['nullable', 'string', 'regex:/^(pending|verified|assigned|resolved|rejected)(,(pending|verified|assigned|resolved|rejected))*$/'],
+            'severity'    => ['nullable', 'string', 'regex:/^(low|moderate|high|critical)(,(low|moderate|high|critical))*$/'],
             'date_from'   => 'nullable|date',
             'date_to'     => 'nullable|date|after_or_equal:date_from',
         ]);
@@ -44,8 +45,7 @@ class ReportController extends Controller
             ->with(['user:id,name'])
             ->when($request->status, fn ($q) => str_contains($request->status, ',')
                 ? $q->whereIn('status', explode(',', $request->status))
-                : $q->where('status', $request->status),
-                fn ($q) => $q->whereIn('status', ['verified', 'acknowledged', 'assigned', 'resolved']))
+                : $q->where('status', $request->status))
             ->when($request->severity, fn ($q) => str_contains($request->severity, ',')
                 ? $q->whereIn('severity', explode(',', $request->severity))
                 : $q->where('severity', $request->severity))
@@ -520,11 +520,21 @@ class ReportController extends Controller
         }
 
         // Push notification to all team members
+        $memberIds = $team->members->pluck('id')->toArray();
         ExpoPushService::sendToUsers(
-            $team->members->pluck('id')->toArray(),
+            $memberIds,
             "New Assignment — {$report->reference_number}",
             "You have been assigned to a {$report->severity} flood report. Open the app for details.",
             ['type' => 'assignment', 'reportId' => $report->id]
+        );
+
+        // SMS to team members (queued)
+        SmsService::queueToUsers(
+            $memberIds,
+            SmsService::format(
+                "New Assignment — {$report->reference_number}",
+                "You have been assigned to a {$report->severity} flood report at {$report->address}. Open the app for details."
+            )
         );
 
         // Real-time socket events to each team member
@@ -621,6 +631,15 @@ class ReportController extends Controller
                 ],
                 'my_reports'
             );
+
+            // SMS only for verified, assigned, resolved — skip rejected & acknowledged
+            if (in_array($newStatus, ['verified', 'assigned', 'resolved'])) {
+                SmsService::queueToUsers(
+                    $report->user_id,
+                    SmsService::format($titles[$newStatus], $bodies[$newStatus]),
+                    'my_reports'
+                );
+            }
         }
 
         // Real-time socket

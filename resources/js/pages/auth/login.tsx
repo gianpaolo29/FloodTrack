@@ -23,17 +23,17 @@ export default function Login({ status, canRegister }: Props) {
 
             {/* Header */}
             <div className="mb-8">
-                <h1 className="text-[1.75rem] font-bold tracking-tight text-neutral-900 dark:text-white">
+                <h1 className="text-[2rem] font-bold tracking-tight text-neutral-900 dark:text-white">
                     Log in to{' '}
                     <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent dark:from-cyan-400 dark:to-blue-400">your account</span>
                 </h1>
-                <p className="mt-1.5 text-sm text-neutral-500 dark:text-neutral-400">
+                <p className="mt-1.5 text-base text-neutral-500 dark:text-neutral-400">
                     Enter your credentials to continue
                 </p>
             </div>
 
             {status && (
-                <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-400">
+                <div className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-base text-emerald-700 dark:border-emerald-800/40 dark:bg-emerald-900/20 dark:text-emerald-400">
                     {status}
                 </div>
             )}
@@ -47,7 +47,7 @@ export default function Login({ status, canRegister }: Props) {
                     <>
                         {/* Email */}
                         <div className="flex flex-col gap-1.5">
-                            <Label htmlFor="email" className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                            <Label htmlFor="email" className="text-base font-semibold text-neutral-700 dark:text-neutral-300">
                                 Email address
                             </Label>
                             <div className="relative">
@@ -61,7 +61,7 @@ export default function Login({ status, canRegister }: Props) {
                                     tabIndex={1}
                                     autoComplete="email"
                                     placeholder="you@example.com"
-                                    className="h-12 rounded-xl border-neutral-200 bg-neutral-50 pl-11 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:placeholder:text-neutral-500 dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20"
+                                    className="h-12 rounded-xl border-neutral-200 bg-neutral-50 pl-11 pr-4 text-base text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:placeholder:text-neutral-500 dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20"
                                 />
                             </div>
                             <InputError message={errors.email} />
@@ -69,7 +69,7 @@ export default function Login({ status, canRegister }: Props) {
 
                         {/* Password */}
                         <div className="flex flex-col gap-1.5">
-                            <Label htmlFor="password" className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">
+                            <Label htmlFor="password" className="text-base font-semibold text-neutral-700 dark:text-neutral-300">
                                 Password
                             </Label>
                             <div className="relative">
@@ -81,7 +81,7 @@ export default function Login({ status, canRegister }: Props) {
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="Enter your password"
-                                    className="h-12 rounded-xl border-neutral-200 bg-neutral-50 pl-11 pr-10 text-sm text-neutral-900 focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20"
+                                    className="h-12 rounded-xl border-neutral-200 bg-neutral-50 pl-11 pr-10 text-base text-neutral-900 focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20"
                                 />
                             </div>
                             <InputError message={errors.password} />
@@ -90,7 +90,7 @@ export default function Login({ status, canRegister }: Props) {
                         {/* Remember me */}
                         <div className="flex items-center gap-2.5">
                             <Checkbox id="remember" name="remember" tabIndex={3} />
-                            <Label htmlFor="remember" className="text-sm text-neutral-600 cursor-pointer dark:text-neutral-400">
+                            <Label htmlFor="remember" className="text-base text-neutral-600 cursor-pointer dark:text-neutral-400">
                                 Remember me
                             </Label>
                         </div>
@@ -101,7 +101,7 @@ export default function Login({ status, canRegister }: Props) {
                             tabIndex={4}
                             disabled={processing}
                             data-test="login-button"
-                            className="auth-cta mt-1 h-12 w-full rounded-xl text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:shadow-blue-500/30 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+                            className="auth-cta mt-1 h-12 w-full rounded-xl text-base font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:shadow-blue-500/30 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
                         >
                             {processing ? (
                                 <Spinner />
@@ -127,7 +127,7 @@ export default function Login({ status, canRegister }: Props) {
                                     </div>
                                 </div>
 
-                                <p className="text-center text-sm text-neutral-500 dark:text-neutral-400">
+                                <p className="text-center text-base text-neutral-500 dark:text-neutral-400">
                                     Don't have an account?{' '}
                                     <TextLink
                                         href="/register"

@@ -1,8 +1,12 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { Popover, PopoverButton, PopoverPanel, Transition } from '@headlessui/react';
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import type { ApexOptions } from 'apexcharts';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import 'leaflet.heat';
+import { CircleMarker, MapContainer, TileLayer, useMap } from 'react-leaflet';
 import {
     AlertTriangle,
     ArrowUpRight,
@@ -11,9 +15,7 @@ import {
     Droplets,
     ExternalLink,
     FileText,
-    Globe,
     LayoutDashboard,
-    MapPin,
     ShieldCheck,
     Shield,
     TrendingUp,
@@ -25,7 +27,6 @@ import {
     CircleHelp,
     Filter,
     ChevronDown,
-    X,
 } from 'lucide-react';
 import ReactApexChart from 'react-apexcharts';
 import AppLayout from '@/layouts/app-layout';
@@ -48,7 +49,8 @@ interface ActivityItem { id: number; status: string; notes: string | null; creat
 interface MapReport { id: number; reference_number: string; severity: string; status: string; latitude: number; longitude: number; address: string | null }
 interface TeamStats { active: number; deployed: number; inactive: number }
 interface BarangayCount { barangay: string; count: number }
-interface FloodRisk { barangay: string; score: number; level: string; incidents: number }
+interface FloodRiskFactors { frequency: number; severity: number; seasonality: number; rainfall: number; elevation: number; terrain: number }
+interface FloodRisk { barangay: string; score: number; level: string; incidents: number; factors: FloodRiskFactors }
 
 interface Props {
     stats: Stats;
@@ -124,6 +126,163 @@ function CardHeader({ icon: Icon, title, subtitle, children }: {
 function SectionLabel({ children }: { children: React.ReactNode }) {
     return (
         <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-400 dark:text-neutral-500">{children}</p>
+    );
+}
+
+/* ─── Mini Map constants ─── */
+const MINI_MAP_CENTER = [14.07, 120.69] as L.LatLngExpression;
+const MINI_MAP_BOUNDS: L.LatLngBoundsExpression = [
+    [13.95, 120.55],
+    [14.18, 120.80],
+];
+const SEVERITY_HEX: Record<string, string> = {
+    critical: '#ef4444',
+    high: '#f97316',
+    moderate: '#fbbf24',
+    low: '#22c55e',
+};
+
+function MiniMapDarkTile() {
+    const map = useMap();
+    const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+    useEffect(() => {
+        const observer = new MutationObserver(() => setIsDark(document.documentElement.classList.contains('dark')));
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        return () => observer.disconnect();
+    }, []);
+    useEffect(() => {
+        const tilePane = map.getPane('tilePane');
+        if (tilePane) {
+            tilePane.style.filter = isDark
+                ? 'brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7)'
+                : '';
+        }
+    }, [isDark, map]);
+    return (
+        <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+        />
+    );
+}
+
+const MINI_SEVERITY_WEIGHT: Record<string, number> = { critical: 4, high: 3, moderate: 2, low: 1 };
+
+function MiniHeatmapLayer({ points }: { points: [number, number, number][] }) {
+    const map = useMap();
+    const layerRef = useRef<L.Layer | null>(null);
+
+    const build = useCallback(() => {
+        if (layerRef.current) map.removeLayer(layerRef.current);
+        if (points.length === 0) { layerRef.current = null; return; }
+        const size = map.getSize();
+        if (!size.x || !size.y) return;
+
+        // @ts-ignore
+        const layer = L.heatLayer(points, {
+            radius: 20,
+            blur: 15,
+            maxZoom: 18,
+            minOpacity: 0.35,
+            max: Math.max(...points.map(p => p[2]), 1),
+            gradient: { 0.0: '#22c55e', 0.25: '#fbbf24', 0.5: '#f97316', 0.75: '#ef4444', 1.0: '#991b1b' },
+        });
+        layer.addTo(map);
+        layerRef.current = layer;
+    }, [map, points]);
+
+    useEffect(() => {
+        build();
+        map.on('zoomend', build);
+        return () => { map.off('zoomend', build); if (layerRef.current) map.removeLayer(layerRef.current); };
+    }, [map, points]);
+
+    return null;
+}
+
+function MiniMap({ reports }: { reports: MapReport[] }) {
+    const heatPoints = useMemo(() =>
+        reports.filter(r => r.latitude && r.longitude)
+            .map(r => [r.latitude, r.longitude, MINI_SEVERITY_WEIGHT[r.severity] ?? 1] as [number, number, number]),
+        [reports],
+    );
+
+    return (
+        <div className="relative h-full w-full overflow-hidden">
+            <MapContainer
+                center={MINI_MAP_CENTER}
+                zoom={13}
+                minZoom={12}
+                maxZoom={15}
+                maxBounds={MINI_MAP_BOUNDS}
+                maxBoundsViscosity={1.0}
+                zoomControl={false}
+                attributionControl={false}
+                dragging={true}
+                scrollWheelZoom={false}
+                doubleClickZoom={false}
+                style={{ width: '100%', height: '100%' }}
+            >
+                <MiniMapDarkTile />
+                <MiniHeatmapLayer points={heatPoints} />
+                {reports.map((r) => (
+                    <CircleMarker
+                        key={r.id}
+                        center={[r.latitude, r.longitude]}
+                        radius={7}
+                        pathOptions={{
+                            color: SEVERITY_HEX[r.severity] ?? '#94a3b8',
+                            fillColor: SEVERITY_HEX[r.severity] ?? '#94a3b8',
+                            fillOpacity: 0.45,
+                            weight: 2,
+                        }}
+                    />
+                ))}
+            </MapContainer>
+        </div>
+    );
+}
+
+/* ─── Flood Risk Card Header with ? tooltip ─── */
+const FLOOD_RISK_INSIGHTS: import('@/lib/kpi-utils').InsightRow[] = [
+    { label: 'Report Frequency',  value: 25, max: 25, color: '#6366f1' },
+    { label: 'Avg. Severity',     value: 20, max: 25, color: '#ef4444' },
+    { label: 'Rainfall',          value: 20, max: 25, color: '#3b82f6' },
+    { label: 'Seasonality',       value: 15, max: 25, color: '#f59e0b' },
+    { label: 'Elevation',         value: 12, max: 25, color: '#8b5cf6' },
+    { label: 'Terrain',           value: 8,  max: 25, color: '#14b8a6' },
+];
+
+function FloodRiskHeader() {
+    const { t } = useLocale();
+    const cardRef = useRef<HTMLDivElement>(null);
+    const btnRef = useRef<HTMLButtonElement>(null);
+    const { open, toggle } = useKpiTooltip(btnRef);
+
+    return (
+        <div ref={cardRef} className="relative flex items-center gap-3 border-b border-neutral-100/80 px-5 py-4 dark:border-neutral-800/80">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/60">
+                <Target className="size-4 text-neutral-500 dark:text-neutral-400" />
+            </div>
+            <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{t('dashboard.flood_risk')}</p>
+                <p className="truncate text-[11px] text-neutral-400 dark:text-neutral-500">{t('dashboard.barangay_ranking')}</p>
+            </div>
+            <button
+                ref={btnRef}
+                type="button"
+                onClick={toggle}
+                className={`z-10 flex size-6 shrink-0 items-center justify-center rounded-lg transition-colors ${open ? 'bg-neutral-200 text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300' : 'text-neutral-300 hover:text-neutral-500 hover:bg-neutral-100 dark:text-neutral-600 dark:hover:text-neutral-400 dark:hover:bg-neutral-800'}`}
+            >
+                <CircleHelp className="size-3.5 pointer-events-none" />
+            </button>
+            <KpiTooltip
+                title="Flood Risk Factors"
+                insights={FLOOD_RISK_INSIGHTS}
+                visible={open}
+                parentRef={btnRef}
+            />
+        </div>
     );
 }
 
@@ -565,7 +724,7 @@ export default function AdminDashboard({
 
 
         return {
-            chart: { type: 'area', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600, easing: 'easeinout' }, selection: { enabled: false } },
+            chart: { type: 'area', toolbar: { show: false }, zoom: { enabled: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600, easing: 'easeinout' }, selection: { enabled: false } },
             dataLabels: { enabled: false },
             stroke: { curve: 'smooth', width: seriesWidths },
             fill: {
@@ -711,10 +870,10 @@ export default function AdminDashboard({
                     <VerificationGauge rate={verification_rate} color={vrColor} label={vrLabel} bg={vrBg} mounted={mounted} locale={locale} />
                 </div>
 
-                {/* ━━━ Flood Incident Trend (full width) ━━━ */}
+                {/* ━━━ Flood Incident Trend + Mini Map ━━━ */}
                 <div>
                     <SectionLabel>Analytics</SectionLabel>
-                    <div className="mt-3">
+                    <div className="mt-3 grid gap-4 lg:grid-cols-[1fr_340px]">
                         <Card>
                             <CardHeader icon={TrendingUp} title={t('dashboard.flood_incident_trend')} subtitle={cumulative ? `${t('dashboard.cumulative')} - ${chartRange}D` : `${t('dashboard.daily_reports')} - ${chartRange}D`}>
                                 {/* Time range pills */}
@@ -756,27 +915,49 @@ export default function AdminDashboard({
                                     : <Empty text="No flood report data available" />}
                             </div>
                         </Card>
+
+                        {/* Mini Map */}
+                        <Card className="relative overflow-hidden">
+                            <div className="h-full min-h-[420px]">
+                                <MiniMap reports={map_reports} />
+                            </div>
+                            {/* Overlay header */}
+                            <div className="pointer-events-none absolute inset-x-0 top-0 z-[400] bg-gradient-to-b from-white/90 via-white/60 to-transparent px-4 pb-6 pt-3 dark:from-neutral-900/90 dark:via-neutral-900/60">
+                                <div className="pointer-events-auto flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[13px] font-bold text-neutral-800 dark:text-white">Nasugbu, Batangas</p>
+                                        <p className="text-[10px] text-neutral-500 dark:text-neutral-400">{map_reports.length} active incident{map_reports.length !== 1 ? 's' : ''}</p>
+                                    </div>
+                                    <Link href="/admin/reports/map" className="rounded-lg bg-white/80 px-2.5 py-1.5 text-[10px] font-semibold text-neutral-600 shadow-sm backdrop-blur transition hover:bg-white hover:text-neutral-900 dark:bg-neutral-800/80 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white">
+                                        Full map →
+                                    </Link>
+                                </div>
+                            </div>
+                        </Card>
                     </div>
                 </div>
 
                 {/* ━━━ Flood Risk + Barangay Row ━━━ */}
                 <div className="grid gap-4 lg:grid-cols-2">
                     {/* Flood Risk Score */}
-                    <Card>
-                        <CardHeader icon={Target} title={t('dashboard.flood_risk')} subtitle={t('dashboard.barangay_ranking')} />
+                    <Card className="overflow-visible">
+                        <FloodRiskHeader />
                         <div className="flex items-center gap-4 px-5 pt-3">
                             <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#dc2626]" />High</span>
                             <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#d97706]" />Moderate</span>
                             <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#059669]" />Low</span>
                         </div>
-                        <div className="px-3 pb-3 pt-1 sm:px-5 sm:pb-5">
+                        <div className="px-3 pb-0 pt-1 sm:px-5">
                             {flood_risk_scores.length > 0 ? (
                                 <ReactApexChart
                                     type="bar"
                                     height={280}
                                     series={[{ name: 'Risk Score', data: flood_risk_scores.map(r => r.score) }]}
                                     options={{
-                                        chart: { type: 'bar', fontFamily: 'inherit', toolbar: { show: false }, animations: { enabled: true, speed: 800, easing: 'easeinout' }, sparkline: { enabled: false } },
+                                        chart: {
+                                            type: 'bar', fontFamily: 'inherit', toolbar: { show: false },
+                                            animations: { enabled: true, speed: 800, easing: 'easeinout' },
+                                        },
                                         plotOptions: { bar: { borderRadius: 6, borderRadiusApplication: 'end', columnWidth: '50%', distributed: true } },
                                         fill: {
                                             type: 'gradient',
@@ -790,7 +971,7 @@ export default function AdminDashboard({
                                             formatter: (val: number) => String(val),
                                             background: { enabled: false },
                                         },
-                                        states: { hover: { filter: { type: 'darken', value: 0.15 } } },
+                                        states: { hover: { filter: { type: 'darken', value: 0.15 } }, active: { filter: { type: 'darken', value: 0.2 } } },
                                         xaxis: {
                                             categories: flood_risk_scores.map(r => r.barangay),
                                             labels: { style: { fontSize: '10px', fontWeight: 500, colors: '#6b7280' }, rotate: 0, trim: true, hideOverlappingLabels: true },
@@ -803,12 +984,23 @@ export default function AdminDashboard({
                                         tooltip: {
                                             theme: 'light',
                                             style: { fontSize: '11px' },
-                                            y: { formatter: (val: number, opt: any) => `${val}/100 pts · ${flood_risk_scores[opt.dataPointIndex].incidents} incidents · ${flood_risk_scores[opt.dataPointIndex].level} risk` },
+                                            followCursor: true,
+                                            custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
+                                                const r = flood_risk_scores[dataPointIndex];
+                                                const color = r.level === 'High' ? '#dc2626' : r.level === 'Moderate' ? '#d97706' : '#059669';
+                                                return `<div style="padding:8px 12px;font-size:11px;line-height:1.7">
+                                                    <div style="font-weight:700;margin-bottom:4px">${r.barangay}</div>
+                                                    <div>Score: <b>${r.score}</b>/100</div>
+                                                    <div>Incidents: <b>${r.incidents}</b></div>
+                                                    <div>Risk: <span style="color:${color};font-weight:600">${r.level}</span></div>
+                                                </div>`;
+                                            },
                                         },
                                     } as ApexOptions}
                                 />
                             ) : <Empty text="Not enough data" />}
                         </div>
+
                     </Card>
 
                     {/* Barangay Comparison */}
@@ -861,53 +1053,6 @@ export default function AdminDashboard({
                     </Card>
                 </div>
 
-                {/* ━━━ Incident Map ━━━ */}
-                <div>
-                    <SectionLabel>Operations</SectionLabel>
-                    <div className="mt-3">
-                        <Card className="overflow-hidden">
-                            <div className="flex items-center justify-between border-b border-neutral-100/80 px-5 py-4 dark:border-neutral-800/80">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-neutral-100 to-neutral-50 dark:from-neutral-800 dark:to-neutral-800/60">
-                                        <MapPin className="size-4 text-neutral-500 dark:text-neutral-400" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold text-neutral-900 dark:text-white">{t('dashboard.flood_incident_map')}</p>
-                                        <p className="text-[11px] text-neutral-400">{map_reports.length} {t('dashboard.active_flooded_areas')}</p>
-                                    </div>
-                                </div>
-                                <Link href="/admin/reports/map" className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white px-3 py-1.5 text-xs font-medium text-neutral-500 transition-all hover:border-neutral-400 hover:text-neutral-900 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-white">
-                                    <Globe className="size-3.5" />
-                                    {t('dashboard.full_map')}
-                                </Link>
-                            </div>
-                            <div className="p-3 sm:p-4">
-                                {map_reports.length > 0 ? (
-                                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                                        {map_reports.slice(0, 8).map((r) => (
-                                            <Link key={r.id} href={`/admin/reports/${r.id}`}
-                                                className="group flex flex-col justify-between rounded-xl border border-neutral-100/80 bg-neutral-50/30 p-3.5 transition-all hover:border-neutral-300 hover:bg-white hover:shadow-lg hover:shadow-neutral-900/[0.03] dark:border-neutral-800/60 dark:bg-neutral-800/30 dark:hover:border-neutral-700 dark:hover:bg-neutral-800">
-                                                <div className="min-w-0">
-                                                    <div className="flex items-center justify-between gap-2">
-                                                        <span className="truncate font-mono text-xs font-bold text-neutral-900 dark:text-white">{r.reference_number}</span>
-                                                        <span className={`shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${SEV[r.severity as keyof typeof SEV] ?? ''}`}>{r.severity}</span>
-                                                    </div>
-                                                    <p className="mt-1.5 truncate text-[10px] text-neutral-400">{r.address ?? 'No address'}</p>
-                                                </div>
-                                                <div className="mt-2.5 flex items-center gap-1 text-[10px] text-neutral-400">
-                                                    <MapPin className="size-3 shrink-0" />
-                                                    <span className="truncate tabular-nums">{r.latitude.toFixed(4)}, {r.longitude.toFixed(4)}</span>
-                                                </div>
-                                            </Link>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="flex h-32 items-center justify-center"><Empty text={t('dashboard.no_active_floods')} /></div>
-                                )}
-                            </div>
-                        </Card>
-                    </div>
-                </div>
 
                 {/* ━━━ Recent Reports Table ━━━ */}
                 <Card className="overflow-hidden">

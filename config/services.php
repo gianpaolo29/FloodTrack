@@ -59,6 +59,13 @@ return [
         'maps_key' => env('GOOGLE_MAPS_SERVER_KEY', env('VITE_GOOGLE_MAPS_KEY', '')),
     ],
 
+    'simgateway' => [
+        'host'       => env('SIMGATEWAY_YXGP_HOST', ''),
+        'username'   => env('SIMGATEWAY_YXGP_USERNAME', ''),
+        'password'   => env('SIMGATEWAY_YXGP_PASSWORD', ''),
+        'auth_token' => env('SIMGATEWAY_YXGP_AUTH_TOKEN', ''),
+    ],
+
     'facebook' => [
         'app_id'               => env('FACEBOOK_APP_ID', ''),
         'app_secret'           => env('FACEBOOK_APP_SECRET', ''),

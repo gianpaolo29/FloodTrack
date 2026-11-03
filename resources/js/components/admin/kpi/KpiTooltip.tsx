@@ -9,8 +9,9 @@ const URGENCY_STYLES = {
     urgent: { bg: 'bg-red-50 dark:bg-red-950/30', text: 'text-red-600 dark:text-red-400', dot: 'bg-red-500' },
 } as const;
 
-export function KpiTooltip({ desc, insights, visible, parentRef, urgency, actionLink }: {
-    desc: string;
+export function KpiTooltip({ title, desc, insights, visible, parentRef, urgency, actionLink }: {
+    title?: string;
+    desc?: string;
     insights: InsightRow[];
     visible: boolean;
     parentRef: React.RefObject<HTMLDivElement | null>;
@@ -29,12 +30,24 @@ export function KpiTooltip({ desc, insights, visible, parentRef, urgency, action
 
     useEffect(() => {
         if (!visible || !parentRef.current) { setPos(null); return; }
-        const rect = parentRef.current.getBoundingClientRect();
-        const tooltipW = 280;
-        const top = rect.bottom + 8;
-        let left = rect.left + rect.width / 2;
-        left = Math.max(tooltipW / 2 + 8, Math.min(left, window.innerWidth - tooltipW / 2 - 8));
-        setPos({ top, left });
+
+        const update = () => {
+            if (!parentRef.current) return;
+            const rect = parentRef.current.getBoundingClientRect();
+            const tooltipW = 280;
+            const top = rect.bottom + 8;
+            let left = rect.left + rect.width / 2;
+            left = Math.max(tooltipW / 2 + 8, Math.min(left, window.innerWidth - tooltipW / 2 - 8));
+            setPos({ top, left });
+        };
+
+        update();
+        window.addEventListener('scroll', update, true);
+        window.addEventListener('resize', update);
+        return () => {
+            window.removeEventListener('scroll', update, true);
+            window.removeEventListener('resize', update);
+        };
     }, [visible, parentRef]);
 
     if (!visible) return null;
@@ -56,6 +69,11 @@ export function KpiTooltip({ desc, insights, visible, parentRef, urgency, action
                 <div className="size-2.5 rotate-45 bg-white/95 ring-1 ring-neutral-200/60 dark:bg-neutral-900/95 dark:ring-neutral-700/60" />
             </div>
             <div className="w-[280px] rounded-xl bg-white/95 backdrop-blur-xl px-4 py-3.5 shadow-2xl shadow-black/15 ring-1 ring-neutral-200/60 dark:bg-neutral-900/95 dark:ring-neutral-700/60">
+                {/* Title */}
+                {title && (
+                    <p className="mb-2.5 text-[12px] font-bold text-neutral-800 dark:text-neutral-200">{title}</p>
+                )}
+
                 {/* Urgency badge */}
                 {u && (
                     <div className={`mb-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 ${u.bg}`}>
@@ -105,7 +123,7 @@ export function KpiTooltip({ desc, insights, visible, parentRef, urgency, action
                 )}
 
                 {/* Description */}
-                <p className="text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">{desc}</p>
+                {desc && <p className="text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">{desc}</p>}
 
                 {/* Action link */}
                 {actionLink && (

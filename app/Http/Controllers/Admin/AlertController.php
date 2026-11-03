@@ -8,6 +8,7 @@ use App\Models\Alert;
 use App\Models\User;
 use App\Notifications\NewAlertPublished;
 use App\Services\ExpoPushService;
+use App\Services\SmsService;
 use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -116,14 +117,27 @@ class AlertController extends Controller
 
         if ($targetBarangays) {
             // Send real-time event only to targeted users
-            $targetUserIds = User::whereIn('home_address', $targetBarangays)->pluck('id');
+            $targetUserIds = User::whereIn('home_address', $targetBarangays)->pluck('id')->toArray();
             foreach ($targetUserIds as $uid) {
                 SocketService::toUser($uid, 'new-alert', $alert->toArray());
             }
             ExpoPushService::sendToBarangays($targetBarangays, $alert->title, $alert->body, $pushData, $prefKey);
+
+            // SMS only for critical alerts
+            if ($alert->type === 'critical') {
+                SmsService::queueToUsers($targetUserIds, SmsService::format($alert->title, $alert->body), 'critical');
+            }
         } else {
             SocketService::toAll('new-alert', $alert->toArray());
             ExpoPushService::sendToAll($alert->title, $alert->body, $pushData, $prefKey);
+
+            // SMS only for critical alerts
+            if ($alert->type === 'critical') {
+                $allUserIds = User::whereNotNull('contact_number')
+                    ->where('contact_number', '!=', '')
+                    ->pluck('id')->toArray();
+                SmsService::queueToUsers($allUserIds, SmsService::format($alert->title, $alert->body), 'critical');
+            }
         }
 
         // Notify all admins about the new alert
@@ -164,7 +178,7 @@ class AlertController extends Controller
         $freshAlert = $alert->fresh()->toArray();
 
         if ($targetBarangays) {
-            $targetUserIds = User::whereIn('home_address', $targetBarangays)->pluck('id');
+            $targetUserIds = User::whereIn('home_address', $targetBarangays)->pluck('id')->toArray();
             foreach ($targetUserIds as $uid) {
                 SocketService::toUser($uid, 'alert-updated', $freshAlert);
             }

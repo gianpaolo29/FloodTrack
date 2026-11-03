@@ -350,6 +350,14 @@ class DashboardController extends Controller
                 'score'     => $score,
                 'level'     => $level,
                 'incidents' => $totalCount,
+                'factors'   => [
+                    'frequency'   => round($freqNorm * 25, 1),
+                    'severity'    => round($sevNorm * 20, 1),
+                    'seasonality' => round($seasonalMatch * 15, 1),
+                    'rainfall'    => round($rainfallScore * 20, 1),
+                    'elevation'   => round($elevationScore * 12, 1),
+                    'terrain'     => round($terrainScore * 8, 1),
+                ],
             ];
         }
 

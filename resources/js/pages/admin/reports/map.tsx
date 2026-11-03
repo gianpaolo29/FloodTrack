@@ -2,17 +2,17 @@
 import { Head, Link, router } from '@inertiajs/react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { AlertTriangle, Building2, CalendarDays, ChevronDown, Clock, Filter, List, MapPin, Radio, Users, X } from 'lucide-react';
-import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Popover, PopoverButton, PopoverPanel, Transition } from '@headlessui/react';
+import { Clock, Filter, List, MapPin, Radio, Users } from 'lucide-react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import 'leaflet.heat';
-import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { io, type Socket } from 'socket.io-client';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import type { EvacuationCenter, Hazard, MapResponder, Report, ReportStatus, Severity } from '@/types/admin';
+import type { EvacuationCenter, Hazard, MapResponder, Report, Severity } from '@/types/admin';
 import { EVACUATION_CENTER_TYPE_LABELS, HAZARD_TYPE_OPTIONS, SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
 import { MapSkeleton } from '@/components/admin/skeletons';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface Filters {
     status?: string;
@@ -42,19 +42,18 @@ const STATUS_FILTER_OPTIONS = [
     { value: 'resolved',     label: 'Resolved' },
     { value: 'rejected',     label: 'Rejected' },
 ];
-const SEVERITY_FILTER_OPTIONS = [
-    { value: 'critical', label: 'Critical', color: '#ef4444' },
-    { value: 'high',     label: 'High',     color: '#f97316' },
-    { value: 'moderate', label: 'Moderate', color: '#fbbf24' },
-    { value: 'low',      label: 'Low',      color: '#22c55e' },
-];
-
 const SEVERITY_META: Record<Severity, { color: string; hex: string; rgb: string; label: string }> = {
     critical: { color: 'bg-red-500',    hex: '#ef4444', rgb: '239,68,68',   label: 'Critical' },
     high:     { color: 'bg-orange-500', hex: '#f97316', rgb: '249,115,22',  label: 'High'     },
     moderate: { color: 'bg-amber-400',  hex: '#fbbf24', rgb: '251,191,36',  label: 'Moderate' },
     low:      { color: 'bg-emerald-500',hex: '#22c55e', rgb: '34,197,94',   label: 'Low'      },
 };
+
+const SEVERITY_FILTER_OPTIONS = (['critical', 'high', 'moderate', 'low'] as Severity[]).map(s => ({
+    value: s,
+    label: SEVERITY_META[s].label,
+    color: SEVERITY_META[s].hex,
+}));
 
 const SEVERITY_WEIGHT: Record<Severity, number> = { critical: 4, high: 3, moderate: 2, low: 1 };
 
@@ -160,15 +159,13 @@ function makeDivIcon(url: string, width: number, height: number, anchorX: number
 }
 
 /* ─── MapEventHandlers child component ─── */
-function MapEventHandlers({ onZoomChange, onClick, mapRef }: {
-    onZoomChange: (zoom: number) => void;
+function MapEventHandlers({ onClick, mapRef }: {
     onClick: () => void;
     mapRef: React.MutableRefObject<L.Map | null>;
 }) {
     const map = useMap();
     mapRef.current = map;
     useMapEvents({
-        zoomend: () => onZoomChange(map.getZoom()),
         click: () => onClick(),
     });
     return null;
@@ -282,39 +279,59 @@ function DarkModeTileLayer() {
     );
 }
 
-/* ─── Filter select ─── */
-function FilterSelect({ value, onChange, options, placeholder }: {
-    value: string; onChange: (v: string) => void; options: string[]; placeholder: string;
-}) {
-    return (
-        <div className="relative">
-            <select
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                className="h-8 w-full appearance-none rounded-lg border border-neutral-200 bg-white pl-2.5 pr-7 text-xs text-neutral-700 outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-            >
-                <option value="">{placeholder}</option>
-                {options.filter(Boolean).map((opt) => (
-                    <option key={opt} value={opt}>
-                        {opt.charAt(0).toUpperCase() + opt.slice(1).replace('_', ' ')}
-                    </option>
-            ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 size-3 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
-        </div>
-    );
+/* ─── Combined map filter (single dropdown) ─── */
+/** Date preset helpers */
+function getDatePreset(preset: string): { from: string; to: string } {
+    const today = new Date();
+    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+    const to = fmt(today);
+
+    switch (preset) {
+        case 'today':
+            return { from: to, to };
+        case 'week': {
+            const d = new Date(today);
+            d.setDate(d.getDate() - d.getDay());
+            return { from: fmt(d), to };
+        }
+        case 'month': {
+            const d = new Date(today.getFullYear(), today.getMonth(), 1);
+            return { from: fmt(d), to };
+        }
+        case '7days': {
+            const d = new Date(today);
+            d.setDate(d.getDate() - 6);
+            return { from: fmt(d), to };
+        }
+        case '30days': {
+            const d = new Date(today);
+            d.setDate(d.getDate() - 29);
+            return { from: fmt(d), to };
+        }
+        default:
+            return { from: '', to: '' };
+    }
 }
 
-/* ─── Combined map filter (single dropdown) ─── */
+const DATE_PRESETS = [
+    { value: 'today',  label: 'Today' },
+    { value: 'week',   label: 'This Week' },
+    { value: 'month',  label: 'This Month' },
+    { value: '7days',  label: 'Last 7 Days' },
+    { value: '30days', label: 'Last 30 Days' },
+];
+
 function MapCombinedFilter({ filters, onFilter, hasFilters }: {
     filters: Filters;
     onFilter: (key: string, value: string) => void;
     hasFilters: boolean;
 }) {
+    const [open, setOpen] = useState(false);
     const [localStatuses, setLocalStatuses] = useState<string[]>(filters.status ? filters.status.split(',') : []);
     const [localSeverities, setLocalSeverities] = useState<string[]>(filters.severity ? filters.severity.split(',') : []);
     const [localDateFrom, setLocalDateFrom] = useState(filters.date_from ?? '');
     const [localDateTo, setLocalDateTo] = useState(filters.date_to ?? '');
+    const [activeDatePreset, setActiveDatePreset] = useState<string | null>(null);
 
     useEffect(() => {
         setLocalStatuses(filters.status ? filters.status.split(',') : []);
@@ -323,41 +340,64 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
         setLocalDateTo(filters.date_to ?? '');
     }, [filters.status, filters.severity, filters.date_from, filters.date_to]);
 
+    // Detect active preset on mount / filter change
+    useEffect(() => {
+        if (!filters.date_from) { setActiveDatePreset(null); return; }
+        const match = DATE_PRESETS.find(p => {
+            const { from, to } = getDatePreset(p.value);
+            return from === filters.date_from && to === (filters.date_to ?? '');
+        });
+        setActiveDatePreset(match?.value ?? null);
+    }, [filters.date_from, filters.date_to]);
+
     const activeCount = (filters.status ? filters.status.split(',').length : 0)
         + (filters.severity ? filters.severity.split(',').length : 0)
-        + (filters.date_from ? 1 : 0)
-        + (filters.date_to ? 1 : 0);
+        + ((filters.date_from || filters.date_to) ? 1 : 0);
 
     const toggleStatus = (value: string) => setLocalStatuses(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
     const toggleSeverity = (value: string) => setLocalSeverities(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]);
 
-    const apply = (close: () => void) => {
+    const selectDatePreset = (preset: string) => {
+        if (activeDatePreset === preset) {
+            setActiveDatePreset(null);
+            setLocalDateFrom('');
+            setLocalDateTo('');
+        } else {
+            const { from, to } = getDatePreset(preset);
+            setActiveDatePreset(preset);
+            setLocalDateFrom(from);
+            setLocalDateTo(to);
+        }
+    };
+
+    const apply = () => {
         router.get('/admin/reports/map', {
             status: localStatuses.join(',') || undefined,
             severity: localSeverities.join(',') || undefined,
             date_from: localDateFrom || undefined,
             date_to: localDateTo || undefined,
         }, { preserveState: true, replace: true });
-        close();
+        setOpen(false);
     };
 
-    const clearAll = (close: () => void) => {
+    const clearAll = () => {
         setLocalStatuses([]);
         setLocalSeverities([]);
         setLocalDateFrom('');
         setLocalDateTo('');
+        setActiveDatePreset(null);
         router.get('/admin/reports/map', {}, { preserveState: true, replace: true });
-        close();
+        setOpen(false);
     };
 
     return (
-        <Popover className="relative border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
-            {({ open }) => (
-                <>
-                    <PopoverButton
+        <div className="border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
+            <Dialog open={open} onOpenChange={setOpen}>
+                <DialogTrigger asChild>
+                    <button
                         className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-medium outline-none transition-all ${
                             activeCount > 0
-                                ? 'border-neutral-900 bg-neutral-900 text-white shadow-sm dark:border-white dark:bg-white dark:text-neutral-900'
+                                ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                 : 'border-neutral-200 bg-white text-neutral-600 shadow-sm hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
                         }`}
                     >
@@ -368,101 +408,115 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
                                 {activeCount}
                             </span>
                         )}
-                        <ChevronDown className={`size-3 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-                    </PopoverButton>
+                    </button>
+                </DialogTrigger>
 
-                    <Transition
-                        as={Fragment}
-                        enter="transition ease-out duration-200"
-                        enterFrom="opacity-0 translate-y-1"
-                        enterTo="opacity-100 translate-y-0"
-                        leave="transition ease-in duration-150"
-                        leaveFrom="opacity-100 translate-y-0"
-                        leaveTo="opacity-0 translate-y-1"
-                    >
-                        <PopoverPanel className="absolute left-3 right-3 sm:left-5 sm:right-5 top-full z-50 mt-0 max-h-[60vh] overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-800">
-                            {({ close }) => (
-                                <>
-                                    {/* Status */}
-                                    <div className="p-3 pb-0">
-                                        <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">Status</p>
-                                        <div className="flex flex-wrap gap-1">
-                                            {STATUS_FILTER_OPTIONS.map(opt => (
-                                                <button
-                                                    key={opt.value}
-                                                    onClick={() => toggleStatus(opt.value)}
-                                                    className={`rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-all ${
-                                                        localStatuses.includes(opt.value)
-                                                            ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
-                                                            : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
-                                                    }`}
-                                                >
-                                                    {opt.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
+                <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
+                    <DialogHeader className="px-5 pt-5 pb-4">
+                        <DialogTitle className="text-[14px]">Filter Reports</DialogTitle>
+                        <DialogDescription className="text-[11px]">
+                            Narrow down reports by status, severity, and date.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                                    {/* Severity */}
-                                    <div className="mt-2.5 px-3">
-                                        <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">Severity</p>
-                                        <div className="flex flex-wrap gap-1">
-                                            {SEVERITY_FILTER_OPTIONS.map(opt => (
-                                                <button
-                                                    key={opt.value}
-                                                    onClick={() => toggleSeverity(opt.value)}
-                                                    className={`flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-all ${
-                                                        localSeverities.includes(opt.value)
-                                                            ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
-                                                            : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
-                                                    }`}
-                                                >
-                                                    <span className="size-1.5 rounded-full" style={{ backgroundColor: opt.color }} />
-                                                    {opt.label}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
+                    <div className="space-y-4 px-5 pb-4">
+                        {/* Status */}
+                        <div>
+                            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Status</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {STATUS_FILTER_OPTIONS.map(opt => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => toggleStatus(opt.value)}
+                                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                                            localStatuses.includes(opt.value)
+                                                ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
+                                                : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
+                                        }`}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
-                                    {/* Date range */}
-                                    <div className="mt-2.5 px-3">
-                                        <p className="mb-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">Date Range</p>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label className="mb-0.5 block text-[9px] text-neutral-400">From</label>
-                                                <input type="date" value={localDateFrom} onChange={(e) => setLocalDateFrom(e.target.value)}
-                                                    className="h-7 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2 text-[10px] outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
-                                            </div>
-                                            <div>
-                                                <label className="mb-0.5 block text-[9px] text-neutral-400">To</label>
-                                                <input type="date" value={localDateTo} onChange={(e) => setLocalDateTo(e.target.value)} min={localDateFrom || undefined}
-                                                    className="h-7 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2 text-[10px] outline-none transition focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
-                                            </div>
-                                        </div>
-                                    </div>
+                        {/* Severity */}
+                        <div>
+                            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Severity</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {SEVERITY_FILTER_OPTIONS.map(opt => (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => toggleSeverity(opt.value)}
+                                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                                            localSeverities.includes(opt.value)
+                                                ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
+                                                : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
+                                        }`}
+                                    >
+                                        <span className="size-2 rounded-full" style={{ backgroundColor: opt.color }} />
+                                        {opt.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
-                                    {/* Apply / Clear */}
-                                    <div className="mt-2.5 flex items-center justify-between border-t border-neutral-100 px-3 py-2 dark:border-neutral-700">
-                                        <button
-                                            onClick={() => clearAll(close)}
-                                            className="rounded-lg px-2.5 py-1.5 text-[10px] font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
-                                        >
-                                            Reset
-                                        </button>
-                                        <button
-                                            onClick={() => apply(close)}
-                                            className="rounded-lg bg-neutral-900 px-4 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
-                                        >
-                                            Apply
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-                        </PopoverPanel>
-                    </Transition>
-                </>
-            )}
-        </Popover>
+                        {/* Quick Date Presets */}
+                        <div>
+                            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Quick Date</p>
+                            <div className="flex flex-wrap gap-1.5">
+                                {DATE_PRESETS.map(preset => (
+                                    <button
+                                        key={preset.value}
+                                        onClick={() => selectDatePreset(preset.value)}
+                                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                                            activeDatePreset === preset.value
+                                                ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
+                                                : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
+                                        }`}
+                                    >
+                                        {preset.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Custom Date Range */}
+                        <div>
+                            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Custom Range</p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="mb-1 block text-[10px] font-medium text-neutral-500">From</label>
+                                    <input type="date" value={localDateFrom} onChange={(e) => { setLocalDateFrom(e.target.value); setActiveDatePreset(null); }}
+                                        className="h-8 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-[11px] outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-[10px] font-medium text-neutral-500">To</label>
+                                    <input type="date" value={localDateTo} onChange={(e) => { setLocalDateTo(e.target.value); setActiveDatePreset(null); }} min={localDateFrom || undefined}
+                                        className="h-8 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-[11px] outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between border-t border-neutral-100 px-5 py-3.5 dark:border-neutral-800">
+                        <button
+                            onClick={clearAll}
+                            className="rounded-lg px-3 py-1.5 text-[11px] font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                        >
+                            Reset all
+                        </button>
+                        <button
+                            onClick={apply}
+                            className="rounded-lg bg-neutral-900 px-5 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                        >
+                            Apply filters
+                        </button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+        </div>
     );
 }
 
@@ -608,10 +662,12 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
     const [selectedEvacCenter, setSelectedEvacCenter]   = useState<EvacuationCenter | null>(null);
     const [selectedResponder, setSelectedResponder]     = useState<LiveResponder | null>(null);
     const [selectedHazard, setSelectedHazard]           = useState<Hazard | null>(null);
+    const [showHeatmap, setShowHeatmap]                 = useState(true);
+    const [showReportMarkers, setShowReportMarkers]     = useState(false);
+    const [showHazards, setShowHazards]                 = useState(false);
     const [showEvacCenters, setShowEvacCenters]         = useState(false);
-    const [showResponders, setShowResponders]           = useState(true);
-    const [showAssignmentLines, setShowAssignmentLines] = useState(true);
-    const [zoom, setZoom]                               = useState(12);
+    const [showResponders, setShowResponders]           = useState(false);
+    const [showAssignmentLines, setShowAssignmentLines] = useState(false);
 
     // Keep "last seen" text live
     const [, setTick] = useState(0);
@@ -731,40 +787,42 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
             <div className="relative z-0 flex h-[calc(100vh-57px)] flex-col lg:flex-row-reverse">
 
                 {/* ── Side panel ── */}
-                <div className="flex w-full flex-col overflow-visible border-b border-neutral-200/70 bg-white lg:w-[340px] lg:border-b-0 lg:border-l dark:border-neutral-800 dark:bg-neutral-900">
+                <div className="flex w-full flex-col overflow-visible border-b border-neutral-200/50 bg-white lg:w-[340px] lg:border-b-0 lg:border-l dark:border-neutral-800/80 dark:bg-neutral-900">
 
                     {/* Header */}
-                    <div className="flex items-center justify-between border-b border-neutral-100 px-3 sm:px-5 py-4 dark:border-neutral-800">
+                    <div className="flex items-center justify-between px-4 sm:px-5 py-4">
                         <div>
-                            <h1 className="text-sm font-bold tracking-tight text-neutral-900 dark:text-white">Map View</h1>
-                            <p className="mt-0.5 text-[11px] text-neutral-400">Flood report locations</p>
+                            <h1 className="text-[13px] font-bold tracking-tight text-neutral-900 dark:text-white">Map View</h1>
+                            <p className="mt-0.5 text-[11px] text-neutral-400">{reports.length} report{reports.length !== 1 ? 's' : ''} found</p>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                                {reports.length} report{reports.length !== 1 ? 's' : ''}
-                            </span>
-                            <Link href="/admin/reports" className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-neutral-600 transition hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-                                <List className="size-3" /> List
-                            </Link>
-                        </div>
+                        <Link href="/admin/reports" className="flex items-center gap-1.5 rounded-lg border border-neutral-200/80 bg-neutral-50 px-2.5 py-1.5 text-[11px] font-medium text-neutral-600 transition hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700">
+                            <List className="size-3" /> List view
+                        </Link>
                     </div>
 
                     {/* Severity stat pills */}
-                    <div className="grid grid-cols-4 gap-2 border-b border-neutral-100 px-3 sm:px-5 py-3 dark:border-neutral-800">
+                    <div className="grid grid-cols-4 gap-1.5 px-4 sm:px-5 pb-3">
                         {(['critical', 'high', 'moderate', 'low'] as Severity[]).map((s) => (
                             <button
                                 key={s}
                                 onClick={() => filter('severity', filters.severity === s ? '' : s)}
-                                className={`flex flex-col items-center rounded-xl p-2 transition-all ${
+                                className={`group relative flex flex-col items-center rounded-lg py-2 transition-all ${
                                     filters.severity === s
-                                        ? 'ring-2 ring-offset-1'
-                                        : 'hover:bg-neutral-50 dark:hover:bg-neutral-800'
+                                        ? 'bg-neutral-900 dark:bg-white'
+                                        : 'bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800/60 dark:hover:bg-neutral-800'
                                 }`}
-                                style={filters.severity === s ? { '--tw-ring-color': SEVERITY_META[s].hex } as React.CSSProperties : {}}
                             >
-                                <span className="text-base font-bold text-neutral-900 dark:text-white">{counts[s]}</span>
-                                <span className={`mt-1 h-1.5 w-full rounded-full ${SEVERITY_META[s].color}`} />
-                                <span className="mt-1 text-[9px] font-medium text-neutral-400">{SEVERITY_META[s].label}</span>
+                                <span className={`text-sm font-bold tabular-nums ${
+                                    filters.severity === s
+                                        ? 'text-white dark:text-neutral-900'
+                                        : 'text-neutral-900 dark:text-white'
+                                }`}>{counts[s]}</span>
+                                <span className={`mt-1 h-1 w-6 rounded-full ${SEVERITY_META[s].color}`} />
+                                <span className={`mt-1 text-[9px] font-medium ${
+                                    filters.severity === s
+                                        ? 'text-neutral-400 dark:text-neutral-500'
+                                        : 'text-neutral-400'
+                                }`}>{SEVERITY_META[s].label}</span>
                             </button>
                         ))}
                     </div>
@@ -772,50 +830,101 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                     {/* Filters */}
                     <MapCombinedFilter filters={filters} onFilter={filter} hasFilters={hasFilters} />
 
-                    {/* Legend + Report list + Responder list */}
-                    <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-3">
-                        {/* Legend */}
-                        <div className="mb-3">
-                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Heatmap</p>
-                            <div className="flex flex-wrap gap-3">
-                                <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400"><span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />Low</span>
-                                <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400"><span className="h-2.5 w-2.5 rounded-full bg-amber-400" />Moderate</span>
-                                <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400"><span className="h-2.5 w-2.5 rounded-full bg-orange-500" />High</span>
-                                <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400"><span className="h-2.5 w-2.5 rounded-full bg-red-600" />Critical</span>
+                    {/* Scrollable content */}
+                    <div className="flex-1 overflow-y-auto">
+
+                        {/* Layer toggles */}
+                        <div className="border-b border-neutral-100/80 px-4 sm:px-5 py-3 dark:border-neutral-800/60">
+                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-neutral-400/80">Layers</p>
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                                {([
+                                    { key: 'heatmap',     label: 'Heatmap',      checked: showHeatmap,         toggle: () => setShowHeatmap(v => !v) },
+                                    { key: 'reports',     label: 'Reports',      checked: showReportMarkers,   toggle: () => setShowReportMarkers(v => !v) },
+                                    { key: 'hazards',     label: 'Hazards',      checked: showHazards,         toggle: () => setShowHazards(v => !v) },
+                                    { key: 'evac',        label: 'Evac Centers', checked: showEvacCenters,     toggle: () => setShowEvacCenters(v => !v) },
+                                    { key: 'responders',  label: 'Responders',   checked: showResponders,      toggle: () => setShowResponders(v => !v) },
+                                    { key: 'assignments', label: 'Assignments',  checked: showAssignmentLines, toggle: () => setShowAssignmentLines(v => !v) },
+                                ] as const).map(({ key, label, checked, toggle }) => (
+                                    <label key={key} className="flex items-center gap-2 cursor-pointer select-none group">
+                                        <div className="relative flex items-center justify-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={checked}
+                                                onChange={toggle}
+                                                className="peer size-3.5 cursor-pointer appearance-none rounded border border-neutral-300 bg-white transition checked:border-neutral-900 checked:bg-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:checked:border-white dark:checked:bg-white"
+                                            />
+                                            <svg className="pointer-events-none absolute hidden size-2.5 peer-checked:block" viewBox="0 0 10 10" fill="none">
+                                                <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="dark:stroke-neutral-900" />
+                                            </svg>
+                                        </div>
+                                        <span className={`text-[11px] font-medium transition ${checked ? 'text-neutral-700 dark:text-neutral-300' : 'text-neutral-400 dark:text-neutral-500'}`}>{label}</span>
+                                    </label>
+                                ))}
                             </div>
-                            {showEvacCenters && (
-                                <div className="flex flex-wrap gap-3 mt-2">
-                                    <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                                        <span className="h-2.5 w-2.5 rounded-sm bg-teal-600" />
-                                        Evac Center
-                                    </span>
-                                    <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                                        <span className="h-2.5 w-2.5 rounded-sm bg-red-600" />
-                                        Full
-                                    </span>
-                                </div>
-                            )}
-                            {showAssignmentLines && assignmentLines.length > 0 && (
-                                <div className={`flex flex-wrap gap-3 mt-2`}>
-                                    <span className="flex items-center gap-1.5 text-[11px] text-neutral-600 dark:text-neutral-400">
-                                        <span className="h-0.5 w-4 bg-violet-500" style={{ borderTop: '2px dashed #8b5cf6' }} />
-                                        Assignment link
-                                    </span>
-                                </div>
-                            )}
                         </div>
 
-                        {/* Responder list */}
+                        {/* Hazard Map Legend */}
+                        <div className="border-b border-neutral-100/80 px-4 sm:px-5 py-3 dark:border-neutral-800/60">
+                            <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400/80">Hazard Map Legend</p>
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-0">
+                                {/* Flood */}
+                                <div>
+                                    <p className="mb-1.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">Flood</p>
+                                    <div className="flex flex-col gap-1">
+                                        {HAZARD_TYPE_OPTIONS.flood.map(opt => {
+                                            const active = hazards.some(h => h.category === 'flood' && h.type === opt.value);
+                                            const severity: Severity = hazards.find(h => h.category === 'flood' && h.type === opt.value)?.severity ?? 'moderate';
+                                            const hex = SEVERITY_META[severity].hex;
+                                            const icon = HAZARD_ICONS[opt.value] ?? HAZARD_DEFAULT_ICON;
+                                            return (
+                                                <div key={opt.value} className="flex items-center gap-1.5" style={!active ? { opacity: 0.5 } : undefined}>
+                                                    <svg width="22" height="24" viewBox="0 0 36 40" className="shrink-0">
+                                                        <path d="M16.27 3.5a2 2 0 0 1 3.46 0L33.05 28.5a2 2 0 0 1-1.73 3H4.68a2 2 0 0 1-1.73-3z" fill={hex} stroke={hex} strokeWidth="1" />
+                                                        <path d="M16.27 3.5a2 2 0 0 1 3.46 0L33.05 28.5a2 2 0 0 1-1.73 3H4.68a2 2 0 0 1-1.73-3z" fill="none" stroke="#000" strokeWidth="0.8" opacity="0.15" />
+                                                        <g transform="translate(3, 3)" dangerouslySetInnerHTML={{ __html: icon }} />
+                                                    </svg>
+                                                    <span className={`text-[10px] leading-tight font-medium ${active ? 'text-neutral-700 dark:text-neutral-300' : 'text-neutral-400 dark:text-neutral-500'}`}>{opt.label}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                                {/* Road */}
+                                <div>
+                                    <p className="mb-1.5 text-[10px] font-bold text-orange-600 dark:text-orange-400">Road</p>
+                                    <div className="flex flex-col gap-1">
+                                        {HAZARD_TYPE_OPTIONS.road.map(opt => {
+                                            const active = hazards.some(h => h.category === 'road' && h.type === opt.value);
+                                            const severity: Severity = hazards.find(h => h.category === 'road' && h.type === opt.value)?.severity ?? 'moderate';
+                                            const hex = SEVERITY_META[severity].hex;
+                                            const icon = HAZARD_ICONS[opt.value] ?? HAZARD_DEFAULT_ICON;
+                                            return (
+                                                <div key={opt.value} className="flex items-center gap-1.5" style={!active ? { opacity: 0.5 } : undefined}>
+                                                    <svg width="22" height="24" viewBox="0 0 36 40" className="shrink-0">
+                                                        <path d="M16.27 3.5a2 2 0 0 1 3.46 0L33.05 28.5a2 2 0 0 1-1.73 3H4.68a2 2 0 0 1-1.73-3z" fill={hex} stroke={hex} strokeWidth="1" />
+                                                        <path d="M16.27 3.5a2 2 0 0 1 3.46 0L33.05 28.5a2 2 0 0 1-1.73 3H4.68a2 2 0 0 1-1.73-3z" fill="none" stroke="#000" strokeWidth="0.8" opacity="0.15" />
+                                                        <g transform="translate(3, 3)" dangerouslySetInnerHTML={{ __html: icon }} />
+                                                    </svg>
+                                                    <span className={`text-[10px] leading-tight font-medium ${active ? 'text-neutral-700 dark:text-neutral-300' : 'text-neutral-400 dark:text-neutral-500'}`}>{opt.label}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Responders */}
                         {showResponders && liveResponders.length > 0 && (
-                            <>
-                                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                                    <span className="flex items-center gap-1">
-                                        <Users className="size-3" />
-                                        On-duty responders
-                                        <span className="normal-case font-normal text-neutral-300">— click to focus</span>
+                            <div className="border-b border-neutral-100/80 px-4 sm:px-5 py-3 dark:border-neutral-800/60">
+                                <div className="mb-2 flex items-center justify-between">
+                                    <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400/80">
+                                        <Users className="size-3" />Responders
                                     </span>
-                                </p>
-                                <div className="mb-4 space-y-1.5">
+                                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[9px] font-bold tabular-nums text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">{liveResponders.length}</span>
+                                </div>
+                                <div className="space-y-1">
                                     {liveResponders.map((r) => {
                                         const stale = isStale(r.location_updated_at);
                                         return (
@@ -826,28 +935,18 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                     setSelectedResponder(selectedResponder?.id === r.id ? null : r);
                                                     if (selectedResponder?.id !== r.id) focusOnLocation(r.latitude, r.longitude);
                                                 }}
-                                                className={`w-full rounded-xl border p-2.5 text-left transition-all ${
+                                                className={`w-full rounded-lg p-2 text-left transition-all ${
                                                     selectedResponder?.id === r.id
-                                                        ? 'border-blue-400 bg-blue-50 ring-1 ring-blue-200 dark:border-blue-600 dark:bg-blue-900/20'
-                                                        : 'border-neutral-100 bg-neutral-50/50 hover:border-neutral-200 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-800/40 dark:hover:border-neutral-700'
+                                                        ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-900/20 dark:ring-blue-700'
+                                                        : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
                                                 }`}
                                             >
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2 min-w-0">
-                                                        <span className={`h-2.5 w-2.5 shrink-0 rounded-full bg-blue-600 ${stale ? 'opacity-40' : ''}`} />
-                                                        <span className="truncate text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">
-                                                            {r.name}
-                                                        </span>
+                                                        <span className={`size-2 shrink-0 rounded-full ${stale ? 'bg-amber-400' : 'bg-emerald-500'}`} />
+                                                        <span className="truncate text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">{r.name}</span>
                                                     </div>
-                                                    {stale && (
-                                                        <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold text-amber-600 ring-1 ring-amber-200">
-                                                            Stale
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="mt-1 flex items-center justify-between text-[10px] text-neutral-400">
-                                                    <span>{r.team_name ?? 'No team'}</span>
-                                                    <span className="flex items-center gap-1">
+                                                    <span className="flex shrink-0 items-center gap-1 text-[10px] text-neutral-400">
                                                         <Clock className="size-2.5" />
                                                         {formatLastSeen(r.location_updated_at)}
                                                     </span>
@@ -856,51 +955,49 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                         );
                                     })}
                                 </div>
-                            </>
+                            </div>
                         )}
 
-                        {/* Report list */}
-                        <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">
-                            Reports {reports.length > 0 && <span className="normal-case font-normal text-neutral-300">— click to focus</span>}
-                        </p>
-                        <div className="space-y-1.5">
-                            {sortedReports.map((r) => (
-                                <button
-                                    key={r.id}
-                                    onClick={() => focusOnLocation(r.latitude, r.longitude)}
-                                    className="w-full rounded-xl border border-neutral-100 bg-neutral-50/50 p-2.5 text-left transition-all hover:border-neutral-200 hover:bg-neutral-50 dark:border-neutral-800 dark:bg-neutral-800/40 dark:hover:border-neutral-700"
-                                >
-                                    <div className="flex items-center justify-between gap-2">
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <span
-                                                className="h-2.5 w-2.5 shrink-0 rounded-full"
-                                                style={{ backgroundColor: SEVERITY_META[r.severity].hex }}
-                                            />
-                                            <span className="truncate font-mono text-[10px] font-bold text-neutral-700 dark:text-neutral-300">
-                                                {r.reference_number}
-                                            </span>
+                        {/* Reports */}
+                        <div className="px-4 sm:px-5 py-3">
+                            <div className="mb-2 flex items-center justify-between">
+                                <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400/80">Reports</span>
+                                {reports.length > 0 && (
+                                    <span className="text-[9px] text-neutral-300 dark:text-neutral-600">tap to locate</span>
+                                )}
+                            </div>
+                            <div className="space-y-1">
+                                {sortedReports.map((r) => (
+                                    <button
+                                        key={r.id}
+                                        onClick={() => focusOnLocation(r.latitude, r.longitude)}
+                                        className="w-full rounded-lg p-2 text-left transition-all hover:bg-neutral-50 dark:hover:bg-neutral-800/60"
+                                    >
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <svg width="10" height="10" viewBox="0 0 10 10" className="shrink-0">
+                                                    <circle cx="5" cy="5" r="4" fill={SEVERITY_META[r.severity].hex} fillOpacity="0.3" stroke={SEVERITY_META[r.severity].hex} strokeWidth="1.5" />
+                                                </svg>
+                                                <span className="truncate font-mono text-[11px] font-bold text-neutral-700 dark:text-neutral-300">{r.reference_number}</span>
+                                            </div>
+                                            <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${STATUS_COLORS[r.status]}`}>{r.status}</span>
                                         </div>
-                                        <div className="flex shrink-0 items-center gap-1">
-                                            <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${STATUS_COLORS[r.status]}`}>
-                                                {r.status}
-                                            </span>
+                                        {r.address && (
+                                            <p className="mt-0.5 truncate pl-[18px] text-[10px] text-neutral-400">{r.address}</p>
+                                        )}
+                                        <div className="mt-0.5 flex items-center justify-between pl-[18px] text-[10px] text-neutral-400">
+                                            <span>{r.user?.name ?? 'Unknown'}</span>
+                                            <span>{new Date(r.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                         </div>
+                                    </button>
+                                ))}
+                                {reports.length === 0 && (
+                                    <div className="flex flex-col items-center py-12 text-neutral-400">
+                                        <MapPin className="size-6 mb-2 opacity-30" />
+                                        <p className="text-xs">No reports match your filters</p>
                                     </div>
-                                    {r.address && (
-                                        <p className="mt-1 truncate text-[10px] text-neutral-400">{r.address}</p>
-                                    )}
-                                    <div className="mt-1 flex items-center justify-between text-[10px] text-neutral-400">
-                                        <span>{r.user?.name ?? 'Unknown'}</span>
-                                        <span className="flex items-center gap-1">
-                                            <CalendarDays className="size-2.5" />
-                                            {new Date(r.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                        </span>
-                                    </div>
-                                </button>
-                            ))}
-                            {reports.length === 0 && (
-                                <div className="py-10 text-center text-xs text-neutral-400">No reports match your filters</div>
-                            )}
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -918,9 +1015,66 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                         style={{ width: '100%', height: '100%' }}
                     >
                         <DarkModeTileLayer />
-                        <MapEventHandlers onZoomChange={setZoom} onClick={clearSelection} mapRef={mapRef} />
+                        <MapEventHandlers onClick={clearSelection} mapRef={mapRef} />
                         <MapFitBounds reports={reports} evacuation_centers={evacuation_centers} />
-                        <HeatmapLayer points={heatPoints} />
+                        {showHeatmap && <HeatmapLayer points={heatPoints} />}
+
+                        {/* Report markers — CircleMarkers */}
+                        {showReportMarkers && sortedReports.map((r) => (
+                            <CircleMarker
+                                key={`report-${r.id}`}
+                                center={[r.latitude, r.longitude]}
+                                radius={10}
+                                pathOptions={{
+                                    color: SEVERITY_META[r.severity].hex,
+                                    fillColor: SEVERITY_META[r.severity].hex,
+                                    fillOpacity: 0.35,
+                                    weight: 2.5,
+                                }}
+                                eventHandlers={{
+                                    click: () => focusOnLocation(r.latitude, r.longitude),
+                                }}
+                            >
+                                <Popup maxWidth={270} minWidth={220}>
+                                    <div style={{ minWidth: 200 }}>
+                                        {/* Header */}
+                                        <div className="flex items-center justify-between px-3 pt-2.5 pb-2">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="flex size-[18px] items-center justify-center rounded-full" style={{ backgroundColor: SEVERITY_META[r.severity].hex + '18' }}>
+                                                    <span className="size-[7px] rounded-full" style={{ backgroundColor: SEVERITY_META[r.severity].hex }} />
+                                                </span>
+                                                <span className="text-[11px] font-bold capitalize text-neutral-800">{r.severity}</span>
+                                            </div>
+                                            <span className={`rounded-full px-2 py-[3px] text-[10px] font-semibold leading-none ${STATUS_COLORS[r.status]}`}>
+                                                {r.status}
+                                            </span>
+                                        </div>
+
+                                        {/* Body */}
+                                        <div className="border-t border-neutral-100 px-3 py-2.5">
+                                            {r.address && (
+                                                <p className="text-[11px] leading-relaxed text-neutral-500">{r.address}</p>
+                                            )}
+                                            <div className="mt-1.5 flex items-center justify-between text-[10px] text-neutral-400">
+                                                <span className="font-medium">{r.user?.name ?? 'Unknown'}</span>
+                                                <span>{new Date(r.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                            </div>
+                                        </div>
+
+                                        {/* Action */}
+                                        <div className="border-t border-neutral-100 px-3 py-2.5">
+                                            <Link
+                                                href={`/admin/reports/${r.id}`}
+                                                style={{ color: '#fff' }}
+                                                className="block rounded-lg bg-[oklch(0.55_0.14_240)] px-3 py-1.5 text-center text-[11px] font-semibold !text-white shadow-sm transition hover:bg-[oklch(0.50_0.14_240)] hover:shadow-md"
+                                            >
+                                                View details
+                                            </Link>
+                                        </div>
+                                    </div>
+                                </Popup>
+                            </CircleMarker>
+                        ))}
 
                         {/* Evacuation center markers */}
                         {showEvacCenters && evacuation_centers.map((ec) => {
@@ -1053,7 +1207,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                         ))}
 
                         {/* Hazard markers (active only) */}
-                        {hazards.map((h) => (
+                        {showHazards && hazards.map((h) => (
                             <Marker
                                 key={`haz-${h.id}`}
                                 position={[h.latitude, h.longitude]}
@@ -1111,85 +1265,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
 
                     </MapContainer>
 
-                    {/* Map Legend */}
-                    <div className="absolute bottom-4 left-4 z-[1000] w-[200px] overflow-hidden rounded-xl border border-white/20 bg-white/90 shadow-2xl shadow-black/10 backdrop-blur-xl dark:border-neutral-700/40 dark:bg-neutral-900/90 dark:shadow-black/30">
-                        {/* Header */}
-                        <div className="border-b border-neutral-100/80 px-3.5 py-2 dark:border-neutral-800/60">
-                            <p className="text-[9px] font-bold tracking-wide text-neutral-800 dark:text-neutral-200">Map Legend</p>
-                        </div>
 
-                        {/* Heatmap Intensity */}
-                        <div className="border-b border-neutral-100/60 px-3.5 py-2.5 dark:border-neutral-800/40">
-                            <p className="mb-2 text-[7px] font-bold uppercase tracking-[0.15em] text-neutral-400 dark:text-neutral-500">Report Density</p>
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-[7px] text-neutral-400">Low</span>
-                                <div className="flex-1 h-2 rounded-full overflow-hidden" style={{
-                                    background: 'linear-gradient(to right, #22c55e, #fbbf24, #f97316, #ef4444, #991b1b)',
-                                }} />
-                                <span className="text-[7px] text-neutral-400">High</span>
-                            </div>
-                        </div>
-
-                        {/* Severity */}
-                        <div className="border-b border-neutral-100/60 px-3.5 py-2.5 dark:border-neutral-800/40">
-                            <p className="mb-2 text-[7px] font-bold uppercase tracking-[0.15em] text-neutral-400 dark:text-neutral-500">Severity</p>
-                            <div className="grid grid-cols-2 gap-x-3 gap-y-1">
-                                {[
-                                    { label: 'Critical', color: '#991b1b' },
-                                    { label: 'High', color: '#ef4444' },
-                                    { label: 'Moderate', color: '#f97316' },
-                                    { label: 'Low', color: '#fbbf24' },
-                                ].map(({ label, color }) => (
-                                    <div key={label} className="flex items-center gap-1.5">
-                                        <span className="size-2 rounded-full ring-1 ring-black/5" style={{ backgroundColor: color }} />
-                                        <span className="text-[8px] font-medium text-neutral-600 dark:text-neutral-400">{label}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Hazards */}
-                        {hazards.length > 0 && (() => {
-                            const floodTypes = [...new Set(hazards.filter(h => h.category === 'flood').map(h => h.type))];
-                            const roadTypes = [...new Set(hazards.filter(h => h.category === 'road').map(h => h.type))];
-                            return (
-                                <div className="px-3.5 py-2.5">
-                                    <div className="mb-2 flex items-center justify-between">
-                                        <p className="text-[7px] font-bold uppercase tracking-[0.15em] text-neutral-400 dark:text-neutral-500">Hazards</p>
-                                        <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[7px] font-bold tabular-nums text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">{hazards.length}</span>
-                                    </div>
-                                    <div className="flex flex-col gap-1.5">
-                                        {floodTypes.length > 0 && (
-                                            <div>
-                                                <div className="mb-1 flex items-center gap-1.5">
-                                                    <svg width="8" height="8" viewBox="0 0 8 8"><path d="M4 0L8 8H0z" fill="#3b82f6" /></svg>
-                                                    <span className="text-[8px] font-semibold text-blue-600 dark:text-blue-400">Flood</span>
-                                                </div>
-                                                <div className="ml-3.5 flex flex-col gap-0.5 border-l border-blue-200/60 pl-2 dark:border-blue-800/40">
-                                                    {floodTypes.map(t => (
-                                                        <span key={t} className="text-[7px] text-neutral-500 dark:text-neutral-400">{hazardTypeLabel('flood', t)}</span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                        {roadTypes.length > 0 && (
-                                            <div>
-                                                <div className="mb-1 flex items-center gap-1.5">
-                                                    <svg width="8" height="8" viewBox="0 0 8 8"><path d="M4 0L8 8H0z" fill="#f97316" /></svg>
-                                                    <span className="text-[8px] font-semibold text-orange-600 dark:text-orange-400">Road</span>
-                                                </div>
-                                                <div className="ml-3.5 flex flex-col gap-0.5 border-l border-orange-200/60 pl-2 dark:border-orange-800/40">
-                                                    {roadTypes.map(t => (
-                                                        <span key={t} className="text-[7px] text-neutral-500 dark:text-neutral-400">{hazardTypeLabel('road', t)}</span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        })()}
-                    </div>
                 </div>
             </div>
         </AppLayout>

@@ -30,6 +30,11 @@ if (typeof document !== 'undefined') {
         }
         setActive(null);
     });
+
+    // Close on scroll
+    document.addEventListener('scroll', () => {
+        if (activeId) setActive(null);
+    }, true);
 }
 
 export function useKpiTooltip(btnRef: React.RefObject<HTMLButtonElement | null>) {
