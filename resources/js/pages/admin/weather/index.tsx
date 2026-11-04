@@ -139,7 +139,7 @@ function windyUrl(lat: number, lon: number): string {
 
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={`overflow-hidden rounded-lg border border-neutral-200/60 bg-white/80 backdrop-blur-sm transition-gpu duration-300 hover:shadow-xl hover:shadow-neutral-900/[0.04] hover:border-neutral-300/70 dark:border-neutral-800/80 dark:bg-neutral-900/80 dark:hover:border-neutral-700 dark:hover:shadow-black/20 ${className}`}>
+        <div className={`overflow-hidden rounded-lg border border-neutral-200/60 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-neutral-900/[0.04] hover:border-neutral-300/70 dark:border-neutral-800/80 dark:bg-neutral-900/80 dark:hover:border-neutral-700 dark:hover:shadow-black/20 ${className}`}>
             {children}
         </div>
     );
@@ -184,7 +184,7 @@ function InsightBar({ question, answers }: { question: string; answers: string[]
 
 function Metric({ icon, value, label, iconBg }: { icon: React.ReactNode; value: string; label: string; iconBg: string }) {
     return (
-        <div className="flex flex-col items-center gap-1 rounded-lg border border-neutral-200/50 bg-white py-2.5 transition-gpu hover:border-neutral-300/60 hover:shadow-sm dark:border-neutral-700/50 dark:bg-neutral-800/40 dark:hover:border-neutral-600/50">
+        <div className="flex flex-col items-center gap-1 rounded-lg border border-neutral-200/50 bg-white py-2.5 transition-all hover:border-neutral-300/60 hover:shadow-sm dark:border-neutral-700/50 dark:bg-neutral-800/40 dark:hover:border-neutral-600/50">
             <div className={`flex size-5 items-center justify-center rounded ${iconBg}`}>
                 {icon}
             </div>
@@ -383,7 +383,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                 { val: `${stats.raining}`, label: 'Raining', accent: 'bg-indigo-500' },
                                 { val: `${stats.avgRisk}`, label: 'Avg Risk', accent: 'bg-amber-500' },
                             ].map((s) => (
-                                <div key={s.label} className="relative overflow-hidden rounded-lg border border-neutral-200/70 bg-white px-3 py-2.5 transition-gpu hover:shadow-md hover:border-neutral-300/80 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700">
+                                <div key={s.label} className="relative overflow-hidden rounded-lg border border-neutral-200/70 bg-white px-3 py-2.5 transition-all hover:shadow-md hover:border-neutral-300/80 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700">
                                     <div className={`absolute inset-x-0 top-0 h-[2px] ${s.accent}`} />
                                     <p className="text-[8px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{s.label}</p>
                                     <p className="mt-1 text-lg font-bold tabular-nums tracking-tight text-neutral-900 dark:text-white">{s.val}</p>
@@ -407,7 +407,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                         {locLabel && gpsCoords && (
                             <button
                                 onClick={resetToMyLocation}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-neutral-600 shadow-sm transition-gpu hover:border-neutral-400 hover:text-neutral-900 cursor-pointer dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-white"
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-neutral-600 shadow-sm transition-all hover:border-neutral-400 hover:text-neutral-900 cursor-pointer dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-white"
                             >
                                 <Navigation className="size-3" /> My Location
                             </button>
@@ -488,7 +488,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                             {myWeather.hourly.map((h, i) => {
                                                 const t = new Date(h.dt * 1000).toLocaleTimeString('en-PH', { hour: 'numeric', hour12: true });
                                                 return (
-                                                    <div key={i} className="flex shrink-0 flex-col items-center gap-1 rounded-xl border border-neutral-200/50 bg-white px-3 py-2.5 min-w-[68px] transition-gpu hover:shadow-sm dark:border-neutral-700/50 dark:bg-neutral-800/40">
+                                                    <div key={i} className="flex shrink-0 flex-col items-center gap-1 rounded-xl border border-neutral-200/50 bg-white px-3 py-2.5 min-w-[68px] transition-all hover:shadow-sm dark:border-neutral-700/50 dark:bg-neutral-800/40">
                                                         <span className="text-[10px] font-bold text-neutral-400">{t}</span>
                                                         <img src={iconUrl(h.icon)} alt="" className="size-7 drop-shadow-sm" />
                                                         <span className="text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{Math.round(h.temperature)}°</span>
@@ -515,7 +515,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                         </p>
                                         <div className="grid grid-cols-3 gap-2">
                                             {myWeather.forecast.slice(0, 3).map((day, i) => (
-                                                <div key={i} className="flex flex-col items-center gap-1.5 rounded-xl border border-neutral-200/50 bg-white py-3.5 transition-gpu hover:shadow-sm dark:border-neutral-700/50 dark:bg-neutral-800/40">
+                                                <div key={i} className="flex flex-col items-center gap-1.5 rounded-xl border border-neutral-200/50 bg-white py-3.5 transition-all hover:shadow-sm dark:border-neutral-700/50 dark:bg-neutral-800/40">
                                                     <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400">{day.day}</span>
                                                     <img src={iconUrl(day.icon)} alt="" className="size-9 drop-shadow-sm" />
                                                     <span className="text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{day.temp_max}° / {day.temp_min}°</span>
@@ -549,7 +549,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                         {locSearch && !locSearching && (
                                             <button
                                                 onClick={() => searchLocation(locSearch)}
-                                                className="shrink-0 rounded-md bg-neutral-900 px-2.5 py-0.5 text-[10px] font-semibold text-white transition-gpu hover:bg-neutral-800 cursor-pointer dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
+                                                className="shrink-0 rounded-md bg-neutral-900 px-2.5 py-0.5 text-[10px] font-semibold text-white transition-all hover:bg-neutral-800 cursor-pointer dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
                                             >
                                                 Search
                                             </button>
@@ -609,7 +609,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                 <button
                                     key={level}
                                     onClick={() => setRiskFilter(active ? null : level)}
-                                    className={`group flex flex-col items-center gap-1.5 py-5 transition-gpu cursor-pointer ${
+                                    className={`group flex flex-col items-center gap-1.5 py-5 transition-all cursor-pointer ${
                                         active ? `${rc.bg} shadow-inner` : 'hover:bg-neutral-50/70 dark:hover:bg-neutral-800/30'
                                     }`}
                                 >
@@ -651,7 +651,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                 <p className="text-xs text-neutral-400">Could not connect to AI service</p>
                                 <button
                                     onClick={generateWeatherInsights}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-600 shadow-sm transition-gpu hover:border-neutral-400 hover:text-neutral-900 cursor-pointer dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-white"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-600 shadow-sm transition-all hover:border-neutral-400 hover:text-neutral-900 cursor-pointer dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-white"
                                 >
                                     <RefreshCw className="size-3.5" /> Retry
                                 </button>
@@ -666,7 +666,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                         <span className="size-1.5 rounded-full bg-current animate-pulse" />
                                         {aiData.risk_level} risk
                                     </span>
-                                    <button onClick={generateWeatherInsights} className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-2 py-1 text-[9px] font-medium text-neutral-400 transition-gpu hover:border-neutral-400 hover:text-neutral-900 cursor-pointer dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-white">
+                                    <button onClick={generateWeatherInsights} className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-2 py-1 text-[9px] font-medium text-neutral-400 transition-all hover:border-neutral-400 hover:text-neutral-900 cursor-pointer dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-white">
                                         <RefreshCw className="size-2.5" /> Refresh
                                     </button>
                                 </div>
@@ -793,7 +793,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                 <button
                                     key={level}
                                     onClick={() => setRiskFilter(active ? null : level)}
-                                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-[11px] font-bold transition-gpu cursor-pointer ${
+                                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${
                                         active
                                             ? `${rc.bg} ${rc.border} ${rc.text} shadow-md ${rc.glow}`
                                             : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600'
@@ -807,7 +807,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                         {(search || riskFilter) && (
                             <button
                                 onClick={() => { setSearch(''); setRiskFilter(null); }}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] font-bold text-red-500 transition-gpu hover:bg-red-100 hover:shadow-sm cursor-pointer dark:border-red-800/40 dark:bg-red-950/30 dark:hover:bg-red-950/50"
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] font-bold text-red-500 transition-all hover:bg-red-100 hover:shadow-sm cursor-pointer dark:border-red-800/40 dark:bg-red-950/30 dark:hover:bg-red-950/50"
                             >
                                 <X className="size-3" /> Clear
                             </button>
@@ -834,7 +834,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                         return (
                             <div
                                 key={brgy.name}
-                                className="overflow-hidden rounded-2xl border border-neutral-200/70 bg-white shadow-sm transition-gpu hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900"
+                                className="overflow-hidden rounded-2xl border border-neutral-200/70 bg-white shadow-sm transition-all hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900"
                                 style={{ borderLeftWidth: 4, borderLeftColor: RISK_LEFT_BORDER[brgy.flood_risk.level] }}
                             >
                                 <button
@@ -890,7 +890,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                                 </p>
                                                 <div className="grid grid-cols-3 gap-2">
                                                     {brgy.forecast.map((day, idx) => (
-                                                        <div key={idx} className="flex flex-col items-center gap-1.5 rounded-xl border border-neutral-200/50 bg-white py-3.5 transition-gpu hover:shadow-sm dark:border-neutral-700/50 dark:bg-neutral-800/40">
+                                                        <div key={idx} className="flex flex-col items-center gap-1.5 rounded-xl border border-neutral-200/50 bg-white py-3.5 transition-all hover:shadow-sm dark:border-neutral-700/50 dark:bg-neutral-800/40">
                                                             <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400">{day.day}</span>
                                                             <img src={iconUrl(day.icon)} alt="" className="size-9 drop-shadow-sm" />
                                                             <span className="text-xs font-bold text-neutral-900 tabular-nums dark:text-white">{day.temp_max}° / {day.temp_min}°</span>
@@ -911,7 +911,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                                 <span className={`text-xs font-bold ${rc.text}`}>{brgy.flood_risk.score}/100 — {brgy.flood_risk.level}</span>
                                             </div>
                                             <div className="h-2.5 rounded-full bg-neutral-100 overflow-hidden dark:bg-neutral-800">
-                                                <div className={`h-full rounded-full transition-gpu duration-700 ease-out ${RISK_BAR_COLORS[brgy.flood_risk.level]}`} style={{ width: `${brgy.flood_risk.score}%` }} />
+                                                <div className={`h-full rounded-full transition-all duration-700 ease-out ${RISK_BAR_COLORS[brgy.flood_risk.level]}`} style={{ width: `${brgy.flood_risk.score}%` }} />
                                             </div>
                                         </div>
                                     </div>

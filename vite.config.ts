@@ -14,19 +14,6 @@ export default defineConfig(({ isSsrBuild, command }) => ({
             protocol: 'ws',
         },
     },
-    build: {
-        rollupOptions: {
-            output: {
-                manualChunks(id) {
-                    if (id.includes('apexcharts') || id.includes('react-apexcharts')) return 'apexcharts';
-                    if (id.includes('leaflet')) return 'leaflet';
-                    if (id.includes('socket.io')) return 'socketio';
-                    if (id.includes('framer-motion') || id.includes('motion/react')) return 'motion';
-                    if (id.includes('@react-google-maps')) return 'google-maps';
-                },
-            },
-        },
-    },
     plugins: [
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],

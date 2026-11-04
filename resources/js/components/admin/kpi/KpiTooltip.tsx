@@ -105,7 +105,7 @@ export function KpiTooltip({ title, desc, insights, visible, parentRef, urgency,
                                 {row.max !== undefined && row.max > 0 && typeof row.value === 'number' && (
                                     <div className="mt-1 h-1 w-full rounded-full bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
                                         <div
-                                            className="h-full rounded-full transition-gpu duration-300"
+                                            className="h-full rounded-full transition-all duration-300"
                                             style={{
                                                 width: `${row.max > 0 ? Math.min((row.value / row.max) * 100, 100) : 0}%`,
                                                 backgroundColor: row.color ?? '#94a3b8',

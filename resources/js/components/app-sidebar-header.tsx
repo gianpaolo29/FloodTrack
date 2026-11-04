@@ -69,7 +69,7 @@ function LanguageDropdown() {
     return (
         <Popover className="relative">
             <PopoverButton
-                className="flex size-9 items-center justify-center rounded-xl text-[11px] font-bold text-muted-foreground transition-gpu hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95 focus:outline-none"
+                className="flex size-9 items-center justify-center rounded-xl text-[11px] font-bold text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95 focus:outline-none"
             >
                 {locale === 'en' ? 'EN' : 'FIL'}
             </PopoverButton>
@@ -293,7 +293,7 @@ export function AppSidebarHeader({
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     onKeyDown={(e) => { if (e.key === 'Escape') closeSearch(); }}
                                     placeholder={t('nav.search')}
-                                    className="h-9 w-full rounded-xl border-0 bg-muted/50 pl-9 pr-8 text-sm text-foreground shadow-sm ring-1 ring-border/40 placeholder:text-muted-foreground/40 focus:bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none transition-gpu"
+                                    className="h-9 w-full rounded-xl border-0 bg-muted/50 pl-9 pr-8 text-sm text-foreground shadow-sm ring-1 ring-border/40 placeholder:text-muted-foreground/40 focus:bg-background focus:ring-2 focus:ring-primary/30 focus:outline-none transition-all"
                                 />
                                 <button
                                     onClick={closeSearch}
@@ -351,7 +351,7 @@ export function AppSidebarHeader({
                     ) : (
                         <button
                             onClick={openSearch}
-                            className="flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-gpu hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
+                            className="flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
                         >
                             <Search className="size-[18px]" />
                         </button>
@@ -373,7 +373,7 @@ export function AppSidebarHeader({
                             <>
                                 <PopoverButton
                                     onClick={() => { if (!popoverOpen) fetchNotifications(); }}
-                                    className="group relative flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-gpu hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95 focus:outline-none"
+                                    className="group relative flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95 focus:outline-none"
                                 >
                                     <Bell className={`size-[18px] transition-transform group-hover:scale-105 ${popoverOpen ? 'text-foreground' : ''}`} />
                                     {localUnread > 0 && (
@@ -446,7 +446,7 @@ export function AppSidebarHeader({
                 {/* Dark mode toggle */}
                 <button
                     onClick={() => updateAppearance(appearance === 'dark' ? 'light' : 'dark')}
-                    className="flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-gpu hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
+                    className="flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
                     title={appearance === 'dark' ? t('nav.switch_light') : t('nav.switch_dark')}
                 >
                     {appearance === 'dark' ? <Sun className="size-[18px]" /> : <Moon className="size-[18px]" />}
@@ -455,7 +455,7 @@ export function AppSidebarHeader({
                 {/* Fullscreen toggle */}
                 <button
                     onClick={toggleFullscreen}
-                    className="hidden md:flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-gpu hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
+                    className="hidden md:flex size-9 items-center justify-center rounded-xl text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95"
                     title={isFullscreen ? t('nav.exit_fullscreen') : t('nav.fullscreen')}
                 >
                     {isFullscreen ? <Minimize className="size-[18px]" /> : <Maximize className="size-[18px]" />}
@@ -468,12 +468,12 @@ export function AppSidebarHeader({
                 {auth.user && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <button className="flex items-center gap-2.5 rounded-xl pl-1 pr-2 py-1 transition-gpu hover:bg-muted/60 hover:shadow-sm active:scale-[0.97] focus:outline-none">
+                            <button className="flex items-center gap-2.5 rounded-xl pl-1 pr-2 py-1 transition-all hover:bg-muted/60 hover:shadow-sm active:scale-[0.97] focus:outline-none">
                                 <div className="hidden text-right sm:block">
                                     <p className="text-sm font-medium leading-tight">{auth.user.name}</p>
                                     <p className="text-[11px] leading-tight text-muted-foreground capitalize">{auth.user.role}</p>
                                 </div>
-                                <Avatar className="size-8 ring-2 ring-primary/15 transition-gpu duration-200 group-hover:ring-primary/35 group-hover:shadow-md group-hover:shadow-primary/10">
+                                <Avatar className="size-8 ring-2 ring-primary/15 transition-all duration-200 group-hover:ring-primary/35 group-hover:shadow-md group-hover:shadow-primary/10">
                                     <AvatarImage src={auth.user.avatar_url ?? undefined} alt={auth.user.name} />
                                     <AvatarFallback className="bg-gradient-to-br from-primary/80 to-primary text-[11px] font-semibold text-primary-foreground">
                                         {getInitials(auth.user.name)}
@@ -513,7 +513,7 @@ function NotificationItem({ notification, onClick }: { notification: AppNotifica
     return (
         <button
             onClick={onClick}
-            className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-gpu duration-150 hover:bg-muted/40 active:bg-muted/60 ${isUnread ? 'bg-primary/[0.03]' : ''}`}
+            className={`flex w-full items-start gap-3 px-4 py-3 text-left transition-all duration-150 hover:bg-muted/40 active:bg-muted/60 ${isUnread ? 'bg-primary/[0.03]' : ''}`}
         >
             <div className={`mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl ${bgMap[data.type] ?? 'bg-muted'}`}>
                 {iconMap[data.type] ?? <Bell className="size-4 text-muted-foreground" />}

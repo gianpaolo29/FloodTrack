@@ -80,7 +80,7 @@ const SORT_KEYS = [
 ];
 
 const inputClass =
-    'w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-sm outline-none transition-gpu placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/60 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:ring-neutral-500/15';
+    'w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/60 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:ring-neutral-500/15';
 
 const modalSpring = { type: 'spring' as const, stiffness: 400, damping: 28 };
 
@@ -414,7 +414,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/alerts" />
                         <button
                             onClick={() => { form.reset(); setShowCreateModal(true); }}
-                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-gpu active:scale-[0.97]"
+                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
                         >
                             <Plus className="size-4" />
                             Publish Announcement
@@ -505,7 +505,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                 <button
                                     onClick={runBulkDelete}
                                     disabled={bulkProcessing}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-gpu hover:bg-red-700 disabled:opacity-50"
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-red-700 disabled:opacity-50"
                                 >
                                     <Trash2 className="size-3.5" /> Delete
                                 </button>
@@ -537,7 +537,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                 value={searchValue}
                                 onChange={(e) => setSearchValue(e.target.value)}
                                 placeholder={t('alerts.search_placeholder')}
-                                className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-gpu placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
+                                className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
                             />
                             {searchValue && (
                                 <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -696,7 +696,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                 <button
                                     onClick={() => { const prev = alerts.links[0]; if (prev?.url) router.get(prev.url); }}
                                     disabled={alerts.current_page === 1}
-                                    className="flex size-8 items-center justify-center rounded-lg border border-neutral-200/80 bg-white text-neutral-400 shadow-sm transition-gpu hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 disabled:pointer-events-none disabled:opacity-30 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                                    className="flex size-8 items-center justify-center rounded-lg border border-neutral-200/80 bg-white text-neutral-400 shadow-sm transition-all hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 disabled:pointer-events-none disabled:opacity-30 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
                                 >
                                     <ChevronLeft className="size-3.5" />
                                 </button>
@@ -705,7 +705,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                         <button
                                             key={i}
                                             onClick={() => router.get(link.url!)}
-                                            className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-gpu ${
+                                            className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-all ${
                                                 link.active
                                                     ? 'bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900'
                                                     : 'border border-neutral-200/80 bg-white text-neutral-500 shadow-sm hover:border-neutral-300 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
@@ -717,7 +717,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                 <button
                                     onClick={() => { const next = alerts.links[alerts.links.length - 1]; if (next?.url) router.get(next.url); }}
                                     disabled={alerts.current_page === alerts.last_page}
-                                    className="flex size-8 items-center justify-center rounded-lg border border-neutral-200/80 bg-white text-neutral-400 shadow-sm transition-gpu hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 disabled:pointer-events-none disabled:opacity-30 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                                    className="flex size-8 items-center justify-center rounded-lg border border-neutral-200/80 bg-white text-neutral-400 shadow-sm transition-all hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 disabled:pointer-events-none disabled:opacity-30 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
                                 >
                                     <ChevronRight className="size-3.5" />
                                 </button>
@@ -769,7 +769,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                 <button
                                     type="button"
                                     onClick={applyTemplate}
-                                    className="mb-4 flex items-center gap-2.5 rounded-xl border border-dashed border-neutral-300 bg-neutral-50/60 px-4 py-2.5 text-left transition-gpu hover:border-neutral-400 hover:bg-neutral-50 dark:border-neutral-600/50 dark:bg-neutral-800/20 dark:hover:border-neutral-500/60 dark:hover:bg-neutral-800/30"
+                                    className="mb-4 flex items-center gap-2.5 rounded-xl border border-dashed border-neutral-300 bg-neutral-50/60 px-4 py-2.5 text-left transition-all hover:border-neutral-400 hover:bg-neutral-50 dark:border-neutral-600/50 dark:bg-neutral-800/20 dark:hover:border-neutral-500/60 dark:hover:bg-neutral-800/30"
                                 >
                                     <FileText className="size-4 shrink-0 text-neutral-500 dark:text-neutral-400" />
                                     <div>
@@ -813,7 +813,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                                             key={t}
                                                             type="button"
                                                             onClick={() => form.setData('type', t)}
-                                                            className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-xs font-semibold capitalize transition-gpu ${
+                                                            className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-xs font-semibold capitalize transition-all ${
                                                                 active
                                                                     ? colors.active
                                                                     : 'border-neutral-200 bg-neutral-50/50 text-neutral-500 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-400 dark:hover:border-neutral-600'
@@ -851,7 +851,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                     <button
                                         type="submit"
                                         disabled={form.processing}
-                                        className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-gpu disabled:opacity-50"
+                                        className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                                     >
                                         <Send className="size-4" />
                                         {form.processing ? 'Publishing...' : 'Publish'}
@@ -969,7 +969,7 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
                                                 key={t}
                                                 type="button"
                                                 onClick={() => editForm.setData('type', t)}
-                                                className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-xs font-semibold capitalize transition-gpu ${
+                                                className={`flex flex-1 items-center justify-center gap-2 rounded-xl border-2 px-3 py-2.5 text-xs font-semibold capitalize transition-all ${
                                                     active
                                                         ? colors.active
                                                         : 'border-neutral-200 bg-neutral-50/50 text-neutral-500 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-neutral-400 dark:hover:border-neutral-600'
@@ -1021,7 +1021,7 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
                             <button
                                 type="submit"
                                 disabled={editForm.processing || !editForm.isDirty}
-                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-gpu disabled:opacity-50"
+                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                             >
                                 <Save className="size-4" />
                                 {editForm.processing ? 'Saving...' : 'Save Changes'}

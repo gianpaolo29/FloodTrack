@@ -101,7 +101,7 @@ export default function Login({ status, canRegister }: Props) {
                             tabIndex={4}
                             disabled={processing}
                             data-test="login-button"
-                            className="auth-cta mt-1 h-12 w-full rounded-xl text-base font-bold text-white shadow-lg shadow-blue-500/20 transition-gpu duration-300 hover:shadow-blue-500/30 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+                            className="auth-cta mt-1 h-12 w-full rounded-xl text-base font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:shadow-blue-500/30 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
                         >
                             {processing ? (
                                 <Spinner />

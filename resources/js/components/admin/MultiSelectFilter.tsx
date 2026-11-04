@@ -44,7 +44,7 @@ export function MultiSelectFilter({ label, options, selected, onChange }: Props)
         <Popover className="relative">
             <PopoverButton
                 onClick={() => setSearch('')}
-                className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-medium transition-gpu outline-none ${
+                className={`flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-medium transition-all outline-none ${
                     activeCount > 0
                         ? 'border-neutral-900 bg-neutral-900 text-white shadow-sm dark:border-white dark:bg-white dark:text-neutral-900'
                         : 'border-neutral-200/80 bg-white text-neutral-600 shadow-sm hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'

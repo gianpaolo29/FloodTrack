@@ -75,7 +75,7 @@ export function NavSection({ label, items }: NavSectionProps) {
                                         <SidebarMenuButton
                                             tooltip={{ children: item.title }}
                                             isActive={anyChildActive}
-                                            className={`w-full rounded-lg text-[10px] transition-gpu duration-200 group-data-[collapsible=icon]:justify-center ${
+                                            className={`w-full rounded-lg text-[10px] transition-all duration-200 group-data-[collapsible=icon]:justify-center ${
                                                 anyChildActive ? ACTIVE_CLASS : INACTIVE_CLASS
                                             }`}
                                         >
@@ -107,7 +107,7 @@ export function NavSection({ label, items }: NavSectionProps) {
                                                             <SidebarMenuSubButton
                                                                 asChild
                                                                 isActive={childActive}
-                                                                className={`h-6 rounded-md text-[9px] transition-gpu duration-150 ${
+                                                                className={`h-6 rounded-md text-[9px] transition-all duration-150 ${
                                                                     childActive
                                                                         ? 'border border-neutral-200 bg-white font-semibold text-neutral-900 shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-white'
                                                                         : 'border border-transparent font-medium text-sidebar-foreground/40 hover:border-neutral-200/50 hover:bg-white/50 hover:text-sidebar-foreground/80 dark:hover:border-neutral-700/50 dark:hover:bg-neutral-800/30'
@@ -135,7 +135,7 @@ export function NavSection({ label, items }: NavSectionProps) {
                                 asChild
                                 isActive={active}
                                 tooltip={{ children: item.title }}
-                                className={`rounded-lg text-[10px] transition-gpu duration-200 group-data-[collapsible=icon]:justify-center ${
+                                className={`rounded-lg text-[10px] transition-all duration-200 group-data-[collapsible=icon]:justify-center ${
                                     active ? ACTIVE_CLASS : INACTIVE_CLASS
                                 }`}
                             >

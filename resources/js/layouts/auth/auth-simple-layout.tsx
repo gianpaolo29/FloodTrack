@@ -83,7 +83,7 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
                         {/* Logo */}
                         <div>
                             <Link href={home()} className="group inline-flex items-center gap-3">
-                                <div className="flex size-10 items-center justify-center transition-gpu duration-300 group-hover:scale-110">
+                                <div className="flex size-10 items-center justify-center transition-all duration-300 group-hover:scale-110">
                                     <AppLogoIcon className="size-10 rounded-[14px] shadow-xl shadow-black/10" />
                                 </div>
                                 <span className="text-lg font-bold tracking-tight text-white drop-shadow-sm">
@@ -104,7 +104,7 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
                                 {rotatingTexts.map((item, i) => (
                                     <div
                                         key={i}
-                                        className="absolute inset-0 transition-gpu duration-700"
+                                        className="absolute inset-0 transition-all duration-700"
                                         style={{
                                             opacity: textIndex === i ? 1 : 0,
                                             transform: textIndex === i ? 'translateY(0)' : 'translateY(20px)',
@@ -127,7 +127,7 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
                                     <button
                                         key={i}
                                         onClick={() => setTextIndex(i)}
-                                        className={`h-1 rounded-full transition-gpu duration-500 ${textIndex === i ? 'w-8 bg-cyan-400' : 'w-2 bg-white/20 hover:bg-white/30'}`}
+                                        className={`h-1 rounded-full transition-all duration-500 ${textIndex === i ? 'w-8 bg-cyan-400' : 'w-2 bg-white/20 hover:bg-white/30'}`}
                                     />
                                 ))}
                             </div>
@@ -205,7 +205,7 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
             <button
                 onClick={() => updateAppearance(isDark ? 'light' : 'dark')}
                 aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                className={`fixed bottom-20 right-6 z-50 flex size-10 items-center justify-center rounded-xl backdrop-blur-xl transition-gpu duration-300 hover:scale-110 active:scale-95 lg:bottom-6 ${isDark ? 'border border-white/10 bg-white/[0.06] shadow-lg shadow-black/20' : 'border border-neutral-200/80 bg-white/80 shadow-sm ring-1 ring-neutral-100'}`}
+                className={`fixed bottom-20 right-6 z-50 flex size-10 items-center justify-center rounded-xl backdrop-blur-xl transition-all duration-300 hover:scale-110 active:scale-95 lg:bottom-6 ${isDark ? 'border border-white/10 bg-white/[0.06] shadow-lg shadow-black/20' : 'border border-neutral-200/80 bg-white/80 shadow-sm ring-1 ring-neutral-100'}`}
             >
                 {isDark ? (
                     <Sun className="size-4 text-amber-400" />

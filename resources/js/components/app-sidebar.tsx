@@ -85,7 +85,7 @@ export function AppSidebar() {
             <SidebarHeader className="p-2 pb-2.5">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild className="rounded-xl transition-gpu duration-200 hover:bg-sidebar-foreground/[0.04] hover:shadow-sm active:scale-[0.97] group-data-[collapsible=icon]:justify-center">
+                        <SidebarMenuButton size="lg" asChild className="rounded-xl transition-all duration-200 hover:bg-sidebar-foreground/[0.04] hover:shadow-sm active:scale-[0.97] group-data-[collapsible=icon]:justify-center">
                             <Link href={isAdmin ? '/admin' : dashboard()} prefetch>
                                 <AppLogo />
                             </Link>

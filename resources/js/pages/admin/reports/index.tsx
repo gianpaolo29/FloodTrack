@@ -302,7 +302,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
             <div className="flex flex-col gap-4 sm:gap-5 p-3 sm:p-6 lg:p-8">
 
                 {/* ── Header ── */}
-                <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-gpu duration-700 ${mounted ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0'}`}>
+                <div className={`flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between transition-all duration-700 ${mounted ? 'translate-y-0 opacity-100' : '-translate-y-3 opacity-0'}`}>
                     <div className="flex items-center gap-3 sm:gap-4">
                         <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 dark:bg-white">
                             <FileText className="size-4 sm:size-5 text-white dark:text-neutral-900" />
@@ -416,7 +416,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                     key={action}
                                     onClick={() => runBulkAction(action)}
                                     disabled={bulkProcessing}
-                                    className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-gpu active:scale-95 disabled:opacity-50 ${cls}`}
+                                    className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold shadow-sm transition-all active:scale-95 disabled:opacity-50 ${cls}`}
                                 >
                                     <Icon className="size-3.5" /> {label}
                                 </button>
@@ -432,7 +432,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                 </AnimatePresence>
 
                 {/* ── Table card ── */}
-                <div className={`relative overflow-visible rounded-2xl border border-neutral-200/70 bg-white hover:shadow-lg hover:border-neutral-300/80 transition-gpu duration-700 delay-300 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
+                <div className={`relative overflow-visible rounded-2xl border border-neutral-200/70 bg-white hover:shadow-lg hover:border-neutral-300/80 transition-all duration-700 delay-300 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
 
                     {/* Animated top border */}
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-neutral-300/50 to-transparent dark:via-neutral-600/50" />
@@ -448,7 +448,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                 value={searchValue}
                                 onChange={(e) => setSearchValue(e.target.value)}
                                 placeholder={t('reports.search_placeholder')}
-                                className="h-6 w-full rounded-lg border border-neutral-200/80 bg-white pl-6 pr-6 text-[10px] shadow-sm outline-none transition-gpu placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
+                                className="h-6 w-full rounded-lg border border-neutral-200/80 bg-white pl-6 pr-6 text-[10px] shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
                             />
                             {searchValue && (
                                 <button onClick={() => setSearchValue('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -584,7 +584,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                 <button
                                     onClick={() => { const prev = reports.links[0]; if (prev?.url) router.get(prev.url); }}
                                     disabled={reports.current_page === 1}
-                                    className="flex size-8 items-center justify-center rounded-lg border border-neutral-200/80 bg-white text-neutral-400 shadow-sm transition-gpu hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 disabled:pointer-events-none disabled:opacity-30 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                                    className="flex size-8 items-center justify-center rounded-lg border border-neutral-200/80 bg-white text-neutral-400 shadow-sm transition-all hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 disabled:pointer-events-none disabled:opacity-30 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
                                 >
                                     <ChevronLeft className="size-3.5" />
                                 </button>
@@ -593,7 +593,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                         <button
                                             key={i}
                                             onClick={() => router.get(link.url!)}
-                                            className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-gpu ${
+                                            className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-all ${
                                                 link.active
                                                     ? 'bg-neutral-900 text-white shadow-md dark:bg-white dark:text-neutral-900'
                                                     : 'border border-neutral-200/80 bg-white text-neutral-500 shadow-sm hover:border-neutral-300 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
@@ -606,7 +606,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                 <button
                                     onClick={() => { const next = reports.links[reports.links.length - 1]; if (next?.url) router.get(next.url); }}
                                     disabled={reports.current_page === reports.last_page}
-                                    className="flex size-8 items-center justify-center rounded-lg border border-neutral-200/80 bg-white text-neutral-400 shadow-sm transition-gpu hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 disabled:pointer-events-none disabled:opacity-30 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                                    className="flex size-8 items-center justify-center rounded-lg border border-neutral-200/80 bg-white text-neutral-400 shadow-sm transition-all hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 disabled:pointer-events-none disabled:opacity-30 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
                                 >
                                     <ChevronRight className="size-3.5" />
                                 </button>
@@ -746,7 +746,7 @@ function ReportRow({ report, isSelected, onToggle }: {
             <td className="px-3 py-2 text-right">
                 <Link
                     href={`/admin/reports/${report.id}`}
-                    className="inline-flex translate-x-1 items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[10px] font-semibold text-neutral-600 opacity-0 shadow-sm transition-gpu duration-200 group-hover:translate-x-0 group-hover:opacity-100 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-white"
+                    className="inline-flex translate-x-1 items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[10px] font-semibold text-neutral-600 opacity-0 shadow-sm transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-white"
                 >
                     View
                     <ArrowUpRight className="size-2.5" />

@@ -109,7 +109,7 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef, t }: {
                             key={d}
                             disabled={isFuture}
                             onClick={() => handleDayClick(d)}
-                            className={`relative flex size-9 items-center justify-center text-xs font-medium transition-gpu mx-auto rounded-lg
+                            className={`relative flex size-9 items-center justify-center text-xs font-medium transition-all mx-auto rounded-lg
                                 ${isFuture ? 'cursor-not-allowed text-neutral-200 dark:text-neutral-700' : 'cursor-pointer'}
                                 ${isStart || isEnd
                                     ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
@@ -142,13 +142,13 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef, t }: {
                 </div>
             </div>
             <div className="mt-3 flex items-center gap-2">
-                <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2 text-[11px] font-semibold text-neutral-500 transition-gpu hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800">
+                <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2 text-[11px] font-semibold text-neutral-500 transition-all hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800">
                     {t('filter.cancel')}
                 </button>
                 <button
                     onClick={() => { if (rangeStart && rangeEnd) onApply(rangeStart, rangeEnd); }}
                     disabled={!rangeStart || !rangeEnd}
-                    className={`flex-1 rounded-xl py-2 text-[11px] font-semibold transition-gpu ${
+                    className={`flex-1 rounded-xl py-2 text-[11px] font-semibold transition-all ${
                         rangeStart && rangeEnd
                             ? 'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200'
                             : 'bg-neutral-100 text-neutral-300 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-600'
@@ -224,7 +224,7 @@ export function PeriodToggle({ period, customFrom, customTo, baseUrl, extraParam
                 <button
                     key={key}
                     onClick={() => setPeriod(key)}
-                    className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-gpu sm:px-3.5 sm:text-xs ${
+                    className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all sm:px-3.5 sm:text-xs ${
                         period === key || (key === 'custom' && showCalendar)
                             ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                             : 'text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
