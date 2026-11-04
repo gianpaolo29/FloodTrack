@@ -59,7 +59,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const inputClass =
-    'w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:ring-neutral-500/20';
+    'w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition-gpu placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:ring-neutral-500/20';
 
 const modalSpring = { type: 'spring' as const, stiffness: 380, damping: 30 };
 
@@ -303,7 +303,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/hazards" />
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 active:scale-[0.97] dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-gpu hover:bg-neutral-800 active:scale-[0.97] dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                         >
                             <Plus className="size-4" />
                             Add Hazard
@@ -401,15 +401,15 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                                 </span>
                                 <div className="h-4 w-px bg-neutral-300/60 dark:bg-neutral-600/60" />
                                 <button onClick={() => runBulkAction('activate')} disabled={bulkProcessing}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-emerald-700 disabled:opacity-50">
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-gpu hover:bg-emerald-700 disabled:opacity-50">
                                     <Power className="size-3.5" /> Activate
                                 </button>
                                 <button onClick={() => runBulkAction('deactivate')} disabled={bulkProcessing}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-amber-600 disabled:opacity-50">
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition-gpu hover:bg-amber-600 disabled:opacity-50">
                                     <Power className="size-3.5" /> Deactivate
                                 </button>
                                 <button onClick={() => runBulkAction('delete')} disabled={bulkProcessing}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-red-700 disabled:opacity-50">
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-gpu hover:bg-red-700 disabled:opacity-50">
                                     <Trash2 className="size-3.5" /> Delete
                                 </button>
                                 <button onClick={() => setSelected([])}
@@ -434,7 +434,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                                 placeholder={t('hazards.search_placeholder')}
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
+                                className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-sm outline-none transition-gpu placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
                             />
                             {search && (
                                 <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -857,7 +857,7 @@ function HazardFormModal({ hazard, onClose }: { hazard?: Hazard; onClose: () => 
                                         return (
                                             <button key={cat} type="button"
                                                 onClick={() => { setCatLocked(true); form.setData('category', cat); form.setData('type', ''); }}
-                                                className={`flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-semibold transition-all ${
+                                                className={`flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-semibold transition-gpu ${
                                                     active
                                                         ? 'border-neutral-900 bg-neutral-50 text-neutral-900 dark:border-white dark:bg-neutral-800 dark:text-white'
                                                         : 'border-neutral-200 text-neutral-500 hover:border-neutral-300 dark:border-neutral-700 dark:text-neutral-400'
@@ -936,7 +936,7 @@ function HazardFormModal({ hazard, onClose }: { hazard?: Hazard; onClose: () => 
                             <button type="submit"
                                 disabled={form.processing || (!isEditing && !isReady)}
                                 title={!isReady && !isEditing ? 'Fill in all fields and pin a location first' : undefined}
-                                className={`inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold shadow-sm transition-all hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40 ${
+                                className={`inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold shadow-sm transition-gpu hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40 ${
                                     isReady || isEditing
                                         ? 'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200'
                                         : 'bg-neutral-400 text-white shadow-neutral-400/20'

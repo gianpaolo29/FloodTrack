@@ -147,7 +147,7 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
                             <button
                                 type="submit"
                                 disabled={form.processing}
-                                className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-3 py-1.5 text-[10px] font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 active:scale-[0.97] disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                                className="inline-flex items-center gap-1.5 rounded-lg bg-neutral-900 px-3 py-1.5 text-[10px] font-semibold text-white shadow-sm transition-gpu hover:bg-neutral-800 active:scale-[0.97] disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                             >
                                 <Save className="size-3" />
                                 {form.processing ? 'Saving…' : 'Save Changes'}
@@ -186,7 +186,7 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
                                 <p className="mb-3 text-[9px] text-neutral-400">Operational status for all teams.</p>
                                 <div className="grid grid-cols-2 gap-2">
                                     <button type="button" onClick={() => set('schedule_level', 'white')}
-                                        className={`flex items-center gap-2 rounded-lg border-2 px-3 py-2 transition-all ${get('schedule_level') !== 'red' ? 'border-blue-500 bg-blue-50/50 dark:border-blue-400 dark:bg-blue-950/20' : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700'}`}>
+                                        className={`flex items-center gap-2 rounded-lg border-2 px-3 py-2 transition-gpu ${get('schedule_level') !== 'red' ? 'border-blue-500 bg-blue-50/50 dark:border-blue-400 dark:bg-blue-950/20' : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700'}`}>
                                         <Clock className={`size-3.5 ${get('schedule_level') !== 'red' ? 'text-blue-500' : 'text-neutral-400'}`} />
                                         <div className="text-left">
                                             <p className={`text-[10px] font-bold ${get('schedule_level') !== 'red' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-600 dark:text-neutral-300'}`}>White</p>
@@ -194,7 +194,7 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
                                         </div>
                                     </button>
                                     <button type="button" onClick={() => set('schedule_level', 'red')}
-                                        className={`flex items-center gap-2 rounded-lg border-2 px-3 py-2 transition-all ${get('schedule_level') === 'red' ? 'border-red-500 bg-red-50/50 dark:border-red-400 dark:bg-red-950/20' : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700'}`}>
+                                        className={`flex items-center gap-2 rounded-lg border-2 px-3 py-2 transition-gpu ${get('schedule_level') === 'red' ? 'border-red-500 bg-red-50/50 dark:border-red-400 dark:bg-red-950/20' : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700'}`}>
                                         <AlertTriangle className={`size-3.5 ${get('schedule_level') === 'red' ? 'text-red-500' : 'text-neutral-400'}`} />
                                         <div className="text-left">
                                             <p className={`text-[10px] font-bold ${get('schedule_level') === 'red' ? 'text-red-700 dark:text-red-400' : 'text-neutral-600 dark:text-neutral-300'}`}>Red</p>
@@ -235,7 +235,7 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
                                     <p className="text-[9px] text-neutral-400">Track and enforce response time limits</p>
                                 </div>
                                 <button type="button" onClick={handleSlaToggle}
-                                    className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-semibold transition-all ${sla_enabled ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'}`}>
+                                    className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-semibold transition-gpu ${sla_enabled ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'}`}>
                                     {sla_enabled ? <CheckCircle2 className="size-2.5" /> : <Clock className="size-2.5" />}
                                     {sla_enabled ? 'Enabled' : 'Disabled'}
                                 </button>
@@ -268,7 +268,7 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
                                                                     type="number" min={1} max={9999}
                                                                     value={slaGet(sev, stage).threshold_minutes}
                                                                     onChange={e => slaUpdate(sev, stage, parseInt(e.target.value) || 1)}
-                                                                    className="w-12 rounded border border-neutral-200 bg-neutral-50/50 px-1 py-0.5 text-center text-[9px] font-medium tabular-nums outline-none transition-all focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+                                                                    className="w-12 rounded border border-neutral-200 bg-neutral-50/50 px-1 py-0.5 text-center text-[9px] font-medium tabular-nums outline-none transition-gpu focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
                                                                 />
                                                                 <span className="text-[7px] text-neutral-400">min</span>
                                                             </div>
@@ -283,7 +283,7 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
                                     <p className="text-[8px] text-neutral-400">Exceeding limits triggers breach notifications and auto-escalation</p>
                                     {slaForm.isDirty && (
                                         <button type="submit" disabled={slaForm.processing}
-                                            className="inline-flex items-center gap-1 rounded-md bg-neutral-900 px-2.5 py-1 text-[9px] font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200">
+                                            className="inline-flex items-center gap-1 rounded-md bg-neutral-900 px-2.5 py-1 text-[9px] font-semibold text-white shadow-sm transition-gpu hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200">
                                             <Save className="size-2.5" />
                                             {slaForm.processing ? 'Saving...' : 'Save Thresholds'}
                                         </button>
@@ -331,7 +331,7 @@ function SettingsCard({
 /* ─── Setting Row Components ─── */
 
 const inputCls =
-    'h-9 w-full shrink-0 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm text-right outline-none transition-all focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 sm:w-44 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-neutral-500 dark:focus:bg-neutral-800';
+    'h-9 w-full shrink-0 rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 text-sm text-right outline-none transition-gpu focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 sm:w-44 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-neutral-500 dark:focus:bg-neutral-800';
 
 function SettingInput({
     title, description, value, onChange, type = 'text', placeholder,

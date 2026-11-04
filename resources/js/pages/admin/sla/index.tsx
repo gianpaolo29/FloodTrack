@@ -118,7 +118,7 @@ export default function SlaIndex({ configs, sla_enabled }: Props) {
                     </div>
                     <button
                         onClick={handleToggle}
-                        className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97] ${
+                        className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm transition-gpu active:scale-[0.97] ${
                             sla_enabled
                                 ? 'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200'
                                 : 'bg-neutral-400 text-white hover:bg-neutral-500 dark:bg-neutral-600 dark:hover:bg-neutral-500'
@@ -174,7 +174,7 @@ export default function SlaIndex({ configs, sla_enabled }: Props) {
                                                                 max={9999}
                                                                 value={c.threshold_minutes}
                                                                 onChange={(e) => updateField(sev, stage, parseInt(e.target.value) || 1)}
-                                                                className="w-20 rounded-lg border border-neutral-200 bg-neutral-50/50 px-2.5 py-1.5 text-center text-xs font-medium tabular-nums outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+                                                                className="w-20 rounded-lg border border-neutral-200 bg-neutral-50/50 px-2.5 py-1.5 text-center text-xs font-medium tabular-nums outline-none transition-gpu focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
                                                             />
                                                             <span className="text-[10px] text-neutral-400">min</span>
                                                         </div>
@@ -195,7 +195,7 @@ export default function SlaIndex({ configs, sla_enabled }: Props) {
                             <button
                                 type="submit"
                                 disabled={form.processing || !form.isDirty}
-                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-gpu hover:bg-neutral-800 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                             >
                                 <Save className="size-4" />
                                 {form.processing ? 'Saving...' : 'Save Thresholds'}
@@ -218,7 +218,7 @@ export default function SlaIndex({ configs, sla_enabled }: Props) {
                         <button
                             onClick={handleSave}
                             disabled={form.processing}
-                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-gpu hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
                         >
                             <Save className="size-4" />
                             {form.processing ? 'Saving...' : 'Save Thresholds'}

@@ -148,6 +148,12 @@
     }
 }
 
+@utility transition-gpu {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-timing-function: var(--tw-ease, ease);
+    transition-duration: var(--tw-duration, 150ms);
+}
+
 /* ─── Sidebar ─── */
 [data-sidebar] {
     font-family: var(--font-sans) !important;
@@ -283,7 +289,7 @@ table td div[class*="rounded-full"][class*="size-"] {
     background: var(--card);
     box-shadow: 0 1px 2px oklch(0 0 0 / 0.04);
     ring: 1px oklch(0.91 0.01 250 / 0.3);
-    transition: all 0.2s ease;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
 }
 .stat-card:hover {
     box-shadow: 0 4px 12px oklch(0 0 0 / 0.08);
@@ -311,7 +317,7 @@ table td div[class*="rounded-full"][class*="size-"] {
     background: var(--card);
     box-shadow: 0 1px 3px oklch(0 0 0 / 0.04), 0 1px 2px oklch(0 0 0 / 0.02);
     ring: 1px oklch(0.91 0.01 250 / 0.3);
-    transition: all 0.25s ease;
+    transition: box-shadow 0.25s ease;
 }
 .premium-card:hover {
     box-shadow: 0 4px 16px oklch(0 0 0 / 0.08), 0 2px 4px oklch(0 0 0 / 0.04);
@@ -418,7 +424,7 @@ table td div[class*="rounded-full"][class*="size-"] {
     align-items: center !important;
     justify-content: center !important;
     padding: 0 !important;
-    transition: all 0.15s ease !important;
+    transition: color 0.15s ease, background-color 0.15s ease !important;
 }
 .leaflet-popup-close-button:hover {
     color: oklch(0.35 0.02 250) !important;

@@ -99,7 +99,7 @@ function tooltipHtml(label: string, rows: { color: string; name: string; value: 
 /* ─── Card ─── */
 function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={`rounded-2xl border border-neutral-200/60 bg-white/80 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-neutral-900/[0.04] hover:border-neutral-300/70 dark:border-neutral-800/80 dark:bg-neutral-900/80 dark:hover:border-neutral-700 dark:hover:shadow-black/20 ${className}`}>
+        <div className={`rounded-2xl border border-neutral-200/60 bg-white/80 backdrop-blur-sm transition-gpu duration-300 hover:shadow-xl hover:shadow-neutral-900/[0.04] hover:border-neutral-300/70 dark:border-neutral-800/80 dark:bg-neutral-900/80 dark:hover:border-neutral-700 dark:hover:shadow-black/20 ${className}`}>
             {children}
         </div>
     );
@@ -325,14 +325,19 @@ export default function AdminDashboard({
                     reconnectionDelay: 3000,
                 });
 
-                const reload = () => {
-                    router.reload({ preserveState: true, preserveScroll: true });
+                let reloadTimer: ReturnType<typeof setTimeout> | null = null;
+                const debouncedReload = () => {
+                    if (reloadTimer) return;
+                    reloadTimer = setTimeout(() => {
+                        reloadTimer = null;
+                        router.reload({ preserveState: true, preserveScroll: true });
+                    }, 5000);
                 };
 
-                socket.on('new-report', reload);
-                socket.on('report-status', reload);
-                socket.on('member-status-updated', reload);
-                socket.on('new-notification', reload);
+                socket.on('new-report', debouncedReload);
+                socket.on('report-status', debouncedReload);
+                socket.on('member-status-updated', debouncedReload);
+                socket.on('new-notification', debouncedReload);
             })
             .catch(() => {});
 
@@ -772,7 +777,7 @@ export default function AdminDashboard({
             <div className="mx-auto flex max-w-[1600px] flex-col gap-6 p-4 sm:p-6 lg:gap-7 lg:p-8">
 
                 {/* ━━━ Header ━━━ */}
-                <div className={`flex flex-col gap-3 transition-all duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
+                <div className={`flex flex-col gap-3 transition-gpu duration-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center gap-3.5">
                             <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-neutral-900 shadow-lg shadow-neutral-900/20 dark:bg-white dark:shadow-white/10">
@@ -893,7 +898,7 @@ export default function AdminDashboard({
                                     const active = visibleSeries.has(name);
                                     return (
                                         <button key={name} onClick={() => { const next = new Set(visibleSeries); if (active) next.delete(name); else next.add(name); setVisibleSeries(next); }}
-                                            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold transition-all ${active ? '' : 'opacity-40'}`}
+                                            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold transition-gpu ${active ? '' : 'opacity-40'}`}
                                             style={active ? { backgroundColor: color + '15', color } : {}}
                                         >
                                             <span className="size-1.5 rounded-full" style={{ backgroundColor: color }} />
@@ -1066,7 +1071,7 @@ export default function AdminDashboard({
                                 <p className="text-[11px] text-neutral-400">Latest submitted flood incident reports</p>
                             </div>
                         </div>
-                        <Link href="/admin/reports" className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white px-3 py-1.5 text-xs font-medium text-neutral-500 transition-all hover:border-neutral-400 hover:text-neutral-900 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-white">
+                        <Link href="/admin/reports" className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white px-3 py-1.5 text-xs font-medium text-neutral-500 transition-gpu hover:border-neutral-400 hover:text-neutral-900 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-white">
                             View all <ExternalLink className="size-3" />
                         </Link>
                     </div>
@@ -1211,7 +1216,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
             {({ open }) => (
                 <>
                     <PopoverButton
-                        className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold outline-none transition-all sm:text-xs ${
+                        className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold outline-none transition-gpu sm:text-xs ${
                             activeCount > 0
                                 ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
                                 : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
@@ -1262,7 +1267,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                                     <button
                                                         key={opt.value}
                                                         onClick={() => toggleSev(opt.value)}
-                                                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-medium transition-all ${
+                                                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-medium transition-gpu ${
                                                             localSev.includes(opt.value)
                                                                 ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
                                                                 : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
@@ -1283,7 +1288,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                                     <button
                                                         key={opt.value}
                                                         onClick={() => toggleStatus(opt.value)}
-                                                        className={`rounded-lg border px-2.5 py-1 text-[10px] font-medium transition-all ${
+                                                        className={`rounded-lg border px-2.5 py-1 text-[10px] font-medium transition-gpu ${
                                                             localStatus.includes(opt.value)
                                                                 ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
                                                                 : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
@@ -1383,7 +1388,7 @@ function VerificationGauge({ rate, color, label, bg, mounted, locale }: { rate: 
     return (
         <div
             ref={cardRef}
-            className={`group relative overflow-hidden rounded-lg border border-neutral-200/70 bg-white px-3 py-2.5 transition-all duration-700 hover:shadow-md hover:border-neutral-300/80 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
+            className={`group relative overflow-hidden rounded-lg border border-neutral-200/70 bg-white px-3 py-2.5 transition-gpu duration-700 hover:shadow-md hover:border-neutral-300/80 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
             style={{ transitionDelay: '800ms' }}
         >
             <div className={`absolute inset-x-0 top-0 h-[2px] ${bg}`} />

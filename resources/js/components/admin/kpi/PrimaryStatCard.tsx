@@ -39,7 +39,7 @@ export function PrimaryStatCard({ label, value, trend, trendLabel, desc, insight
     return (
         <div
             ref={cardRef}
-            className={`group relative overflow-hidden rounded-lg border border-neutral-200/70 bg-white px-3 py-2.5 transition-all duration-700 hover:shadow-md hover:border-neutral-300/80 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+            className={`group relative overflow-hidden rounded-lg border border-neutral-200/70 bg-white px-3 py-2.5 transition-gpu duration-700 hover:shadow-md hover:border-neutral-300/80 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
             style={{ transitionDelay: `${index * 80}ms` }}
         >
             {accent && <div className={`absolute inset-x-0 top-0 h-[2px] ${ACCENT_STYLES[accent]}`} />}

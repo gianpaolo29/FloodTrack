@@ -320,7 +320,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                                     <a
                                         key={p}
                                         href={`/admin/export/pdf${p !== 'all' ? `?period=${p}` : ''}`}
-                                        className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-all hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-700"
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-700 transition-gpu hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-700"
                                     >
                                         <Printer className="size-3" />
                                         {{ all: t('filter.all_time'), month: t('filter.this_month'), week: t('filter.this_week'), today: t('filter.today') }[p]}
@@ -418,7 +418,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                                 <a
                                     href={buildUrl()}
                                     onClick={handleDownload}
-                                    className="inline-flex items-center gap-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2 text-xs font-semibold shadow-sm transition-all active:scale-[0.97]"
+                                    className="inline-flex items-center gap-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2 text-xs font-semibold shadow-sm transition-gpu active:scale-[0.97]"
                                 >
                                     <FileDown className="size-3.5" />
                                     Download Excel
@@ -445,7 +445,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
 /* ─── Shared styles ─── */
 
 const selectCls =
-    'h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 py-2 text-sm outline-none transition-all focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-neutral-500 dark:focus:bg-neutral-800';
+    'h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3 py-2 text-sm outline-none transition-gpu focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-neutral-500 dark:focus:bg-neutral-800';
 
 /* ─── Sub-components ─── */
 

@@ -144,13 +144,13 @@ export default function Register() {
                             <InputError message={errors.password} />
 
                             {/* Strength indicator */}
-                            <div className={`overflow-hidden transition-all duration-300 ${password ? 'max-h-16 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
+                            <div className={`overflow-hidden transition-gpu duration-300 ${password ? 'max-h-16 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
                                 <div className="flex items-center gap-2 mb-1.5">
                                     <div className="flex flex-1 gap-0.5">
                                         {Array.from({ length: 5 }).map((_, i) => (
                                             <div
                                                 key={i}
-                                                className={`h-[3px] flex-1 rounded-full transition-all duration-300 ${i < strength.score ? strength.color : 'bg-neutral-200 dark:bg-neutral-700'}`}
+                                                className={`h-[3px] flex-1 rounded-full transition-gpu duration-300 ${i < strength.score ? strength.color : 'bg-neutral-200 dark:bg-neutral-700'}`}
                                             />
                                         ))}
                                     </div>
@@ -201,7 +201,7 @@ export default function Register() {
                             type="submit"
                             tabIndex={7}
                             data-test="register-user-button"
-                            className="auth-cta mt-1 h-11 w-full rounded-xl text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:shadow-blue-500/30 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
+                            className="auth-cta mt-1 h-11 w-full rounded-xl text-sm font-semibold text-white shadow-lg shadow-blue-500/20 transition-gpu duration-300 hover:shadow-blue-500/30 hover:brightness-110 active:scale-[0.99] disabled:opacity-60"
                         >
                             {processing ? (
                                 <Spinner />

@@ -395,7 +395,7 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                     <button
-                        className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-medium outline-none transition-all ${
+                        className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-medium outline-none transition-gpu ${
                             activeCount > 0
                                 ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                 : 'border-neutral-200 bg-white text-neutral-600 shadow-sm hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
@@ -428,7 +428,7 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
                                     <button
                                         key={opt.value}
                                         onClick={() => toggleStatus(opt.value)}
-                                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-gpu ${
                                             localStatuses.includes(opt.value)
                                                 ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                 : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
@@ -448,7 +448,7 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
                                     <button
                                         key={opt.value}
                                         onClick={() => toggleSeverity(opt.value)}
-                                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-gpu ${
                                             localSeverities.includes(opt.value)
                                                 ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                 : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
@@ -469,7 +469,7 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
                                     <button
                                         key={preset.value}
                                         onClick={() => selectDatePreset(preset.value)}
-                                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-gpu ${
                                             activeDatePreset === preset.value
                                                 ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                 : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
@@ -806,7 +806,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                             <button
                                 key={s}
                                 onClick={() => filter('severity', filters.severity === s ? '' : s)}
-                                className={`group relative flex flex-col items-center rounded-lg py-2 transition-all ${
+                                className={`group relative flex flex-col items-center rounded-lg py-2 transition-gpu ${
                                     filters.severity === s
                                         ? 'bg-neutral-900 dark:bg-white'
                                         : 'bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800/60 dark:hover:bg-neutral-800'
@@ -935,7 +935,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                     setSelectedResponder(selectedResponder?.id === r.id ? null : r);
                                                     if (selectedResponder?.id !== r.id) focusOnLocation(r.latitude, r.longitude);
                                                 }}
-                                                className={`w-full rounded-lg p-2 text-left transition-all ${
+                                                className={`w-full rounded-lg p-2 text-left transition-gpu ${
                                                     selectedResponder?.id === r.id
                                                         ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-900/20 dark:ring-blue-700'
                                                         : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
@@ -971,7 +971,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                     <button
                                         key={r.id}
                                         onClick={() => focusOnLocation(r.latitude, r.longitude)}
-                                        className="w-full rounded-lg p-2 text-left transition-all hover:bg-neutral-50 dark:hover:bg-neutral-800/60"
+                                        className="w-full rounded-lg p-2 text-left transition-gpu hover:bg-neutral-50 dark:hover:bg-neutral-800/60"
                                     >
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2 min-w-0">
@@ -1121,7 +1121,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                     </div>
                                                     <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
                                                         <div
-                                                            className={`h-full rounded-full transition-all ${
+                                                            className={`h-full rounded-full transition-gpu ${
                                                                 selectedEvacCenter.current_occupancy >= selectedEvacCenter.capacity
                                                                     ? 'bg-red-500'
                                                                     : selectedEvacCenter.current_occupancy / selectedEvacCenter.capacity > 0.8

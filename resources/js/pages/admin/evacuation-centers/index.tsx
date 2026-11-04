@@ -83,7 +83,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const inputClass =
-    'w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:ring-neutral-500/20';
+    'w-full rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm outline-none transition-gpu placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/15 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:ring-neutral-500/20';
 
 const modalSpring = { type: 'spring' as const, stiffness: 380, damping: 30 };
 
@@ -277,7 +277,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/evacuation-centers" />
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
+                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-gpu active:scale-[0.97]"
                         >
                             <Plus className="size-4" />
                             Add Center
@@ -369,21 +369,21 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                                 <button
                                     onClick={() => runBulkAction('activate')}
                                     disabled={bulkProcessing}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-emerald-700 disabled:opacity-50"
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition-gpu hover:bg-emerald-700 disabled:opacity-50"
                                 >
                                     <Power className="size-3.5" /> Activate
                                 </button>
                                 <button
                                     onClick={() => runBulkAction('deactivate')}
                                     disabled={bulkProcessing}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-amber-600 disabled:opacity-50"
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white transition-gpu hover:bg-amber-600 disabled:opacity-50"
                                 >
                                     <Power className="size-3.5" /> Deactivate
                                 </button>
                                 <button
                                     onClick={() => runBulkAction('delete')}
                                     disabled={bulkProcessing}
-                                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-all hover:bg-red-700 disabled:opacity-50"
+                                    className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-gpu hover:bg-red-700 disabled:opacity-50"
                                 >
                                     <Trash2 className="size-3.5" /> Delete
                                 </button>
@@ -411,7 +411,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                                 placeholder={t('evac.search_placeholder')}
                                 value={searchValue}
                                 onChange={(e) => setSearchValue(e.target.value)}
-                                className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
+                                className="h-9 w-full rounded-xl border border-neutral-200 bg-neutral-50 pl-9 pr-8 text-sm outline-none transition-gpu placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:placeholder:text-neutral-500 dark:focus:bg-neutral-800"
                             />
                             {searchValue && (
                                 <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -779,7 +779,7 @@ function OccupancyCell({ centerId, current, capacity }: { centerId: number; curr
                 <span className={`ml-auto text-[10px] font-semibold ${textColor}`}>{pct}%</span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
-                <div className={`h-full rounded-full transition-all ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
+                <div className={`h-full rounded-full transition-gpu ${barColor}`} style={{ width: `${Math.min(pct, 100)}%` }} />
             </div>
             <div className="flex items-center gap-1 mt-0.5">
                 <button
@@ -800,7 +800,7 @@ function OccupancyCell({ centerId, current, capacity }: { centerId: number; curr
                     min={0}
                     max={capacity}
                     disabled={updating}
-                    className="h-6 w-14 rounded-lg border border-neutral-200 bg-white px-1.5 text-center text-xs tabular-nums text-neutral-800 outline-none transition-all focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/15 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:focus:border-neutral-500"
+                    className="h-6 w-14 rounded-lg border border-neutral-200 bg-white px-1.5 text-center text-xs tabular-nums text-neutral-800 outline-none transition-gpu focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/15 disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:focus:border-neutral-500"
                 />
                 <button
                     type="button"
@@ -1113,7 +1113,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                         <div className="flex items-center gap-2">
                                             <div className="flex-1 h-1.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
                                                 <div
-                                                    className={`h-full rounded-full transition-all ${
+                                                    className={`h-full rounded-full transition-gpu ${
                                                         (Number(form.data.current_occupancy) / Number(form.data.capacity)) >= 0.9
                                                             ? 'bg-red-500'
                                                             : (Number(form.data.current_occupancy) / Number(form.data.capacity)) >= 0.7
@@ -1194,7 +1194,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                 type="submit"
                                 disabled={form.processing || (!isEditing && !isReady)}
                                 title={!isReady && !isEditing ? 'Fill in all fields and pin a location first' : undefined}
-                                className={`inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 ${
+                                className={`inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow-md transition-gpu hover:shadow-lg hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 ${
                                     isReady || isEditing
                                         ? 'bg-neutral-900 dark:bg-white dark:text-neutral-900 shadow-sm hover:bg-neutral-800 dark:hover:bg-neutral-200'
                                         : 'bg-neutral-400 shadow-sm'

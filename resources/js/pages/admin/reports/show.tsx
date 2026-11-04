@@ -50,7 +50,7 @@ interface Props {
 const SEVERITY_OPTIONS = ['low', 'moderate', 'high', 'critical'] as const;
 
 const inputClass =
-    'w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-800 dark:focus:ring-neutral-500/20';
+    'w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-gpu placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-800 dark:focus:ring-neutral-500/20';
 
 const STATUS_FLOW: { status: ReportStatus; label: string; color: string }[] = [
     { status: 'pending', label: 'Pending', color: 'amber' },
@@ -197,7 +197,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                     <div className="flex items-center gap-3 sm:gap-4">
                         <Link
                             href="/admin/reports"
-                            className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-500 shadow-sm transition-all hover:bg-neutral-50 hover:text-neutral-700 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800"
+                            className="flex size-9 items-center justify-center rounded-xl border border-neutral-200 bg-white text-neutral-500 shadow-sm transition-gpu hover:bg-neutral-50 hover:text-neutral-700 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900 dark:hover:bg-neutral-800"
                         >
                             <ArrowLeft className="size-4" />
                         </Link>
@@ -223,7 +223,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                         {!editing && (
                             <button
                                 onClick={() => setEditing(true)}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-sm font-medium text-neutral-700 shadow-sm transition-all hover:bg-neutral-50 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-sm font-medium text-neutral-700 shadow-sm transition-gpu hover:bg-neutral-50 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
                             >
                                 <Pencil className="size-3.5" />
                                 Edit
@@ -232,7 +232,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                         <button
                             onClick={handleDelete}
                             disabled={deleting}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3.5 py-2 text-sm font-medium text-red-600 shadow-sm transition-all hover:bg-red-50 hover:shadow-md disabled:opacity-50 dark:border-red-800/40 dark:bg-neutral-900 dark:text-red-400 dark:hover:bg-red-950/20"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3.5 py-2 text-sm font-medium text-red-600 shadow-sm transition-gpu hover:bg-red-50 hover:shadow-md disabled:opacity-50 dark:border-red-800/40 dark:bg-neutral-900 dark:text-red-400 dark:hover:bg-red-950/20"
                         >
                             <Trash2 className="size-3.5" />
                             Delete
@@ -342,7 +342,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                             key={sev}
                                                             type="button"
                                                             onClick={() => editForm.setData('severity', sev as Severity)}
-                                                            className={`rounded-lg border px-2 py-2 text-xs font-semibold capitalize transition-all ${
+                                                            className={`rounded-lg border px-2 py-2 text-xs font-semibold capitalize transition-gpu ${
                                                                 active
                                                                     ? `${SEVERITY_COLORS[sev]} border-transparent`
                                                                     : 'border-neutral-200 text-neutral-500 hover:border-neutral-300 dark:border-neutral-700 dark:text-neutral-400'
@@ -386,7 +386,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                             <button
                                                 type="submit"
                                                 disabled={editForm.processing || !editForm.isDirty}
-                                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+                                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-gpu disabled:opacity-50"
                                             >
                                                 <Save className="size-4" />
                                                 {editForm.processing ? 'Saving...' : 'Save Changes'}
@@ -499,7 +499,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                     <img
                                                         src={m.url}
                                                         alt="Evidence"
-                                                        className="aspect-video w-full object-cover ring-1 ring-neutral-200/60 transition-all duration-300 group-hover:scale-105 group-hover:ring-2 group-hover:ring-neutral-400 dark:ring-neutral-700/60"
+                                                        className="aspect-video w-full object-cover ring-1 ring-neutral-200/60 transition-gpu duration-300 group-hover:scale-105 group-hover:ring-2 group-hover:ring-neutral-400 dark:ring-neutral-700/60"
                                                     />
                                                     <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
                                                         <ExternalLink className="size-5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
@@ -722,7 +722,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         <button
                                             type="submit"
                                             disabled={verifyForm.processing}
-                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-gpu disabled:opacity-50"
                                         >
                                             <CheckCircle2 className="size-4" />
                                             Verify Report
@@ -762,7 +762,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                         key={t.id}
                                                         type="button"
                                                         onClick={() => assignForm.setData('team_id', String(t.id))}
-                                                        className={`w-full rounded-lg border p-2.5 text-left transition-all ${
+                                                        className={`w-full rounded-lg border p-2.5 text-left transition-gpu ${
                                                             selected
                                                                 ? 'border-blue-400 bg-blue-50 ring-1 ring-blue-200 dark:border-blue-500 dark:bg-blue-950/30 dark:ring-blue-800'
                                                                 : 'border-transparent bg-white hover:border-neutral-200 hover:bg-neutral-50 dark:bg-neutral-800 dark:hover:border-neutral-600 dark:hover:bg-neutral-700/50'
@@ -800,7 +800,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         <button
                                             type="submit"
                                             disabled={assignForm.processing}
-                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition-all hover:bg-neutral-50 hover:shadow-md disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition-gpu hover:bg-neutral-50 hover:shadow-md disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                                         >
                                             <UserCheck className="size-4" />
                                             {report.assigned_team ? 'Reassign' : report.status === 'acknowledged' ? 'Escalate & Assign' : 'Assign'}
@@ -823,7 +823,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         <button
                                             type="submit"
                                             disabled={rejectForm.processing}
-                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-red-700 hover:shadow-md disabled:opacity-50"
+                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-gpu hover:bg-red-700 hover:shadow-md disabled:opacity-50"
                                         >
                                             <XCircle className="size-4" />
                                             Reject
@@ -858,7 +858,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         <button
                                             type="submit"
                                             disabled={resolveForm.processing || !resolveForm.data.notes.trim()}
-                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 hover:shadow-md disabled:opacity-50"
+                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-gpu hover:bg-emerald-700 hover:shadow-md disabled:opacity-50"
                                         >
                                             <CheckCircle2 className="size-4" />
                                             Mark as Resolved
@@ -871,7 +871,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         <button
                                             type="submit"
                                             disabled={reopenForm.processing}
-                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border-2 border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm font-semibold text-neutral-700 transition-all hover:bg-neutral-100 hover:shadow-sm disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border-2 border-neutral-200 bg-neutral-50 px-4 py-2.5 text-sm font-semibold text-neutral-700 transition-gpu hover:bg-neutral-100 hover:shadow-sm disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                                         >
                                             <RefreshCw className="size-4" />
                                             Reopen Report
@@ -1124,7 +1124,7 @@ function SlaComplianceCard({ tracking }: { tracking: SlaTracking[] }) {
                             </div>
                             <div className="h-2 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
                                 <div
-                                    className={`h-full rounded-full transition-all duration-500 ${SLA_BAR_COLORS[status]}`}
+                                    className={`h-full rounded-full transition-gpu duration-500 ${SLA_BAR_COLORS[status]}`}
                                     style={{ width: `${Math.min(pct, 100)}%` }}
                                 />
                             </div>

@@ -763,7 +763,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                 />
 
                 {/* ── Navbar ─────────────────────────────────────────── */}
-                <header className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
+                <header className={`fixed inset-x-0 top-0 z-50 transition-gpu duration-500 ${
                     scrolled
                         ? isDark
                             ? 'bg-[#06090f]/80 shadow-2xl shadow-black/40 backdrop-blur-2xl backdrop-saturate-150'
@@ -777,8 +777,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                     <nav className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 sm:py-4 lg:px-10">
                         <Link href="/" className="group flex items-center gap-2.5 sm:gap-3">
-                            <div className="relative transition-all duration-300 group-hover:scale-110">
-                                <AppLogoIcon className={`size-9 sm:size-10 rounded-[13px] sm:rounded-[14px] shadow-xl transition-all duration-300 ${scrolled ? 'shadow-blue-900/30' : 'shadow-blue-900/20'} group-hover:shadow-blue-900/40`} />
+                            <div className="relative transition-gpu duration-300 group-hover:scale-110">
+                                <AppLogoIcon className={`size-9 sm:size-10 rounded-[13px] sm:rounded-[14px] shadow-xl transition-gpu duration-300 ${scrolled ? 'shadow-blue-900/30' : 'shadow-blue-900/20'} group-hover:shadow-blue-900/40`} />
                             </div>
                             <span className="text-[1.05rem] sm:text-[1.15rem] font-bold tracking-tight">
                                 <span className={isDark ? 'text-white' : 'text-slate-900'}>Flood</span>
@@ -798,14 +798,14 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 ref={themeBtnRef}
                                 onClick={handleThemeToggle}
                                 aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                                className={`flex size-9 items-center justify-center rounded-xl transition-all duration-300 hover:scale-110 active:scale-95 ${isDark ? 'text-amber-400 hover:bg-white/[0.06]' : 'text-indigo-500 hover:bg-neutral-100'}`}
+                                className={`flex size-9 items-center justify-center rounded-xl transition-gpu duration-300 hover:scale-110 active:scale-95 ${isDark ? 'text-amber-400 hover:bg-white/[0.06]' : 'text-indigo-500 hover:bg-neutral-100'}`}
                             >
                                 {isDark ? <Sun className="size-[18px] sm:size-4" /> : <Moon className="size-[18px] sm:size-4" />}
                             </button>
 
                             <a
                                 href="https://github.com/gianpaolo29/FloodTrack/releases/download/v1.2/FloodTrack.apk"
-                                className={`group flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold transition-all duration-300 hover:scale-105 active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm ${isDark ? 'bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-400 hover:from-cyan-500/20 hover:to-blue-500/20' : 'bg-gradient-to-r from-cyan-50 to-blue-50 text-blue-600 hover:from-cyan-100 hover:to-blue-100'}`}
+                                className={`group flex items-center gap-1.5 rounded-xl px-3 py-2 text-[13px] font-semibold transition-gpu duration-300 hover:scale-105 active:scale-95 sm:gap-2 sm:px-4 sm:py-2.5 sm:text-sm ${isDark ? 'bg-gradient-to-r from-cyan-500/10 to-blue-500/10 text-cyan-400 hover:from-cyan-500/20 hover:to-blue-500/20' : 'bg-gradient-to-r from-cyan-50 to-blue-50 text-blue-600 hover:from-cyan-100 hover:to-blue-100'}`}
                             >
                                 <Download className="size-4 transition-transform duration-300 group-hover:translate-y-0.5" />
                                 <span className="hidden sm:inline">Download App</span>
@@ -944,7 +944,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     <div className="w-full sm:w-auto">
                                         <Magnet padding={60} magnetStrength={3}>
                                             <StarBorder color={isDark ? 'rgba(56,189,248,0.6)' : 'rgba(59,130,246,0.5)'} speed="5s" thickness={1} className="rounded-2xl">
-                                                <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-7 py-3.5 text-sm font-bold text-white shadow-2xl text-center transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:shadow-cyan-500/25 active:scale-[0.97]">
+                                                <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-7 py-3.5 text-sm font-bold text-white shadow-2xl text-center transition-gpu duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:shadow-cyan-500/25 active:scale-[0.97]">
                                                     <span className="relative z-10 flex items-center justify-center gap-2.5">
                                                         Create free account
                                                         <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -958,10 +958,10 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     <Magnet padding={50} magnetStrength={4}>
                                         <Link
                                             href={auth.user ? (auth.user.role === 'admin' ? '/admin' : dashboard()) : login()}
-                                            className={`group flex items-center justify-center gap-2 rounded-2xl border px-7 py-3.5 text-sm font-semibold backdrop-blur-md transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white/90 hover:border-white/[0.12]' : 'border-neutral-200/80 bg-white/70 text-slate-600 hover:bg-white hover:text-slate-900 hover:border-blue-200/60 shadow-lg shadow-blue-500/[0.04] ring-1 ring-neutral-100 hover:ring-blue-100/50'}`}
+                                            className={`group flex items-center justify-center gap-2 rounded-2xl border px-7 py-3.5 text-sm font-semibold backdrop-blur-md transition-gpu duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white/90 hover:border-white/[0.12]' : 'border-neutral-200/80 bg-white/70 text-slate-600 hover:bg-white hover:text-slate-900 hover:border-blue-200/60 shadow-lg shadow-blue-500/[0.04] ring-1 ring-neutral-100 hover:ring-blue-100/50'}`}
                                         >
                                             {auth.user ? 'Go to dashboard' : 'Sign in'}
-                                            <ArrowUpRight className="size-4 opacity-40 transition-all duration-300 group-hover:opacity-80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                                            <ArrowUpRight className="size-4 opacity-40 transition-gpu duration-300 group-hover:opacity-80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                                         </Link>
                                     </Magnet>
                                 </div>
@@ -997,7 +997,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                     <section className="relative px-3 py-10 sm:px-6 sm:py-16" ref={bentoRef}>
                         <div className="mx-auto max-w-6xl">
                             {/* Glass container */}
-                            <div className={`relative overflow-hidden rounded-2xl sm:rounded-[28px] border p-1 backdrop-blur-xl transition-all duration-[1000ms] ${isDark ? 'border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-white/[0.01]' : 'border-neutral-200/80 bg-white/80 shadow-2xl shadow-blue-500/[0.04] ring-1 ring-neutral-100'} ${bentoIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                            <div className={`relative overflow-hidden rounded-2xl sm:rounded-[28px] border p-1 backdrop-blur-xl transition-gpu duration-[1000ms] ${isDark ? 'border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-white/[0.01]' : 'border-neutral-200/80 bg-white/80 shadow-2xl shadow-blue-500/[0.04] ring-1 ring-neutral-100'} ${bentoIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                                 {/* Animated top border glow */}
                                 <div className="absolute inset-x-0 top-0 h-px animated-border" />
 
@@ -1012,7 +1012,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                         return (
                                             <div
                                                 key={s.label}
-                                                className={`group relative flex flex-col items-center justify-center px-4 py-8 text-center transition-all duration-500 sm:py-10 ${isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-neutral-50'} ${bentoIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'} ${i < 2 ? `border-b sm:border-b-0 ${isDark ? 'border-white/[0.04]' : 'border-neutral-100'}` : ''} ${i % 2 === 0 ? `border-r sm:border-r-0 ${isDark ? 'border-white/[0.04]' : 'border-neutral-100'}` : ''}`}
+                                                className={`group relative flex flex-col items-center justify-center px-4 py-8 text-center transition-gpu duration-500 sm:py-10 ${isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-neutral-50'} ${bentoIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'} ${i < 2 ? `border-b sm:border-b-0 ${isDark ? 'border-white/[0.04]' : 'border-neutral-100'}` : ''} ${i % 2 === 0 ? `border-r sm:border-r-0 ${isDark ? 'border-white/[0.04]' : 'border-neutral-100'}` : ''}`}
                                                 style={{ transitionDelay: `${i * 100}ms` }}
                                             >
                                                 {/* Hover glow */}
@@ -1021,7 +1021,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                 />
                                                 <div
                                                     ref={(el) => { statsIconRefs.current[i] = el; }}
-                                                    className={`relative mb-4 inline-flex rounded-2xl bg-gradient-to-br ${s.gradient} p-3 shadow-lg transition-all duration-500 group-hover:scale-110 group-hover:shadow-xl`}
+                                                    className={`relative mb-4 inline-flex rounded-2xl bg-gradient-to-br ${s.gradient} p-3 shadow-lg transition-gpu duration-500 group-hover:scale-110 group-hover:shadow-xl`}
                                                     style={{ opacity: bentoIn ? undefined : 0 }}
                                                 >
                                                     <Icon className="size-5 text-white" />
@@ -1091,13 +1091,13 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     return (
                                         <SpotlightCard
                                             key={f.title}
-                                            className={`feat-card group rounded-2xl sm:rounded-[20px] border p-5 transition-all duration-500 sm:p-8 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'}`}
+                                            className={`feat-card group rounded-2xl sm:rounded-[20px] border p-5 transition-gpu duration-500 sm:p-8 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'}`}
                                             spotlightColor={isDark ? 'rgba(56, 189, 248, 0.08)' : 'rgba(59, 130, 246, 0.06)'}
                                         >
                                             {/* Shimmer sweep on hover */}
                                             <div className={`pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-in-out bg-gradient-to-r from-transparent to-transparent skew-x-[-20deg] ${isDark ? 'via-white/[0.03]' : 'via-blue-500/[0.03]'}`} />
 
-                                            <div className={`feat-icon relative mb-6 inline-flex rounded-2xl bg-gradient-to-br ${f.grad} p-3.5 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-2xl`}>
+                                            <div className={`feat-icon relative mb-6 inline-flex rounded-2xl bg-gradient-to-br ${f.grad} p-3.5 shadow-xl transition-gpu duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:shadow-2xl`}>
                                                 <Icon className="size-[22px] text-white transition-transform duration-500 group-hover:scale-110" />
                                                 <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
                                             </div>
@@ -1149,7 +1149,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 ] as const).map((s, i) => {
                                     const Icon = s.icon;
                                     return (
-                                        <div key={s.n} className={`relative flex flex-col items-center text-center transition-all duration-[800ms] ease-out ${stepsIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
+                                        <div key={s.n} className={`relative flex flex-col items-center text-center transition-gpu duration-[800ms] ease-out ${stepsIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'}`}
                                             style={{ transitionDelay: `${i * 200 + 200}ms` }}
                                         >
                                             <StepCard isDark={isDark} grad={s.grad} ring={s.ring} stepsIn={stepsIn} index={i}>
@@ -1257,7 +1257,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     sub="Know where to go when it matters. All locations are verified by MDRRMO."
                                 />
 
-                                <div className={`transition-all duration-[800ms] ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                                <div className={`transition-gpu duration-[800ms] ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                                     {/* Map -- glass frame */}
                                     <div className="relative group/map">
                                         <div className={`absolute -inset-px rounded-2xl sm:rounded-[24px] bg-gradient-to-b to-transparent opacity-0 transition-opacity duration-700 group-hover/map:opacity-100 ${isDark ? 'from-white/[0.08] via-white/[0.02]' : 'from-neutral-200/40 via-neutral-100/20'}`} />
@@ -1281,7 +1281,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 </div>
 
                                 {/* Emergency contact strip -- glass */}
-                                <div className={`mt-10 relative overflow-hidden rounded-2xl border backdrop-blur-md transition-all duration-[800ms] delay-300 ${isDark ? 'border-white/[0.05] bg-white/[0.02]' : 'border-neutral-200/70 bg-white/60 ring-1 ring-neutral-100'} ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
+                                <div className={`mt-10 relative overflow-hidden rounded-2xl border backdrop-blur-md transition-gpu duration-[800ms] delay-300 ${isDark ? 'border-white/[0.05] bg-white/[0.02]' : 'border-neutral-200/70 bg-white/60 ring-1 ring-neutral-100'} ${evacIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
                                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/20 to-transparent" />
                                     <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 px-4 sm:px-6 py-4 sm:py-5">
                                         {([
@@ -1321,7 +1321,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 />
                             </div>
 
-                            <div className={`relative mx-auto max-w-3xl text-center transition-all duration-[800ms] ${ctaIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+                            <div className={`relative mx-auto max-w-3xl text-center transition-gpu duration-[800ms] ${ctaIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
                                 <div ref={ctaLogoRef} className="mb-6 sm:mb-8 inline-flex relative rounded-[20px] sm:rounded-[28px]">
                                     <AppLogoIcon className="size-16 sm:size-24 rounded-[20px] sm:rounded-[28px] shadow-2xl shadow-blue-900/20" />
                                     {/* Ripple rings via anime.js-driven pseudo replacement */}
@@ -1338,7 +1338,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     <div ref={ctaButtonsRef} className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
                                         <div className="w-full sm:w-auto" style={{ opacity: 0 }}><Magnet padding={60} magnetStrength={3}>
                                             <StarBorder color={isDark ? 'rgba(56,189,248,0.6)' : 'rgba(59,130,246,0.5)'} speed="5s" thickness={1} className="rounded-2xl">
-                                                <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-2xl transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:shadow-cyan-500/25 active:scale-[0.97]">
+                                                <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-2xl transition-gpu duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:shadow-cyan-500/25 active:scale-[0.97]">
                                                     <span className="relative z-10 flex items-center gap-2.5">
                                                         Create free account
                                                         <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -1347,7 +1347,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                             </StarBorder>
                                         </Magnet></div>
                                         <div className="w-full sm:w-auto" style={{ opacity: 0 }}><Magnet padding={50} magnetStrength={4}>
-                                            <Link href={login()} className={`group flex items-center justify-center gap-2 rounded-2xl border px-8 py-3.5 text-sm font-bold backdrop-blur-md transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/80' : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 shadow-sm'}`}>
+                                            <Link href={login()} className={`group flex items-center justify-center gap-2 rounded-2xl border px-8 py-3.5 text-sm font-bold backdrop-blur-md transition-gpu duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/80' : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 shadow-sm'}`}>
                                                 Sign in
                                             </Link>
                                         </Magnet></div>
@@ -1402,7 +1402,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     ]).map(l => (
                                         <li key={l.label}>
                                             <Link href={l.href} className={`group inline-flex items-center justify-center gap-2 text-[13px] transition-colors duration-200 sm:justify-start ${isDark ? 'text-white/30 hover:text-white/60' : 'text-neutral-400 hover:text-neutral-600'}`}>
-                                                <ArrowRight className="size-3 opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 hidden sm:block" />
+                                                <ArrowRight className="size-3 opacity-0 -translate-x-1 transition-gpu duration-200 group-hover:opacity-100 group-hover:translate-x-0 hidden sm:block" />
                                                 {l.label}
                                             </Link>
                                         </li>
@@ -1672,10 +1672,10 @@ function StepCard({ isDark, grad, ring, stepsIn, index, children }: {
     return (
         <div
             ref={cardRef}
-            className={`group/step relative z-10 mb-6 sm:mb-8 flex size-24 sm:size-36 flex-col items-center justify-center rounded-[22px] sm:rounded-[28px] border shadow-2xl ${ring} transition-all duration-500 hover:scale-110 cursor-pointer ${isDark ? 'border-white/[0.05] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-3xl' : 'border-neutral-200/70 bg-white hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'}`}
+            className={`group/step relative z-10 mb-6 sm:mb-8 flex size-24 sm:size-36 flex-col items-center justify-center rounded-[22px] sm:rounded-[28px] border shadow-2xl ${ring} transition-gpu duration-500 hover:scale-110 cursor-pointer ${isDark ? 'border-white/[0.05] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-3xl' : 'border-neutral-200/70 bg-white hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'}`}
         >
             <div ref={ringRef} className="absolute inset-0 rounded-[28px]" style={{ opacity: 0 }} />
-            <div className={`rounded-xl sm:rounded-2xl bg-gradient-to-br ${grad} p-3 sm:p-4 shadow-xl transition-all duration-500 group-hover/step:-translate-y-1 group-hover/step:shadow-2xl`}>
+            <div className={`rounded-xl sm:rounded-2xl bg-gradient-to-br ${grad} p-3 sm:p-4 shadow-xl transition-gpu duration-500 group-hover/step:-translate-y-1 group-hover/step:shadow-2xl`}>
                 {children}
                 <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
             </div>
@@ -1718,29 +1718,29 @@ function SeverityGrid({ isDark, sevIn, activeSev, setActiveSev }: {
                 return (
                     <SpotlightCard
                         key={s.level}
-                        className={`sev-card group cursor-pointer rounded-2xl sm:rounded-[20px] border p-4 transition-all duration-500 sm:p-7 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'} ${open ? isDark ? 'scale-[1.03] border-white/[0.12] shadow-2xl' : 'scale-[1.03] border-blue-200/80 shadow-2xl shadow-blue-500/[0.06] ring-1 ring-blue-100/50' : ''}`}
+                        className={`sev-card group cursor-pointer rounded-2xl sm:rounded-[20px] border p-4 transition-gpu duration-500 sm:p-7 hover:-translate-y-2 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06]'} ${open ? isDark ? 'scale-[1.03] border-white/[0.12] shadow-2xl' : 'scale-[1.03] border-blue-200/80 shadow-2xl shadow-blue-500/[0.06] ring-1 ring-blue-100/50' : ''}`}
                         spotlightColor={`${s.color}15`}
                     >
                         <div onClick={() => setActiveSev(activeSev === i ? null : i)} className="relative">
                             {/* Shimmer sweep */}
                             <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1200ms] ease-in-out bg-gradient-to-r from-transparent via-white/[0.02] to-transparent skew-x-[-20deg]" />
 
-                            <div className="relative mb-3 sm:mb-5 inline-flex items-center gap-2 sm:gap-2.5 rounded-xl sm:rounded-[14px] px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold transition-all duration-500 group-hover:scale-105"
+                            <div className="relative mb-3 sm:mb-5 inline-flex items-center gap-2 sm:gap-2.5 rounded-xl sm:rounded-[14px] px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs sm:text-sm font-bold transition-gpu duration-500 group-hover:scale-105"
                                 style={{ backgroundColor: s.color + '12', color: s.color, boxShadow: open ? `0 0 24px ${s.color}20` : `0 0 0 ${s.color}00` }}
                             >
                                 <Icon className="size-4 sm:size-[18px] transition-transform duration-500 group-hover:rotate-12 group-hover:scale-110" />
                                 {s.level}
                             </div>
                             <p className={`relative text-[14px] font-medium transition-colors duration-300 ${isDark ? 'text-white/70 group-hover:text-white/85' : 'text-neutral-600 group-hover:text-neutral-800'}`}>{s.meaning}</p>
-                            <div className="overflow-hidden transition-all duration-500"
+                            <div className="overflow-hidden transition-gpu duration-500"
                                 style={{ maxHeight: open ? '120px' : '0', opacity: open ? 1 : 0 }}
                             >
                                 <p className={`mt-3 text-[13px] leading-relaxed ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>{s.detail}</p>
                             </div>
-                            <div className="relative mt-4 h-[2px] rounded-full overflow-hidden transition-all duration-700"
+                            <div className="relative mt-4 h-[2px] rounded-full overflow-hidden transition-gpu duration-700"
                                 style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.04)', width: '100%' }}
                             >
-                                <div className="absolute inset-y-0 left-0 rounded-full transition-all duration-700"
+                                <div className="absolute inset-y-0 left-0 rounded-full transition-gpu duration-700"
                                     style={{ backgroundColor: s.color + '50', width: open ? '100%' : '0%' }}
                                 />
                             </div>
@@ -1794,24 +1794,24 @@ function RolesGrid({ isDark, rolesIn }: { isDark: boolean; rolesIn: boolean }) {
                 return (
                     <SpotlightCard
                         key={r.role}
-                        className={`role-card group rounded-2xl sm:rounded-[20px] border p-5 transition-all duration-500 sm:p-9 hover:-translate-y-3 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'}`}
+                        className={`role-card group rounded-2xl sm:rounded-[20px] border p-5 transition-gpu duration-500 sm:p-9 hover:-translate-y-3 ${isDark ? 'border-white/[0.04] bg-[#0a0e17] hover:border-white/[0.1] hover:shadow-2xl hover:shadow-black/30' : 'border-neutral-200/70 bg-white/80 backdrop-blur-sm hover:border-blue-200/60 hover:shadow-2xl hover:shadow-blue-500/[0.06] ring-1 ring-transparent hover:ring-blue-100/50'}`}
                         spotlightColor={isDark ? `rgba(${r.role === 'Residents' ? '56,189,248' : r.role === 'Responders' ? '6,182,212' : '167,139,250'}, 0.1)` : `rgba(${r.role === 'Residents' ? '56,189,248' : r.role === 'Responders' ? '6,182,212' : '167,139,250'}, 0.08)`}
                     >
                         {/* Shimmer sweep */}
                         <div className="pointer-events-none absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-[1200ms] ease-in-out bg-gradient-to-r from-transparent via-white/[0.03] to-transparent skew-x-[-20deg]" />
 
-                        <div className={`role-icon relative mb-4 sm:mb-6 inline-flex rounded-[18px] sm:rounded-[22px] bg-gradient-to-br ${r.grad} p-3 sm:p-4 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-2xl`}>
+                        <div className={`role-icon relative mb-4 sm:mb-6 inline-flex rounded-[18px] sm:rounded-[22px] bg-gradient-to-br ${r.grad} p-3 sm:p-4 shadow-xl transition-gpu duration-500 group-hover:scale-110 group-hover:-rotate-3 group-hover:shadow-2xl`}>
                             <Icon className="size-6 sm:size-7 text-white transition-transform duration-500 group-hover:scale-110" />
                             <div className="absolute inset-[1px] rounded-[17px] sm:rounded-[21px] bg-gradient-to-b from-white/20 to-transparent" />
                         </div>
                         <h3 className={`mb-1.5 text-xl font-bold transition-colors duration-300 ${isDark ? 'text-white/90 group-hover:text-white' : 'text-neutral-800 group-hover:text-neutral-900'}`}>{r.role}</h3>
-                        <div className={`mb-6 h-[3px] w-10 rounded-full ${r.accent} opacity-50 transition-all duration-700 group-hover:w-24 group-hover:opacity-100`} />
+                        <div className={`mb-6 h-[3px] w-10 rounded-full ${r.accent} opacity-50 transition-gpu duration-700 group-hover:w-24 group-hover:opacity-100`} />
                         <ul className="space-y-3.5">
                             {r.points.map((p, pi) => (
-                                <li key={p} className={`flex items-start gap-3 text-[14px] font-[350] transition-all duration-500 ${isDark ? 'text-white/40 group-hover:text-white/55' : 'text-neutral-500 group-hover:text-neutral-600'}`}
+                                <li key={p} className={`flex items-start gap-3 text-[14px] font-[350] transition-gpu duration-500 ${isDark ? 'text-white/40 group-hover:text-white/55' : 'text-neutral-500 group-hover:text-neutral-600'}`}
                                     style={{ transitionDelay: `${pi * 50}ms` }}
                                 >
-                                    <CheckCircle2 className="mt-[3px] size-4 shrink-0 text-emerald-500/50 transition-all duration-500 group-hover:text-emerald-400/80 group-hover:scale-110" />
+                                    <CheckCircle2 className="mt-[3px] size-4 shrink-0 text-emerald-500/50 transition-gpu duration-500 group-hover:text-emerald-400/80 group-hover:scale-110" />
                                     <span>{p}</span>
                                 </li>
                             ))}
@@ -1936,14 +1936,14 @@ function PhoneDemo({ visible }: { visible: boolean }) {
     }, []);
 
     return (
-        <div className={`grid items-center gap-8 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_380px] transition-all duration-[800ms] ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div className={`grid items-center gap-8 lg:grid-cols-[1fr_340px] xl:grid-cols-[1fr_380px] transition-gpu duration-[800ms] ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             {/* Left -- Timeline steps */}
             <div className="relative order-2 lg:order-1">
                 {/* Vertical connector line */}
                 <div className="absolute left-[23px] top-8 bottom-8 hidden lg:block">
                     <div className={`h-full w-px bg-gradient-to-b ${isDark ? 'from-white/[0.04] via-white/[0.06] to-white/[0.04]' : 'from-neutral-200/30 via-neutral-200/60 to-neutral-200/30'}`} />
                     {/* Animated fill */}
-                    <div className="absolute top-0 left-0 w-px transition-all duration-700 ease-out rounded-full"
+                    <div className="absolute top-0 left-0 w-px transition-gpu duration-700 ease-out rounded-full"
                         style={{ height: `${(active / 2) * 100}%`, background: `linear-gradient(to bottom, ${DEMO_STEPS[0].color}60, ${DEMO_STEPS[active].color}80)` }}
                     />
                 </div>
@@ -1957,7 +1957,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                             <button
                                 key={i}
                                 onClick={() => setActive(i)}
-                                className={`group relative flex w-full items-start gap-5 rounded-2xl border p-4 text-left transition-all duration-500 sm:p-5 ${
+                                className={`group relative flex w-full items-start gap-5 rounded-2xl border p-4 text-left transition-gpu duration-500 sm:p-5 ${
                                     isActive
                                         ? isDark
                                             ? 'border-white/[0.08] bg-white/[0.03] scale-[1.02] shadow-xl shadow-black/20'
@@ -1976,7 +1976,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                 )}
 
                                 {/* Icon node */}
-                                <div className={`relative z-10 flex size-[46px] shrink-0 items-center justify-center rounded-2xl transition-all duration-500 ${
+                                <div className={`relative z-10 flex size-[46px] shrink-0 items-center justify-center rounded-2xl transition-gpu duration-500 ${
                                     isActive
                                         ? `bg-gradient-to-br ${s.gradient} shadow-lg`
                                         : isPast
@@ -1984,9 +1984,9 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                             : isDark ? 'bg-white/[0.03]' : 'bg-neutral-50'
                                 }`} style={isActive ? { boxShadow: `0 8px 24px ${s.color}25` } : {}}>
                                     {isActive && <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />}
-                                    <Icon className={`size-5 transition-all duration-500 ${isActive ? 'text-white scale-110' : isPast ? isDark ? 'text-white/40' : 'text-neutral-400' : isDark ? 'text-white/20' : 'text-neutral-300'}`} />
+                                    <Icon className={`size-5 transition-gpu duration-500 ${isActive ? 'text-white scale-110' : isPast ? isDark ? 'text-white/40' : 'text-neutral-400' : isDark ? 'text-white/20' : 'text-neutral-300'}`} />
                                     {/* Step number */}
-                                    <span className={`absolute -top-1 -right-1 flex size-[18px] items-center justify-center rounded-full text-[9px] font-bold transition-all duration-300 ${
+                                    <span className={`absolute -top-1 -right-1 flex size-[18px] items-center justify-center rounded-full text-[9px] font-bold transition-gpu duration-300 ${
                                         isActive ? isDark ? 'bg-white text-[#06090f] shadow-md' : 'bg-neutral-900 text-white shadow-md' : isPast ? isDark ? 'bg-white/10 text-white/40' : 'bg-neutral-200 text-neutral-500' : isDark ? 'bg-white/[0.05] text-white/20' : 'bg-neutral-100 text-neutral-400'
                                     }`}>{i + 1}</span>
                                 </div>
@@ -1994,13 +1994,13 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                 {/* Text */}
                                 <div className="relative min-w-0 pt-0.5">
                                     <h4 className={`text-[15px] font-semibold transition-colors duration-300 ${isActive ? isDark ? 'text-white' : 'text-neutral-900' : isDark ? 'text-white/40' : 'text-neutral-400'}`}>{s.title}</h4>
-                                    <p className={`mt-1 text-[13px] leading-relaxed font-[350] transition-all duration-500 overflow-hidden ${
+                                    <p className={`mt-1 text-[13px] leading-relaxed font-[350] transition-gpu duration-500 overflow-hidden ${
                                         isActive ? isDark ? 'text-white/45 max-h-20 opacity-100' : 'text-neutral-500 max-h-20 opacity-100' : isDark ? 'text-white/20 max-h-0 sm:max-h-20 opacity-0 sm:opacity-100' : 'text-neutral-300 max-h-0 sm:max-h-20 opacity-0 sm:opacity-100'
                                     }`}>{s.desc}</p>
                                 </div>
 
                                 {/* Active arrow indicator */}
-                                <ArrowRight className={`hidden lg:block ml-auto mt-3 size-4 shrink-0 transition-all duration-300 ${isActive ? isDark ? 'text-white/30 translate-x-0 opacity-100' : 'text-neutral-400 translate-x-0 opacity-100' : 'text-transparent -translate-x-2 opacity-0'}`} />
+                                <ArrowRight className={`hidden lg:block ml-auto mt-3 size-4 shrink-0 transition-gpu duration-300 ${isActive ? isDark ? 'text-white/30 translate-x-0 opacity-100' : 'text-neutral-400 translate-x-0 opacity-100' : 'text-transparent -translate-x-2 opacity-0'}`} />
                             </button>
                         );
                     })}
@@ -2057,12 +2057,12 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                 <div className="relative z-20 mx-3 mb-2 mt-1 flex items-center gap-2.5 rounded-2xl bg-white/[0.03] px-3 py-2.5 border border-white/[0.04]">
                                     <AppLogoIcon className="size-8 rounded-xl shadow-md" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-[12px] font-bold text-white/80 transition-all duration-300">{DEMO_STEPS[active].title}</p>
+                                        <p className="text-[12px] font-bold text-white/80 transition-gpu duration-300">{DEMO_STEPS[active].title}</p>
                                         <p className="text-[9px] text-white/25 font-medium">Step {active + 1} of 3</p>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         {[0, 1, 2].map(i => (
-                                            <div key={i} className={`h-[4px] rounded-full transition-all duration-500 ${i <= active ? 'w-3' : 'w-[4px]'}`}
+                                            <div key={i} className={`h-[4px] rounded-full transition-gpu duration-500 ${i <= active ? 'w-3' : 'w-[4px]'}`}
                                                 style={{ backgroundColor: i <= active ? DEMO_STEPS[Math.min(i, 2)].color : 'rgba(255,255,255,0.06)' }}
                                             />
                                         ))}
@@ -2072,7 +2072,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                 {/* Screen content */}
                                 <div className="relative h-[380px] sm:h-[410px]">
                                     {/* Screen 0: Flood Depth */}
-                                    <div className={`absolute inset-0 transition-all duration-500 ${active === 0 ? 'opacity-100 translate-y-0' : active > 0 ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                                    <div className={`absolute inset-0 transition-gpu duration-500 ${active === 0 ? 'opacity-100 translate-y-0' : active > 0 ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
                                         <div className="flex flex-col h-full p-3.5 gap-2">
                                             <p className="text-[11px] font-semibold text-white/30 px-1 mb-1">How deep is the flood?</p>
                                             {([
@@ -2083,13 +2083,13 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                             ] as const).map((s) => (
                                                 <div
                                                     key={s.level}
-                                                    className={`flex items-center gap-3 rounded-2xl px-4 py-3 border transition-all duration-300 ${
+                                                    className={`flex items-center gap-3 rounded-2xl px-4 py-3 border transition-gpu duration-300 ${
                                                         s.selected
                                                             ? 'border-white/[0.1] bg-white/[0.04] shadow-lg'
                                                             : 'border-white/[0.03] bg-white/[0.01]'
                                                     }`}
                                                 >
-                                                    <div className={`relative size-4 rounded-full border-2 transition-all duration-300 ${s.selected ? 'border-transparent' : 'border-white/10'}`}
+                                                    <div className={`relative size-4 rounded-full border-2 transition-gpu duration-300 ${s.selected ? 'border-transparent' : 'border-white/10'}`}
                                                         style={s.selected ? { backgroundColor: s.color, boxShadow: `0 0 12px ${s.color}50` } : {}}
                                                     >
                                                         {!s.selected && <div className="absolute inset-1 rounded-full bg-white/[0.04]" />}
@@ -2122,7 +2122,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                     </div>
 
                                     {/* Screen 1: Evidence */}
-                                    <div className={`absolute inset-0 transition-all duration-500 ${active === 1 ? 'opacity-100 translate-y-0' : active > 1 ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                                    <div className={`absolute inset-0 transition-gpu duration-500 ${active === 1 ? 'opacity-100 translate-y-0' : active > 1 ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
                                         <div className="flex flex-col h-full p-3.5 gap-2.5">
                                             <div className="grid grid-cols-2 gap-2 flex-1">
                                                 <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-blue-950/50 to-cyan-950/30 border border-white/[0.06] flex items-center justify-center">
@@ -2165,7 +2165,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                     </div>
 
                                     {/* Screen 2: Success */}
-                                    <div className={`absolute inset-0 transition-all duration-500 ${active === 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                                    <div className={`absolute inset-0 transition-gpu duration-500 ${active === 2 ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
                                         <div className="flex flex-col h-full items-center justify-center p-5 text-center">
                                             {/* Success icon */}
                                             <div className="relative mb-5">
@@ -2306,7 +2306,7 @@ function EvacuationMap({ centers }: { centers: EvacuationCenterData[] }) {
 
 function PremiumButton({ href, children }: { href: string; children: ReactNode }) {
     return (
-        <Link href={href} className="group relative overflow-hidden rounded-[14px] bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow-xl shadow-blue-500/15 transition-all duration-300 hover:shadow-blue-500/30 hover:scale-105 active:scale-95">
+        <Link href={href} className="group relative overflow-hidden rounded-[14px] bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow-xl shadow-blue-500/15 transition-gpu duration-300 hover:shadow-blue-500/30 hover:scale-105 active:scale-95">
             <span className="relative z-10">{children}</span>
             <div className="absolute inset-[1px] rounded-[13px] bg-gradient-to-b from-white/15 to-transparent opacity-100" />
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -2385,7 +2385,7 @@ function SectionHead({ visible, badge, badgeIcon, badgeColor, title, sub }: {
     const { resolvedAppearance } = useAppearance();
     const isDark = resolvedAppearance === 'dark';
     return (
-        <div className={`mb-8 text-center transition-all duration-[800ms] sm:mb-20 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
+        <div className={`mb-8 text-center transition-gpu duration-[800ms] sm:mb-20 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
             <span className={`mb-4 sm:mb-5 inline-flex items-center gap-2 rounded-full border px-3 sm:px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] ${isDark ? badgeColor : badgeColor.replace(/\/20/g, '/30').replace(/\/\[0\.06\]/g, '/[0.08]')}`}>
                 {badgeIcon}
                 {badge}
