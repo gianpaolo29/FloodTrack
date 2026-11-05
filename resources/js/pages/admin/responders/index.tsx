@@ -272,6 +272,7 @@ export default function AdminRespondersIndex({ responders, filters, barangay_lis
                                 </button>
                             )}
                         </div>
+                        <div className="ml-auto flex flex-wrap items-center gap-2">
                         <MultiSelectFilter
                             label="Status"
                             options={[
@@ -305,6 +306,7 @@ export default function AdminRespondersIndex({ responders, filters, barangay_lis
                             selected={filters.barangay ? filters.barangay.split(',') : []}
                             onChange={(vals) => filter('barangay', vals.join(','))}
                         />
+                        </div>
                     </div>
 
                     {/* Mobile card view */}

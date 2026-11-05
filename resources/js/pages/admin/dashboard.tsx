@@ -785,9 +785,11 @@ export default function AdminDashboard({
                                 <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">{t('dashboard.subtitle')}</p>
                             </div>
                         </div>
-                        <div className="relative z-30 flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/60">
-                            <DashboardFilters filters={filters} barangayList={barangay_list} period={period} customFrom={custom_from} customTo={custom_to} />
-                            <div className="h-5 w-px bg-neutral-200/80 dark:bg-neutral-700/60" />
+                        <div className="relative z-30 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-1.5 rounded-xl border border-neutral-200/80 bg-white/80 p-1.5 sm:p-1 shadow-sm backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/60">
+                            <div className="flex items-center gap-1.5">
+                                <DashboardFilters filters={filters} barangayList={barangay_list} period={period} customFrom={custom_from} customTo={custom_to} />
+                                <div className="hidden sm:block h-5 w-px bg-neutral-200/80 dark:bg-neutral-700/60" />
+                            </div>
                             <PeriodToggle bare period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin" extraParams={{
                                 ...(filters.severity ? { severity: filters.severity } : {}),
                                 ...(filters.status ? { status: filters.status } : {}),

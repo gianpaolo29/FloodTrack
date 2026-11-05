@@ -12,6 +12,9 @@ export interface TeamMember {
     avatar_url: string | null;
     is_leader: boolean;
     member_status?: ResponderStatus;
+    is_online?: boolean;
+    distance_km?: number | null;
+    location_updated_at?: string | null;
 }
 
 export interface Team {

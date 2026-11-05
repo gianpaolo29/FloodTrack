@@ -664,8 +664,18 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                             {report.team_members.map((m) => {
                                                 const ms = report.member_statuses?.find(s => s.user_id === m.id);
                                                 const status: ResponderStatus = ms?.status ?? 'pending';
+                                                const isOnline = m.is_online ?? false;
+                                                const lastSeen = m.location_updated_at
+                                                    ? (() => {
+                                                        const diff = Math.floor((Date.now() - new Date(m.location_updated_at!).getTime()) / 1000);
+                                                        if (diff < 60) return 'Just now';
+                                                        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+                                                        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+                                                        return `${Math.floor(diff / 86400)}d ago`;
+                                                    })()
+                                                    : null;
                                                 return (
-                                                    <div key={m.id} className="flex items-center gap-3 px-4 py-2.5">
+                                                    <div key={m.id} className="flex items-center gap-3 px-4 py-3">
                                                         <div className={`relative flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white shadow-sm ${m.is_leader ? 'bg-neutral-900 dark:bg-white dark:text-neutral-900' : 'bg-neutral-500 dark:bg-neutral-400'}`}>
                                                             {m.name.charAt(0).toUpperCase()}
                                                             {m.is_leader && (
@@ -677,6 +687,27 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                                 {m.name}
                                                                 {m.is_leader && <span className="ml-1.5 text-[10px] font-normal text-neutral-500 dark:text-neutral-400">Leader</span>}
                                                             </p>
+                                                            <div className="mt-0.5 flex items-center gap-2 text-[10px]">
+                                                                {isOnline ? (
+                                                                    <>
+                                                                        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                                                            <span className="relative flex size-1.5">
+                                                                                <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                                                                                <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+                                                                            </span>
+                                                                            Online
+                                                                        </span>
+                                                                        {m.distance_km != null && (
+                                                                            <span className="font-semibold text-blue-600 dark:text-blue-400">{m.distance_km} km</span>
+                                                                        )}
+                                                                        {lastSeen && (
+                                                                            <span className="text-neutral-400">{lastSeen}</span>
+                                                                        )}
+                                                                    </>
+                                                                ) : (
+                                                                    <span className="text-neutral-400 dark:text-neutral-500">Offline</span>
+                                                                )}
+                                                            </div>
                                                         </div>
                                                         <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${RESPONDER_STATUS_COLORS[status]}`}>
                                                             {RESPONDER_STATUS_LABELS[status]}
@@ -751,9 +782,14 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                             </div>
                                         )}
                                         <div className="max-h-[220px] space-y-1.5 overflow-y-auto rounded-xl border border-neutral-200 bg-neutral-50/50 p-1.5 dark:border-neutral-700 dark:bg-neutral-800/50">
-                                            {teams.filter((t) => {
+                                            {[...teams].filter((t) => {
                                                 const isCurrentTeam = report.assigned_team?.id === t.id;
                                                 return isCurrentTeam || (t.active_assignments ?? 0) === 0;
+                                            }).sort((a, b) => {
+                                                if (a.distance_km == null && b.distance_km == null) return 0;
+                                                if (a.distance_km == null) return 1;
+                                                if (b.distance_km == null) return -1;
+                                                return a.distance_km - b.distance_km;
                                             }).map((t) => {
                                                 const selected = assignForm.data.team_id === String(t.id);
                                                 const onShift = (t as any).is_on_shift ?? true;
@@ -793,6 +829,38 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                                 </span>
                                                             )}
                                                         </div>
+                                                        {/* Leader info */}
+                                                        {(() => {
+                                                            const leader = t.members.find((m: any) => m.id === t.leader_id);
+                                                            if (!leader) return null;
+                                                            const lOnline = (leader as any).is_online ?? false;
+                                                            const lDist = (leader as any).member_distance_km;
+                                                            const lLastSeen = (leader as any).location_updated_at
+                                                                ? (() => {
+                                                                    const diff = Math.floor((Date.now() - new Date((leader as any).location_updated_at).getTime()) / 1000);
+                                                                    if (diff < 60) return 'Just now';
+                                                                    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+                                                                    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+                                                                    return `${Math.floor(diff / 86400)}d ago`;
+                                                                })()
+                                                                : null;
+                                                            return (
+                                                                <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
+                                                                    <span className={`size-1.5 shrink-0 rounded-full ${lOnline ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-600'}`} />
+                                                                    <span className="truncate text-neutral-600 dark:text-neutral-400">
+                                                                        {leader.name} <span className="text-neutral-400 dark:text-neutral-500">★ Leader</span>
+                                                                    </span>
+                                                                    {lOnline ? (
+                                                                        <span className="ml-auto flex items-center gap-1.5 shrink-0">
+                                                                            {lDist != null && <span className="font-semibold text-blue-600 dark:text-blue-400">{lDist}km</span>}
+                                                                            {lLastSeen && <span className="text-neutral-400">{lLastSeen}</span>}
+                                                                        </span>
+                                                                    ) : (
+                                                                        <span className="ml-auto text-neutral-400 dark:text-neutral-500 shrink-0">Offline</span>
+                                                                    )}
+                                                                </div>
+                                                            );
+                                                        })()}
                                                     </button>
                                                 );
                                             })}

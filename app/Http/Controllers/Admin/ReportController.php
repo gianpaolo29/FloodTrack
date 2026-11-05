@@ -199,13 +199,24 @@ class ReportController extends Controller
             'updated_at' => $u->pivot->updated_at,
         ]);
 
-        // Build team_members with is_leader flag
-        $teamMembers = $report->responderUsers->map(fn ($u) => [
-            'id'         => $u->id,
-            'name'       => $u->name,
-            'avatar_url' => $u->avatar_url,
-            'is_leader'  => $report->assignedTeam && $report->assignedTeam->leader_id === $u->id,
-        ]);
+        // Build team_members with is_leader flag + location
+        $teamMembers = $report->responderUsers->map(function ($u) use ($report) {
+            $lat = $u->current_latitude;
+            $lng = $u->current_longitude;
+            $distanceKm = ($lat && $lng && $report->latitude && $report->longitude)
+                ? round($this->haversine($report->latitude, $report->longitude, $lat, $lng), 1)
+                : null;
+
+            return [
+                'id'                  => $u->id,
+                'name'                => $u->name,
+                'avatar_url'          => $u->avatar_url,
+                'is_leader'           => $report->assignedTeam && $report->assignedTeam->leader_id === $u->id,
+                'is_online'           => $u->current_latitude !== null && $u->location_updated_at !== null,
+                'distance_km'         => $distanceKm,
+                'location_updated_at' => $u->location_updated_at?->toIso8601String(),
+            ];
+        });
 
         return Inertia::render('admin/reports/show', [
             'report' => array_merge($report->toArray(), [
@@ -688,7 +699,7 @@ class ReportController extends Controller
         $isRedAlert = $level === 'red';
 
         $query = Team::with([
-                'members:id,name,team_id,is_on_duty',
+                'members:id,name,team_id,is_on_duty,current_latitude,current_longitude,location_updated_at',
                 'leader:id,current_latitude,current_longitude,home_latitude,home_longitude',
             ])
             ->where('is_active', true)
@@ -722,6 +733,20 @@ class ReportController extends Controller
 
                 // Indicate if this team is on the current shift
                 $team->is_on_shift = $isRedAlert || ($team->shift === $currentShift);
+
+                // Add per-member distance and online status
+                $team->members->transform(function ($member) use ($report) {
+                    $mLat = $member->current_latitude;
+                    $mLng = $member->current_longitude;
+                    $member->is_online = $mLat !== null && $member->location_updated_at !== null;
+                    $member->member_distance_km = ($mLat && $mLng && $report->latitude && $report->longitude)
+                        ? round($this->haversine($report->latitude, $report->longitude, $mLat, $mLng), 1)
+                        : null;
+                    $member->location_updated_at = $member->location_updated_at?->toIso8601String();
+                    // Hide raw coordinates from frontend
+                    unset($member->current_latitude, $member->current_longitude);
+                    return $member;
+                });
 
                 unset($team->leader);
 

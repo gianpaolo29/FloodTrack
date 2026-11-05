@@ -113,6 +113,8 @@ export default function Profile({ mustVerifyEmail, status }: Props) {
                     </p>
                 </div>
 
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start sm:gap-8">
+
                 {/* ── Profile information card ── */}
                 <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
                     {/* Card header */}
@@ -287,7 +289,7 @@ export default function Profile({ mustVerifyEmail, status }: Props) {
                         >
                             {({ errors, processing }) => (
                                 <>
-                                    <div className="grid gap-5 sm:grid-cols-3">
+                                    <div className="grid gap-5">
                                         <div className="flex flex-col gap-1.5">
                                             <Label htmlFor="current_password">Current password</Label>
                                             <PasswordInput
@@ -333,6 +335,7 @@ export default function Profile({ mustVerifyEmail, status }: Props) {
                     </div>
                 </div>
 
+                </div>
             </div>
         </>
     );

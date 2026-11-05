@@ -82,13 +82,13 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
 
                         {/* Logo */}
                         <div>
-                            <Link href={home()} className="group inline-flex items-center gap-3">
-                                <div className="flex size-10 items-center justify-center transition-all duration-300 group-hover:scale-110">
-                                    <AppLogoIcon className="size-10 rounded-[14px] shadow-xl shadow-black/10" />
-                                </div>
-                                <span className="text-lg font-bold tracking-tight text-white drop-shadow-sm">
-                                    Flood<GradientTextRB colors={['#67e8f9', '#60a5fa', '#67e8f9']} animationSpeed={4} className="text-lg font-bold tracking-tight">Track</GradientTextRB>
-                                </span>
+                            <Link href={home()} className="group inline-flex items-center transition-all duration-300 hover:scale-105">
+                                <img
+                                    src="/images/floodtrack-logo.png"
+                                    alt="FloodTrack"
+                                    className="h-auto w-40 object-contain"
+                                    style={{ filter: 'brightness(1.3) drop-shadow(0 0 6px rgba(56,189,248,0.15))' }}
+                                />
                             </Link>
                         </div>
 
@@ -173,9 +173,12 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
 
                         {/* Mobile header */}
                         <div className="mb-6 flex items-center justify-center lg:hidden">
-                            <Link href={home()} className="inline-flex items-center gap-2.5">
-                                <AppLogoIcon className="size-9 rounded-[12px] shadow-lg shadow-blue-500/20" />
-                                <span className="text-base font-bold text-neutral-900 dark:text-white">Flood<span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent dark:from-cyan-400 dark:to-blue-400">Track</span></span>
+                            <Link href={home()}>
+                                <img
+                                    src="/images/floodtrack-logo.png"
+                                    alt="FloodTrack"
+                                    className="h-auto w-36 object-contain dark:brightness-[1.3] dark:drop-shadow-[0_0_6px_rgba(56,189,248,0.15)]"
+                                />
                             </Link>
                         </div>
 

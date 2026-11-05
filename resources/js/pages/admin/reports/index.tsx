@@ -440,19 +440,19 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                     {/* ── Toolbar ── */}
                     <div className="relative z-20 flex flex-wrap items-center gap-1.5 rounded-t-2xl border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-4 py-2 dark:border-neutral-800 dark:bg-neutral-800/30">
                         {/* Search — left */}
-                        <div className="relative flex-1 min-w-[160px] max-w-xs">
-                            <Search className="pointer-events-none absolute left-2 top-1/2 size-2.5 -translate-y-1/2 text-neutral-400" />
+                        <div className="relative flex-1 min-w-[200px] max-w-sm">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
                             <input
                                 ref={searchRef}
                                 type="text"
                                 value={searchValue}
                                 onChange={(e) => setSearchValue(e.target.value)}
                                 placeholder={t('reports.search_placeholder')}
-                                className="h-6 w-full rounded-lg border border-neutral-200/80 bg-white pl-6 pr-6 text-[10px] shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
+                                className="h-9 w-full rounded-lg border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
                             />
                             {searchValue && (
-                                <button onClick={() => setSearchValue('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
-                                    <X className="size-2.5" />
+                                <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
+                                    <X className="size-4" />
                                 </button>
                             )}
                         </div>

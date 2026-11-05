@@ -17,6 +17,7 @@ export const en: Record<string, string> = {
     'sidebar.announcements': 'Announcements',
     'sidebar.residents': 'Residents',
     'sidebar.rescue_personnel': 'Rescue Personnel',
+    'sidebar.responder_map': 'Live Responder Map',
     'sidebar.response_teams': 'Response Teams',
     'sidebar.analytics': 'Analytics',
     'sidebar.statistics': 'Statistics',
