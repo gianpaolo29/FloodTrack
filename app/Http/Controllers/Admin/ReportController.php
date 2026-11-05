@@ -89,11 +89,18 @@ class ReportController extends Controller
             ->values()
             ->all();
 
+        $responderCounts = [
+            'on_duty'  => User::where('role', 'responder')->where('is_on_duty', true)->count(),
+            'off_duty' => User::where('role', 'responder')->where(fn ($q) => $q->where('is_on_duty', false)->orWhereNull('is_on_duty'))->count(),
+            'tracking' => $responders->count(),
+        ];
+
         return Inertia::render('admin/reports/map', [
             'reports'            => $reports,
             'filters'            => $request->only(['status', 'severity', 'date_from', 'date_to']),
             'evacuation_centers' => $evacuationCenters,
             'responders'         => $responders,
+            'responder_counts'   => $responderCounts,
             'hazards'            => $hazards,
             'flood_zones'        => $floodZones,
         ]);

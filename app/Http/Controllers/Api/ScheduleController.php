@@ -38,6 +38,18 @@ class ScheduleController extends Controller
             $onDuty = $level === 'red' || $teamShift === $currentShift;
         }
 
+        // Sync is_on_duty in DB so admin can see correct status
+        if ((bool) $user->is_on_duty !== $onDuty) {
+            $user->update(['is_on_duty' => $onDuty]);
+            if (! $onDuty) {
+                $user->update([
+                    'current_latitude'    => null,
+                    'current_longitude'   => null,
+                    'location_updated_at' => null,
+                ]);
+            }
+        }
+
         return response()->json([
             'level'         => $level,
             'current_shift' => $currentShift,

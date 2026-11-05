@@ -241,6 +241,11 @@ class ReportController extends Controller
         SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => $data['status']]);
         SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => $data['status']]);
 
+        // Refresh socket assignment cache when report status changes (e.g. resolved)
+        if ($report->assigned_to) {
+            SocketService::refreshAssignments($report->assigned_to);
+        }
+
         return response()->json($report->fresh()->load(['statusUpdates.user:id,name,role']));
     }
 

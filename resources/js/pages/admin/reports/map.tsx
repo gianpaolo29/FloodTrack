@@ -26,6 +26,7 @@ interface Props {
     filters: Filters;
     evacuation_centers: EvacuationCenter[];
     responders: MapResponder[];
+    responder_counts: { on_duty: number; off_duty: number; tracking: number };
     hazards: Hazard[];
 }
 
@@ -644,7 +645,7 @@ function useMapSocket(initial: MapResponder[], onNewReport: () => void) {
 }
 
 /* ─── Main page ─── */
-export default function AdminReportsMap({ reports, filters, evacuation_centers, responders: initialResponders, hazards }: Props) {
+export default function AdminReportsMap({ reports, filters, evacuation_centers, responders: initialResponders, responder_counts, hazards }: Props) {
     // Auto-refresh: silently reload Inertia page data when socket fires new-report/report-status
     const refreshDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handleReportEvent = useCallback(() => {
@@ -916,45 +917,61 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                         </div>
 
                         {/* Responders */}
-                        {showResponders && liveResponders.length > 0 && (
+                        {showResponders && (
                             <div className="border-b border-neutral-100/80 px-4 sm:px-5 py-3 dark:border-neutral-800/60">
                                 <div className="mb-2 flex items-center justify-between">
                                     <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400/80">
                                         <Users className="size-3" />Responders
                                     </span>
-                                    <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[9px] font-bold tabular-nums text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">{liveResponders.length}</span>
                                 </div>
-                                <div className="space-y-1">
-                                    {liveResponders.map((r) => {
-                                        const stale = isStale(r.location_updated_at);
-                                        return (
-                                            <button
-                                                key={`resp-${r.id}`}
-                                                onClick={() => {
-                                                    clearSelection();
-                                                    setSelectedResponder(selectedResponder?.id === r.id ? null : r);
-                                                    if (selectedResponder?.id !== r.id) focusOnLocation(r.latitude, r.longitude);
-                                                }}
-                                                className={`w-full rounded-lg p-2 text-left transition-all ${
-                                                    selectedResponder?.id === r.id
-                                                        ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-900/20 dark:ring-blue-700'
-                                                        : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
-                                                }`}
-                                            >
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <div className="flex items-center gap-2 min-w-0">
-                                                        <span className={`size-2 shrink-0 rounded-full ${stale ? 'bg-amber-400' : 'bg-emerald-500'}`} />
-                                                        <span className="truncate text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">{r.name}</span>
+                                <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
+                                    <span className="flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                        <span className="relative flex size-1.5"><span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" /><span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" /></span>
+                                        {responder_counts.on_duty} On Duty
+                                    </span>
+                                    <span className="flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[9px] font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                                        <Radio className="size-2.5" />
+                                        {liveResponders.length} Live
+                                    </span>
+                                    <span className="flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-0.5 text-[9px] font-bold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                                        {responder_counts.off_duty} Off Duty
+                                    </span>
+                                </div>
+                                {liveResponders.length > 0 ? (
+                                    <div className="space-y-1">
+                                        {liveResponders.map((r) => {
+                                            const stale = isStale(r.location_updated_at);
+                                            return (
+                                                <button
+                                                    key={`resp-${r.id}`}
+                                                    onClick={() => {
+                                                        clearSelection();
+                                                        setSelectedResponder(selectedResponder?.id === r.id ? null : r);
+                                                        if (selectedResponder?.id !== r.id) focusOnLocation(r.latitude, r.longitude);
+                                                    }}
+                                                    className={`w-full rounded-lg p-2 text-left transition-all ${
+                                                        selectedResponder?.id === r.id
+                                                            ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-900/20 dark:ring-blue-700'
+                                                            : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <div className="flex items-center gap-2 min-w-0">
+                                                            <span className={`size-2 shrink-0 rounded-full ${stale ? 'bg-amber-400' : 'bg-emerald-500'}`} />
+                                                            <span className="truncate text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">{r.name}</span>
+                                                        </div>
+                                                        <span className="flex shrink-0 items-center gap-1 text-[10px] text-neutral-400">
+                                                            <Clock className="size-2.5" />
+                                                            {formatLastSeen(r.location_updated_at)}
+                                                        </span>
                                                     </div>
-                                                    <span className="flex shrink-0 items-center gap-1 text-[10px] text-neutral-400">
-                                                        <Clock className="size-2.5" />
-                                                        {formatLastSeen(r.location_updated_at)}
-                                                    </span>
-                                                </div>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="py-2 text-center text-[10px] text-neutral-400">No responders online</p>
+                                )}
                             </div>
                         )}
 
@@ -1004,6 +1021,25 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
 
                 {/* ── Map ── */}
                 <div className="relative flex-1">
+                    {/* Live badge overlay */}
+                    <div className="pointer-events-none absolute right-3 top-3 z-[1000] flex items-center gap-2 rounded-lg bg-white/90 px-3 py-1.5 shadow-lg backdrop-blur-sm dark:bg-neutral-900/90">
+                        <span className="flex items-center gap-1.5">
+                            <span className="relative flex size-2">
+                                <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-500 opacity-60" />
+                                <span className="relative inline-flex size-2 rounded-full bg-red-500" />
+                            </span>
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400">Live</span>
+                        </span>
+                        <span className="h-3 w-px bg-neutral-300 dark:bg-neutral-600" />
+                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <span className="size-1.5 rounded-full bg-emerald-500" />
+                            {responder_counts.on_duty} On Duty
+                        </span>
+                        <span className="flex items-center gap-1 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
+                            <span className="size-1.5 rounded-full bg-neutral-400" />
+                            {responder_counts.off_duty} Off
+                        </span>
+                    </div>
                     <MapContainer
                         center={DEFAULT_CENTER}
                         zoom={13}
