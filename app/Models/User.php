@@ -29,7 +29,10 @@ class User extends Authenticatable
         'home_longitude',
         'current_latitude',
         'current_longitude',
+        'current_heading',
+        'current_speed',
         'location_updated_at',
+        'duty_override',
         'notification_prefs',
         'email_verified_at',
     ];

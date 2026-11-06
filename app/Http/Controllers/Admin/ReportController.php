@@ -506,6 +506,26 @@ class ReportController extends Controller
 
         $oldStatus = $report->status;
 
+        // If reassigning, resolve all existing responder rows from the old team
+        if ($report->assigned_team_id && $report->assigned_team_id !== $team->id) {
+            DB::table('report_responders')
+                ->where('report_id', $report->id)
+                ->where('status', '!=', 'resolved')
+                ->update([
+                    'status'      => 'resolved',
+                    'resolved_at' => now(),
+                    'updated_at'  => now(),
+                ]);
+
+            // Refresh socket cache for old responders
+            $oldMemberIds = DB::table('report_responders')
+                ->where('report_id', $report->id)
+                ->pluck('user_id');
+            foreach ($oldMemberIds as $mId) {
+                SocketService::refreshAssignments($mId);
+            }
+        }
+
         $report->update([
             'assigned_team_id' => $team->id,
             'assigned_to'      => $team->leader_id,
@@ -513,15 +533,24 @@ class ReportController extends Controller
             'assigned_at'      => now(),
         ]);
 
-        // Upsert each team member into report_responders
+        // Seed report_responders for all team members
         foreach ($team->members as $member) {
             ReportResponder::updateOrCreate(
                 ['report_id' => $report->id, 'user_id' => $member->id],
                 [
-                    'role'   => $member->id === $team->leader_id ? 'lead' : 'support',
-                    'status' => 'pending',
+                    'role'        => $member->id === $team->leader_id ? 'lead' : 'support',
+                    'status'      => 'pending',
+                    'en_route_at' => null,
+                    'on_scene_at' => null,
+                    'resolved_at' => null,
+                    'route'       => null,
                 ]
             );
+        }
+
+        // Refresh socket assignment cache for new team members
+        foreach ($team->members as $member) {
+            SocketService::refreshAssignments($member->id);
         }
 
         ReportStatusUpdate::create([

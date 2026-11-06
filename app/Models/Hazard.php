@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Observers\HazardObserver;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 
+#[ObservedBy(HazardObserver::class)]
 class Hazard extends Model
 {
     protected $fillable = [

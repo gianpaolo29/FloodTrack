@@ -14,6 +14,7 @@ use App\Http\Controllers\Api\WeatherController;
 use App\Http\Controllers\Api\EvacuationCenterController;
 use App\Http\Controllers\Api\ProtocolController;
 use App\Http\Controllers\Api\AdminStatsController;
+use App\Http\Controllers\Api\RealtimeController;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Http\Controllers\Api\UserNotificationController;
 use Illuminate\Support\Facades\Route;
@@ -156,11 +157,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Schedule (all authenticated users can read)
     Route::get('/schedule', [ScheduleController::class, 'index']);
+    Route::get('/realtime/authorize', [RealtimeController::class, 'authorize']);
 
     // ── Responder only ───────────────────────────────────────────────────
     Route::middleware('role:responder,admin')->prefix('responder')->group(function () {
+        Route::post('/locations', [\App\Http\Controllers\Api\ResponderLocationController::class, 'store'])->middleware('throttle:12,1');
         Route::get('/assigned-reports', [ReportController::class, 'index']);  // with ?assigned=me
         Route::patch('/reports/{report}/status', [ReportController::class, 'updateStatus']);
+        Route::patch('/reports/{report}/mission-status', [\App\Http\Controllers\Api\ResponderMissionController::class, 'updateStatus']);
         Route::get('/stats', [ResponderStatsController::class, 'index']);
         // Team
         Route::get('/team',                                   [TeamController::class, 'myTeam']);
@@ -184,6 +188,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/reports/{report}/verify',           [ReportController::class, 'verify']);
         Route::patch('/reports/{report}/reject',           [ReportController::class, 'reject']);
         Route::get('/admin/stats',                         [AdminStatsController::class, 'index']);
+        Route::post('/admin/users/{user}/duty-override',   [UserController::class, 'dutyOverride']);
+        Route::get('/admin/responders/live',               [\App\Http\Controllers\Api\AdminResponderLiveController::class, 'index']);
+        Route::get('/admin/responders/{user}/history',     [\App\Http\Controllers\Api\AdminResponderLiveController::class, 'history']);
 
         // Hazard sync from weather alerts
         Route::post('/admin/hazards/sync-weather', function () {

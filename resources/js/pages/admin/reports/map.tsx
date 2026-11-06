@@ -69,17 +69,35 @@ function createEvacMarker(isFull: boolean): string {
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-/** Blue circle marker for responders */
-function createResponderMarker(): string {
-    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
-        <filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.25"/></filter>
-        <circle filter="url(#s)" cx="16" cy="16" r="13" fill="#2563eb" stroke="white" stroke-width="2.5"/>
-        <circle cx="16" cy="12" r="4" fill="white" opacity="0.9"/>
-        <path d="M9 22.5c0-3.5 3.1-5.5 7-5.5s7 2 7 5.5" fill="white" opacity="0.9"/>
+/** Responder marker with status color and optional heading arrow */
+const RESPONDER_STATUS_MARKER_COLORS: Record<string, string> = {
+    idle: '#2563eb',
+    en_route: '#f59e0b',
+    on_scene: '#22c55e',
+};
+
+function createResponderMarkerSvg(status: ResponderMapStatus, state: 'online' | 'stale' | 'offline', heading?: number | null): string {
+    const color = RESPONDER_STATUS_MARKER_COLORS[status] ?? '#2563eb';
+    const opacity = state === 'offline' ? '0.3' : state === 'stale' ? '0.5' : '1';
+    const headingArrow = heading != null && state === 'online'
+        ? `<g transform="rotate(${heading}, 20, 20)"><polygon points="20,3 16,11 24,11" fill="${color}" opacity="0.8"/></g>`
+        : '';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
+        <g opacity="${opacity}">
+            ${headingArrow}
+            <filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.25"/></filter>
+            <circle filter="url(#s)" cx="20" cy="20" r="13" fill="${color}" stroke="white" stroke-width="2.5"/>
+            <circle cx="20" cy="16" r="4" fill="white" opacity="0.9"/>
+            <path d="M13 26.5c0-3.5 3.1-5.5 7-5.5s7 2 7 5.5" fill="white" opacity="0.9"/>
+        </g>
     </svg>`;
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
+// Legacy — keep for backward compat
+function createResponderMarker(): string {
+    return createResponderMarkerSvg('idle', 'online');
+}
 const RESPONDER_MARKER_URL = createResponderMarker();
 
 /** Per-type hazard icons */
@@ -541,104 +559,158 @@ function isStale(iso: string | null): boolean {
 }
 
 /* ─── Live responder state from Socket.IO ─── */
+
+type ResponderMapStatus = 'idle' | 'en_route' | 'on_scene';
+
 interface LiveResponder {
     id: number;
     name: string;
     latitude: number;
     longitude: number;
+    heading: number | null;
+    speed: number | null;
     avatar_url: string | null;
+    team_id: number | null;
     team_name: string | null;
+    status: ResponderMapStatus;
     location_updated_at: string;
+}
+
+function getResponderState(updatedAt: string | null): 'online' | 'stale' | 'offline' {
+    if (!updatedAt) return 'offline';
+    const age = (Date.now() - new Date(updatedAt).getTime()) / 60_000;
+    if (age >= 5) return 'offline';
+    if (age >= 2) return 'stale';
+    return 'online';
 }
 
 function useMapSocket(initial: MapResponder[], onNewReport: () => void) {
     const [responders, setResponders] = useState<Map<number, LiveResponder>>(() => {
         const map = new Map<number, LiveResponder>();
         for (const r of initial) {
-            map.set(r.id, {
-                id: r.id,
-                name: r.name,
-                latitude: r.current_latitude,
-                longitude: r.current_longitude,
-                avatar_url: r.avatar_url,
-                team_name: r.team?.name ?? null,
-                location_updated_at: r.location_updated_at ?? new Date().toISOString(),
-            });
+            if (r.current_latitude && r.current_longitude) {
+                map.set(r.id, {
+                    id: r.id,
+                    name: r.name,
+                    latitude: r.current_latitude,
+                    longitude: r.current_longitude,
+                    heading: null,
+                    speed: null,
+                    avatar_url: r.avatar_url,
+                    team_id: r.team_id,
+                    team_name: r.team?.name ?? null,
+                    status: 'idle',
+                    location_updated_at: r.location_updated_at ?? new Date().toISOString(),
+                });
+            }
         }
         return map;
     });
 
     useEffect(() => {
         const socketUrl = (import.meta.env.VITE_SOCKET_URL || window.location.origin).replace(/\/$/, '');
-
         let socket: Socket | null = null;
 
         fetch('/admin/socket-token', {
             headers: {
                 'Accept': 'application/json',
-                'X-XSRF-TOKEN': decodeURIComponent(
-                    document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? ''
-                ),
+                'X-XSRF-TOKEN': decodeURIComponent(document.cookie.match(/XSRF-TOKEN=([^;]+)/)?.[1] ?? ''),
             },
         })
-            .then((res) => {
-                if (!res.ok) {
-                    console.warn('[map-socket] socket-token fetch failed:', res.status);
-                    return null;
-                }
-                return res.json();
-            })
+            .then((res) => res.ok ? res.json() : null)
             .then((data) => {
-                if (!data?.token) {
-                    console.warn('[map-socket] no token received, socket will not connect');
-                    return;
-                }
+                if (!data?.token) return;
 
                 socket = io(socketUrl, {
                     auth: { token: data.token },
                     transports: ['websocket', 'polling'],
                     reconnection: true,
-                    reconnectionAttempts: 10,
+                    reconnectionAttempts: Infinity,
                     reconnectionDelay: 3000,
                 });
 
-                socket.on('connect', () => {
-                    console.log('[map-socket] connected', socket?.id);
-                });
+                socket.on('connect', () => console.log('[map-socket] connected', socket?.id));
+                socket.on('connect_error', (err) => console.warn('[map-socket] error:', err.message));
 
-                socket.on('connect_error', (err) => {
-                    console.warn('[map-socket] connection error:', err.message);
-                });
-
-                // Live responder locations
-                socket.on('responder-location', (payload: { user_id: number; name: string; latitude: number; longitude: number; timestamp: string }) => {
+                // New event: location.updated (from admin:responders room)
+                socket.on('location.updated', (p: { user_id: number; name: string; team_id?: number; lat: number; lng: number; heading?: number; speed?: number; recorded_at: string }) => {
                     setResponders((prev) => {
                         const next = new Map(prev);
-                        const existing = next.get(payload.user_id);
-                        next.set(payload.user_id, {
-                            id: payload.user_id,
-                            name: payload.name,
-                            latitude: payload.latitude,
-                            longitude: payload.longitude,
+                        const existing = next.get(p.user_id);
+                        next.set(p.user_id, {
+                            ...existing!,
+                            id: p.user_id,
+                            name: p.name,
+                            latitude: p.lat,
+                            longitude: p.lng,
+                            heading: p.heading ?? existing?.heading ?? null,
+                            speed: p.speed ?? existing?.speed ?? null,
                             avatar_url: existing?.avatar_url ?? null,
+                            team_id: p.team_id ?? existing?.team_id ?? null,
                             team_name: existing?.team_name ?? null,
-                            location_updated_at: payload.timestamp,
+                            status: existing?.status ?? 'idle',
+                            location_updated_at: p.recorded_at,
                         });
                         return next;
                     });
                 });
 
-                // Auto-refresh: new reports and status changes
+                // Legacy event compatibility
+                socket.on('responder-location', (p: { user_id: number; name: string; latitude: number; longitude: number; timestamp: string }) => {
+                    setResponders((prev) => {
+                        const next = new Map(prev);
+                        const existing = next.get(p.user_id);
+                        next.set(p.user_id, {
+                            id: p.user_id,
+                            name: p.name,
+                            latitude: p.latitude,
+                            longitude: p.longitude,
+                            heading: existing?.heading ?? null,
+                            speed: existing?.speed ?? null,
+                            avatar_url: existing?.avatar_url ?? null,
+                            team_id: existing?.team_id ?? null,
+                            team_name: existing?.team_name ?? null,
+                            status: existing?.status ?? 'idle',
+                            location_updated_at: p.timestamp,
+                        });
+                        return next;
+                    });
+                });
+
+                // Responder status changes
+                socket.on('responder.status', (p: { report_id: number; responder: { id: number; name: string; status: string } }) => {
+                    setResponders((prev) => {
+                        const next = new Map(prev);
+                        const existing = next.get(p.responder.id);
+                        if (existing) {
+                            next.set(p.responder.id, { ...existing, status: p.responder.status as ResponderMapStatus });
+                        }
+                        return next;
+                    });
+                });
+
+                // Duty changed — add or remove responders
+                socket.on('duty.changed', (p: { user_id: number; on_duty: boolean }) => {
+                    setResponders((prev) => {
+                        const next = new Map(prev);
+                        if (!p.on_duty) {
+                            next.delete(p.user_id);
+                        }
+                        return next;
+                    });
+                });
+
+                // Stale notification
+                socket.on('responder.stale', (_p: { user_id: number; last_seen: string }) => {
+                    // State is derived from location_updated_at in render, no action needed
+                });
+
                 socket.on('new-report', onNewReport);
                 socket.on('report-status', onNewReport);
             })
-            .catch((err) => {
-                console.warn('[map-socket] setup failed:', err);
-            });
+            .catch((err) => console.warn('[map-socket] setup failed:', err));
 
-        return () => {
-            socket?.disconnect();
-        };
+        return () => { socket?.disconnect(); };
     }, []);
 
     return useMemo(() => Array.from(responders.values()), [responders]);
@@ -705,15 +777,15 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
         full: makeDivIcon(createEvacMarker(true), 30, 30, 15, 15),
     }), []);
 
-    const responderIcon = useMemo(() => makeDivIcon(RESPONDER_MARKER_URL, 32, 32, 16, 16), []);
-
-    const staleResponderIcon = useMemo(() => {
+    const getResponderIcon = useCallback((r: LiveResponder) => {
+        const state = getResponderState(r.location_updated_at);
+        const url = createResponderMarkerSvg(r.status, state, r.heading);
         return L.divIcon({
-            html: `<img src="${RESPONDER_MARKER_URL}" width="32" height="32" style="display:block;opacity:0.45;" />`,
+            html: `<img src="${url}" width="40" height="40" style="display:block;" />`,
             className: '',
-            iconSize: [32, 32],
-            iconAnchor: [16, 16],
-            popupAnchor: [0, -16],
+            iconSize: [40, 40],
+            iconAnchor: [20, 20],
+            popupAnchor: [0, -20],
         });
     }, []);
 
@@ -939,8 +1011,21 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                 </div>
                                 {liveResponders.length > 0 ? (
                                     <div className="space-y-1">
-                                        {liveResponders.map((r) => {
-                                            const stale = isStale(r.location_updated_at);
+                                        {[...liveResponders]
+                                            .sort((a, b) => {
+                                                const order: Record<string, number> = { en_route: 0, on_scene: 1, idle: 2 };
+                                                const diff = (order[a.status] ?? 9) - (order[b.status] ?? 9);
+                                                if (diff !== 0) return diff;
+                                                const stateA = getResponderState(a.location_updated_at);
+                                                const stateB = getResponderState(b.location_updated_at);
+                                                const so: Record<string, number> = { online: 0, stale: 1, offline: 2 };
+                                                return (so[stateA] ?? 9) - (so[stateB] ?? 9);
+                                            })
+                                            .map((r) => {
+                                            const state = getResponderState(r.location_updated_at);
+                                            const statusColors: Record<string, string> = { idle: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', en_route: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', on_scene: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' };
+                                            const statusLabels: Record<string, string> = { idle: 'Idle', en_route: 'En Route', on_scene: 'On Scene' };
+                                            const dotColor = state === 'offline' ? 'bg-neutral-300 dark:bg-neutral-600' : state === 'stale' ? 'bg-amber-400' : 'bg-emerald-500';
                                             return (
                                                 <button
                                                     key={`resp-${r.id}`}
@@ -953,16 +1038,22 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                         selectedResponder?.id === r.id
                                                             ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-900/20 dark:ring-blue-700'
                                                             : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
-                                                    }`}
+                                                    } ${state === 'offline' ? 'opacity-40' : state === 'stale' ? 'opacity-60' : ''}`}
                                                 >
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div className="flex items-center gap-2 min-w-0">
-                                                            <span className={`size-2 shrink-0 rounded-full ${stale ? 'bg-amber-400' : 'bg-emerald-500'}`} />
+                                                            <span className={`size-2 shrink-0 rounded-full ${dotColor}`} />
                                                             <span className="truncate text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">{r.name}</span>
                                                         </div>
-                                                        <span className="flex shrink-0 items-center gap-1 text-[10px] text-neutral-400">
+                                                        <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${statusColors[r.status] ?? statusColors.idle}`}>
+                                                            {statusLabels[r.status] ?? 'Idle'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-0.5 flex items-center gap-2 pl-4 text-[10px] text-neutral-400">
+                                                        {r.team_name && <span>{r.team_name}</span>}
+                                                        <span className="ml-auto flex items-center gap-1">
                                                             <Clock className="size-2.5" />
-                                                            {formatLastSeen(r.location_updated_at)}
+                                                            {state === 'offline' ? 'Offline' : state === 'stale' ? `Stale · ${formatLastSeen(r.location_updated_at)}` : formatLastSeen(r.location_updated_at)}
                                                         </span>
                                                     </div>
                                                 </button>
@@ -1195,7 +1286,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                             <Marker
                                 key={`resp-${r.id}`}
                                 position={[r.latitude, r.longitude]}
-                                icon={isStale(r.location_updated_at) ? staleResponderIcon : responderIcon}
+                                icon={getResponderIcon(r)}
                                 zIndexOffset={20}
                                 eventHandlers={{
                                     click: () => {

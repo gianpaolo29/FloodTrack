@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Log;
 
 class SocketService
 {
-    private static function emit(string $room, string $event, mixed $data = null): void
+    public static function emit(string $room, string $event, mixed $data = null): void
     {
         $url    = rtrim(config('services.socket.url'), '/') . '/internal/emit';
         $secret = config('services.socket.secret');
@@ -68,6 +68,28 @@ class SocketService
                 ]);
         } catch (\Throwable $e) {
             Log::warning('[SocketService] refreshAssignments failed', ['responder_id' => $responderId, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Revoke all non-admin sockets from a room.
+     */
+    public static function revokeRoom(string $room, array $exceptRoles = ['admin']): void
+    {
+        $url    = rtrim(config('services.socket.url'), '/') . '/internal/room-revoke';
+        $secret = config('services.socket.secret');
+
+        if (! $url || ! $secret) return;
+
+        try {
+            Http::timeout(3)
+                ->withHeaders(['x-internal-secret' => $secret])
+                ->post($url, [
+                    'room'         => $room,
+                    'except_roles' => $exceptRoles,
+                ]);
+        } catch (\Throwable $e) {
+            Log::warning('[SocketService] revokeRoom failed', ['room' => $room, 'error' => $e->getMessage()]);
         }
     }
 }
