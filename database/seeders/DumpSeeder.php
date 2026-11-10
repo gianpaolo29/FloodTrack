@@ -541,14 +541,15 @@ class DumpSeeder extends Seeder
             $assignedResponder = null;
 
             // Status progression timestamps
+            // Target: 20-30 min avg total response time (created_at → resolved_at)
             if (!in_array($finalStatus, ['pending'])) {
-                // Submitted → Verified/Rejected: 5-30 min
-                $verifiedAt = $createdAt->copy()->addMinutes((int)(rand(5, 30) * $speedFactor));
+                // Submitted → Verified/Rejected: 2-5 min
+                $verifiedAt = $createdAt->copy()->addMinutes((int)(rand(2, 5) * $speedFactor));
             }
 
             if (in_array($finalStatus, ['assigned','en_route','on_scene','resolved'])) {
-                // Verified → Assigned: 2-10 min
-                $assignedAt = $verifiedAt->copy()->addMinutes((int)(rand(2, 10) * $speedFactor));
+                // Verified → Assigned: 1-3 min
+                $assignedAt = $verifiedAt->copy()->addMinutes((int)(rand(1, 3) * $speedFactor));
                 $teamIdx = $responderIdx % $teamCount;
                 $assignedTeam = $teams[$teamIdx];
                 $assignedResponder = $responders[$responderIdx % $responderCount];
@@ -556,10 +557,12 @@ class DumpSeeder extends Seeder
             }
 
             if ($finalStatus === 'resolved') {
-                // On Scene → Resolved: 1-6 hours
-                $enRouteAt = $assignedAt->copy()->addMinutes((int)(rand(1, 5) * $speedFactor));
-                $onSceneAt = $enRouteAt->copy()->addMinutes((int)(rand(15, 45) * $speedFactor));
-                $resolvedAt = $onSceneAt->copy()->addMinutes((int)(rand(60, 360) * $speedFactor));
+                // Assigned → En Route: 1-3 min
+                $enRouteAt = $assignedAt->copy()->addMinutes((int)(rand(1, 3) * $speedFactor));
+                // En Route → On Scene: 3-8 min
+                $onSceneAt = $enRouteAt->copy()->addMinutes((int)(rand(3, 8) * $speedFactor));
+                // On Scene → Resolved: 5-15 min
+                $resolvedAt = $onSceneAt->copy()->addMinutes((int)(rand(5, 15) * $speedFactor));
             }
 
             // depth_ft based on severity
@@ -624,9 +627,9 @@ class DumpSeeder extends Seeder
                         'role'        => 'lead',
                         'status'      => $pivotStatus,
                         'en_route_at' => in_array($finalStatus, ['en_route','on_scene','resolved'])
-                            ? $assignedAt->copy()->addMinutes((int)(rand(1, 5) * $speedFactor)) : null,
+                            ? $assignedAt->copy()->addMinutes((int)(rand(1, 3) * $speedFactor)) : null,
                         'on_scene_at' => in_array($finalStatus, ['on_scene','resolved'])
-                            ? $assignedAt->copy()->addMinutes((int)(rand(16, 50) * $speedFactor)) : null,
+                            ? $assignedAt->copy()->addMinutes((int)(rand(4, 10) * $speedFactor)) : null,
                         'resolved_at' => $finalStatus === 'resolved' ? $resolvedAt : null,
                     ]
                 );
@@ -641,8 +644,8 @@ class DumpSeeder extends Seeder
                             [
                                 'role'        => 'support',
                                 'status'      => 'resolved',
-                                'en_route_at' => $assignedAt->copy()->addMinutes((int)(rand(2, 8) * $speedFactor)),
-                                'on_scene_at' => $assignedAt->copy()->addMinutes((int)(rand(20, 55) * $speedFactor)),
+                                'en_route_at' => $assignedAt->copy()->addMinutes((int)(rand(1, 4) * $speedFactor)),
+                                'on_scene_at' => $assignedAt->copy()->addMinutes((int)(rand(5, 12) * $speedFactor)),
                                 'resolved_at' => $resolvedAt,
                             ]
                         );
