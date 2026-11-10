@@ -23,6 +23,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -342,6 +343,36 @@ class ReportController extends Controller
             'notes'     => $request->notes,
         ]);
 
+        // Resolve all assigned responders on this report
+        $responderRows = DB::table('report_responders')
+            ->where('report_id', $report->id)
+            ->where('status', '!=', 'resolved')
+            ->get();
+
+        foreach ($responderRows as $row) {
+            DB::table('report_responders')
+                ->where('report_id', $report->id)
+                ->where('user_id', $row->user_id)
+                ->update(['status' => 'resolved', 'resolved_at' => now(), 'updated_at' => now()]);
+
+            ReportStatusUpdate::create([
+                'report_id' => $report->id,
+                'user_id'   => $row->user_id,
+                'status'    => 'resolved',
+                'notes'     => 'Resolved by admin.',
+            ]);
+
+            SocketService::toReport($report->id, 'responder.status', [
+                'report_id' => $report->id,
+                'responder' => ['id' => $row->user_id, 'status' => 'resolved'],
+            ]);
+            SocketService::emit('admin:responders', 'responder.status', [
+                'report_id' => $report->id,
+                'responder' => ['id' => $row->user_id, 'status' => 'resolved'],
+            ]);
+            SocketService::refreshAssignments($row->user_id);
+        }
+
         app(SlaService::class)->advanceStage($report, 'resolved');
 
         $this->notifyStatusChange($report, $oldStatus, 'resolved', $request->user()->name);
@@ -635,6 +666,36 @@ class ReportController extends Controller
             'status'    => 'rejected',
             'notes'     => $request->notes ?? 'Report rejected by admin.',
         ]);
+
+        // Clear all assigned responders on this report
+        $responderRows = DB::table('report_responders')
+            ->where('report_id', $report->id)
+            ->where('status', '!=', 'resolved')
+            ->get();
+
+        foreach ($responderRows as $row) {
+            DB::table('report_responders')
+                ->where('report_id', $report->id)
+                ->where('user_id', $row->user_id)
+                ->update(['status' => 'resolved', 'resolved_at' => now(), 'updated_at' => now()]);
+
+            ReportStatusUpdate::create([
+                'report_id' => $report->id,
+                'user_id'   => $row->user_id,
+                'status'    => 'resolved',
+                'notes'     => 'Report rejected by admin.',
+            ]);
+
+            SocketService::toReport($report->id, 'responder.status', [
+                'report_id' => $report->id,
+                'responder' => ['id' => $row->user_id, 'status' => 'resolved'],
+            ]);
+            SocketService::emit('admin:responders', 'responder.status', [
+                'report_id' => $report->id,
+                'responder' => ['id' => $row->user_id, 'status' => 'resolved'],
+            ]);
+            SocketService::refreshAssignments($row->user_id);
+        }
 
         app(SlaService::class)->advanceStage($report, 'rejected');
 

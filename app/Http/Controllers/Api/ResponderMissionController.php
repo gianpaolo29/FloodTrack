@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Report;
 use App\Models\ReportStatusUpdate;
+use App\Models\User;
 use App\Services\ExpoPushService;
 use App\Services\SocketService;
 use Illuminate\Http\JsonResponse;
@@ -76,63 +77,81 @@ class ResponderMissionController extends Controller
             }
         }
 
-        // Update pivot row
-        $updateData = ['status' => $newStatus, 'updated_at' => now()];
-        if ($newStatus === 'en_route') {
-            $updateData['en_route_at'] = now();
-            // Compute route to report
-            $route = \App\Services\RoutingService::computeRoute(
-                (float) $user->current_latitude,
-                (float) $user->current_longitude,
-                (float) $report->latitude,
-                (float) $report->longitude,
-            );
-            if ($route) {
-                $updateData['route'] = json_encode($route);
-            }
-        }
-        if ($newStatus === 'on_scene') $updateData['on_scene_at'] = now();
-        if ($newStatus === 'resolved') $updateData['resolved_at'] = now();
-
-        DB::table('report_responders')
+        // Gather all teammates on this report whose status is behind the new status
+        $teammates = DB::table('report_responders')
             ->where('report_id', $report->id)
-            ->where('user_id', $user->id)
-            ->update($updateData);
+            ->get();
 
-        // Write status update log
-        ReportStatusUpdate::create([
-            'report_id' => $report->id,
-            'user_id'   => $user->id,
-            'status'    => $newStatus,
-            'notes'     => $data['notes'] ?? null,
-        ]);
+        foreach ($teammates as $mate) {
+            $mateOrder = $order[$mate->status] ?? 0;
+            if ($mateOrder >= ($order[$newStatus] ?? 0)) continue; // already at or ahead
 
-        // Emit responder.status to the report room
-        $statusPayload = [
-            'report_id' => $report->id,
-            'responder' => [
-                'id'     => $user->id,
-                'name'   => $user->name,
-                'status' => $newStatus,
-                'lat'    => $user->current_latitude ? (float) $user->current_latitude : null,
-                'lng'    => $user->current_longitude ? (float) $user->current_longitude : null,
-            ],
-            'route' => isset($route) ? $route : null,
-        ];
+            $mateUser = User::find($mate->user_id);
+            if (! $mateUser) continue;
 
-        SocketService::toReport($report->id, 'responder.status', $statusPayload);
-        SocketService::emit('admin:responders', 'responder.status', $statusPayload);
+            $mateUpdate = ['status' => $newStatus, 'updated_at' => now()];
+            if ($newStatus === 'en_route') {
+                $mateUpdate['en_route_at'] = now();
+                if ($mateUser->current_latitude && $mateUser->current_longitude) {
+                    $mateRoute = \App\Services\RoutingService::computeRoute(
+                        (float) $mateUser->current_latitude,
+                        (float) $mateUser->current_longitude,
+                        (float) $report->latitude,
+                        (float) $report->longitude,
+                    );
+                    if ($mateRoute) {
+                        $mateUpdate['route'] = json_encode($mateRoute);
+                    }
+                }
+            }
+            if ($newStatus === 'on_scene') $mateUpdate['on_scene_at'] = now();
+            if ($newStatus === 'resolved') $mateUpdate['resolved_at'] = now();
 
-        // Emit route.updated if a route was computed
-        if (isset($route) && $route) {
-            SocketService::toReport($report->id, 'route.updated', [
-                'report_id'      => $report->id,
-                'user_id'        => $user->id,
-                'polyline'       => $route['polyline'],
-                'distance_m'     => $route['distance_m'],
-                'duration_s'     => $route['duration_s'],
-                'hazard_warning' => $route['hazard_warning'],
+            DB::table('report_responders')
+                ->where('report_id', $report->id)
+                ->where('user_id', $mate->user_id)
+                ->update($mateUpdate);
+
+            // Log for each teammate
+            ReportStatusUpdate::create([
+                'report_id' => $report->id,
+                'user_id'   => $mate->user_id,
+                'status'    => $newStatus,
+                'notes'     => $mate->user_id === $user->id ? ($data['notes'] ?? null) : null,
             ]);
+
+            // Emit status for each teammate
+            $matePayload = [
+                'report_id' => $report->id,
+                'responder' => [
+                    'id'     => $mateUser->id,
+                    'name'   => $mateUser->name,
+                    'status' => $newStatus,
+                    'lat'    => $mateUser->current_latitude ? (float) $mateUser->current_latitude : null,
+                    'lng'    => $mateUser->current_longitude ? (float) $mateUser->current_longitude : null,
+                ],
+                'route' => isset($mateRoute) ? $mateRoute : null,
+            ];
+            SocketService::toReport($report->id, 'responder.status', $matePayload);
+            SocketService::emit('admin:responders', 'responder.status', $matePayload);
+
+            // Emit route for teammates that got one
+            if (isset($mateRoute) && $mateRoute) {
+                SocketService::toReport($report->id, 'route.updated', [
+                    'report_id'      => $report->id,
+                    'user_id'        => $mateUser->id,
+                    'polyline'       => $mateRoute['polyline'],
+                    'distance_m'     => $mateRoute['distance_m'],
+                    'duration_s'     => $mateRoute['duration_s'],
+                    'hazard_warning' => $mateRoute['hazard_warning'],
+                ]);
+            }
+            unset($mateRoute);
+
+            // Refresh assignments for each teammate
+            if ($newStatus === 'resolved') {
+                SocketService::refreshAssignments($mateUser->id);
+            }
         }
 
         // Notify the resident
@@ -169,8 +188,6 @@ class ResponderMissionController extends Controller
                 SocketService::revokeRoom("report:{$report->id}");
             }
 
-            // Refresh assignment cache
-            SocketService::refreshAssignments($user->id);
         }
 
         return response()->json([

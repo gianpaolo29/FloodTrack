@@ -653,69 +653,56 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                             </div>
                             <div className="p-5">
                                 {report.team_members && report.team_members.length > 0 ? (
-                                    <div className="flex flex-col gap-3">
-                                        {/* Team readiness summary */}
-                                        <TeamReadinessSummary
-                                            members={report.team_members}
-                                            memberStatuses={report.member_statuses ?? []}
-                                        />
-                                        {/* Member list */}
-                                        <div className="flex flex-col divide-y divide-neutral-100 rounded-xl border border-neutral-100 dark:divide-neutral-800 dark:border-neutral-800">
-                                            {report.team_members.map((m) => {
-                                                const ms = report.member_statuses?.find(s => s.user_id === m.id);
-                                                const status: ResponderStatus = ms?.status ?? 'pending';
-                                                const isOnline = m.is_online ?? false;
-                                                const lastSeen = m.location_updated_at
-                                                    ? (() => {
-                                                        const diff = Math.floor((Date.now() - new Date(m.location_updated_at!).getTime()) / 1000);
-                                                        if (diff < 60) return 'Just now';
-                                                        if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-                                                        if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-                                                        return `${Math.floor(diff / 86400)}d ago`;
-                                                    })()
-                                                    : null;
-                                                return (
-                                                    <div key={m.id} className="flex items-center gap-3 px-4 py-3">
-                                                        <div className={`relative flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white shadow-sm ${m.is_leader ? 'bg-neutral-900 dark:bg-white dark:text-neutral-900' : 'bg-neutral-500 dark:bg-neutral-400'}`}>
-                                                            {m.name.charAt(0).toUpperCase()}
-                                                            {m.is_leader && (
-                                                                <span className="absolute -bottom-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-neutral-700 dark:bg-neutral-300 text-[8px] font-bold text-white dark:text-neutral-900 ring-1 ring-white dark:ring-neutral-900">★</span>
+                                    <div className="flex flex-col divide-y divide-neutral-100 rounded-xl border border-neutral-100 dark:divide-neutral-800 dark:border-neutral-800">
+                                        {report.team_members.map((m) => {
+                                            const isOnline = m.is_online ?? false;
+                                            const lastSeen = m.location_updated_at
+                                                ? (() => {
+                                                    const diff = Math.floor((Date.now() - new Date(m.location_updated_at!).getTime()) / 1000);
+                                                    if (diff < 60) return 'Just now';
+                                                    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+                                                    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+                                                    return `${Math.floor(diff / 86400)}d ago`;
+                                                })()
+                                                : null;
+                                            return (
+                                                <div key={m.id} className="flex items-center gap-3 px-4 py-3">
+                                                    <div className={`relative flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white shadow-sm ${m.is_leader ? 'bg-neutral-900 dark:bg-white dark:text-neutral-900' : 'bg-neutral-500 dark:bg-neutral-400'}`}>
+                                                        {m.name.charAt(0).toUpperCase()}
+                                                        {m.is_leader && (
+                                                            <span className="absolute -bottom-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-neutral-700 dark:bg-neutral-300 text-[8px] font-bold text-white dark:text-neutral-900 ring-1 ring-white dark:ring-neutral-900">★</span>
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="truncate text-xs font-semibold text-neutral-900 dark:text-neutral-100">
+                                                            {m.name}
+                                                            {m.is_leader && <span className="ml-1.5 text-[10px] font-normal text-neutral-500 dark:text-neutral-400">Leader</span>}
+                                                        </p>
+                                                        <div className="mt-0.5 flex items-center gap-2 text-[10px]">
+                                                            {isOnline ? (
+                                                                <>
+                                                                    <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                                                                        <span className="relative flex size-1.5">
+                                                                            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                                                                            <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+                                                                        </span>
+                                                                        Online
+                                                                    </span>
+                                                                    {m.distance_km != null && (
+                                                                        <span className="font-semibold text-blue-600 dark:text-blue-400">{m.distance_km} km</span>
+                                                                    )}
+                                                                    {lastSeen && (
+                                                                        <span className="text-neutral-400">{lastSeen}</span>
+                                                                    )}
+                                                                </>
+                                                            ) : (
+                                                                <span className="text-neutral-400 dark:text-neutral-500">Offline</span>
                                                             )}
                                                         </div>
-                                                        <div className="min-w-0 flex-1">
-                                                            <p className="truncate text-xs font-semibold text-neutral-900 dark:text-neutral-100">
-                                                                {m.name}
-                                                                {m.is_leader && <span className="ml-1.5 text-[10px] font-normal text-neutral-500 dark:text-neutral-400">Leader</span>}
-                                                            </p>
-                                                            <div className="mt-0.5 flex items-center gap-2 text-[10px]">
-                                                                {isOnline ? (
-                                                                    <>
-                                                                        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                                                                            <span className="relative flex size-1.5">
-                                                                                <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                                                                                <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
-                                                                            </span>
-                                                                            Online
-                                                                        </span>
-                                                                        {m.distance_km != null && (
-                                                                            <span className="font-semibold text-blue-600 dark:text-blue-400">{m.distance_km} km</span>
-                                                                        )}
-                                                                        {lastSeen && (
-                                                                            <span className="text-neutral-400">{lastSeen}</span>
-                                                                        )}
-                                                                    </>
-                                                                ) : (
-                                                                    <span className="text-neutral-400 dark:text-neutral-500">Offline</span>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                        <span className={`shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${RESPONDER_STATUS_COLORS[status]}`}>
-                                                            {RESPONDER_STATUS_LABELS[status]}
-                                                        </span>
                                                     </div>
-                                                );
-                                            })}
-                                        </div>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 ) : report.assigned_responder ? (
                                     /* Legacy single-responder fallback */
