@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\DutyLog;
+use App\Models\Setting;
 use App\Models\Team;
 use App\Models\User;
 use App\Services\ExpoPushService;
@@ -31,6 +32,7 @@ class SyncDutyStatus extends Command
     public function handle(): int
     {
         $activeShift = $this->activeShift();
+        $isRedAlert = Setting::getValue('schedule_level', 'white') === 'red';
         $now = now();
 
         // Get all responders with their team info
@@ -56,7 +58,8 @@ class SyncDutyStatus extends Command
                 $shouldBeOnDuty = false;
                 $source = 'override';
             } elseif ($team && $team->is_active) {
-                $shouldBeOnDuty = $team->shift === $activeShift;
+                // Red alert: all active teams are on duty
+                $shouldBeOnDuty = $isRedAlert || $team->shift === $activeShift;
             }
 
             $currentlyOnDuty = (bool) $responder->is_on_duty;

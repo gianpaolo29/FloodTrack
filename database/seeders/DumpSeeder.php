@@ -304,7 +304,7 @@ class DumpSeeder extends Seeder
                         'password'          => bcrypt('password123'),
                         'role'              => 'responder',
                         'email_verified_at' => now(),
-                        'is_on_duty'        => true,
+                        'is_on_duty'        => false,
                     ]
                 );
             }

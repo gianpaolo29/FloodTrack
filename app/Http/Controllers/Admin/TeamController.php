@@ -9,6 +9,7 @@ use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -116,6 +117,8 @@ class TeamController extends Controller
 
         User::whereIn('id', $memberIds)->update(['team_id' => $team->id]);
 
+        Artisan::call('duty:sync');
+
         Inertia::flash('toast', ['type' => 'success', 'message' => "Team \"{$team->name}\" created."]);
 
         return back();
@@ -153,6 +156,8 @@ class TeamController extends Controller
 
         User::whereIn('id', $newMemberIds)->update(['team_id' => $team->id]);
 
+        Artisan::call('duty:sync');
+
         Inertia::flash('toast', ['type' => 'success', 'message' => "Team \"{$team->name}\" updated."]);
 
         return back();
@@ -161,6 +166,8 @@ class TeamController extends Controller
     public function toggleActive(Team $team): RedirectResponse
     {
         $team->update(['is_active' => ! $team->is_active]);
+
+        Artisan::call('duty:sync');
 
         $status = $team->is_active ? 'activated' : 'deactivated';
         Inertia::flash('toast', ['type' => 'success', 'message' => "Team \"{$team->name}\" {$status}."]);
@@ -179,6 +186,8 @@ class TeamController extends Controller
         $team->reports()->update(['assigned_team_id' => null]);
 
         $team->delete();
+
+        Artisan::call('duty:sync');
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Team \"{$name}\" deleted."]);
 

@@ -21,6 +21,8 @@ use App\Services\SmsService;
 use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,6 +32,12 @@ class ReportController extends Controller
 
     public function map(Request $request): Response
     {
+        // Auto-sync duty status at most once per minute
+        Cache::remember('duty:sync:last_run', 60, function () {
+            Artisan::call('duty:sync');
+            return now()->timestamp;
+        });
+
         $request->validate([
             'status'      => ['nullable', 'string', 'regex:/^(pending|verified|assigned|resolved|rejected)(,(pending|verified|assigned|resolved|rejected))*$/'],
             'severity'    => ['nullable', 'string', 'regex:/^(low|moderate|high|critical)(,(low|moderate|high|critical))*$/'],
@@ -90,9 +98,10 @@ class ReportController extends Controller
             ->all();
 
         $responderCounts = [
-            'on_duty'  => User::where('role', 'responder')->where('is_on_duty', true)->count(),
-            'off_duty' => User::where('role', 'responder')->where(fn ($q) => $q->where('is_on_duty', false)->orWhereNull('is_on_duty'))->count(),
-            'tracking' => $responders->count(),
+            'on_duty'         => User::where('role', 'responder')->where('is_on_duty', true)->count(),
+            'off_duty'        => User::where('role', 'responder')->where(fn ($q) => $q->where('is_on_duty', false)->orWhereNull('is_on_duty'))->count(),
+            'total_responders' => User::where('role', 'responder')->count(),
+            'tracking'        => $responders->count(),
         ];
 
         return Inertia::render('admin/reports/map', [

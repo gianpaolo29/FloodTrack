@@ -26,7 +26,7 @@ interface Props {
     filters: Filters;
     evacuation_centers: EvacuationCenter[];
     responders: MapResponder[];
-    responder_counts: { on_duty: number; off_duty: number; tracking: number };
+    responder_counts: { on_duty: number; off_duty: number; total_responders: number; tracking: number };
     hazards: Hazard[];
 }
 
@@ -584,7 +584,8 @@ function getResponderState(updatedAt: string | null): 'online' | 'stale' | 'offl
     return 'online';
 }
 
-function useMapSocket(initial: MapResponder[], onNewReport: () => void) {
+function useMapSocket(initial: MapResponder[], initialOnDuty: number, onNewReport: () => void) {
+    const [onDutyCount, setOnDutyCount] = useState(initialOnDuty);
     const [responders, setResponders] = useState<Map<number, LiveResponder>>(() => {
         const map = new Map<number, LiveResponder>();
         for (const r of initial) {
@@ -689,8 +690,9 @@ function useMapSocket(initial: MapResponder[], onNewReport: () => void) {
                     });
                 });
 
-                // Duty changed — add or remove responders
+                // Duty changed — add or remove responders + update count
                 socket.on('duty.changed', (p: { user_id: number; on_duty: boolean }) => {
+                    setOnDutyCount((prev) => Math.max(0, prev + (p.on_duty ? 1 : -1)));
                     setResponders((prev) => {
                         const next = new Map(prev);
                         if (!p.on_duty) {
@@ -713,7 +715,8 @@ function useMapSocket(initial: MapResponder[], onNewReport: () => void) {
         return () => { socket?.disconnect(); };
     }, []);
 
-    return useMemo(() => Array.from(responders.values()), [responders]);
+    const list = useMemo(() => Array.from(responders.values()), [responders]);
+    return { liveResponders: list, onDutyCount };
 }
 
 /* ─── Main page ─── */
@@ -727,7 +730,8 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
         }, 1500);
     }, []);
 
-    const liveResponders = useMapSocket(initialResponders, handleReportEvent);
+    const { liveResponders, onDutyCount } = useMapSocket(initialResponders, responder_counts.on_duty, handleReportEvent);
+    const offDutyCount = responder_counts.total_responders - onDutyCount;
 
     const [mounted, setMounted] = useState(false);
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
@@ -999,14 +1003,14 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                 <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
                                     <span className="flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
                                         <span className="relative flex size-1.5"><span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" /><span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" /></span>
-                                        {responder_counts.on_duty} On Duty
+                                        {onDutyCount} On Duty
                                     </span>
                                     <span className="flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[9px] font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                                         <Radio className="size-2.5" />
                                         {liveResponders.length} Live
                                     </span>
                                     <span className="flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-0.5 text-[9px] font-bold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                                        {responder_counts.off_duty} Off Duty
+                                        {offDutyCount} Off Duty
                                     </span>
                                 </div>
                                 {liveResponders.length > 0 ? (
@@ -1124,11 +1128,11 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                         <span className="h-3 w-px bg-neutral-300 dark:bg-neutral-600" />
                         <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
                             <span className="size-1.5 rounded-full bg-emerald-500" />
-                            {responder_counts.on_duty} On Duty
+                            {onDutyCount} On Duty
                         </span>
                         <span className="flex items-center gap-1 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
                             <span className="size-1.5 rounded-full bg-neutral-400" />
-                            {responder_counts.off_duty} Off
+                            {offDutyCount} Off
                         </span>
                     </div>
                     <MapContainer

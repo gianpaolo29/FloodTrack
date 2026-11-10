@@ -8,6 +8,8 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 
 class AdminResponderLiveController extends Controller
 {
@@ -18,6 +20,12 @@ class AdminResponderLiveController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        // Auto-sync duty status at most once per minute
+        Cache::remember('duty:sync:last_run', 60, function () {
+            Artisan::call('duty:sync');
+            return now()->timestamp;
+        });
+
         $query = User::where('role', 'responder')
             ->where('is_on_duty', true)
             ->select([

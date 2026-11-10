@@ -12,6 +12,7 @@ use App\Services\ExpoPushService;
 use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -67,6 +68,9 @@ class SettingsController extends Controller
 
     private function handleScheduleChange(string $newLevel): void
     {
+        // Sync duty flags immediately so map counts update in real-time
+        Artisan::call('duty:sync');
+
         $currentShift = ScheduleController::currentShift();
 
         // 1. Broadcast real-time socket event to all connected clients
