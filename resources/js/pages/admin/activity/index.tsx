@@ -1,6 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { CheckCircle2, ChevronLeft, ChevronRight, Clock, History, Search, Sparkles, X } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { useLocale } from '@/hooks/use-locale';
 import { MultiSelectFilter } from '@/components/admin/MultiSelectFilter';
@@ -78,7 +78,7 @@ const ROLE_AVATAR: Record<string, string> = {
 
 export default function AdminActivityLog({ activities, filters, stats, trends, period, custom_from, custom_to, teams }: Props) {
     const { t } = useLocale();
-    const [searchValue, setSearchValue] = useState('');
+    const [searchValue, setSearchValue] = useState(filters.search ?? '');
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
@@ -90,16 +90,18 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
         });
     }, [filters]);
 
-    const filtered = activities.data.filter((a) => {
-        if (!searchValue) return true;
-        const q = searchValue.toLowerCase();
-        return (
-            (a.report?.reference_number ?? '').toLowerCase().includes(q) ||
-            (a.user?.name ?? '').toLowerCase().includes(q) ||
-            a.status.toLowerCase().includes(q) ||
-            (a.notes ?? '').toLowerCase().includes(q)
-        );
-    });
+    // Debounced server-side search
+    const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (searchValue === (filters.search ?? '')) return;
+        if (searchDebounce.current) clearTimeout(searchDebounce.current);
+        searchDebounce.current = setTimeout(() => {
+            router.get('/admin/activity', { ...filters, search: searchValue || undefined, page: undefined }, { preserveState: true, replace: true });
+        }, 400);
+        return () => { if (searchDebounce.current) clearTimeout(searchDebounce.current); };
+    }, [searchValue]);
+
+    const filtered = activities.data;
 
     const hasFilters = !!(filters.status || filters.team_id);
 

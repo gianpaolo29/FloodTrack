@@ -240,11 +240,18 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
         router.get('/admin/reports', { status: filters.status }, { preserveState: false, replace: true });
     };
 
-    const filtered = reports.data.filter((r) => {
-        if (!searchValue) return true;
-        const q = searchValue.toLowerCase();
-        return r.reference_number.toLowerCase().includes(q) || (r.address ?? '').toLowerCase().includes(q) || (r.user?.name ?? '').toLowerCase().includes(q);
-    });
+    // Debounced server-side search across all pages
+    const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (searchValue === (filters.search ?? '')) return;
+        if (searchDebounce.current) clearTimeout(searchDebounce.current);
+        searchDebounce.current = setTimeout(() => {
+            router.get('/admin/reports', { ...filters, search: searchValue || undefined }, { preserveState: true, replace: true });
+        }, 400);
+        return () => { if (searchDebounce.current) clearTimeout(searchDebounce.current); };
+    }, [searchValue]);
+
+    const filtered = reports.data;
 
     const hasExtraFilters = !!(filters.severity || filters.team_id || filters.status);
     const allOnPageSelected = filtered.length > 0 && filtered.every((r) => selected.includes(r.id));

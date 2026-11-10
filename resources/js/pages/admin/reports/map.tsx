@@ -178,14 +178,16 @@ function makeDivIcon(url: string, width: number, height: number, anchorX: number
 }
 
 /* ─── MapEventHandlers child component ─── */
-function MapEventHandlers({ onClick, mapRef }: {
+function MapEventHandlers({ onClick, mapRef, onZoom }: {
     onClick: () => void;
     mapRef: React.MutableRefObject<L.Map | null>;
+    onZoom?: (zoom: number) => void;
 }) {
     const map = useMap();
     mapRef.current = map;
     useMapEvents({
         click: () => onClick(),
+        zoomend: () => onZoom?.(map.getZoom()),
     });
     return null;
 }
@@ -207,9 +209,6 @@ function MapFitBounds({ reports, evacuation_centers }: { reports: Report[]; evac
         }
         const bounds = L.latLngBounds(allPoints.map(([lat, lng]) => L.latLng(lat, lng)));
         map.fitBounds(bounds, { padding: [60, 60], maxZoom: 15 });
-        // Re-enforce bounds after fitBounds
-        map.setMaxBounds(L.latLngBounds(NASUGBU_BOUNDS));
-        map.setMinZoom(11);
     }, [map, reports, evacuation_centers]);
     return null;
 }
@@ -746,6 +745,9 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
     const [showResponders, setShowResponders]           = useState(false);
     const [showAssignmentLines, setShowAssignmentLines] = useState(false);
 
+    // Track zoom for responsive responder markers
+    const [mapZoom, setMapZoom] = useState(13);
+
     // Keep "last seen" text live
     const [, setTick] = useState(0);
     useEffect(() => {
@@ -781,15 +783,52 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
         full: makeDivIcon(createEvacMarker(true), 30, 30, 15, 15),
     }), []);
 
-    const getResponderIcon = useCallback((r: LiveResponder) => {
+    const getResponderIcon = useCallback((r: LiveResponder, zoom: number) => {
         const state = getResponderState(r.location_updated_at);
-        const url = createResponderMarkerSvg(r.status, state, r.heading);
+        const color = RESPONDER_STATUS_MARKER_COLORS[r.status] ?? '#2563eb';
+        const opacity = state === 'offline' ? '0.3' : state === 'stale' ? '0.5' : '1';
+
+        // Scale based on zoom: small at z11, full at z16+
+        const scale = Math.max(0.5, Math.min(1, (zoom - 11) / 5));
+        const size = Math.round(36 * scale);
+        const border = Math.max(2, Math.round(3 * scale));
+        const fontSize = Math.round(15 * scale);
+        const dotSize = Math.max(6, Math.round(10 * scale));
+        const dotBorder = Math.max(1, Math.round(2 * scale));
+        const nameFontSize = Math.round(10 * scale);
+        const showName = zoom >= 13;
+
+        const heading = r.heading != null && state === 'online'
+            ? `<div style="position:absolute;top:${Math.round(-8 * scale)}px;left:50%;transform:translateX(-50%) rotate(${r.heading}deg);width:0;height:0;border-left:${Math.round(6 * scale)}px solid transparent;border-right:${Math.round(6 * scale)}px solid transparent;border-bottom:${Math.round(10 * scale)}px solid ${color};opacity:0.8;"></div>`
+            : '';
+        const firstName = (r.name?.split(' ')[0] ?? '').slice(0, 10);
+        const dotColor = state === 'online' ? '#22c55e' : state === 'stale' ? '#f59e0b' : '#9ca3af';
+        const nameLabel = showName
+            ? `<div style="text-align:center;margin-top:1px;font-size:${nameFontSize}px;font-weight:700;color:#1e293b;white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;">${firstName}</div>`
+            : '';
+
+        const avatarContent = r.avatar_url
+            ? `<img src="${r.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block;" />`
+            : `<span style="color:white;font-size:${fontSize}px;font-weight:700;line-height:${size - border * 2}px;text-align:center;display:block;width:100%;">${(r.name?.charAt(0) ?? '?').toUpperCase()}</span>`;
+        const avatarBg = r.avatar_url ? '#fff' : color;
+
+        const totalH = size + (showName ? nameFontSize + 4 : 0);
+
         return L.divIcon({
-            html: `<img src="${url}" width="40" height="40" style="display:block;" />`,
+            html: `<div style="opacity:${opacity};display:flex;flex-direction:column;align-items:center;">
+                <div style="position:relative;">
+                    ${heading}
+                    <div style="width:${size}px;height:${size}px;border-radius:50%;border:${border}px solid ${color};overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.25);background:${avatarBg};display:flex;align-items:center;justify-content:center;">
+                        ${avatarContent}
+                    </div>
+                    <div style="position:absolute;bottom:-1px;right:-1px;width:${dotSize}px;height:${dotSize}px;border-radius:50%;background:${dotColor};border:${dotBorder}px solid white;"></div>
+                </div>
+                ${nameLabel}
+            </div>`,
             className: '',
-            iconSize: [40, 40],
-            iconAnchor: [20, 20],
-            popupAnchor: [0, -20],
+            iconSize: [80, totalH],
+            iconAnchor: [40, Math.round(size / 2)],
+            popupAnchor: [0, -Math.round(size / 2)],
         });
     }, []);
 
@@ -1138,15 +1177,13 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                     <MapContainer
                         center={DEFAULT_CENTER}
                         zoom={13}
-                        minZoom={11}
+                        minZoom={5}
                         maxZoom={18}
-                        maxBounds={NASUGBU_BOUNDS}
-                        maxBoundsViscosity={1.0}
                         zoomControl={true}
                         style={{ width: '100%', height: '100%' }}
                     >
                         <DarkModeTileLayer />
-                        <MapEventHandlers onClick={clearSelection} mapRef={mapRef} />
+                        <MapEventHandlers onClick={clearSelection} mapRef={mapRef} onZoom={setMapZoom} />
                         <MapFitBounds reports={reports} evacuation_centers={evacuation_centers} />
                         {showHeatmap && <HeatmapLayer points={heatPoints} />}
 
@@ -1290,7 +1327,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                             <Marker
                                 key={`resp-${r.id}`}
                                 position={[r.latitude, r.longitude]}
-                                icon={getResponderIcon(r)}
+                                icon={getResponderIcon(r, mapZoom)}
                                 zIndexOffset={20}
                                 eventHandlers={{
                                     click: () => {

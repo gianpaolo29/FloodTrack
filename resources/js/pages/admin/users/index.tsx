@@ -81,13 +81,20 @@ export default function AdminUsersIndex({ users, filters, barangay_list, stats, 
     const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
     const [selected, setSelected] = useState<number[]>([]);
     const [bulkProcessing, setBulkProcessing] = useState(false);
-    const [searchValue, setSearchValue] = useState('');
+    const [searchValue, setSearchValue] = useState(filters.search ?? '');
 
-    const filtered = users.data.filter((u) => {
-        if (!searchValue) return true;
-        const q = searchValue.toLowerCase();
-        return u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || (u.contact_number ?? '').toLowerCase().includes(q) || (u.home_address ?? '').toLowerCase().includes(q);
-    });
+    // Debounced server-side search
+    const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (searchValue === (filters.search ?? '')) return;
+        if (searchDebounce.current) clearTimeout(searchDebounce.current);
+        searchDebounce.current = setTimeout(() => {
+            router.get('/admin/users', { ...filters, search: searchValue || undefined, page: undefined }, { preserveState: true, replace: true });
+        }, 400);
+        return () => { if (searchDebounce.current) clearTimeout(searchDebounce.current); };
+    }, [searchValue]);
+
+    const filtered = users.data;
 
     const filter = useCallback((key: string, value: string) => {
         router.get('/admin/users', { ...filters, [key]: value || undefined, page: undefined }, {

@@ -73,7 +73,7 @@ export default function AdminRespondersIndex({ responders, filters, barangay_lis
 
     const [showCreate, setShowCreate] = useState(false);
     const [editingResponder, setEditingResponder] = useState<Responder | null>(null);
-    const [searchValue, setSearchValue] = useState('');
+    const [searchValue, setSearchValue] = useState(filters.search ?? '');
 
     const filter = useCallback((key: string, value: string) => {
         router.get('/admin/responders', { ...filters, [key]: value || undefined, page: undefined }, {
@@ -81,17 +81,24 @@ export default function AdminRespondersIndex({ responders, filters, barangay_lis
         });
     }, [filters]);
 
+    // Debounced server-side search
+    const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (searchValue === (filters.search ?? '')) return;
+        if (searchDebounce.current) clearTimeout(searchDebounce.current);
+        searchDebounce.current = setTimeout(() => {
+            router.get('/admin/responders', { ...filters, search: searchValue || undefined, page: undefined }, { preserveState: true, replace: true });
+        }, 400);
+        return () => { if (searchDebounce.current) clearTimeout(searchDebounce.current); };
+    }, [searchValue]);
+
     const handleDelete = async (r: Responder) => {
         const confirmed = await swalDelete(r.name);
         if (!confirmed) return;
         router.delete(`/admin/responders/${r.id}`, { preserveState: false, preserveScroll: true });
     };
 
-    const filtered = responders.data.filter((r) => {
-        if (!searchValue) return true;
-        const q = searchValue.toLowerCase();
-        return r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q) || (r.contact_number ?? '').toLowerCase().includes(q) || (r.home_address ?? '').toLowerCase().includes(q) || (r.team_name ?? '').toLowerCase().includes(q);
-    });
+    const filtered = responders.data;
 
     const hasFilters = !!(searchValue || filters.status || filters.team || filters.leader);
 

@@ -111,10 +111,21 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
     const { t } = useLocale();
     const [showCreate, setShowCreate] = useState(false);
     const [editTarget, setEditTarget] = useState<Team | null>(null);
-    const [searchValue, setSearchValue] = useState('');
+    const [searchValue, setSearchValue] = useState(filters.search ?? '');
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
+
+    // Debounced server-side search
+    const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (searchValue === (filters.search ?? '')) return;
+        if (searchDebounce.current) clearTimeout(searchDebounce.current);
+        searchDebounce.current = setTimeout(() => {
+            router.get('/admin/teams', { ...filters, search: searchValue || undefined, page: undefined }, { preserveState: true, replace: true });
+        }, 400);
+        return () => { if (searchDebounce.current) clearTimeout(searchDebounce.current); };
+    }, [searchValue]);
 
     const handleDelete = useCallback(async (team: Team) => {
         const confirmed = await swalDelete(`team "${team.name}"`);
@@ -132,11 +143,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
         });
     }, []);
 
-    const filtered = teams.data.filter((t) => {
-        if (!searchValue) return true;
-        const q = searchValue.toLowerCase();
-        return t.name.toLowerCase().includes(q) || t.members.some((m) => m.name.toLowerCase().includes(q));
-    });
+    const filtered = teams.data;
 
     const tl = trends.label;
     const assignedPct = stats.total_responders > 0 ? Math.round((stats.in_teams / stats.total_responders) * 100) : 0;

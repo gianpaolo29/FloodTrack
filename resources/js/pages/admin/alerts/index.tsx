@@ -209,7 +209,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
-    const [searchValue, setSearchValue] = useState('');
+    const [searchValue, setSearchValue] = useState(filters.search ?? '');
     const [mounted, setMounted] = useState(false);
     const searchRef = useRef<HTMLInputElement>(null);
 
@@ -244,15 +244,18 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
         });
     };
 
-    const filtered = alerts.data.filter((a) => {
-        if (!searchValue) return true;
-        const q = searchValue.toLowerCase();
-        return (
-            a.title.toLowerCase().includes(q) ||
-            a.body.toLowerCase().includes(q) ||
-            a.type.toLowerCase().includes(q)
-        );
-    });
+    // Debounced server-side search
+    const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (searchValue === (filters.search ?? '')) return;
+        if (searchDebounce.current) clearTimeout(searchDebounce.current);
+        searchDebounce.current = setTimeout(() => {
+            router.get('/admin/alerts', { ...filters, search: searchValue || undefined, page: undefined }, { preserveState: true, replace: true });
+        }, 400);
+        return () => { if (searchDebounce.current) clearTimeout(searchDebounce.current); };
+    }, [searchValue]);
+
+    const filtered = alerts.data;
 
     const hasActiveFilters = !!(searchValue || filters.type);
 

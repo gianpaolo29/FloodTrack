@@ -121,7 +121,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
     const [bulkProcessing, setBulkProcessing] = useState(false);
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [editingCenter, setEditingCenter] = useState<EvacuationCenter | null>(null);
-    const [searchValue, setSearchValue] = useState('');
+    const [searchValue, setSearchValue] = useState(filters.search ?? '');
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
@@ -136,15 +136,18 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
         [filters],
     );
 
-    const filtered = centers.data.filter((c) => {
-        if (!searchValue) return true;
-        const q = searchValue.toLowerCase();
-        return (
-            c.name.toLowerCase().includes(q) ||
-            (c.address ?? '').toLowerCase().includes(q) ||
-            c.type.toLowerCase().includes(q)
-        );
-    });
+    // Debounced server-side search
+    const searchDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
+    useEffect(() => {
+        if (searchValue === (filters.search ?? '')) return;
+        if (searchDebounce.current) clearTimeout(searchDebounce.current);
+        searchDebounce.current = setTimeout(() => {
+            router.get('/admin/evacuation-centers', { ...filters, search: searchValue || undefined, page: undefined }, { preserveState: true, replace: true });
+        }, 400);
+        return () => { if (searchDebounce.current) clearTimeout(searchDebounce.current); };
+    }, [searchValue]);
+
+    const filtered = centers.data;
 
     const allOnPageSelected = filtered.length > 0 && filtered.every((c) => selected.includes(c.id));
     const toggleAll = () => {

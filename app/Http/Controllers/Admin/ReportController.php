@@ -143,8 +143,11 @@ class ReportController extends Controller
                 : $q->where('severity', $request->severity))
             ->when($request->team_id, fn ($q) => $q->where('assigned_team_id', $request->team_id))
             ->when($request->search, fn ($q) => $q->where(function ($q2) use ($request) {
-                $q2->where('address', 'like', "%{$request->search}%")
-                   ->orWhere('reference_number', 'like', "%{$request->search}%");
+                $search = $request->search;
+                $q2->where('address', 'like', "%{$search}%")
+                   ->orWhere('reference_number', 'like', "%{$search}%")
+                   ->orWhere('id', $search)
+                   ->orWhereHas('user', fn ($q3) => $q3->where('name', 'like', "%{$search}%"));
             }))
             ->orderByRaw("DATE(created_at) DESC")
             ->orderByRaw("{$severityOrder} DESC")
