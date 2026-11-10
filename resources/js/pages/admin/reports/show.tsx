@@ -141,6 +141,9 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
 
                 socket.on('report-status', reload);
                 socket.on('member-status-updated', reload);
+                socket.on('responder.status', reload);
+                socket.on('responder.location', reload);
+                socket.on('route.updated', reload);
                 socket.on('new-notification', reload);
             })
             .catch(() => {});

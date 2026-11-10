@@ -41,6 +41,12 @@ io.on('connection', (socket) => {
   socket.join(`user:${userId}`);
   socket.join('alerts');
 
+  // Admins auto-join rooms for live monitoring
+  if (role === 'admin') {
+    socket.join('admin:responders');
+    socket.join('responder-locations');
+  }
+
   socket.on('join-report', (reportId) => socket.join(`report:${reportId}`));
   socket.on('leave-report', (reportId) => socket.leave(`report:${reportId}`));
   socket.on('typing', (reportId) => {
