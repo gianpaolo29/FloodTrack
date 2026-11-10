@@ -752,7 +752,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
     const [, setTick] = useState(0);
     useEffect(() => {
         if (!showResponders || liveResponders.length === 0) return;
-        const id = setInterval(() => setTick((t) => t + 1), 15_000);
+        const id = setInterval(() => setTick((t) => t + 1), 5_000);
         return () => clearInterval(id);
     }, [showResponders, liveResponders.length]);
 
