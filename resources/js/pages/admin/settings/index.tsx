@@ -178,6 +178,8 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
                     <div className="grid gap-4 lg:grid-cols-2">
                         <SettingsCard icon={Bot} title="AI & Automation" sub="Control AI-powered report analysis">
                             <SettingToggle title="AI Report Analysis" description="Automatically verify reports using AI. When off, all reports go to admin." enabled={getBool('ai_report_analysis')} onToggle={() => toggleBool('ai_report_analysis')} />
+                            <SettingInput title="Report Cooldown (min)" description="Minutes between submissions per user. 0 to disable." value={get('report_cooldown_minutes')} onChange={(v) => set('report_cooldown_minutes', v)} type="number" />
+                            <SettingInput title="Daily Report Cap" description="Max reports per user per day. 0 for unlimited." value={get('report_daily_cap')} onChange={(v) => set('report_daily_cap', v)} type="number" />
                         </SettingsCard>
 
                         <SettingsCard icon={Shield} title="Responder Schedule" sub="Shift rotation and alert levels">

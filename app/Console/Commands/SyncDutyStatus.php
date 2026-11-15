@@ -95,8 +95,12 @@ class SyncDutyStatus extends Command
                     ->update(['ended_at' => $now]);
             }
 
-            // Emit duty.changed via socket
+            // Emit duty.changed via socket — to admin and to the responder
             SocketService::toAll('duty.changed', [
+                'user_id' => $responder->id,
+                'on_duty' => $shouldBeOnDuty,
+            ]);
+            SocketService::toUser($responder->id, 'duty.changed', [
                 'user_id' => $responder->id,
                 'on_duty' => $shouldBeOnDuty,
             ]);
@@ -120,7 +124,6 @@ class SyncDutyStatus extends Command
             }
         }
 
-        // Also handle responders with no team — always off duty
         User::where('role', 'responder')
             ->whereNull('team_id')
             ->where('is_on_duty', true)

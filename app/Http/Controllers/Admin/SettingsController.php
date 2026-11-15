@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\ScheduleController;
+use App\Jobs\AnalyzeReportJob;
+use App\Models\Report;
 use App\Models\ReportSlaConfig;
 use App\Models\Setting;
 use App\Models\User;
@@ -35,8 +37,9 @@ class SettingsController extends Controller
             'settings.*' => 'nullable|string|max:500',
         ]);
 
-        // Capture old schedule level before saving
+        // Capture old values before saving
         $oldScheduleLevel = Setting::getValue('schedule_level', 'white');
+        $oldAiAnalysis = Setting::getValue('ai_report_analysis', true);
 
         foreach ($request->settings as $key => $value) {
             $setting = Setting::where('key', $key)->first();
@@ -54,6 +57,12 @@ class SettingsController extends Controller
             $setting->update(['value' => $storeValue]);
         }
 
+        // If AI analysis was just turned ON, analyze all pending reports
+        $newAiAnalysis = Setting::getValue('ai_report_analysis', true);
+        if (!$oldAiAnalysis && $newAiAnalysis) {
+            $this->dispatchPendingReportAnalysis();
+        }
+
         // If schedule level changed, notify all responders
         $newScheduleLevel = $request->settings['schedule_level'] ?? null;
 
@@ -64,6 +73,14 @@ class SettingsController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Settings saved.']);
 
         return back();
+    }
+
+    private function dispatchPendingReportAnalysis(): void
+    {
+        Report::where('status', 'pending')
+            ->whereNull('ai_image_verified')
+            ->pluck('id')
+            ->each(fn (int $id) => AnalyzeReportJob::dispatch($id));
     }
 
     private function handleScheduleChange(string $newLevel): void

@@ -7,6 +7,7 @@ use App\Models\IncidentMessage;
 use App\Models\Report;
 use App\Models\ReportMedia;
 use App\Models\ReportStatusUpdate;
+use App\Models\Setting;
 use App\Models\User;
 use App\Jobs\AnalyzeReportJob;
 use App\Notifications\ReportStatusChanged;
@@ -76,6 +77,32 @@ class ReportController extends Controller
             'media.*'     => 'file|mimes:jpg,jpeg,png,mp4,mov,avi,mkv,webm|max:51200',
             'voice_note'  => 'nullable|file|mimes:m4a,mp4,webm,ogg,wav,mp3|max:5120',
         ]);
+
+        // Spam protection: cooldown + daily cap
+        $user = $request->user();
+        $cooldown = (int) Setting::getValue('report_cooldown_minutes', 5);
+        $dailyCap = (int) Setting::getValue('report_daily_cap', 5);
+
+        if ($cooldown > 0) {
+            $lastReport = $user->reports()->latest()->first();
+            if ($lastReport && $lastReport->created_at->diffInMinutes(now()) < $cooldown) {
+                $remaining = $cooldown - $lastReport->created_at->diffInMinutes(now());
+                return response()->json([
+                    'message' => "Please wait {$remaining} more minute(s) before submitting another report.",
+                    'retry_after_minutes' => $remaining,
+                ], 429);
+            }
+        }
+
+        if ($dailyCap > 0) {
+            $todayCount = $user->reports()->whereDate('created_at', today())->count();
+            if ($todayCount >= $dailyCap) {
+                return response()->json([
+                    'message' => "You've reached the daily limit of {$dailyCap} reports. Please try again tomorrow.",
+                    'daily_cap' => $dailyCap,
+                ], 429);
+            }
+        }
 
         // Normalize address to nearest barangay using coordinates
         $data['address'] = $this->resolveBarangay(

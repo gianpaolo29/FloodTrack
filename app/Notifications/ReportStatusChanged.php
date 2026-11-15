@@ -26,6 +26,23 @@ class ReportStatusChanged extends Notification
     public function toArray(object $notifiable): array
     {
         $ref = $this->report->reference_number;
+        $isResponder = $notifiable->role === 'responder';
+
+        // Responder-facing messages for assignment
+        if ($isResponder && $this->newStatus === 'assigned') {
+            $address = $this->report->address ?? 'Unknown location';
+            return [
+                'type'             => 'assignment',
+                'title'            => "New Assignment — {$ref}",
+                'message'          => "You have been assigned to a {$this->report->severity} flood report at {$address}. Open the app for details.",
+                'report_id'        => $this->report->id,
+                'reference_number' => $ref,
+                'old_status'       => $this->oldStatus,
+                'new_status'       => $this->newStatus,
+                'severity'         => $this->report->severity,
+                'reason'           => $this->reason,
+            ];
+        }
 
         $messages = [
             'pending'  => "Your report {$ref} has been submitted and is awaiting review.",

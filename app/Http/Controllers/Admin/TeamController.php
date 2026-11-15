@@ -7,6 +7,7 @@ use App\Http\Traits\HasPeriodStats;
 use App\Models\Report;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -119,6 +120,15 @@ class TeamController extends Controller
 
         Artisan::call('duty:sync');
 
+        // Notify each member so their app refreshes duty/schedule state
+        foreach ($memberIds as $uid) {
+            SocketService::toUser($uid, 'schedule-updated', [
+                'team_id'   => $team->id,
+                'team_name' => $team->name,
+                'shift'     => $team->shift,
+            ]);
+        }
+
         Inertia::flash('toast', ['type' => 'success', 'message' => "Team \"{$team->name}\" created."]);
 
         return back();
@@ -158,6 +168,16 @@ class TeamController extends Controller
 
         Artisan::call('duty:sync');
 
+        // Notify new + removed members so their app refreshes duty/schedule state
+        $allAffected = array_unique(array_merge($newMemberIds, $removedIds));
+        foreach ($allAffected as $uid) {
+            SocketService::toUser($uid, 'schedule-updated', [
+                'team_id'   => $team->id,
+                'team_name' => $team->name,
+                'shift'     => $team->shift,
+            ]);
+        }
+
         Inertia::flash('toast', ['type' => 'success', 'message' => "Team \"{$team->name}\" updated."]);
 
         return back();
@@ -165,9 +185,20 @@ class TeamController extends Controller
 
     public function toggleActive(Team $team): RedirectResponse
     {
+        $memberIds = $team->members()->pluck('id')->all();
+
         $team->update(['is_active' => ! $team->is_active]);
 
         Artisan::call('duty:sync');
+
+        // Notify members so their app refreshes duty state
+        foreach ($memberIds as $uid) {
+            SocketService::toUser($uid, 'schedule-updated', [
+                'team_id'   => $team->id,
+                'team_name' => $team->name,
+                'is_active' => $team->is_active,
+            ]);
+        }
 
         $status = $team->is_active ? 'activated' : 'deactivated';
         Inertia::flash('toast', ['type' => 'success', 'message' => "Team \"{$team->name}\" {$status}."]);
@@ -178,6 +209,7 @@ class TeamController extends Controller
     public function destroy(Team $team): RedirectResponse
     {
         $name = $team->name;
+        $memberIds = $team->members()->pluck('id')->all();
 
         // Unassign all members
         $team->members()->update(['team_id' => null]);
@@ -188,6 +220,12 @@ class TeamController extends Controller
         $team->delete();
 
         Artisan::call('duty:sync');
+
+        // Notify removed members
+        foreach ($memberIds as $uid) {
+            SocketService::toUser($uid, 'schedule-updated', ['team_id' => null]);
+            SocketService::toUser($uid, 'duty.changed', ['user_id' => $uid, 'on_duty' => false]);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Team \"{$name}\" deleted."]);
 
