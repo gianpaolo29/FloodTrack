@@ -75,7 +75,7 @@ class ReportController extends Controller
             'address'     => 'nullable|string|max:255',
             'media'       => 'nullable|array|max:5',
             'media.*'     => 'file|mimes:jpg,jpeg,png,mp4,mov,avi,mkv,webm|max:51200',
-            'voice_note'  => 'nullable|file|mimes:m4a,mp4,webm,ogg,wav,mp3|max:5120',
+            'voice_note'  => 'nullable|file|mimes:m4a,mp4,webm,ogg,wav,mp3,caf,3gp,aac|max:5120',
         ]);
 
         // Spam protection: cooldown + daily cap
