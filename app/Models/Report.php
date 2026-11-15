@@ -39,6 +39,8 @@ class Report extends Model
         'messenger_sender_name',
         'advisory',
         'voice_transcription',
+        'rescued_count',
+        'evacuation_center_id',
     ];
 
     protected $appends = ['sla_status', 'member_statuses'];
@@ -125,6 +127,11 @@ class Report extends Model
         return $this->belongsToMany(User::class, 'report_responders')
             ->withPivot('role', 'status')
             ->withTimestamps();
+    }
+
+    public function evacuationCenter()
+    {
+        return $this->belongsTo(EvacuationCenter::class);
     }
 
     public function slaTracking()

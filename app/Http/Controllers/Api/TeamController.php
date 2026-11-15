@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\EvacuationCenter;
+use App\Models\OccupancyLog;
 use App\Models\Report;
 use App\Models\ReportResponder;
 use App\Models\ReportStatusUpdate;
@@ -74,10 +76,12 @@ class TeamController extends Controller
     public function submitMemberStatus(Report $report, Request $request): JsonResponse
     {
         $request->validate([
-            'status'   => 'required|in:pending,en_route,on_scene,resolved',
-            'notes'    => 'nullable|string|max:1000',
-            'media'    => 'nullable|array|max:5',
-            'media.*'  => 'file|mimes:jpg,jpeg,png,mp4,mov|max:51200',
+            'status'                => 'required|in:pending,en_route,on_scene,resolved',
+            'notes'                 => 'nullable|string|max:1000',
+            'media'                 => 'nullable|array|max:5',
+            'media.*'               => 'file|mimes:jpg,jpeg,png,mp4,mov|max:51200',
+            'rescued_count'         => 'nullable|integer|min:0|max:9999',
+            'evacuation_center_id'  => 'nullable|integer|exists:evacuation_centers,id',
         ]);
 
         $user = $request->user();
@@ -145,9 +149,14 @@ class TeamController extends Controller
                 ->update(['status' => 'resolved', 'updated_at' => now()]);
 
             $report->update([
-                'status'      => 'resolved',
-                'resolved_at' => now(),
+                'status'                => 'resolved',
+                'resolved_at'           => now(),
+                'rescued_count'         => $request->rescued_count,
+                'evacuation_center_id'  => $request->evacuation_center_id,
             ]);
+
+            // Auto check-in rescued residents at evacuation center
+            $this->checkInRescued($report, $request->user());
 
             // Broadcast report-status to the report room
             SocketService::toReport($report->id, 'report-status', [
@@ -209,8 +218,10 @@ class TeamController extends Controller
     public function confirmTeamStatus(Report $report, Request $request): JsonResponse
     {
         $request->validate([
-            'status' => 'required|in:en_route,on_scene,resolved',
-            'notes'  => 'nullable|string|max:1000',
+            'status'                => 'required|in:en_route,on_scene,resolved',
+            'notes'                 => 'nullable|string|max:1000',
+            'rescued_count'         => 'nullable|integer|min:0|max:9999',
+            'evacuation_center_id'  => 'nullable|integer|exists:evacuation_centers,id',
         ]);
 
         $user = $request->user();
@@ -222,10 +233,17 @@ class TeamController extends Controller
 
         $newStatus = $request->status === 'resolved' ? 'resolved' : 'assigned';
 
-        $report->update([
+        $updateData = [
             'status'      => $newStatus,
             'resolved_at' => $request->status === 'resolved' ? now() : null,
-        ]);
+        ];
+
+        if ($request->status === 'resolved') {
+            $updateData['rescued_count']        = $request->rescued_count;
+            $updateData['evacuation_center_id']  = $request->evacuation_center_id;
+        }
+
+        $report->update($updateData);
 
         // Update every assigned member's individual status to match the team status
         ReportResponder::where('report_id', $report->id)
@@ -288,6 +306,11 @@ class TeamController extends Controller
             }
         }
 
+        // Auto check-in rescued residents at evacuation center
+        if ($request->status === 'resolved') {
+            $this->checkInRescued($report, $user);
+        }
+
         // Notify all admins when a report is resolved
         if ($request->status === 'resolved') {
             $teamName = $user->team->name;
@@ -306,5 +329,38 @@ class TeamController extends Controller
         }
 
         return response()->json(['message' => 'Team status confirmed.']);
+    }
+
+    private function checkInRescued(Report $report, User $user): void
+    {
+        if (! $report->rescued_count || $report->rescued_count <= 0 || ! $report->evacuation_center_id) {
+            return;
+        }
+
+        $center = EvacuationCenter::find($report->evacuation_center_id);
+        if (! $center) return;
+
+        $previous = $center->current_occupancy;
+        $new = min($previous + $report->rescued_count, $center->capacity);
+
+        OccupancyLog::create([
+            'evacuation_center_id' => $center->id,
+            'previous_occupancy'   => $previous,
+            'new_occupancy'        => $new,
+            'changed_by'           => $user->id,
+            'change_type'          => 'check_in',
+        ]);
+
+        $center->update(['current_occupancy' => $new]);
+
+        $pct = $center->capacity > 0 ? (int) round($new / $center->capacity * 100) : 0;
+
+        SocketService::toAll('evacuation-updated', [
+            'id'                => $center->id,
+            'name'              => $center->name,
+            'current_occupancy' => $new,
+            'capacity'          => $center->capacity,
+            'occupancy_pct'     => $pct,
+        ]);
     }
 }

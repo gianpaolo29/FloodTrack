@@ -278,6 +278,12 @@ class ReportController extends Controller
 
     public function assign(Request $request, Report $report)
     {
+        if (! $report->requiresAssignment()) {
+            return response()->json([
+                'message' => 'Low and moderate severity reports cannot be assigned. They receive advisories only.',
+            ], 422);
+        }
+
         $data = $request->validate([
             'responder_id' => 'required|exists:users,id',
         ]);

@@ -147,6 +147,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Evacuation centers and protocols
     Route::get('/evacuation-centers', [EvacuationCenterController::class, 'index']);
+    Route::get('/evacuation-centers/nearest', [EvacuationCenterController::class, 'nearest']);
     Route::patch('/evacuation-centers/{evacuationCenter}/occupancy', [EvacuationCenterController::class, 'updateOccupancy']);
     Route::get('/protocols',          [ProtocolController::class, 'index']);
 

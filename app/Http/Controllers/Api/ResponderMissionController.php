@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\EvacuationCenter;
+use App\Models\OccupancyLog;
 use App\Models\Report;
 use App\Models\ReportStatusUpdate;
 use App\Models\User;
@@ -35,8 +37,10 @@ class ResponderMissionController extends Controller
         }
 
         $data = $request->validate([
-            'status' => 'required|in:en_route,on_scene,resolved',
-            'notes'  => 'nullable|string|max:500',
+            'status'                => 'required|in:en_route,on_scene,resolved',
+            'notes'                 => 'nullable|string|max:500',
+            'rescued_count'         => 'nullable|integer|min:0|max:9999',
+            'evacuation_center_id'  => 'nullable|integer|exists:evacuation_centers,id',
         ]);
 
         $newStatus = $data['status'];
@@ -178,7 +182,15 @@ class ResponderMissionController extends Controller
                 ->exists();
 
             if ($allResolved && $report->status !== 'resolved') {
-                $report->update(['status' => 'resolved', 'resolved_at' => now()]);
+                $report->update([
+                    'status'                => 'resolved',
+                    'resolved_at'           => now(),
+                    'rescued_count'         => $data['rescued_count'] ?? null,
+                    'evacuation_center_id'  => $data['evacuation_center_id'] ?? null,
+                ]);
+
+                // Auto check-in rescued residents at evacuation center
+                $this->checkInRescued($report, $user);
                 app(\App\Services\SlaService::class)->advanceStage($report, 'resolved');
 
                 SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'resolved']);
@@ -193,6 +205,39 @@ class ResponderMissionController extends Controller
         return response()->json([
             'status'    => $newStatus,
             'report_id' => $report->id,
+        ]);
+    }
+
+    private function checkInRescued(Report $report, User $user): void
+    {
+        if (! $report->rescued_count || $report->rescued_count <= 0 || ! $report->evacuation_center_id) {
+            return;
+        }
+
+        $center = EvacuationCenter::find($report->evacuation_center_id);
+        if (! $center) return;
+
+        $previous = $center->current_occupancy;
+        $new = min($previous + $report->rescued_count, $center->capacity);
+
+        OccupancyLog::create([
+            'evacuation_center_id' => $center->id,
+            'previous_occupancy'   => $previous,
+            'new_occupancy'        => $new,
+            'changed_by'           => $user->id,
+            'change_type'          => 'check_in',
+        ]);
+
+        $center->update(['current_occupancy' => $new]);
+
+        $pct = $center->capacity > 0 ? (int) round($new / $center->capacity * 100) : 0;
+
+        SocketService::toAll('evacuation-updated', [
+            'id'                => $center->id,
+            'name'              => $center->name,
+            'current_occupancy' => $new,
+            'capacity'          => $center->capacity,
+            'occupancy_pct'     => $pct,
         ]);
     }
 }

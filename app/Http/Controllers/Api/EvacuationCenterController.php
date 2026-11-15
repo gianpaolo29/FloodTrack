@@ -23,6 +23,65 @@ class EvacuationCenterController extends Controller
         return response()->json($centers);
     }
 
+    /**
+     * GET /evacuation-centers/nearest?lat=...&lng=...
+     * Returns the nearest active evacuation center with available capacity.
+     */
+    public function nearest(Request $request): JsonResponse
+    {
+        $request->validate([
+            'lat' => 'required|numeric|between:-90,90',
+            'lng' => 'required|numeric|between:-180,180',
+        ]);
+
+        $lat = (float) $request->lat;
+        $lng = (float) $request->lng;
+
+        $centers = EvacuationCenter::where('is_active', true)
+            ->whereColumn('current_occupancy', '<', 'capacity')
+            ->get();
+
+        if ($centers->isEmpty()) {
+            return response()->json(['data' => null, 'message' => 'No evacuation centers with available capacity.']);
+        }
+
+        // Find nearest using Haversine
+        $nearest = null;
+        $minDist = PHP_FLOAT_MAX;
+
+        foreach ($centers as $center) {
+            $dist = $this->haversineKm($lat, $lng, $center->latitude, $center->longitude);
+            if ($dist < $minDist) {
+                $minDist = $dist;
+                $nearest = $center;
+            }
+        }
+
+        return response()->json([
+            'data' => [
+                'id'                => $nearest->id,
+                'name'              => $nearest->name,
+                'address'           => $nearest->address,
+                'latitude'          => $nearest->latitude,
+                'longitude'         => $nearest->longitude,
+                'capacity'          => $nearest->capacity,
+                'current_occupancy' => $nearest->current_occupancy,
+                'occupancy_pct'     => $nearest->occupancy_pct,
+                'available'         => $nearest->capacity - $nearest->current_occupancy,
+                'distance_km'       => round($minDist, 1),
+            ],
+        ]);
+    }
+
+    private function haversineKm(float $lat1, float $lon1, float $lat2, float $lon2): float
+    {
+        $r = 6371;
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLon = deg2rad($lon2 - $lon1);
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLon / 2) ** 2;
+        return 2 * $r * asin(sqrt($a));
+    }
+
     public function updateOccupancy(Request $request, EvacuationCenter $evacuationCenter): JsonResponse
     {
         $validated = $request->validate([

@@ -531,6 +531,14 @@ class ReportController extends Controller
 
     public function assign(Report $report, Request $request): RedirectResponse
     {
+        if (! $report->requiresAssignment()) {
+            Inertia::flash('toast', [
+                'type'    => 'error',
+                'message' => 'Low and moderate severity reports cannot be assigned to a team. They receive advisories only.',
+            ]);
+            return back();
+        }
+
         $request->validate([
             'team_id' => 'required|exists:teams,id',
         ]);
