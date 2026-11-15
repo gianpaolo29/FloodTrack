@@ -8,9 +8,11 @@ use App\Models\OccupancyLog;
 use App\Models\Report;
 use App\Models\ReportResponder;
 use App\Models\ReportStatusUpdate;
+use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\ReportStatusChanged;
 use App\Notifications\TeamResolvedReport;
+use App\Services\AdvisoryService;
 use App\Services\ExpoPushService;
 use App\Services\SocketService;
 use Illuminate\Http\JsonResponse;
@@ -276,7 +278,7 @@ class TeamController extends Controller
             ];
             $pushBodies = [
                 'en_route' => 'A responder is on the way to your location. Please stay safe.',
-                'on_scene' => 'A responder has arrived at your location.',
+                'on_scene' => 'A responder has arrived at your location. Check the app for safety guidance.',
                 'resolved' => 'Your report has been resolved. Thank you for keeping your community safe.',
             ];
 
@@ -306,6 +308,11 @@ class TeamController extends Controller
             }
         }
 
+        // Generate advisory for resident when responder arrives on scene
+        if ($request->status === 'on_scene' && ! $report->advisory) {
+            $this->generateArrivalAdvisory($report);
+        }
+
         // Auto check-in rescued residents at evacuation center
         if ($request->status === 'resolved') {
             $this->checkInRescued($report, $user);
@@ -329,6 +336,40 @@ class TeamController extends Controller
         }
 
         return response()->json(['message' => 'Team status confirmed.']);
+    }
+
+    private function generateArrivalAdvisory(Report $report): void
+    {
+        try {
+            $aiEnabled = Setting::getValue('ai_report_analysis', true);
+            $advisory = $aiEnabled
+                ? AdvisoryService::generate($report)
+                : AdvisoryService::generateWithoutAI($report);
+
+            $report->update(['advisory' => $advisory]);
+
+            // Notify resident about the advisory
+            if ($report->user_id) {
+                ExpoPushService::sendToUsers(
+                    $report->user_id,
+                    "Safety Advisory — {$report->reference_number}",
+                    'A responder has arrived. We\'ve prepared safety guidance and nearby evacuation centers for you.',
+                    ['type' => 'advisory', 'reportId' => $report->id, 'status' => 'on_scene'],
+                    'my_reports'
+                );
+
+                SocketService::toUser($report->user_id, 'report-status', [
+                    'reportId' => $report->id,
+                    'status'   => 'on_scene',
+                    'advisory' => true,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[TeamController] Advisory generation failed', [
+                'report_id' => $report->id,
+                'error'     => $e->getMessage(),
+            ]);
+        }
     }
 
     private function checkInRescued(Report $report, User $user): void

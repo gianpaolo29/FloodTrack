@@ -54,8 +54,14 @@ class SocketService
 
         if (! $url || ! $secret) return;
 
-        $reportIds = Report::where('assigned_to', $responderId)
-            ->where('status', 'assigned')
+        $user = \App\Models\User::find($responderId);
+        $reportIds = Report::where('status', 'assigned')
+            ->where(function ($q) use ($responderId, $user) {
+                $q->where('assigned_to', $responderId);
+                if ($user && $user->team_id) {
+                    $q->orWhere('assigned_team_id', $user->team_id);
+                }
+            })
             ->pluck('id')
             ->toArray();
 

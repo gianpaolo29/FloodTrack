@@ -7,12 +7,15 @@ use App\Models\EvacuationCenter;
 use App\Models\OccupancyLog;
 use App\Models\Report;
 use App\Models\ReportStatusUpdate;
+use App\Models\Setting;
 use App\Models\User;
+use App\Services\AdvisoryService;
 use App\Services\ExpoPushService;
 use App\Services\SocketService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ResponderMissionController extends Controller
 {
@@ -174,6 +177,11 @@ class ResponderMissionController extends Controller
 
         SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => $newStatus]);
 
+        // Generate advisory for resident when responder arrives on scene
+        if ($newStatus === 'on_scene' && ! $report->advisory) {
+            $this->generateArrivalAdvisory($report);
+        }
+
         // Auto-resolve report when ALL responders on this report are resolved
         if ($newStatus === 'resolved') {
             $allResolved = ! DB::table('report_responders')
@@ -206,6 +214,39 @@ class ResponderMissionController extends Controller
             'status'    => $newStatus,
             'report_id' => $report->id,
         ]);
+    }
+
+    private function generateArrivalAdvisory(Report $report): void
+    {
+        try {
+            $aiEnabled = Setting::getValue('ai_report_analysis', true);
+            $advisory = $aiEnabled
+                ? AdvisoryService::generate($report)
+                : AdvisoryService::generateWithoutAI($report);
+
+            $report->update(['advisory' => $advisory]);
+
+            if ($report->user_id) {
+                ExpoPushService::sendToUsers(
+                    $report->user_id,
+                    "Safety Advisory — {$report->reference_number}",
+                    'A responder has arrived. We\'ve prepared safety guidance and nearby evacuation centers for you.',
+                    ['type' => 'advisory', 'reportId' => $report->id, 'status' => 'on_scene'],
+                    'my_reports'
+                );
+
+                SocketService::toUser($report->user_id, 'report-status', [
+                    'reportId' => $report->id,
+                    'status'   => 'on_scene',
+                    'advisory' => true,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[ResponderMission] Advisory generation failed', [
+                'report_id' => $report->id,
+                'error'     => $e->getMessage(),
+            ]);
+        }
     }
 
     private function checkInRescued(Report $report, User $user): void

@@ -75,7 +75,7 @@ class ReportController extends Controller
             'address'     => 'nullable|string|max:255',
             'media'       => 'nullable|array|max:5',
             'media.*'     => 'file|mimes:jpg,jpeg,png,mp4,mov,avi,mkv,webm|max:51200',
-            'voice_note'  => 'nullable|file|mimes:m4a,mp4,webm,ogg,wav,mp3,caf,3gp,aac|max:5120',
+            'voice_note'  => 'nullable|file|mimes:m4a,mp4,webm,ogg,wav,mp3,caf,3gp,aac|max:10240',
         ]);
 
         // Spam protection: cooldown + daily cap
@@ -85,11 +85,11 @@ class ReportController extends Controller
 
         if ($cooldown > 0) {
             $lastReport = $user->reports()->latest()->first();
-            if ($lastReport && $lastReport->created_at->diffInMinutes(now()) < $cooldown) {
-                $remaining = $cooldown - $lastReport->created_at->diffInMinutes(now());
+            if ($lastReport && $lastReport->created_at->diffInSeconds(now()) < $cooldown * 60) {
+                $remainingSeconds = ($cooldown * 60) - $lastReport->created_at->diffInSeconds(now());
                 return response()->json([
-                    'message' => "Please wait {$remaining} more minute(s) before submitting another report.",
-                    'retry_after_minutes' => $remaining,
+                    'message' => 'Please wait before submitting another report.',
+                    'retry_after_seconds' => (int) $remainingSeconds,
                 ], 429);
             }
         }
