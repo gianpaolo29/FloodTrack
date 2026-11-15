@@ -531,10 +531,11 @@ class ReportController extends Controller
 
     public function assign(Report $report, Request $request): RedirectResponse
     {
-        if (! $report->requiresAssignment()) {
+        $allowedStatuses = ['verified', 'acknowledged', 'assigned'];
+        if (! in_array($report->status, $allowedStatuses)) {
             Inertia::flash('toast', [
                 'type'    => 'error',
-                'message' => 'Low and moderate severity reports cannot be assigned to a team. They receive advisories only.',
+                'message' => 'This report cannot be assigned in its current status.',
             ]);
             return back();
         }
@@ -545,14 +546,17 @@ class ReportController extends Controller
 
         $team = Team::with('members:id,name,team_id')->findOrFail($request->team_id);
 
-        // Enforce one-to-one: a team can only be assigned to one active report at a time
-        $activeReport = $team->activeReport()->where('id', '!=', $report->id)->first();
-        if ($activeReport) {
-            Inertia::flash('toast', [
-                'type'    => 'error',
-                'message' => "Team \"{$team->name}\" is already assigned to report {$activeReport->reference_number}.",
-            ]);
-            return back();
+        // Enforce one-to-one during normal operations; allow multiple during RED ALERT
+        $isRedAlert = Setting::getValue('schedule_level', 'white') === 'red';
+        if (! $isRedAlert) {
+            $activeReport = $team->activeReport()->where('id', '!=', $report->id)->first();
+            if ($activeReport) {
+                Inertia::flash('toast', [
+                    'type'    => 'error',
+                    'message' => "Team \"{$team->name}\" is already assigned to report {$activeReport->reference_number}.",
+                ]);
+                return back();
+            }
         }
 
         $oldStatus = $report->status;

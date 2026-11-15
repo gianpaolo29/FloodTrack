@@ -91,7 +91,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
 
     const isLowModerate = ['low', 'moderate'].includes(report.severity);
     const canVerify = report.status === 'pending';
-    const canAssign = report.status === 'verified';
+    const canAssign = ['verified', 'acknowledged'].includes(report.status);
     const canReject = ['pending', 'verified'].includes(report.status);
     const canResolve = ['verified', 'acknowledged', 'assigned'].includes(report.status);
     const canReopen = ['resolved', 'rejected', 'acknowledged'].includes(report.status);
