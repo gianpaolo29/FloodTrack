@@ -126,20 +126,6 @@ export interface Report {
     } | null;
 }
 
-export interface FieldReport {
-    id: number;
-    report_id: number;
-    user_id: number;
-    user?: { id: number; name: string; role: string };
-    actions_taken: string;
-    resources_used: string | null;
-    people_assisted: number | null;
-    damage_assessment: string | null;
-    checklist: string[] | null;
-    created_at: string;
-    updated_at: string;
-}
-
 export interface Alert {
     id: number;
     title: string;

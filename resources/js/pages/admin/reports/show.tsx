@@ -773,10 +773,12 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         )}
                                         <div className="max-h-[220px] space-y-1.5 overflow-y-auto rounded-xl border border-neutral-200 bg-neutral-50/50 p-1.5 dark:border-neutral-700 dark:bg-neutral-800/50">
                                             {(() => {
-                                                const availableTeams = [...teams].filter((t) => {
-                                                    const isCurrentTeam = report.assigned_team?.id === t.id;
-                                                    const isRedAlert = schedule_level === 'red';
-                                                    return isCurrentTeam || isRedAlert || (t.active_assignments ?? 0) === 0;
+                                                const availableTeams = [...teams].sort((a, b) => {
+                                                    // Prioritize: unassigned first, then by distance
+                                                    const aAssigned = (a.active_assignments ?? 0) > 0 ? 1 : 0;
+                                                    const bAssigned = (b.active_assignments ?? 0) > 0 ? 1 : 0;
+                                                    if (aAssigned !== bAssigned) return aAssigned - bAssigned;
+                                                    return 0;
                                                 }).sort((a, b) => {
                                                     if (a.distance_km == null && b.distance_km == null) return 0;
                                                     if (a.distance_km == null) return 1;

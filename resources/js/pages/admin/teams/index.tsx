@@ -372,6 +372,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Leader</th>
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Shift</th>
                                     <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Members</th>
+                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Assign</th>
                                     <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Performance</th>
                                     <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Status</th>
                                     <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
@@ -434,6 +435,17 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                                                 <span className="text-sm font-semibold tabular-nums text-neutral-900 dark:text-white">
                                                     {team.members.length}
                                                 </span>
+                                            </td>
+                                            {/* Assign */}
+                                            <td className="px-5 py-4 text-center">
+                                                {team.active_assignments > 0 ? (
+                                                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-0.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:ring-blue-800/40">
+                                                        <ClipboardList className="size-3" />
+                                                        {team.active_assignments}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs text-neutral-300 dark:text-neutral-600">None</span>
+                                                )}
                                             </td>
                                             {/* Performance */}
                                             <td className="px-5 py-4 text-center">
