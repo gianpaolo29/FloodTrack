@@ -585,6 +585,7 @@ interface LiveResponder {
     avatar_url: string | null;
     team_id: number | null;
     team_name: string | null;
+    team_member_count: number;
     status: ResponderMapStatus;
     location_updated_at: string;
 }
@@ -613,6 +614,7 @@ function useMapSocket(initial: MapResponder[], initialOnDuty: number, onNewRepor
                     avatar_url: r.avatar_url,
                     team_id: r.team_id,
                     team_name: r.team?.name ?? null,
+                    team_member_count: (r as any).team_member_count ?? 0,
                     status: 'idle',
                     location_updated_at: r.location_updated_at ?? new Date().toISOString(),
                 });
@@ -662,6 +664,7 @@ function useMapSocket(initial: MapResponder[], initialOnDuty: number, onNewRepor
                             avatar_url: existing?.avatar_url ?? null,
                             team_id: p.team_id ?? existing?.team_id ?? null,
                             team_name: existing?.team_name ?? null,
+                            team_member_count: existing?.team_member_count ?? 0,
                             status: existing?.status ?? 'idle',
                             location_updated_at: p.recorded_at,
                         });
@@ -684,6 +687,7 @@ function useMapSocket(initial: MapResponder[], initialOnDuty: number, onNewRepor
                             avatar_url: existing?.avatar_url ?? null,
                             team_id: existing?.team_id ?? null,
                             team_name: existing?.team_name ?? null,
+                            team_member_count: existing?.team_member_count ?? 0,
                             status: existing?.status ?? 'idle',
                             location_updated_at: p.timestamp,
                         });
@@ -1043,6 +1047,14 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                     <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400/80">
                                         <Users className="size-3" />Responders
                                     </span>
+                                    {selectedResponder && (
+                                        <button
+                                            onClick={() => setSelectedResponder(null)}
+                                            className="text-[10px] font-semibold text-[oklch(0.55_0.14_240)] hover:underline cursor-pointer"
+                                        >
+                                            Show all
+                                        </button>
+                                    )}
                                 </div>
                                 <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
                                     <span className="flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
@@ -1069,41 +1081,76 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                 const so: Record<string, number> = { online: 0, stale: 1, offline: 2 };
                                                 return (so[stateA] ?? 9) - (so[stateB] ?? 9);
                                             })
+                                            .filter((r) => !selectedResponder || selectedResponder.id === r.id)
                                             .map((r) => {
                                             const state = getResponderState(r.location_updated_at);
                                             const statusColors: Record<string, string> = { idle: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', en_route: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', on_scene: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' };
                                             const statusLabels: Record<string, string> = { idle: 'Idle', en_route: 'En Route', on_scene: 'On Scene' };
                                             const dotColor = state === 'offline' ? 'bg-neutral-300 dark:bg-neutral-600' : state === 'stale' ? 'bg-amber-400' : 'bg-emerald-500';
+                                            const assignedReport = reports.find(rp => rp.status === 'assigned' && (rp.assigned_to === r.id || rp.assigned_team?.id === r.team_id));
+                                            const isSelected = selectedResponder?.id === r.id;
                                             return (
                                                 <button
                                                     key={`resp-${r.id}`}
                                                     onClick={() => {
-                                                        clearSelection();
-                                                        setSelectedResponder(selectedResponder?.id === r.id ? null : r);
-                                                        if (selectedResponder?.id !== r.id) focusOnLocation(r.latitude, r.longitude);
+                                                        if (isSelected) {
+                                                            setSelectedResponder(null);
+                                                        } else {
+                                                            setSelectedResponder(r);
+                                                            if (mapRef.current) {
+                                                                mapRef.current.setView([r.latitude, r.longitude], 16, { animate: true });
+                                                            }
+                                                        }
                                                     }}
                                                     className={`w-full rounded-lg p-2 text-left transition-all ${
-                                                        selectedResponder?.id === r.id
+                                                        isSelected
                                                             ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-900/20 dark:ring-blue-700'
                                                             : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
                                                     } ${state === 'offline' ? 'opacity-40' : state === 'stale' ? 'opacity-60' : ''}`}
                                                 >
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div className="flex items-center gap-2 min-w-0">
-                                                            <span className={`size-2 shrink-0 rounded-full ${dotColor}`} />
-                                                            <span className="truncate text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">{r.name}</span>
+                                                            {r.avatar_url ? (
+                                                                <img src={r.avatar_url} alt="" className="size-6 shrink-0 rounded-full object-cover" />
+                                                            ) : (
+                                                                <span className={`flex size-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[9px] font-bold text-blue-700`}>
+                                                                    {r.name.charAt(0).toUpperCase()}
+                                                                </span>
+                                                            )}
+                                                            <div className="min-w-0">
+                                                                <span className="block truncate text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">{r.team_name ?? r.name}</span>
+                                                                <span className="block truncate text-[9px] text-neutral-400">{r.name} · {r.team_member_count} member{r.team_member_count !== 1 ? 's' : ''}</span>
+                                                            </div>
                                                         </div>
                                                         <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${statusColors[r.status] ?? statusColors.idle}`}>
                                                             {statusLabels[r.status] ?? 'Idle'}
                                                         </span>
                                                     </div>
-                                                    <div className="mt-0.5 flex items-center gap-2 pl-4 text-[10px] text-neutral-400">
-                                                        {r.team_name && <span>{r.team_name}</span>}
-                                                        <span className="ml-auto flex items-center gap-1">
-                                                            <Clock className="size-2.5" />
-                                                            {state === 'offline' ? 'Offline' : state === 'stale' ? `Stale · ${formatLastSeen(r.location_updated_at)}` : formatLastSeen(r.location_updated_at)}
-                                                        </span>
-                                                    </div>
+                                                    {isSelected && (
+                                                        <div className="mt-2 ml-8 flex flex-col gap-1.5">
+                                                            <div className="flex items-center gap-2 text-[10px]">
+                                                                <span className={`size-1.5 rounded-full ${dotColor}`} />
+                                                                <span className={`font-medium ${state === 'online' ? 'text-emerald-600' : state === 'stale' ? 'text-amber-600' : 'text-neutral-400'}`}>
+                                                                    {state === 'online' ? 'Online' : state === 'stale' ? 'Stale' : 'Offline'}
+                                                                </span>
+                                                                <span className="text-neutral-300">·</span>
+                                                                <span className="text-neutral-400">{formatLastSeen(r.location_updated_at)}</span>
+                                                            </div>
+                                                            <div className="rounded-md border border-neutral-100 bg-neutral-50 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-800">
+                                                                {assignedReport ? (
+                                                                    <div className="flex flex-col gap-0.5">
+                                                                        <div className="flex items-center gap-1">
+                                                                            <span className="size-1.5 rounded-full" style={{ backgroundColor: SEVERITY_META[assignedReport.severity].hex }} />
+                                                                            <span className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-300">Assigned — {assignedReport.severity}</span>
+                                                                        </div>
+                                                                        {assignedReport.address && <p className="text-[9px] text-neutral-400 leading-snug">{assignedReport.address}</p>}
+                                                                    </div>
+                                                                ) : (
+                                                                    <span className="text-[10px] text-neutral-400">Not assigned</span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
                                                 </button>
                                             );
                                         })}
@@ -1344,7 +1391,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
 
                         {/* Responder markers */}
                         {showResponders && liveResponders.map((r) => {
-                            const assignedReport = reports.find(rp => rp.status === 'assigned' && rp.assigned_to === r.id);
+                            const assignedReport = reports.find(rp => rp.status === 'assigned' && (rp.assigned_to === r.id || rp.assigned_team?.id === r.team_id));
                             const state = getResponderState(r.location_updated_at);
                             const stale = state !== 'online';
                             return (
@@ -1352,20 +1399,22 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                     key={`resp-${r.id}`}
                                     position={[r.latitude, r.longitude]}
                                     icon={getResponderIcon(r, mapZoom)}
-                                    zIndexOffset={20}
+                                    zIndexOffset={500}
                                 >
                                     <Popup maxWidth={280} minWidth={220}>
                                         <div className="flex flex-col gap-2.5 p-3 pr-6 pt-3">
                                             {/* Header */}
                                             <div className="flex items-center gap-2.5">
-                                                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
-                                                    {r.name.charAt(0).toUpperCase()}
-                                                </div>
+                                                {r.avatar_url ? (
+                                                    <img src={r.avatar_url} alt="" className="size-9 shrink-0 rounded-full object-cover ring-2 ring-blue-200" />
+                                                ) : (
+                                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
+                                                        {r.name.charAt(0).toUpperCase()}
+                                                    </div>
+                                                )}
                                                 <div className="min-w-0">
-                                                    <p className="text-xs font-bold text-neutral-900">{r.name}</p>
-                                                    {r.team_name && (
-                                                        <p className="text-[10px] text-gray-500">{r.team_name}</p>
-                                                    )}
+                                                    <p className="text-xs font-bold text-neutral-900">{r.team_name ?? r.name}</p>
+                                                    <p className="text-[10px] text-gray-500">{r.name} · {r.team_member_count} member{r.team_member_count !== 1 ? 's' : ''}</p>
                                                 </div>
                                             </div>
 

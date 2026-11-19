@@ -56,10 +56,10 @@ class ReportController extends Controller
 
         $reports = Report::select([
                 'id', 'reference_number', 'severity', 'status',
-                'latitude', 'longitude', 'address', 'user_id', 'assigned_to', 'created_at',
+                'latitude', 'longitude', 'address', 'user_id', 'assigned_to', 'assigned_team_id', 'created_at',
                 'verified_at', 'resolved_at',
             ])
-            ->with(['user:id,name'])
+            ->with(['user:id,name', 'assignedTeam:id,name'])
             ->whereIn('status', ['verified', 'assigned', 'resolved'])
             ->when($request->severity, fn ($q) => str_contains($request->severity, ',')
                 ? $q->whereIn('severity', explode(',', $request->severity))
@@ -81,9 +81,15 @@ class ReportController extends Controller
             ->where('is_on_duty', true)
             ->whereNotNull('current_latitude')
             ->whereNotNull('current_longitude')
+            ->whereHas('team', fn ($q) => $q->whereColumn('leader_id', 'users.id'))
             ->select(['id', 'name', 'avatar', 'team_id', 'current_latitude', 'current_longitude', 'location_updated_at'])
-            ->with('team:id,name')
-            ->get();
+            ->with(['team:id,name', 'team.members' => fn ($q) => $q->select('id', 'team_id')->where('is_on_duty', true)])
+            ->get()
+            ->map(function ($r) {
+                $r->team_member_count = $r->team?->members?->count() ?? 0;
+                unset($r->team->members);
+                return $r;
+            });
 
         $hazards = Hazard::where('active', true)
             ->select(['id', 'category', 'type', 'severity', 'title', 'latitude', 'longitude'])

@@ -772,16 +772,25 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                             </div>
                                         )}
                                         <div className="max-h-[220px] space-y-1.5 overflow-y-auto rounded-xl border border-neutral-200 bg-neutral-50/50 p-1.5 dark:border-neutral-700 dark:bg-neutral-800/50">
-                                            {[...teams].filter((t) => {
-                                                const isCurrentTeam = report.assigned_team?.id === t.id;
-                                                const isRedAlert = schedule_level === 'red';
-                                                return isCurrentTeam || isRedAlert || (t.active_assignments ?? 0) === 0;
-                                            }).sort((a, b) => {
-                                                if (a.distance_km == null && b.distance_km == null) return 0;
-                                                if (a.distance_km == null) return 1;
-                                                if (b.distance_km == null) return -1;
-                                                return a.distance_km - b.distance_km;
-                                            }).map((t) => {
+                                            {(() => {
+                                                const availableTeams = [...teams].filter((t) => {
+                                                    const isCurrentTeam = report.assigned_team?.id === t.id;
+                                                    const isRedAlert = schedule_level === 'red';
+                                                    return isCurrentTeam || isRedAlert || (t.active_assignments ?? 0) === 0;
+                                                }).sort((a, b) => {
+                                                    if (a.distance_km == null && b.distance_km == null) return 0;
+                                                    if (a.distance_km == null) return 1;
+                                                    if (b.distance_km == null) return -1;
+                                                    return a.distance_km - b.distance_km;
+                                                });
+                                                if (availableTeams.length === 0) return (
+                                                    <div className="flex flex-col items-center gap-1.5 py-6">
+                                                        <Users className="size-5 text-neutral-300 dark:text-neutral-600" />
+                                                        <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500">No available responder teams</p>
+                                                        <p className="text-[10px] text-neutral-300 dark:text-neutral-600">All teams are currently assigned</p>
+                                                    </div>
+                                                );
+                                                return availableTeams.map((t) => {
                                                 const selected = assignForm.data.team_id === String(t.id);
                                                 const onShift = (t as any).is_on_shift ?? true;
                                                 return (
@@ -854,7 +863,8 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                         })()}
                                                     </button>
                                                 );
-                                            })}
+                                            });
+                                            })()}
                                         </div>
                                         <button
                                             type="submit"
