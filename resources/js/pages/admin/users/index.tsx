@@ -443,7 +443,7 @@ export default function AdminUsersIndex({ users, filters, barangay_list, stats, 
                                             type="checkbox"
                                             checked={allOnPageSelected}
                                             onChange={toggleAll}
-                                            className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
+                                            className="size-3.5 rounded border-neutral-300 text-[oklch(0.55_0.14_240)] focus:ring-[oklch(0.55_0.14_240)]/20 dark:border-neutral-600 dark:text-[oklch(0.62_0.14_240)]"
                                         />
                                     </th>
                                     <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Resident</th>
@@ -468,7 +468,7 @@ export default function AdminUsersIndex({ users, filters, barangay_list, stats, 
                                                 type="checkbox"
                                                 checked={selected.includes(user.id)}
                                                 onChange={() => toggleOne(user.id)}
-                                                className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
+                                                className="size-3.5 rounded border-neutral-300 text-[oklch(0.55_0.14_240)] focus:ring-[oklch(0.55_0.14_240)]/20 dark:border-neutral-600 dark:text-[oklch(0.62_0.14_240)]"
                                             />
                                         </td>
 

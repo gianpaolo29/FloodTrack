@@ -555,7 +555,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                                 type="checkbox"
                                                 checked={allOnPageSelected}
                                                 onChange={toggleAll}
-                                                className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
+                                                className="size-3.5 rounded border-neutral-300 text-[oklch(0.55_0.14_240)] focus:ring-[oklch(0.55_0.14_240)]/20 dark:border-neutral-600 dark:text-[oklch(0.62_0.14_240)]"
                                             />
                                         </th>
                                         {['Report', 'Location', 'Severity', 'Status', 'SLA', 'Team', 'Reporter', 'Date', ''].map((h) => (
@@ -654,18 +654,13 @@ function ReportRow({ report, isSelected, onToggle }: {
                     : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50'
             }`}
         >
-            {/* Selected left accent */}
-            {isSelected && (
-                <td colSpan={0} className="absolute left-0 top-0 h-full w-[3px] rounded-r-sm bg-neutral-900 dark:bg-white" />
-            )}
-
             {/* Checkbox */}
             <td className="w-10 px-3 py-2 text-center">
                 <input
                     type="checkbox"
                     checked={isSelected}
                     onChange={onToggle}
-                    className="size-3 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
+                    className="size-3 rounded border-neutral-300 text-[oklch(0.55_0.14_240)] focus:ring-[oklch(0.55_0.14_240)]/20 dark:border-neutral-600 dark:text-[oklch(0.62_0.14_240)]"
                 />
             </td>
 

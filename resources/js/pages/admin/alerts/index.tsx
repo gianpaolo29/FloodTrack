@@ -166,7 +166,7 @@ function BarangayMultiSelect({
                                     type="checkbox"
                                     checked={selected.includes(b)}
                                     onChange={() => toggle(b)}
-                                    className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
+                                    className="size-3.5 rounded border-neutral-300 text-[oklch(0.55_0.14_240)] focus:ring-[oklch(0.55_0.14_240)]/20 dark:border-neutral-600 dark:text-[oklch(0.62_0.14_240)]"
                                 />
                                 <span className="text-neutral-700 dark:text-neutral-300">{b}</span>
                             </label>
@@ -622,7 +622,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                             type="checkbox"
                                             checked={allOnPageSelected}
                                             onChange={toggleAll}
-                                            className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
+                                            className="size-3.5 rounded border-neutral-300 text-[oklch(0.55_0.14_240)] focus:ring-[oklch(0.55_0.14_240)]/20 dark:border-neutral-600 dark:text-[oklch(0.62_0.14_240)]"
                                         />
                                     </th>
                                     <th className="px-4 py-3.5 text-left">
@@ -1070,7 +1070,7 @@ function AlertRow({
                     type="checkbox"
                     checked={isSelected}
                     onChange={onToggle}
-                    className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
+                    className="size-3.5 rounded border-neutral-300 text-[oklch(0.55_0.14_240)] focus:ring-[oklch(0.55_0.14_240)]/20 dark:border-neutral-600 dark:text-[oklch(0.62_0.14_240)]"
                 />
             </td>
 

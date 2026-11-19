@@ -44,7 +44,7 @@ export function MultiSelectFilter({ label, options, selected, onChange }: Props)
         <Popover className="relative">
             <PopoverButton
                 onClick={() => setSearch('')}
-                className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-all outline-none ${
+                className={`flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-all outline-none ${
                     activeCount > 0
                         ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                         : 'border-neutral-200/80 bg-white text-neutral-600 shadow-sm hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
@@ -53,7 +53,7 @@ export function MultiSelectFilter({ label, options, selected, onChange }: Props)
                 <Filter className="size-3.5" />
                 {label}
                 {activeCount > 0 && (
-                    <span className="ml-0.5 flex size-5 items-center justify-center rounded-full bg-white text-xs font-bold text-neutral-900 dark:bg-neutral-900 dark:text-white">
+                    <span className="ml-0.5 flex size-4.5 items-center justify-center rounded-full bg-white text-[10px] font-bold leading-none text-neutral-900 dark:bg-neutral-900 dark:text-white">
                         {activeCount}
                     </span>
                 )}
@@ -95,7 +95,7 @@ export function MultiSelectFilter({ label, options, selected, onChange }: Props)
                                         type="checkbox"
                                         checked={allSelected}
                                         onChange={toggleAll}
-                                        className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500 dark:border-neutral-600 dark:text-white"
+                                        className="size-3.5 rounded border-neutral-300 text-[oklch(0.55_0.14_240)] focus:ring-[oklch(0.55_0.14_240)]/20 dark:border-neutral-600 dark:text-[oklch(0.62_0.14_240)]"
                                     />
                                     <span className="font-medium">{t('common.select_all')}</span>
                                 </label>
@@ -115,7 +115,7 @@ export function MultiSelectFilter({ label, options, selected, onChange }: Props)
                                                 type="checkbox"
                                                 checked={local.includes(opt.value)}
                                                 onChange={() => toggle(opt.value)}
-                                                className="size-3.5 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500 dark:border-neutral-600 dark:text-white"
+                                                className="size-3.5 rounded border-neutral-300 text-[oklch(0.55_0.14_240)] focus:ring-[oklch(0.55_0.14_240)]/20 dark:border-neutral-600 dark:text-[oklch(0.62_0.14_240)]"
                                             />
                                             {opt.color && (
                                                 <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: opt.color }} />

@@ -1305,7 +1305,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                                                 type="checkbox"
                                                                 checked={localBarangays.includes(b)}
                                                                 onChange={() => toggleBarangay(b)}
-                                                                className="size-3 rounded border-neutral-300 text-neutral-900 focus:ring-neutral-500/20 dark:border-neutral-600"
+                                                                className="size-3 rounded border-neutral-300 text-[oklch(0.55_0.14_240)] focus:ring-[oklch(0.55_0.14_240)]/20 dark:border-neutral-600 dark:text-[oklch(0.62_0.14_240)]"
                                                             />
                                                             <span className="text-neutral-700 dark:text-neutral-300">{b}</span>
                                                         </label>

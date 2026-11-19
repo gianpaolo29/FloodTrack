@@ -976,7 +976,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                 type="checkbox"
                                                 checked={checked}
                                                 onChange={toggle}
-                                                className="peer size-3.5 cursor-pointer appearance-none rounded border border-neutral-300 bg-white transition checked:border-neutral-900 checked:bg-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:checked:border-white dark:checked:bg-white"
+                                                className="peer size-3.5 cursor-pointer appearance-none rounded border border-neutral-300 bg-white transition checked:border-[oklch(0.55_0.14_240)] checked:bg-[oklch(0.55_0.14_240)] dark:border-neutral-600 dark:bg-neutral-800 dark:checked:border-[oklch(0.62_0.14_240)] dark:checked:bg-[oklch(0.62_0.14_240)]"
                                             />
                                             <svg className="pointer-events-none absolute hidden size-2.5 peer-checked:block" viewBox="0 0 10 10" fill="none">
                                                 <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="dark:stroke-neutral-900" />

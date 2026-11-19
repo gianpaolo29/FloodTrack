@@ -813,7 +813,7 @@ function TeamFormModal({
                                                         checked={selected}
                                                         onChange={() => toggleMember(String(r.id))}
                                                         disabled={isLeader}
-                                                        className="size-4 rounded accent-neutral-900 dark:accent-white"
+                                                        className="size-4 rounded accent-[oklch(0.55_0.14_240)] dark:accent-[oklch(0.62_0.14_240)]"
                                                     />
                                                     <div className={`flex size-7 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white ${isLeader ? 'bg-neutral-900' : 'bg-neutral-500'}`}>
                                                         {r.name.charAt(0).toUpperCase()}
