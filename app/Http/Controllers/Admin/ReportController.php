@@ -16,6 +16,7 @@ use App\Models\Team;
 use App\Notifications\ReportStatusChanged;
 use App\Services\ExpoPushService;
 use App\Services\FacebookService;
+use App\Services\AutoAssignService;
 use App\Services\SlaService;
 use App\Services\SmsService;
 use App\Services\SocketService;
@@ -33,11 +34,13 @@ class ReportController extends Controller
 
     public function map(Request $request): Response
     {
-        // Auto-sync duty status at most once per minute
-        Cache::remember('duty:sync:last_run', 60, function () {
-            Artisan::call('duty:sync');
-            return now()->timestamp;
-        });
+        // Auto-sync duty status at most once per minute (non-blocking)
+        if (! Cache::has('duty:sync:last_run')) {
+            Cache::put('duty:sync:last_run', now()->timestamp, 60);
+            dispatch(function () {
+                Artisan::call('duty:sync');
+            })->afterResponse();
+        }
 
         $request->validate([
             'status'      => ['nullable', 'string', 'regex:/^(pending|verified|assigned|resolved|rejected)(,(pending|verified|assigned|resolved|rejected))*$/'],
@@ -46,20 +49,23 @@ class ReportController extends Controller
             'date_to'     => 'nullable|date|after_or_equal:date_from',
         ]);
 
+        // Default to today unless period=all
+        $isAll    = $request->period === 'all';
+        $dateFrom = $isAll ? null : ($request->date_from ?? now()->toDateString());
+        $dateTo   = $isAll ? null : ($request->date_to   ?? now()->toDateString());
+
         $reports = Report::select([
                 'id', 'reference_number', 'severity', 'status',
                 'latitude', 'longitude', 'address', 'user_id', 'assigned_to', 'created_at',
                 'verified_at', 'resolved_at',
             ])
             ->with(['user:id,name'])
-            ->when($request->status, fn ($q) => str_contains($request->status, ',')
-                ? $q->whereIn('status', explode(',', $request->status))
-                : $q->where('status', $request->status))
+            ->whereIn('status', ['verified', 'assigned', 'resolved'])
             ->when($request->severity, fn ($q) => str_contains($request->severity, ',')
                 ? $q->whereIn('severity', explode(',', $request->severity))
                 : $q->where('severity', $request->severity))
-            ->when($request->date_from, fn ($q) => $q->whereDate('created_at', '>=', $request->date_from))
-            ->when($request->date_to, fn ($q) => $q->whereDate('created_at', '<=', $request->date_to))
+            ->when($dateFrom, fn ($q) => $q->whereDate('created_at', '>=', $dateFrom))
+            ->when($dateTo, fn ($q) => $q->whereDate('created_at', '<=', $dateTo))
             ->whereNotNull('latitude')
             ->whereNotNull('longitude')
             ->latest()
@@ -107,7 +113,13 @@ class ReportController extends Controller
 
         return Inertia::render('admin/reports/map', [
             'reports'            => $reports,
-            'filters'            => $request->only(['status', 'severity', 'date_from', 'date_to']),
+            'filters'            => [
+                'status'    => $request->status,
+                'severity'  => $request->severity,
+                'date_from' => $dateFrom,
+                'date_to'   => $dateTo,
+                'period'    => $isAll ? 'all' : null,
+            ],
             'evacuation_centers' => $evacuationCenters,
             'responders'         => $responders,
             'responder_counts'   => $responderCounts,
@@ -524,7 +536,14 @@ class ReportController extends Controller
 
         $this->notifyStatusChange($report, $oldStatus, 'verified', $request->user()->name);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => 'Report verified.']);
+        // Attempt auto-assign if enabled
+        $autoAssignedTeam = AutoAssignService::attemptAssign($report, $request->user());
+
+        if ($autoAssignedTeam) {
+            Inertia::flash('toast', ['type' => 'success', 'message' => "Report verified & auto-assigned to team \"{$autoAssignedTeam->name}\"."]);
+        } else {
+            Inertia::flash('toast', ['type' => 'success', 'message' => 'Report verified.']);
+        }
 
         return back();
     }
@@ -561,99 +580,7 @@ class ReportController extends Controller
 
         $oldStatus = $report->status;
 
-        // If reassigning, resolve all existing responder rows from the old team
-        if ($report->assigned_team_id && $report->assigned_team_id !== $team->id) {
-            DB::table('report_responders')
-                ->where('report_id', $report->id)
-                ->where('status', '!=', 'resolved')
-                ->update([
-                    'status'      => 'resolved',
-                    'resolved_at' => now(),
-                    'updated_at'  => now(),
-                ]);
-
-            // Refresh socket cache for old responders
-            $oldMemberIds = DB::table('report_responders')
-                ->where('report_id', $report->id)
-                ->pluck('user_id');
-            foreach ($oldMemberIds as $mId) {
-                SocketService::refreshAssignments($mId);
-            }
-        }
-
-        $report->update([
-            'assigned_team_id' => $team->id,
-            'assigned_to'      => $team->leader_id,
-            'status'           => 'assigned',
-            'assigned_at'      => now(),
-        ]);
-
-        // Seed report_responders for all team members
-        foreach ($team->members as $member) {
-            ReportResponder::updateOrCreate(
-                ['report_id' => $report->id, 'user_id' => $member->id],
-                [
-                    'role'        => $member->id === $team->leader_id ? 'lead' : 'support',
-                    'status'      => 'pending',
-                    'en_route_at' => null,
-                    'on_scene_at' => null,
-                    'resolved_at' => null,
-                    'route'       => null,
-                ]
-            );
-        }
-
-        // Refresh socket assignment cache for new team members
-        foreach ($team->members as $member) {
-            SocketService::refreshAssignments($member->id);
-        }
-
-        ReportStatusUpdate::create([
-            'report_id' => $report->id,
-            'user_id'   => $request->user()->id,
-            'status'    => 'assigned',
-            'notes'     => "Assigned to team \"{$team->name}\".",
-        ]);
-
-        app(SlaService::class)->advanceStage($report, 'assigned');
-
-        foreach ($team->members as $member) {
-            $member->notify(new ReportStatusChanged($report, $oldStatus, 'assigned', $request->user()->name));
-        }
-
-        // Push notification to all team members
-        $memberIds = $team->members->pluck('id')->toArray();
-        ExpoPushService::sendToUsers(
-            $memberIds,
-            "New Assignment — {$report->reference_number}",
-            "You have been assigned to a {$report->severity} flood report. Open the app for details.",
-            ['type' => 'assignment', 'reportId' => $report->id]
-        );
-
-        // SMS to team members (queued)
-        SmsService::queueToUsers(
-            $memberIds,
-            SmsService::format(
-                "New Assignment — {$report->reference_number}",
-                "You have been assigned to a {$report->severity} flood report at {$report->address}. Open the app for details."
-            )
-        );
-
-        // Real-time socket events to each team member
-        foreach ($team->members as $member) {
-            SocketService::toUser($member->id, 'new-assignment', [
-                'reportId'  => $report->id,
-                'reference' => $report->reference_number,
-                'severity'  => $report->severity,
-                'address'   => $report->address,
-            ]);
-            SocketService::toUser($member->id, 'new-notification', [
-                'type'      => 'assignment',
-                'reportId'  => $report->id,
-                'reference' => $report->reference_number,
-                'status'    => 'assigned',
-            ]);
-        }
+        AutoAssignService::assignTeamToReport($report, $team, $request->user());
 
         $this->notifyStatusChange($report, $oldStatus, 'assigned', $request->user()->name);
 

@@ -73,6 +73,36 @@ const CATEGORY_COLORS: Record<HazardCategory, string> = {
     road:  'bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700',
 };
 
+const SEVERITY_HEX: Record<string, string> = {
+    critical: '#ef4444', high: '#f97316', moderate: '#fbbf24', low: '#22c55e',
+};
+
+const HAZARD_TYPE_ICONS: Record<string, string> = {
+    flash_flood:   '<path d="M17 8l-3 5h6l-3 5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M11 21c1-1 2-1 3 0s2 1 3 0s2-1 3 0" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>',
+    river_flood:   '<path d="M9 14c2-2 4-2 6 0s4 2 6 0" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M9 18c2-2 4-2 6 0s4 2 6 0" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M15 8v3" stroke="white" stroke-width="2" stroke-linecap="round"/>',
+    coastal_flood: '<path d="M9 16c2-2 4-2 6 0s4 2 6 0" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M9 20c2-2 4-2 6 0s4 2 6 0" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.7"/><path d="M15 8l-2 5h4z" fill="white" opacity="0.9"/>',
+    urban_flood:   '<rect x="11" y="10" width="8" height="10" rx="1" fill="none" stroke="white" stroke-width="1.8"/><path d="M13 14h4M13 17h4" stroke="white" stroke-width="1.2" stroke-linecap="round"/><path d="M9 22c1.5-1.5 3-1.5 4.5 0s3 1.5 4.5 0" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>',
+    closed_road:   '<circle cx="15" cy="15" r="6" fill="none" stroke="white" stroke-width="2"/><path d="M12 12l6 6M18 12l-6 6" stroke="white" stroke-width="2" stroke-linecap="round"/>',
+    debris:        '<path d="M10 20l3-5 2 3 3-7 3 9" stroke="white" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="1.5" fill="white" opacity="0.8"/><circle cx="18" cy="10" r="1" fill="white" opacity="0.6"/>',
+    landslide:     '<path d="M8 22l7-14 7 14z" fill="none" stroke="white" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 22l3-6 3 6" fill="white" opacity="0.3"/><path d="M10 18l2-2 2 1 2-3" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>',
+    flooded_road:  '<path d="M8 15h14" stroke="white" stroke-width="2.5" stroke-linecap="round"/><path d="M8 15l2-5h10l2 5" fill="none" stroke="white" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 19c2-1.5 3-1.5 5 0s3 1.5 5 0" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/>',
+    slow_zone:     '<circle cx="15" cy="14" r="6" fill="none" stroke="white" stroke-width="2"/><path d="M15 11v3.5l2.5 1.5" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+};
+
+const HAZARD_DEFAULT_TYPE_ICON = '<circle cx="15" cy="12" r="1.5" fill="white"/><path d="M15 15v4" stroke="white" stroke-width="2" stroke-linecap="round"/>';
+
+function HazardTriangleIcon({ severity, type }: { severity: string; type: string }) {
+    const hex = SEVERITY_HEX[severity] ?? '#fbbf24';
+    const icon = HAZARD_TYPE_ICONS[type] ?? HAZARD_DEFAULT_TYPE_ICON;
+    return (
+        <svg width="30" height="32" viewBox="0 0 36 40" className="shrink-0 drop-shadow-sm">
+            <path d="M16.27 3.5a2 2 0 0 1 3.46 0L33.05 28.5a2 2 0 0 1-1.73 3H4.68a2 2 0 0 1-1.73-3z" fill={hex} />
+            <path d="M16.27 3.5a2 2 0 0 1 3.46 0L33.05 28.5a2 2 0 0 1-1.73 3H4.68a2 2 0 0 1-1.73-3z" fill="none" stroke="#000" strokeWidth="0.8" opacity="0.15" />
+            <g transform="translate(3, 3)" dangerouslySetInnerHTML={{ __html: icon }} />
+        </svg>
+    );
+}
+
 
 function getTypeLabel(category: HazardCategory, type: string): string {
     return HAZARD_TYPE_OPTIONS[category]?.find((t) => t.value === type)?.label ?? type;
@@ -303,7 +333,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/hazards" />
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 active:scale-[0.97] dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                            className="inline-flex items-center gap-2 rounded-xl bg-[oklch(0.55_0.14_240)] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[oklch(0.50_0.14_240)] active:scale-[0.97] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)]"
                         >
                             <Plus className="size-4" />
                             Add Hazard
@@ -468,13 +498,10 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                     {/* Mobile card view */}
                     <div className="block sm:hidden divide-y divide-neutral-100 dark:divide-neutral-800">
                         {filtered.map((hazard) => {
-                            const CatIcon = CATEGORY_ICON[hazard.category] ?? ShieldAlert;
                             const isFlood = hazard.category === 'flood';
                             return (
                                 <div key={hazard.id} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
-                                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
-                                        <CatIcon className="size-4 text-neutral-600 dark:text-neutral-400" />
-                                    </div>
+                                    <HazardTriangleIcon severity={hazard.severity} type={hazard.type} />
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center justify-between gap-2">
                                             <p className="truncate text-sm font-semibold text-neutral-800 dark:text-neutral-200">{hazard.title}</p>
@@ -583,7 +610,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                                         <button key={i} onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                                                 link.active
-                                                    ? 'bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900'
+                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                     : 'border border-neutral-200 text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
@@ -615,7 +642,6 @@ function HazardRow({ hazard, isSelected, onToggle, onEdit }: {
     hazard: Hazard; isSelected: boolean; onToggle: () => void; onEdit: () => void;
 }) {
     const deleteForm = useForm({});
-    const CatIcon    = CATEGORY_ICON[hazard.category] ?? ShieldAlert;
     const isFlood    = hazard.category === 'flood';
 
     return (
@@ -630,9 +656,7 @@ function HazardRow({ hazard, isSelected, onToggle, onEdit }: {
             {/* Hazard (icon + title + category badge) */}
             <td className="px-5 py-4">
                 <div className="flex items-center gap-3">
-                    <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
-                        <CatIcon className="size-4 text-neutral-600 dark:text-neutral-400" />
-                    </div>
+                    <HazardTriangleIcon severity={hazard.severity} type={hazard.type} />
                     <div className="min-w-0">
                         <p className="truncate text-sm font-semibold text-neutral-800 dark:text-neutral-200">
                             {hazard.title}
@@ -859,7 +883,7 @@ function HazardFormModal({ hazard, onClose }: { hazard?: Hazard; onClose: () => 
                                                 onClick={() => { setCatLocked(true); form.setData('category', cat); form.setData('type', ''); }}
                                                 className={`flex items-center gap-2 rounded-xl border-2 px-3 py-2 text-sm font-semibold transition-all ${
                                                     active
-                                                        ? 'border-neutral-900 bg-neutral-50 text-neutral-900 dark:border-white dark:bg-neutral-800 dark:text-white'
+                                                        ? 'border-[oklch(0.55_0.14_240)] bg-blue-50 text-[oklch(0.55_0.14_240)] dark:border-[oklch(0.62_0.14_240)] dark:bg-neutral-800 dark:text-[oklch(0.62_0.14_240)]'
                                                         : 'border-neutral-200 text-neutral-500 hover:border-neutral-300 dark:border-neutral-700 dark:text-neutral-400'
                                                 }`}
                                             >
@@ -938,7 +962,7 @@ function HazardFormModal({ hazard, onClose }: { hazard?: Hazard; onClose: () => 
                                 title={!isReady && !isEditing ? 'Fill in all fields and pin a location first' : undefined}
                                 className={`inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold shadow-sm transition-all hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40 ${
                                     isReady || isEditing
-                                        ? 'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200'
+                                        ? 'bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)]'
                                         : 'bg-neutral-400 text-white shadow-neutral-400/20'
                                 }`}
                             >
@@ -1081,6 +1105,8 @@ function MapPicker({ latitude, longitude, address, onChange, onGeocode }: {
 
 const PLUS_CODE_RE = /^[0-9A-Z]{4,8}\+[0-9A-Z]{2,3}$/i;
 
+interface GeoResult { name: string; lat: string; lng: string; address: string }
+
 function AddressAutocomplete({ value, onAddressChange, onPlaceSelect, className, placeholder }: {
     value: string;
     onAddressChange: (val: string) => void;
@@ -1088,37 +1114,15 @@ function AddressAutocomplete({ value, onAddressChange, onPlaceSelect, className,
     className?: string;
     placeholder?: string;
 }) {
-    const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: (import.meta.env.VITE_GOOGLE_MAPS_KEY as string) ?? '',
-        libraries: ['places'] as ('places')[],
-    });
+    const [inputVal,  setInputVal]  = useState(value);
+    const [results,   setResults]   = useState<GeoResult[]>([]);
+    const [open,      setOpen]      = useState(false);
+    const [fetching,  setFetching]  = useState(false);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const wrapperRef  = useRef<HTMLDivElement>(null);
 
-    const [inputVal,    setInputVal]    = useState(value);
-    const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([]);
-    const [open,        setOpen]        = useState(false);
-    const [fetching,    setFetching]    = useState(false);
-
-    const acServiceRef = useRef<google.maps.places.AutocompleteService | null>(null);
-    const placesRef    = useRef<google.maps.places.PlacesService | null>(null);
-    const placesDivRef = useRef<HTMLDivElement | null>(null);
-    const debounceRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const wrapperRef   = useRef<HTMLDivElement>(null);
-
-    /* Sync external value (map pin reverse geocode) into input */
     useEffect(() => { setInputVal(value); }, [value]);
 
-    /* Init Google Places services */
-    useEffect(() => {
-        if (!isLoaded) return;
-        acServiceRef.current = new google.maps.places.AutocompleteService();
-        const div = document.createElement('div');
-        document.body.appendChild(div);
-        placesDivRef.current = div;
-        placesRef.current = new google.maps.places.PlacesService(div);
-        return () => { if (placesDivRef.current) document.body.removeChild(placesDivRef.current); };
-    }, [isLoaded]);
-
-    /* Close on outside click */
     useEffect(() => {
         const handler = (e: MouseEvent) => {
             if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
@@ -1127,26 +1131,77 @@ function AddressAutocomplete({ value, onAddressChange, onPlaceSelect, className,
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    const fetchPredictions = useCallback((q: string) => {
-        if (!q || q.length < 2 || !acServiceRef.current) { setPredictions([]); setOpen(false); return; }
-        const bounds = new google.maps.LatLngBounds(
-            { lat: NASUGBU_BOUNDS.south, lng: NASUGBU_BOUNDS.west },
-            { lat: NASUGBU_BOUNDS.north, lng: NASUGBU_BOUNDS.east },
-        );
+    const fetchResults = useCallback(async (q: string) => {
+        if (!q) { setResults([]); setOpen(false); return; }
         setFetching(true);
-        acServiceRef.current.getPlacePredictions(
-            { input: q, bounds, strictBounds: true, componentRestrictions: { country: 'ph' } },
-            (preds, status) => {
-                setFetching(false);
-                if (status === 'OK' && preds) {
-                    const filtered = preds.filter((p) => p.description.toLowerCase().includes('nasugbu'));
-                    setPredictions(filtered);
-                    setOpen(filtered.length > 0);
-                } else {
-                    setPredictions([]); setOpen(false);
+        try {
+            const key = (import.meta.env.VITE_GOOGLE_MAPS_KEY as string) ?? '';
+            const locationBias = `circle:15000@${(NASUGBU_BOUNDS.south + NASUGBU_BOUNDS.north) / 2},${(NASUGBU_BOUNDS.west + NASUGBU_BOUNDS.east) / 2}`;
+
+            // Use Places Text Search (New) for place names + addresses
+            const placesRes = await fetch(
+                `https://places.googleapis.com/v1/places:searchText`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Goog-Api-Key': key,
+                        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location',
+                    },
+                    body: JSON.stringify({
+                        textQuery: q,
+                        maxResultCount: 5,
+                        locationRestriction: {
+                            rectangle: {
+                                low: { latitude: NASUGBU_BOUNDS.south, longitude: NASUGBU_BOUNDS.west },
+                                high: { latitude: NASUGBU_BOUNDS.north, longitude: NASUGBU_BOUNDS.east },
+                            },
+                        },
+                    }),
                 }
-            },
-        );
+            );
+            const placesData = await placesRes.json();
+            if (placesData.places?.length) {
+                const mapped: GeoResult[] = placesData.places
+                    .filter((p: any) =>
+                        p.location.latitude >= NASUGBU_BOUNDS.south &&
+                        p.location.latitude <= NASUGBU_BOUNDS.north &&
+                        p.location.longitude >= NASUGBU_BOUNDS.west &&
+                        p.location.longitude <= NASUGBU_BOUNDS.east
+                    )
+                    .map((p: any) => ({
+                        name: p.displayName?.text ?? p.formattedAddress?.split(',')[0] ?? '',
+                        lat: String(p.location.latitude),
+                        lng: String(p.location.longitude),
+                        address: p.formattedAddress ?? '',
+                    }));
+                setResults(mapped);
+                setOpen(mapped.length > 0);
+            } else {
+                // Fallback to Geocoding API
+                const bounds = `${NASUGBU_BOUNDS.south},${NASUGBU_BOUNDS.west}|${NASUGBU_BOUNDS.north},${NASUGBU_BOUNDS.east}`;
+                const geoRes = await fetch(
+                    `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q + ', Nasugbu, Batangas')}&bounds=${bounds}&region=ph&key=${key}`
+                );
+                const geoData = await geoRes.json();
+                if (geoData.status === 'OK' && geoData.results) {
+                    const mapped: GeoResult[] = geoData.results.slice(0, 5).map((r: any) => ({
+                        name: r.formatted_address.split(',')[0],
+                        lat: String(r.geometry.location.lat),
+                        lng: String(r.geometry.location.lng),
+                        address: r.formatted_address,
+                    }));
+                    setResults(mapped);
+                    setOpen(mapped.length > 0);
+                } else {
+                    setResults([]); setOpen(false);
+                }
+            }
+        } catch {
+            setResults([]); setOpen(false);
+        } finally {
+            setFetching(false);
+        }
     }, []);
 
     const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1154,23 +1209,14 @@ function AddressAutocomplete({ value, onAddressChange, onPlaceSelect, className,
         setInputVal(q);
         onAddressChange(q);
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => fetchPredictions(q), 300);
+        debounceRef.current = setTimeout(() => fetchResults(q), 300);
     };
 
-    const selectPrediction = (pred: google.maps.places.AutocompletePrediction) => {
+    const selectResult = (r: GeoResult) => {
         setOpen(false);
-        if (!placesRef.current) return;
-        placesRef.current.getDetails(
-            { placeId: pred.place_id, fields: ['formatted_address', 'geometry', 'name', 'address_components'] },
-            (place, status) => {
-                if (status !== 'OK' || !place?.geometry?.location) return;
-                const lat  = place.geometry.location.lat().toFixed(7);
-                const lng  = place.geometry.location.lng().toFixed(7);
-                const addr = cleanAddress(place.formatted_address ?? place.name ?? '');
-                setInputVal(addr);
-                onPlaceSelect(lat, lng, addr);
-            },
-        );
+        const addr = cleanAddress(r.address);
+        setInputVal(addr);
+        onPlaceSelect(parseFloat(r.lat).toFixed(7), parseFloat(r.lng).toFixed(7), addr);
     };
 
     return (
@@ -1181,7 +1227,7 @@ function AddressAutocomplete({ value, onAddressChange, onPlaceSelect, className,
                     type="text"
                     value={inputVal}
                     onChange={handleInput}
-                    onFocus={() => predictions.length > 0 && setOpen(true)}
+                    onFocus={() => results.length > 0 && setOpen(true)}
                     placeholder={placeholder}
                     className={className}
                     autoComplete="off"
@@ -1193,19 +1239,19 @@ function AddressAutocomplete({ value, onAddressChange, onPlaceSelect, className,
                 )}
             </div>
 
-            {open && predictions.length > 0 && (
+            {open && results.length > 0 && (
                 <ul className="absolute top-full z-50 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
-                    {predictions.map((pred) => (
+                    {results.map((r, i) => (
                         <li
-                            key={pred.place_id}
-                            onMouseDown={(e) => { e.preventDefault(); selectPrediction(pred); }}
+                            key={i}
+                            onMouseDown={(e) => { e.preventDefault(); selectResult(r); }}
                             className="flex cursor-pointer flex-col gap-0.5 px-3 py-2.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-700/30"
                         >
                             <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
-                                {pred.structured_formatting.main_text}
+                                {r.name}
                             </span>
-                            <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                                {pred.structured_formatting.secondary_text}
+                            <span className="truncate text-[11px] text-neutral-400 dark:text-neutral-500">
+                                {r.address}
                             </span>
                         </li>
                     ))}

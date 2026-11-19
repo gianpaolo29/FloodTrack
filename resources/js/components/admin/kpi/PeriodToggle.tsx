@@ -112,9 +112,9 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef, t }: {
                             className={`relative flex size-9 items-center justify-center text-xs font-medium transition-all mx-auto rounded-lg
                                 ${isFuture ? 'cursor-not-allowed text-neutral-200 dark:text-neutral-700' : 'cursor-pointer'}
                                 ${isStart || isEnd
-                                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                                    ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                     : inRange
-                                        ? 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
+                                        ? 'bg-[oklch(0.90_0.04_240)] text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300'
                                         : isToday
                                             ? 'ring-1 ring-neutral-400 text-neutral-700 dark:ring-neutral-600 dark:text-neutral-300'
                                             : !isFuture ? 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800' : ''
@@ -150,7 +150,7 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef, t }: {
                     disabled={!rangeStart || !rangeEnd}
                     className={`flex-1 rounded-xl py-2 text-[11px] font-semibold transition-all ${
                         rangeStart && rangeEnd
-                            ? 'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200'
+                            ? 'bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)]'
                             : 'bg-neutral-100 text-neutral-300 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-600'
                     }`}
                 >
@@ -226,7 +226,7 @@ export function PeriodToggle({ period, customFrom, customTo, baseUrl, extraParam
                     onClick={() => setPeriod(key)}
                     className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all sm:px-3.5 sm:text-xs ${
                         period === key || (key === 'custom' && showCalendar)
-                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                            ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                             : 'text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'
                     }`}
                 >

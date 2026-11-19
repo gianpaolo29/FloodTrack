@@ -280,7 +280,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/evacuation-centers" />
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
+                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)] px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
                         >
                             <Plus className="size-4" />
                             Add Center
@@ -572,7 +572,7 @@ export default function AdminEvacuationCentersIndex({ centers, filters, stats, t
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                                                 link.active
-                                                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
+                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white shadow-sm'
                                                     : 'border border-neutral-200 text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-white'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
@@ -1038,6 +1038,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                     onChange={(e) => form.setData('name', e.target.value)}
                                     placeholder="e.g. Nasugbu Municipal Gymnasium"
                                     className={inputClass}
+                                    maxLength={32}
                                     required
                                 />
                             </FormField>
@@ -1085,6 +1086,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                         onChange={(e) => form.setData('capacity', e.target.value)}
                                         placeholder={smartMeta.placeholder}
                                         min="1"
+                                        max="99999"
                                         className={`${inputClass} pl-8`}
                                         required
                                     />
@@ -1199,7 +1201,7 @@ function CenterFormModal({ center, onClose }: { center?: EvacuationCenter; onClo
                                 title={!isReady && !isEditing ? 'Fill in all fields and pin a location first' : undefined}
                                 className={`inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold text-white shadow-md transition-all hover:shadow-lg hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 ${
                                     isReady || isEditing
-                                        ? 'bg-neutral-900 dark:bg-white dark:text-neutral-900 shadow-sm hover:bg-neutral-800 dark:hover:bg-neutral-200'
+                                        ? 'bg-[oklch(0.55_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white shadow-sm hover:bg-[oklch(0.50_0.14_240)] dark:hover:bg-[oklch(0.57_0.14_240)]'
                                         : 'bg-neutral-400 shadow-sm'
                                 }`}
                             >
@@ -1407,6 +1409,8 @@ function MapPicker({
 
 const PLUS_CODE_RE = /^[0-9A-Z]{4,8}\+[0-9A-Z]{2,3}$/i;
 
+interface GeoResult { name: string; lat: string; lng: string; address: string }
+
 function AddressAutocomplete({
     value,
     onAddressChange,
@@ -1422,37 +1426,15 @@ function AddressAutocomplete({
     placeholder?: string;
     required?: boolean;
 }) {
-    const { isLoaded } = useJsApiLoader({
-        googleMapsApiKey: (import.meta.env.VITE_GOOGLE_MAPS_KEY as string) ?? '',
-        libraries: ['places'] as ('places')[],
-    });
+    const [inputVal,  setInputVal]  = useState(value);
+    const [results,   setResults]   = useState<GeoResult[]>([]);
+    const [open,      setOpen]      = useState(false);
+    const [fetching,  setFetching]  = useState(false);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const wrapperRef  = useRef<HTMLDivElement>(null);
 
-    const [inputVal,     setInputVal]     = useState(value);
-    const [predictions,  setPredictions]  = useState<google.maps.places.AutocompletePrediction[]>([]);
-    const [open,         setOpen]         = useState(false);
-    const [fetching,     setFetching]     = useState(false);
-
-    const acServiceRef  = useRef<google.maps.places.AutocompleteService | null>(null);
-    const placesRef     = useRef<google.maps.places.PlacesService | null>(null);
-    const placesDivRef  = useRef<HTMLDivElement | null>(null);
-    const debounceRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const wrapperRef    = useRef<HTMLDivElement>(null);
-
-    /* Sync external value (e.g. map pin reverse geocode) into input */
     useEffect(() => { setInputVal(value); }, [value]);
 
-    /* Init Google Places services */
-    useEffect(() => {
-        if (!isLoaded) return;
-        acServiceRef.current = new google.maps.places.AutocompleteService();
-        const div = document.createElement('div');
-        document.body.appendChild(div);
-        placesDivRef.current = div;
-        placesRef.current = new google.maps.places.PlacesService(div);
-        return () => { if (placesDivRef.current) document.body.removeChild(placesDivRef.current); };
-    }, [isLoaded]);
-
-    /* Close dropdown on outside click */
     useEffect(() => {
         const handler = (e: MouseEvent) => {
             if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) setOpen(false);
@@ -1461,27 +1443,76 @@ function AddressAutocomplete({
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    const fetchPredictions = useCallback((q: string) => {
-        if (!q || q.length < 2 || !acServiceRef.current) { setPredictions([]); setOpen(false); return; }
-        const bounds = new google.maps.LatLngBounds(
-            { lat: NASUGBU_BOUNDS.south, lng: NASUGBU_BOUNDS.west },
-            { lat: NASUGBU_BOUNDS.north, lng: NASUGBU_BOUNDS.east },
-        );
+    const fetchResults = useCallback(async (q: string) => {
+        if (!q) { setResults([]); setOpen(false); return; }
         setFetching(true);
-        acServiceRef.current.getPlacePredictions(
-            { input: q, bounds, strictBounds: true, componentRestrictions: { country: 'ph' } },
-            (preds, status) => {
-                setFetching(false);
-                if (status === 'OK' && preds) {
-                    /* Keep only predictions that mention Nasugbu */
-                    const filtered = preds.filter((p) => p.description.toLowerCase().includes('nasugbu'));
-                    setPredictions(filtered);
-                    setOpen(filtered.length > 0);
-                } else {
-                    setPredictions([]); setOpen(false);
+        try {
+            const key = (import.meta.env.VITE_GOOGLE_MAPS_KEY as string) ?? '';
+
+            // Use Places Text Search (New) for place names + addresses
+            const placesRes = await fetch(
+                `https://places.googleapis.com/v1/places:searchText`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Goog-Api-Key': key,
+                        'X-Goog-FieldMask': 'places.displayName,places.formattedAddress,places.location',
+                    },
+                    body: JSON.stringify({
+                        textQuery: q,
+                        maxResultCount: 5,
+                        locationRestriction: {
+                            rectangle: {
+                                low: { latitude: NASUGBU_BOUNDS.south, longitude: NASUGBU_BOUNDS.west },
+                                high: { latitude: NASUGBU_BOUNDS.north, longitude: NASUGBU_BOUNDS.east },
+                            },
+                        },
+                    }),
                 }
-            },
-        );
+            );
+            const placesData = await placesRes.json();
+            if (placesData.places?.length) {
+                const mapped: GeoResult[] = placesData.places
+                    .filter((p: any) =>
+                        p.location.latitude >= NASUGBU_BOUNDS.south &&
+                        p.location.latitude <= NASUGBU_BOUNDS.north &&
+                        p.location.longitude >= NASUGBU_BOUNDS.west &&
+                        p.location.longitude <= NASUGBU_BOUNDS.east
+                    )
+                    .map((p: any) => ({
+                        name: p.displayName?.text ?? p.formattedAddress?.split(',')[0] ?? '',
+                        lat: String(p.location.latitude),
+                        lng: String(p.location.longitude),
+                        address: p.formattedAddress ?? '',
+                    }));
+                setResults(mapped);
+                setOpen(mapped.length > 0);
+            } else {
+                // Fallback to Geocoding API
+                const bounds = `${NASUGBU_BOUNDS.south},${NASUGBU_BOUNDS.west}|${NASUGBU_BOUNDS.north},${NASUGBU_BOUNDS.east}`;
+                const geoRes = await fetch(
+                    `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q + ', Nasugbu, Batangas')}&bounds=${bounds}&region=ph&key=${key}`
+                );
+                const geoData = await geoRes.json();
+                if (geoData.status === 'OK' && geoData.results) {
+                    const mapped: GeoResult[] = geoData.results.slice(0, 5).map((r: any) => ({
+                        name: r.formatted_address.split(',')[0],
+                        lat: String(r.geometry.location.lat),
+                        lng: String(r.geometry.location.lng),
+                        address: r.formatted_address,
+                    }));
+                    setResults(mapped);
+                    setOpen(mapped.length > 0);
+                } else {
+                    setResults([]); setOpen(false);
+                }
+            }
+        } catch {
+            setResults([]); setOpen(false);
+        } finally {
+            setFetching(false);
+        }
     }, []);
 
     const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1489,33 +1520,14 @@ function AddressAutocomplete({
         setInputVal(q);
         onAddressChange(q);
         if (debounceRef.current) clearTimeout(debounceRef.current);
-        debounceRef.current = setTimeout(() => fetchPredictions(q), 300);
+        debounceRef.current = setTimeout(() => fetchResults(q), 300);
     };
 
-    const EVAC_PLACE_TYPES = [
-        'school', 'university', 'church', 'place_of_worship',
-        'gym', 'stadium', 'local_government_office', 'city_hall',
-        'community_center', 'health',
-    ];
-
-    const selectPrediction = (pred: google.maps.places.AutocompletePrediction) => {
+    const selectResult = (r: GeoResult) => {
         setOpen(false);
-        if (!placesRef.current) return;
-        placesRef.current.getDetails(
-            { placeId: pred.place_id, fields: ['formatted_address', 'geometry', 'name', 'address_components', 'types'] },
-            (place, status) => {
-                if (status !== 'OK' || !place?.geometry?.location) return;
-                const lat  = place.geometry.location.lat().toFixed(7);
-                const lng  = place.geometry.location.lng().toFixed(7);
-                const addr = cleanAddress(place.formatted_address ?? place.name ?? '');
-                const raw  = place.name ?? '';
-                /* Only use place name to fill Center Name if it's an evacuation-relevant venue */
-                const isEvacType = place.types?.some((t) => EVAC_PLACE_TYPES.includes(t)) ?? false;
-                const placeName  = isEvacType && !PLUS_CODE_RE.test(raw.trim()) ? (raw || undefined) : undefined;
-                setInputVal(addr);
-                onPlaceSelect(lat, lng, addr, placeName);
-            },
-        );
+        const addr = cleanAddress(r.address);
+        setInputVal(addr);
+        onPlaceSelect(parseFloat(r.lat).toFixed(7), parseFloat(r.lng).toFixed(7), addr, r.name);
     };
 
     return (
@@ -1526,7 +1538,7 @@ function AddressAutocomplete({
                     type="text"
                     value={inputVal}
                     onChange={handleInput}
-                    onFocus={() => predictions.length > 0 && setOpen(true)}
+                    onFocus={() => results.length > 0 && setOpen(true)}
                     placeholder={placeholder}
                     className={className}
                     required={required}
@@ -1539,19 +1551,19 @@ function AddressAutocomplete({
                 )}
             </div>
 
-            {open && predictions.length > 0 && (
+            {open && results.length > 0 && (
                 <ul className="absolute top-full z-50 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-800">
-                    {predictions.map((pred) => (
+                    {results.map((r, i) => (
                         <li
-                            key={pred.place_id}
-                            onMouseDown={(e) => { e.preventDefault(); selectPrediction(pred); }}
+                            key={i}
+                            onMouseDown={(e) => { e.preventDefault(); selectResult(r); }}
                             className="flex cursor-pointer flex-col gap-0.5 px-3 py-2.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
                         >
                             <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
-                                {pred.structured_formatting.main_text}
+                                {r.name}
                             </span>
-                            <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
-                                {pred.structured_formatting.secondary_text}
+                            <span className="truncate text-[11px] text-neutral-400 dark:text-neutral-500">
+                                {r.address}
                             </span>
                         </li>
                     ))}

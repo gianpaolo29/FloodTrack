@@ -1,15 +1,11 @@
 import { Head, router } from '@inertiajs/react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
     AlertCircle,
-    CheckCircle2,
     ChevronDown,
-    ChevronRight,
     ChevronUp,
     Clock,
-    CloudRain,
-    CloudSun,
     Droplets,
     Eye,
     Gauge,
@@ -17,16 +13,12 @@ import {
     MapPin,
     Mountain,
     Navigation,
-    RefreshCw,
     Search,
     X,
-    ShieldAlert,
-    Sparkles,
     Thermometer,
-    TrendingUp,
     Wind,
-    Zap,
     Sun,
+    Sparkles,
     Umbrella,
 } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
@@ -55,16 +47,6 @@ interface BarangayData {
     barangays: BarangayWeather[]; generated_at: string;
 }
 
-interface AiWeatherInsight {
-    risk_level: 'critical' | 'high' | 'moderate' | 'low';
-    summary: string;
-    weather_pattern: string;
-    key_findings: string[];
-    at_risk_barangays: { name: string; reason: string }[];
-    recommendations: string[];
-    priority_action: string;
-    forecast_outlook: string;
-}
 
 interface HourlyItem {
     dt: number; date: string; temperature: number; humidity: number; pressure: number;
@@ -110,26 +92,6 @@ const RISK_LEFT_BORDER: Record<string, string> = {
     low: '#10b981', moderate: '#f59e0b', high: '#f97316', critical: '#ef4444',
 };
 
-const AI_RISK_STYLES: Record<string, string> = {
-    critical: 'bg-red-100 text-red-700 border border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800',
-    high:     'bg-orange-100 text-orange-700 border border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800',
-    moderate: 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800',
-    low:      'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800',
-};
-
-const AI_RISK_BOX: Record<string, string> = {
-    critical: 'bg-red-50 border border-red-200/60 dark:bg-red-950/30 dark:border-red-800/40',
-    high:     'bg-orange-50 border border-orange-200/60 dark:bg-orange-950/30 dark:border-orange-800/40',
-    moderate: 'bg-amber-50 border border-amber-200/60 dark:bg-amber-950/30 dark:border-amber-800/40',
-    low:      'bg-emerald-50 border border-emerald-200/60 dark:bg-emerald-950/30 dark:border-emerald-800/40',
-};
-
-const AI_RISK_TXT: Record<string, string> = {
-    critical: 'text-red-700 dark:text-red-400',
-    high:     'text-orange-700 dark:text-orange-400',
-    moderate: 'text-amber-700 dark:text-amber-400',
-    low:      'text-emerald-700 dark:text-emerald-400',
-};
 
 function windyUrl(lat: number, lon: number): string {
     return `https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=°C&metricWind=km/h&zoom=11&overlay=rain&product=ecmwf&level=surface&lat=${lat}&lon=${lon}&marker=true&message=true`;
@@ -201,8 +163,6 @@ export default function AdminWeather({ barangay_data }: Props) {
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
 
     const [expandedBrgy, setExpandedBrgy] = useState<string | null>(null);
-    const [aiState, setAiState] = useState<'idle' | 'loading' | 'done' | 'error'>('idle');
-    const [aiData, setAiData] = useState<AiWeatherInsight | null>(null);
     const [search, setSearch] = useState('');
     const [riskFilter, setRiskFilter] = useState<string | null>(null);
 
@@ -318,21 +278,6 @@ export default function AdminWeather({ barangay_data }: Props) {
         };
     }, [barangay_data.barangays]);
 
-    async function generateWeatherInsights() {
-        setAiState('loading');
-        try {
-            const res = await fetch('/admin/weather/ai-insights');
-            const data = await res.json();
-            if (data.error) throw new Error(data.error);
-            setAiData(data);
-            setAiState('done');
-        } catch {
-            setAiState('error');
-        }
-    }
-
-    // Auto-load AI insights on mount
-    useEffect(() => { generateWeatherInsights(); }, []);
 
     if (!mounted) return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -596,330 +541,156 @@ export default function AdminWeather({ barangay_data }: Props) {
                     )}
                 </Card>
 
+
+
                 {/* ═══════════════════════════════════════════════════
-                    RISK SUMMARY
+                    BARANGAY TABLE
                 ═══════════════════════════════════════════════════ */}
                 <Card>
-                    <div className="grid grid-cols-4 divide-x divide-neutral-100 dark:divide-neutral-800">
-                        {(['critical', 'high', 'moderate', 'low'] as const).map((level) => {
-                            const count = barangay_data.barangays.filter(b => b.flood_risk.level === level).length;
-                            const rc = RISK_COLORS[level];
-                            const active = riskFilter === level;
-                            return (
-                                <button
-                                    key={level}
-                                    onClick={() => setRiskFilter(active ? null : level)}
-                                    className={`group flex flex-col items-center gap-1.5 py-5 transition-all cursor-pointer ${
-                                        active ? `${rc.bg} shadow-inner` : 'hover:bg-neutral-50/70 dark:hover:bg-neutral-800/30'
-                                    }`}
-                                >
-                                    <div className={`size-2 rounded-full ${rc.dot} transition-transform group-hover:scale-150 ${active ? 'scale-150 shadow-md ' + rc.glow : ''}`} />
-                                    <span className={`text-2xl font-bold tabular-nums ${rc.text}`}>{count}</span>
-                                    <span className="text-[9px] font-semibold text-neutral-400 uppercase tracking-widest">{level}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </Card>
-
-                {/* ═══════════════════════════════════════════════════
-                    AI RECOMMENDATION
-                ═══════════════════════════════════════════════════ */}
-                <Card>
-                    <CardHeader icon={Sparkles} title="AI Weather Recommendation" subtitle="GPT-4o powered analysis across all barangays" iconColor="text-violet-500" iconBg="bg-violet-50 dark:bg-violet-950/40" />
-
-                    <div className="p-5 sm:p-6">
-                        {(aiState === 'idle' || aiState === 'loading') && (
-                            <div className="flex flex-col items-center gap-5 py-14">
-                                <div className="relative">
-                                    <div className="size-14 animate-spin rounded-full border-[3px] border-neutral-200 border-t-neutral-700 dark:border-neutral-700 dark:border-t-neutral-300" />
-                                    <Sparkles className="absolute inset-0 m-auto size-5 text-neutral-500 animate-pulse" />
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-sm font-bold text-neutral-700 dark:text-neutral-200">Analyzing {barangay_data.barangays.length} barangays...</p>
-                                    <p className="mt-1 text-xs text-neutral-400">Computing weather patterns and risk correlations</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {aiState === 'error' && (
-                            <div className="flex flex-col items-center gap-4 py-12">
-                                <div className="flex size-14 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-900/20">
-                                    <AlertCircle className="size-7 text-red-500" />
-                                </div>
-                                <p className="text-sm font-semibold text-neutral-800 dark:text-white">Analysis failed</p>
-                                <p className="text-xs text-neutral-400">Could not connect to AI service</p>
-                                <button
-                                    onClick={generateWeatherInsights}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-600 shadow-sm transition-all hover:border-neutral-400 hover:text-neutral-900 cursor-pointer dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-white"
-                                >
-                                    <RefreshCw className="size-3.5" /> Retry
-                                </button>
-                            </div>
-                        )}
-
-                        {aiState === 'done' && aiData && (
-                            <div className="flex flex-col gap-5">
-                                {/* Risk + Refresh */}
-                                <div className="flex items-center justify-between">
-                                    <span className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-[10px] font-bold uppercase tracking-wider ${AI_RISK_STYLES[aiData.risk_level]}`}>
-                                        <span className="size-1.5 rounded-full bg-current animate-pulse" />
-                                        {aiData.risk_level} risk
-                                    </span>
-                                    <button onClick={generateWeatherInsights} className="inline-flex items-center gap-1.5 rounded-md border border-neutral-200 px-2 py-1 text-[9px] font-medium text-neutral-400 transition-all hover:border-neutral-400 hover:text-neutral-900 cursor-pointer dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-white">
-                                        <RefreshCw className="size-2.5" /> Refresh
-                                    </button>
-                                </div>
-
-                                <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-300">{aiData.summary}</p>
-
-                                {/* Weather Pattern */}
-                                <div className={`rounded-lg p-3 ${AI_RISK_BOX[aiData.risk_level]}`}>
-                                    <div className="mb-1.5 flex items-center gap-1.5">
-                                        <CloudSun className={`size-3 ${AI_RISK_TXT[aiData.risk_level]}`} />
-                                        <span className={`text-[8px] font-bold uppercase tracking-widest ${AI_RISK_TXT[aiData.risk_level]}`}>Weather Pattern</span>
-                                    </div>
-                                    <p className={`text-[10px] font-medium leading-relaxed ${AI_RISK_TXT[aiData.risk_level]}`}>{aiData.weather_pattern}</p>
-                                </div>
-
-                                {/* Two-col: Findings + At-Risk */}
-                                <div className="grid gap-5 sm:grid-cols-2">
-                                    <div>
-                                        <p className="mb-2 text-[8px] font-semibold uppercase tracking-widest text-neutral-400">Key Findings</p>
-                                        <ul className="flex flex-col gap-2">
-                                            {aiData.key_findings.map((f, i) => (
-                                                <li key={i} className="flex items-start gap-2 text-[10px] leading-relaxed text-neutral-600 dark:text-neutral-300">
-                                                    <CheckCircle2 className="mt-0.5 size-3 shrink-0 text-emerald-500" />{f}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                    {aiData.at_risk_barangays.length > 0 && (
-                                        <div>
-                                            <p className="mb-2 text-[8px] font-semibold uppercase tracking-widest text-neutral-400">At-Risk Barangays</p>
-                                            <div className="flex flex-col gap-2">
-                                                {aiData.at_risk_barangays.map((b, i) => (
-                                                    <div key={i} className="flex items-start gap-2 rounded-lg border border-red-100/80 bg-red-50/40 px-3 py-2 dark:border-red-800/30 dark:bg-red-950/20">
-                                                        <ShieldAlert className="mt-0.5 size-3 shrink-0 text-red-500" />
-                                                        <div>
-                                                            <span className="text-[10px] font-bold text-neutral-900 dark:text-white">{b.name}</span>
-                                                            <p className="mt-0.5 text-[9px] leading-relaxed text-neutral-500 dark:text-neutral-400">{b.reason}</p>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Recommendations */}
-                                <div>
-                                    <p className="mb-2 text-[8px] font-semibold uppercase tracking-widest text-neutral-400">Recommendations</p>
-                                    <ul className="flex flex-col gap-2">
-                                        {aiData.recommendations.map((r, i) => (
-                                            <li key={i} className="flex items-start gap-2 text-[10px] leading-relaxed text-neutral-600 dark:text-neutral-300">
-                                                <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded bg-neutral-900 text-[7px] font-bold text-white dark:bg-white dark:text-neutral-900">{i + 1}</span>
-                                                {r}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-
-                                {/* Two-col: Priority + Outlook */}
-                                <div className="grid gap-3 sm:grid-cols-2">
-                                    <div className={`rounded-lg p-3 ${AI_RISK_BOX[aiData.risk_level]}`}>
-                                        <div className="mb-1.5 flex items-center gap-1.5">
-                                            <Zap className={`size-3 ${AI_RISK_TXT[aiData.risk_level]}`} />
-                                            <span className={`text-[8px] font-bold uppercase tracking-widest ${AI_RISK_TXT[aiData.risk_level]}`}>Priority Action</span>
-                                        </div>
-                                        <p className={`text-[10px] font-medium leading-relaxed ${AI_RISK_TXT[aiData.risk_level]}`}>{aiData.priority_action}</p>
-                                    </div>
-                                    <div className="rounded-lg border border-neutral-200/50 bg-neutral-50/80 p-3 dark:border-neutral-700/40 dark:bg-neutral-800/50">
-                                        <div className="mb-1.5 flex items-center gap-1.5">
-                                            <TrendingUp className="size-3 text-neutral-500 dark:text-neutral-400" />
-                                            <span className="text-[8px] font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">24-48h Outlook</span>
-                                        </div>
-                                        <p className="text-[10px] font-medium leading-relaxed text-neutral-700 dark:text-neutral-300">{aiData.forecast_outlook}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center gap-1.5 text-[8px] text-neutral-300 dark:text-neutral-600">
-                                    <ChevronRight className="size-2.5" />
-                                    AI-generated analysis. Always verify with on-ground information and PAGASA advisories.
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </Card>
-
-                {/* ═══════════════════════════════════════════════════
-                    BARANGAY LIST
-                ═══════════════════════════════════════════════════ */}
-                <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center gap-2">
-                        <Mountain className="size-4 text-emerald-500" />
-                        <span className="text-[11px] font-bold text-neutral-500 uppercase tracking-widest dark:text-neutral-400">All Barangays</span>
-                    </div>
-                    <span className="text-[10px] tabular-nums text-neutral-400">
-                        {filteredBarangays.length} of {barangay_data.barangays.length}
-                    </span>
-                </div>
-
-                {/* Search + filter */}
-                <div className="flex flex-col gap-3">
-                    <Card className="!shadow-none">
-                        <div className="flex items-center gap-3 px-4 py-3">
-                            <Search className="size-4 text-neutral-400 shrink-0" />
+                    {/* Header: search + filters inline */}
+                    <div className="flex flex-col gap-3 border-b border-neutral-100 px-5 py-4 dark:border-neutral-800 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <Search className="size-3.5 text-neutral-400 shrink-0" />
                             <input
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Search barangay name, tags (flood-prone, coastal, river)..."
-                                className="w-full bg-transparent text-sm text-neutral-900 placeholder-neutral-400 outline-none dark:text-white dark:placeholder-neutral-500"
+                                placeholder="Search barangay..."
+                                className="w-full bg-transparent text-xs text-neutral-900 placeholder-neutral-400 outline-none dark:text-white dark:placeholder-neutral-500"
                             />
                             {search && (
-                                <button onClick={() => setSearch('')} className="shrink-0 rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300 cursor-pointer">
-                                    <X className="size-3.5" />
+                                <button onClick={() => setSearch('')} className="shrink-0 rounded-md p-0.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600 cursor-pointer dark:hover:bg-neutral-800">
+                                    <X className="size-3" />
                                 </button>
                             )}
                         </div>
-                    </Card>
-                    <div className="flex flex-wrap gap-1.5">
-                        {(['critical', 'high', 'moderate', 'low'] as const).map((level) => {
-                            const count = barangay_data.barangays.filter(b => b.flood_risk.level === level).length;
-                            const rc = RISK_COLORS[level];
-                            const active = riskFilter === level;
-                            return (
+                        <div className="flex items-center gap-1.5 shrink-0">
+                            {(['critical', 'high', 'moderate', 'low'] as const).map((level) => {
+                                const count = barangay_data.barangays.filter(b => b.flood_risk.level === level).length;
+                                const rc = RISK_COLORS[level];
+                                const active = riskFilter === level;
+                                return (
+                                    <button
+                                        key={level}
+                                        onClick={() => setRiskFilter(active ? null : level)}
+                                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold transition-all cursor-pointer ${
+                                            active
+                                                ? `${rc.bg} ${rc.text}`
+                                                : 'text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300'
+                                        }`}
+                                    >
+                                        <span className={`size-1.5 rounded-full ${rc.dot}`} />
+                                        {level} ({count})
+                                    </button>
+                                );
+                            })}
+                            {(search || riskFilter) && (
                                 <button
-                                    key={level}
-                                    onClick={() => setRiskFilter(active ? null : level)}
-                                    className={`inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-1.5 text-[11px] font-bold transition-all cursor-pointer ${
-                                        active
-                                            ? `${rc.bg} ${rc.border} ${rc.text} shadow-md ${rc.glow}`
-                                            : 'border-neutral-200 bg-white text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600'
-                                    }`}
+                                    onClick={() => { setSearch(''); setRiskFilter(null); }}
+                                    className="rounded-md px-1.5 py-1 text-[10px] font-semibold text-red-500 transition-colors hover:bg-red-50 cursor-pointer dark:hover:bg-red-950/30"
                                 >
-                                    <span className={`size-2 rounded-full ${rc.dot}`} />
-                                    {level} <span className="opacity-60">({count})</span>
+                                    <X className="size-3" />
                                 </button>
-                            );
-                        })}
-                        {(search || riskFilter) && (
-                            <button
-                                onClick={() => { setSearch(''); setRiskFilter(null); }}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-[11px] font-bold text-red-500 transition-all hover:bg-red-100 hover:shadow-sm cursor-pointer dark:border-red-800/40 dark:bg-red-950/30 dark:hover:bg-red-950/50"
-                            >
-                                <X className="size-3" /> Clear
-                            </button>
-                        )}
+                            )}
+                            <span className="ml-1 text-[10px] tabular-nums text-neutral-300 dark:text-neutral-600">
+                                {filteredBarangays.length}/{barangay_data.barangays.length}
+                            </span>
+                        </div>
                     </div>
-                </div>
-
-                {/* Cards */}
-                <div className="flex flex-col gap-2.5">
-                    {filteredBarangays.length === 0 && (
-                        <Card>
-                            <div className="flex flex-col items-center gap-3 py-12">
-                                <div className="flex size-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
-                                    <Search className="size-5 text-neutral-400" />
-                                </div>
-                                <p className="text-sm font-medium text-neutral-400">No barangays match your search</p>
+                    {filteredBarangays.length === 0 ? (
+                        <div className="flex flex-col items-center gap-3 py-12">
+                            <div className="flex size-12 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+                                <Search className="size-5 text-neutral-400" />
                             </div>
-                        </Card>
-                    )}
-
-                    {filteredBarangays.map((brgy) => {
-                        const isExpanded = expandedBrgy === brgy.name;
-                        const rc = RISK_COLORS[brgy.flood_risk.level];
-                        return (
-                            <div
-                                key={brgy.name}
-                                className="overflow-hidden rounded-2xl border border-neutral-200/70 bg-white shadow-sm transition-all hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900"
-                                style={{ borderLeftWidth: 4, borderLeftColor: RISK_LEFT_BORDER[brgy.flood_risk.level] }}
-                            >
-                                <button
-                                    onClick={() => setExpandedBrgy(isExpanded ? null : brgy.name)}
-                                    className="group w-full flex items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-neutral-50/50 dark:hover:bg-neutral-800/30 cursor-pointer"
-                                >
-                                    <div className={`size-2.5 shrink-0 rounded-full ${rc.dot} ring-2 ring-offset-2 ring-offset-white dark:ring-offset-neutral-900 ${rc.border.replace('border-', 'ring-')}`} />
-
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="text-sm font-bold text-neutral-900 dark:text-white">{brgy.name}</span>
-                                            {brgy.flood_prone && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-orange-100/80 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400">Flood-prone</span>}
-                                            {brgy.coastal && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-sky-100/80 text-sky-600 dark:bg-sky-900/40 dark:text-sky-400">Coastal</span>}
-                                            {brgy.near_river && <span className="text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md bg-blue-100/80 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">River</span>}
-                                        </div>
-                                        <p className="text-[10px] text-neutral-400 mt-0.5 capitalize">{brgy.weather.description} · {brgy.elevation_m}m elev</p>
-                                    </div>
-
-                                    <div className="flex items-center gap-3 shrink-0">
-                                        <div className="flex items-center gap-1">
-                                            <img src={iconUrl(brgy.weather.icon)} alt="" className="size-9 drop-shadow-md" />
-                                            <span className="text-lg font-extrabold text-neutral-900 tabular-nums dark:text-white">{brgy.weather.temperature}°</span>
-                                        </div>
-
-                                        <div className={`flex flex-col items-center px-3 py-1.5 rounded-xl ${rc.bg} ${rc.border} border`}>
-                                            <span className={`text-lg font-extrabold tabular-nums leading-none ${rc.text}`}>{brgy.flood_risk.score}</span>
-                                            <span className={`text-[7px] font-bold uppercase tracking-wider ${rc.text}`}>{brgy.flood_risk.level}</span>
-                                        </div>
-
-                                        <div className="transition-transform group-hover:translate-y-0.5">
-                                            {isExpanded ? <ChevronUp className="size-4 text-neutral-400" /> : <ChevronDown className="size-4 text-neutral-400" />}
-                                        </div>
-                                    </div>
-                                </button>
-
-                                {isExpanded && (
-                                    <div className="border-t border-neutral-100 bg-neutral-50/40 px-5 pb-5 pt-4 dark:border-neutral-800 dark:bg-neutral-800/20">
-                                        <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mb-2.5">Current Conditions</p>
-                                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                                            <Metric icon={<Thermometer className="size-3.5 text-rose-500" />} value={`${brgy.weather.temperature}°C`} label="Temp" iconBg="bg-rose-50 dark:bg-rose-950/40" />
-                                            <Metric icon={<Droplets className="size-3.5 text-blue-500" />} value={`${brgy.weather.humidity}%`} label="Humidity" iconBg="bg-blue-50 dark:bg-blue-950/40" />
-                                            <Metric icon={<Wind className="size-3.5 text-cyan-500" />} value={`${brgy.weather.wind_speed} km/h`} label="Wind" iconBg="bg-cyan-50 dark:bg-cyan-950/40" />
-                                            <Metric icon={<Umbrella className="size-3.5 text-indigo-500" />} value={`${brgy.weather.rain_1h} mm/h`} label="Rain" iconBg={brgy.weather.rain_1h >= 2.5 ? 'bg-orange-50 dark:bg-orange-950/40' : 'bg-indigo-50 dark:bg-indigo-950/40'} />
-                                            <Metric icon={<Eye className="size-3.5 text-emerald-500" />} value={`${brgy.weather.clouds}%`} label="Clouds" iconBg="bg-emerald-50 dark:bg-emerald-950/40" />
-                                            <Metric icon={<Gauge className="size-3.5 text-violet-500" />} value={`${brgy.weather.pressure} hPa`} label="Pressure" iconBg="bg-violet-50 dark:bg-violet-950/40" />
-                                        </div>
-
-                                        {brgy.forecast.length > 0 && (
-                                            <>
-                                                <p className="mt-5 mb-2.5 flex items-center gap-1.5 text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
-                                                    <Sun className="size-3 text-indigo-500" />
-                                                    3-Day Forecast
-                                                </p>
-                                                <div className="grid grid-cols-3 gap-2">
-                                                    {brgy.forecast.map((day, idx) => (
-                                                        <div key={idx} className="flex flex-col items-center gap-1.5 rounded-xl border border-neutral-200/50 bg-white py-3.5 transition-all hover:shadow-sm dark:border-neutral-700/50 dark:bg-neutral-800/40">
-                                                            <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400">{day.day}</span>
-                                                            <img src={iconUrl(day.icon)} alt="" className="size-9 drop-shadow-sm" />
-                                                            <span className="text-xs font-bold text-neutral-900 tabular-nums dark:text-white">{day.temp_max}° / {day.temp_min}°</span>
-                                                            <div className="flex items-center gap-1 text-sky-500">
-                                                                <Droplets className="size-2.5" />
-                                                                <span className="text-[10px] font-semibold tabular-nums">{day.rain_total} mm</span>
+                            <p className="text-sm font-medium text-neutral-400">No barangays match your search</p>
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                                        {['Barangay', 'Weather', 'Temp', 'Humidity', 'Wind', 'Rain', 'Clouds', 'Risk'].map((h) => (
+                                            <th key={h} className="whitespace-nowrap px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {filteredBarangays.map((brgy) => {
+                                        const rc = RISK_COLORS[brgy.flood_risk.level];
+                                        const isExpanded = expandedBrgy === brgy.name;
+                                        return (
+                                            <Fragment key={brgy.name}>
+                                                <tr
+                                                    onClick={() => setExpandedBrgy(isExpanded ? null : brgy.name)}
+                                                    className="cursor-pointer border-b border-neutral-50 transition-colors hover:bg-neutral-50/70 dark:border-neutral-800/50 dark:hover:bg-neutral-800/30"
+                                                >
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-2.5">
+                                                            <span className={`size-2 shrink-0 rounded-full ${rc.dot}`} />
+                                                            <div className="min-w-0">
+                                                                <p className="text-xs font-bold text-neutral-900 dark:text-white">{brgy.name}</p>
+                                                                <div className="mt-0.5 flex items-center gap-1 flex-wrap">
+                                                                    {brgy.flood_prone && <span className="text-[7px] font-bold uppercase tracking-wider px-1 py-px rounded bg-orange-100/80 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400">Flood-prone</span>}
+                                                                    {brgy.coastal && <span className="text-[7px] font-bold uppercase tracking-wider px-1 py-px rounded bg-sky-100/80 text-sky-600 dark:bg-sky-900/40 dark:text-sky-400">Coastal</span>}
+                                                                    {brgy.near_river && <span className="text-[7px] font-bold uppercase tracking-wider px-1 py-px rounded bg-blue-100/80 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">River</span>}
+                                                                </div>
                                                             </div>
-                                                            <span className="text-[9px] text-neutral-400 tabular-nums">{day.pop}% chance</span>
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            </>
-                                        )}
-
-                                        <div className="mt-5">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Flood Risk Score</span>
-                                                <span className={`text-xs font-bold ${rc.text}`}>{brgy.flood_risk.score}/100 — {brgy.flood_risk.level}</span>
-                                            </div>
-                                            <div className="h-2.5 rounded-full bg-neutral-100 overflow-hidden dark:bg-neutral-800">
-                                                <div className={`h-full rounded-full transition-all duration-700 ease-out ${RISK_BAR_COLORS[brgy.flood_risk.level]}`} style={{ width: `${brgy.flood_risk.score}%` }} />
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        );
-                    })}
-                </div>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <img src={iconUrl(brgy.weather.icon)} alt="" className="size-7" />
+                                                            <span className="text-[10px] capitalize text-neutral-500 dark:text-neutral-400">{brgy.weather.description}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{brgy.weather.temperature}°C</td>
+                                                    <td className="px-4 py-3 text-xs tabular-nums text-neutral-600 dark:text-neutral-300">{brgy.weather.humidity}%</td>
+                                                    <td className="px-4 py-3 text-xs tabular-nums text-neutral-600 dark:text-neutral-300">{brgy.weather.wind_speed} km/h</td>
+                                                    <td className="px-4 py-3">
+                                                        <span className={`text-xs tabular-nums font-medium ${brgy.weather.rain_1h > 0 ? 'text-blue-600 dark:text-blue-400' : 'text-neutral-400'}`}>
+                                                            {brgy.weather.rain_1h} mm/h
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3 text-xs tabular-nums text-neutral-600 dark:text-neutral-300">{brgy.weather.clouds}%</td>
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
+                                                                <div className={`h-full rounded-full ${RISK_BAR_COLORS[brgy.flood_risk.level]}`} style={{ width: `${brgy.flood_risk.score}%` }} />
+                                                            </div>
+                                                            <span className={`text-[10px] font-bold tabular-nums ${rc.text}`}>{brgy.flood_risk.score}</span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                {isExpanded && brgy.forecast.length > 0 && (
+                                                    <tr>
+                                                        <td colSpan={8} className="border-b border-neutral-100 bg-neutral-50/60 px-5 py-4 dark:border-neutral-800 dark:bg-neutral-800/20">
+                                                            <div className="flex items-center gap-6">
+                                                                <p className="shrink-0 text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
+                                                                    3-Day Forecast
+                                                                </p>
+                                                                <div className="flex items-center gap-4">
+                                                                    {brgy.forecast.map((day, idx) => (
+                                                                        <div key={idx} className="flex items-center gap-2 rounded-lg border border-neutral-200/50 bg-white px-3 py-2 dark:border-neutral-700/50 dark:bg-neutral-800/40">
+                                                                            <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400">{day.day}</span>
+                                                                            <img src={iconUrl(day.icon)} alt="" className="size-6" />
+                                                                            <span className="text-[11px] font-bold tabular-nums text-neutral-900 dark:text-white">{day.temp_max}°/{day.temp_min}°</span>
+                                                                            <span className="text-[10px] tabular-nums text-sky-500 font-medium">{day.rain_total}mm</span>
+                                                                            <span className="text-[9px] tabular-nums text-neutral-400">{day.pop}%</span>
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </Fragment>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </Card>
 
                 {/* Footer */}
                 <div className="flex items-center justify-center gap-2 py-4">

@@ -602,7 +602,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-all ${
                                                 link.active
-                                                    ? 'bg-neutral-900 text-white shadow-md dark:bg-white dark:text-neutral-900'
+                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white shadow-md dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                     : 'border border-neutral-200/80 bg-white text-neutral-500 shadow-sm hover:border-neutral-300 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
                                             }`}
                                         >

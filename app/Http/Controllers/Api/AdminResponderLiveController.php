@@ -20,11 +20,13 @@ class AdminResponderLiveController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        // Auto-sync duty status at most once per minute
-        Cache::remember('duty:sync:last_run', 60, function () {
-            Artisan::call('duty:sync');
-            return now()->timestamp;
-        });
+        // Auto-sync duty status at most once per minute (non-blocking)
+        if (! Cache::has('duty:sync:last_run')) {
+            Cache::put('duty:sync:last_run', now()->timestamp, 60);
+            dispatch(function () {
+                Artisan::call('duty:sync');
+            })->afterResponse();
+        }
 
         $query = User::where('role', 'responder')
             ->where('is_on_duty', true)

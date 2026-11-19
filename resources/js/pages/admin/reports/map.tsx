@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import { Clock, Filter, List, MapPin, Radio, Users } from 'lucide-react';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import 'leaflet.heat';
-import { CircleMarker, MapContainer, Marker, Polyline, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import { io, type Socket } from 'socket.io-client';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
@@ -19,6 +19,7 @@ interface Filters {
     severity?: string;
     date_from?: string;
     date_to?: string;
+    period?: string;
 }
 
 interface Props {
@@ -37,11 +38,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const STATUS_FILTER_OPTIONS = [
-    { value: 'pending',      label: 'Pending' },
     { value: 'verified',     label: 'Verified' },
     { value: 'assigned',     label: 'Assigned' },
     { value: 'resolved',     label: 'Resolved' },
-    { value: 'rejected',     label: 'Rejected' },
 ];
 const SEVERITY_META: Record<Severity, { color: string; hex: string; rgb: string; label: string }> = {
     critical: { color: 'bg-red-500',    hex: '#ef4444', rgb: '239,68,68',   label: 'Critical' },
@@ -57,6 +56,21 @@ const SEVERITY_FILTER_OPTIONS = (['critical', 'high', 'moderate', 'low'] as Seve
 }));
 
 const SEVERITY_WEIGHT: Record<Severity, number> = { critical: 4, high: 3, moderate: 2, low: 1 };
+
+/** Simple map pin marker for flood reports, colored by severity */
+function createReportPinSvg(severity: Severity): string {
+    const hex = SEVERITY_META[severity].hex;
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 36">
+        <path d="M12 0C5.4 0 0 5.4 0 12c0 9 12 24 12 24s12-15 12-24C24 5.4 18.6 0 12 0z" fill="${hex}" stroke="white" stroke-width="1.5"/>
+        <circle cx="12" cy="12" r="4.5" fill="white"/>
+    </svg>`;
+}
+
+/** Pre-build SVG data URIs per severity */
+const REPORT_PIN_URLS: Record<string, string> = {};
+for (const s of ['critical', 'high', 'moderate', 'low'] as Severity[]) {
+    REPORT_PIN_URLS[s] = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(createReportPinSvg(s))}`;
+}
 
 /** Teal square pin with a cross for evacuation centers */
 function createEvacMarker(isFull: boolean): string {
@@ -527,7 +541,7 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
                         </button>
                         <button
                             onClick={apply}
-                            className="rounded-lg bg-neutral-900 px-5 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                            className="rounded-lg bg-[oklch(0.55_0.14_240)] px-5 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)]"
                         >
                             Apply filters
                         </button>
@@ -735,7 +749,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
     const [mounted, setMounted] = useState(false);
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
 
-    const [selectedEvacCenter, setSelectedEvacCenter]   = useState<EvacuationCenter | null>(null);
     const [selectedResponder, setSelectedResponder]     = useState<LiveResponder | null>(null);
     const [selectedHazard, setSelectedHazard]           = useState<Hazard | null>(null);
     const [showHeatmap, setShowHeatmap]                 = useState(true);
@@ -743,7 +756,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
     const [showHazards, setShowHazards]                 = useState(false);
     const [showEvacCenters, setShowEvacCenters]         = useState(false);
     const [showResponders, setShowResponders]           = useState(false);
-    const [showAssignmentLines, setShowAssignmentLines] = useState(false);
 
     // Track zoom for responsive responder markers
     const [mapZoom, setMapZoom] = useState(13);
@@ -772,12 +784,24 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
     }, []);
 
     const clearSelection = useCallback(() => {
-        setSelectedEvacCenter(null);
         setSelectedResponder(null);
         setSelectedHazard(null);
     }, []);
 
-    // Memoized icons
+    // Zoom-responsive report pin icons (cached by severity+zoom)
+    const reportPinCache = useRef<Record<string, L.DivIcon>>({});
+    const getReportPinIcon = useCallback((severity: Severity, zoom: number) => {
+        const scale = Math.max(0.5, Math.min(1.2, (zoom - 10) / 5));
+        const roundedScale = Math.round(scale * 10) / 10; // cache-friendly
+        const cacheKey = `${severity}-${roundedScale}`;
+        if (!reportPinCache.current[cacheKey]) {
+            const w = Math.round(24 * roundedScale);
+            const h = Math.round(36 * roundedScale);
+            reportPinCache.current[cacheKey] = makeDivIcon(REPORT_PIN_URLS[severity], w, h, Math.round(w / 2), h);
+        }
+        return reportPinCache.current[cacheKey];
+    }, []);
+
     const evacIcons = useMemo(() => ({
         available: makeDivIcon(createEvacMarker(false), 30, 30, 15, 15),
         full: makeDivIcon(createEvacMarker(true), 30, 30, 15, 15),
@@ -843,24 +867,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
         return icons;
     }, []);
 
-    // Compute assignment lines: assigned reports → their responder's live location
-    const assignmentLines = useMemo(() => {
-        if (!showAssignmentLines || !showResponders) return [];
-        return reports
-            .filter(r => r.status === 'assigned' && r.assigned_to)
-            .map(r => {
-                const resp = liveResponders.find(lr => lr.id === r.assigned_to);
-                if (!resp) return null;
-                return {
-                    reportId: r.id,
-                    path: [
-                        [resp.latitude, resp.longitude] as L.LatLngExpression,
-                        [r.latitude, r.longitude] as L.LatLngExpression,
-                    ],
-                };
-            })
-            .filter(Boolean) as { reportId: number; path: L.LatLngExpression[] }[];
-    }, [reports, liveResponders, showAssignmentLines, showResponders]);
 
 
     // Severity counts for stat pills
@@ -924,13 +930,13 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                 onClick={() => filter('severity', filters.severity === s ? '' : s)}
                                 className={`group relative flex flex-col items-center rounded-lg py-2 transition-all ${
                                     filters.severity === s
-                                        ? 'bg-neutral-900 dark:bg-white'
+                                        ? 'bg-[oklch(0.55_0.14_240)] dark:bg-[oklch(0.62_0.14_240)]'
                                         : 'bg-neutral-50 hover:bg-neutral-100 dark:bg-neutral-800/60 dark:hover:bg-neutral-800'
                                 }`}
                             >
                                 <span className={`text-sm font-bold tabular-nums ${
                                     filters.severity === s
-                                        ? 'text-white dark:text-neutral-900'
+                                        ? 'text-white dark:text-white'
                                         : 'text-neutral-900 dark:text-white'
                                 }`}>{counts[s]}</span>
                                 <span className={`mt-1 h-1 w-6 rounded-full ${SEVERITY_META[s].color}`} />
@@ -959,7 +965,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                     { key: 'hazards',     label: 'Hazards',      checked: showHazards,         toggle: () => setShowHazards(v => !v) },
                                     { key: 'evac',        label: 'Evac Centers', checked: showEvacCenters,     toggle: () => setShowEvacCenters(v => !v) },
                                     { key: 'responders',  label: 'Responders',   checked: showResponders,      toggle: () => setShowResponders(v => !v) },
-                                    { key: 'assignments', label: 'Assignments',  checked: showAssignmentLines, toggle: () => setShowAssignmentLines(v => !v) },
                                 ] as const).map(({ key, label, checked, toggle }) => (
                                     <label key={key} className="flex items-center gap-2 cursor-pointer select-none group">
                                         <div className="relative flex items-center justify-center">
@@ -1155,31 +1160,77 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
 
                 {/* ── Map ── */}
                 <div className="relative flex-1">
-                    {/* Live badge overlay */}
-                    <div className="pointer-events-none absolute right-3 top-3 z-[1000] flex items-center gap-2 rounded-lg bg-white/90 px-3 py-1.5 shadow-lg backdrop-blur-sm dark:bg-neutral-900/90">
-                        <span className="flex items-center gap-1.5">
-                            <span className="relative flex size-2">
-                                <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-500 opacity-60" />
-                                <span className="relative inline-flex size-2 rounded-full bg-red-500" />
+                    {/* Top bar overlay */}
+                    <div className="absolute inset-x-0 top-0 z-[1000] flex items-center justify-between border-b border-neutral-200/40 bg-white/80 px-4 py-1.5 backdrop-blur-md dark:border-neutral-700/40 dark:bg-neutral-900/80">
+                        {/* Time period tabs */}
+                        <div className="flex items-center gap-1">
+                            {([
+                                { key: 'today', label: 'Today' },
+                                { key: 'week',  label: 'This Week' },
+                                { key: 'all',   label: 'All' },
+                            ] as const).map(({ key, label }) => {
+                                const isAll = key === 'all';
+                                const active = isAll
+                                    ? filters.period === 'all'
+                                    : (() => { const p = getDatePreset(key); return !filters.period && filters.date_from === p.from && (filters.date_to ?? '') === p.to; })();
+                                return (
+                                    <button
+                                        key={key}
+                                        onClick={() => {
+                                            if (isAll) {
+                                                router.get('/admin/reports/map', {
+                                                    status: filters.status || undefined,
+                                                    severity: filters.severity || undefined,
+                                                    period: 'all',
+                                                }, { preserveState: true, replace: true });
+                                            } else {
+                                                const { from, to } = getDatePreset(key);
+                                                router.get('/admin/reports/map', {
+                                                    status: filters.status || undefined,
+                                                    severity: filters.severity || undefined,
+                                                    date_from: from,
+                                                    date_to: to,
+                                                }, { preserveState: true, replace: true });
+                                            }
+                                        }}
+                                        className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                                            active
+                                                ? 'bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:bg-[oklch(0.62_0.14_240)]'
+                                                : 'text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700/50 dark:hover:text-neutral-200'
+                                        }`}
+                                    >
+                                        {label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Live status */}
+                        <div className="flex items-center gap-2.5">
+                            <span className="flex items-center gap-1.5">
+                                <span className="relative flex size-1.5">
+                                    <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-500 opacity-60" />
+                                    <span className="relative inline-flex size-1.5 rounded-full bg-red-500" />
+                                </span>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400">Live</span>
                             </span>
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400">Live</span>
-                        </span>
-                        <span className="h-3 w-px bg-neutral-300 dark:bg-neutral-600" />
-                        <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                            <span className="size-1.5 rounded-full bg-emerald-500" />
-                            {onDutyCount} On Duty
-                        </span>
-                        <span className="flex items-center gap-1 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
-                            <span className="size-1.5 rounded-full bg-neutral-400" />
-                            {offDutyCount} Off
-                        </span>
+                            <span className="h-3 w-px bg-neutral-300/60 dark:bg-neutral-600/60" />
+                            <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                                <span className="size-1.5 rounded-full bg-emerald-500" />
+                                {onDutyCount} On Duty
+                            </span>
+                            <span className="flex items-center gap-1 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
+                                <span className="size-1.5 rounded-full bg-neutral-400" />
+                                {offDutyCount} Off
+                            </span>
+                        </div>
                     </div>
                     <MapContainer
                         center={DEFAULT_CENTER}
                         zoom={13}
                         minZoom={5}
                         maxZoom={18}
-                        zoomControl={true}
+                        zoomControl={false}
                         style={{ width: '100%', height: '100%' }}
                     >
                         <DarkModeTileLayer />
@@ -1187,18 +1238,12 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                         <MapFitBounds reports={reports} evacuation_centers={evacuation_centers} />
                         {showHeatmap && <HeatmapLayer points={heatPoints} />}
 
-                        {/* Report markers — CircleMarkers */}
+                        {/* Report markers — Pin markers */}
                         {showReportMarkers && sortedReports.map((r) => (
-                            <CircleMarker
+                            <Marker
                                 key={`report-${r.id}`}
-                                center={[r.latitude, r.longitude]}
-                                radius={10}
-                                pathOptions={{
-                                    color: SEVERITY_META[r.severity].hex,
-                                    fillColor: SEVERITY_META[r.severity].hex,
-                                    fillOpacity: 0.35,
-                                    weight: 2.5,
-                                }}
+                                position={[r.latitude, r.longitude]}
+                                icon={getReportPinIcon(r.severity, mapZoom)}
                                 eventHandlers={{
                                     click: () => focusOnLocation(r.latitude, r.longitude),
                                 }}
@@ -1241,138 +1286,124 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                         </div>
                                     </div>
                                 </Popup>
-                            </CircleMarker>
+                            </Marker>
                         ))}
 
                         {/* Evacuation center markers */}
                         {showEvacCenters && evacuation_centers.map((ec) => {
                             const isFull = ec.current_occupancy >= ec.capacity;
+                            const occupancyPct = Math.min(100, Math.round(ec.current_occupancy / ec.capacity * 100));
+                            const slotsLeft = ec.capacity - ec.current_occupancy;
                             return (
                                 <Marker
                                     key={`evac-${ec.id}`}
                                     position={[ec.latitude, ec.longitude]}
                                     icon={isFull ? evacIcons.full : evacIcons.available}
                                     zIndexOffset={10}
-                                    eventHandlers={{
-                                        click: () => {
-                                            clearSelection();
-                                            setSelectedEvacCenter(selectedEvacCenter?.id === ec.id ? null : ec);
-                                            if (selectedEvacCenter?.id !== ec.id) focusOnLocation(ec.latitude, ec.longitude);
-                                        },
-                                    }}
                                 >
-                                    {selectedEvacCenter?.id === ec.id && (
-                                        <Popup
-                                            maxWidth={280}
-                                            minWidth={240}
-                                            eventHandlers={{ remove: () => setSelectedEvacCenter(null) }}
-                                        >
-                                            <div className="flex flex-col gap-2 p-3 pt-3">
-                                                <div className="flex items-start justify-between gap-2">
-                                                    <p className="text-xs font-bold text-neutral-900 leading-snug">{selectedEvacCenter.name}</p>
-                                                    <span className="shrink-0 rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-semibold text-teal-700 ring-1 ring-teal-200">
-                                                        {EVACUATION_CENTER_TYPE_LABELS[selectedEvacCenter.type]}
+                                    <Popup maxWidth={320} minWidth={260}>
+                                        <div className="flex flex-col gap-2 p-3 pr-6 pt-3">
+                                            {ec.address && (
+                                                <p className="text-[11px] text-gray-500 leading-snug">{ec.address}</p>
+                                            )}
+
+                                            {/* Occupancy bar */}
+                                            <div>
+                                                <div className="mb-1 flex items-center justify-between text-[10px] text-gray-500">
+                                                    <span>Occupancy</span>
+                                                    <span className="font-semibold">
+                                                        {ec.current_occupancy} / {ec.capacity}
                                                     </span>
                                                 </div>
-
-                                                {selectedEvacCenter.address && (
-                                                    <p className="text-[11px] text-gray-500 leading-snug">{selectedEvacCenter.address}</p>
-                                                )}
-
-                                                {/* Occupancy bar */}
-                                                <div>
-                                                    <div className="mb-1 flex items-center justify-between text-[10px] text-gray-500">
-                                                        <span>Occupancy</span>
-                                                        <span className="font-semibold">
-                                                            {selectedEvacCenter.current_occupancy} / {selectedEvacCenter.capacity}
-                                                        </span>
-                                                    </div>
-                                                    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                                                        <div
-                                                            className={`h-full rounded-full transition-all ${
-                                                                selectedEvacCenter.current_occupancy >= selectedEvacCenter.capacity
-                                                                    ? 'bg-red-500'
-                                                                    : selectedEvacCenter.current_occupancy / selectedEvacCenter.capacity > 0.8
-                                                                    ? 'bg-amber-400'
-                                                                    : 'bg-teal-500'
-                                                            }`}
-                                                            style={{ width: `${Math.min(100, Math.round(selectedEvacCenter.current_occupancy / selectedEvacCenter.capacity * 100))}%` }}
-                                                        />
-                                                    </div>
-                                                    <p className={`mt-1 text-[10px] font-semibold ${
-                                                        selectedEvacCenter.current_occupancy >= selectedEvacCenter.capacity
-                                                            ? 'text-red-600' : 'text-teal-600'
-                                                    }`}>
-                                                        {selectedEvacCenter.current_occupancy >= selectedEvacCenter.capacity
-                                                            ? 'Full — no available space'
-                                                            : `${selectedEvacCenter.capacity - selectedEvacCenter.current_occupancy} slots available`}
-                                                    </p>
+                                                <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                                                    <div
+                                                        className={`h-full rounded-full transition-all ${
+                                                            isFull ? 'bg-red-500'
+                                                                : ec.current_occupancy / ec.capacity > 0.8 ? 'bg-amber-400'
+                                                                : 'bg-teal-500'
+                                                        }`}
+                                                        style={{ width: `${occupancyPct}%` }}
+                                                    />
                                                 </div>
-
-                                                <Link
-                                                    href="/admin/evacuation-centers"
-                                                    className="mt-0.5 block rounded-lg bg-neutral-900 px-3 py-2 text-center text-[11px] font-semibold text-white transition hover:bg-neutral-800"
-                                                >
-                                                    Manage centers →
-                                                </Link>
+                                                <p className={`mt-1 text-[10px] font-semibold ${isFull ? 'text-red-600' : 'text-teal-600'}`}>
+                                                    {isFull ? 'Full — no available space' : `${slotsLeft} slots available`}
+                                                </p>
                                             </div>
-                                        </Popup>
-                                    )}
+
+                                            <Link
+                                                href="/admin/evacuation-centers"
+                                                className="mt-1 block text-center text-[11px] font-semibold text-[oklch(0.55_0.14_240)] transition hover:underline"
+                                            >
+                                                Manage centers →
+                                            </Link>
+                                        </div>
+                                    </Popup>
                                 </Marker>
                             );
                         })}
 
                         {/* Responder markers */}
-                        {showResponders && liveResponders.map((r) => (
-                            <Marker
-                                key={`resp-${r.id}`}
-                                position={[r.latitude, r.longitude]}
-                                icon={getResponderIcon(r, mapZoom)}
-                                zIndexOffset={20}
-                                eventHandlers={{
-                                    click: () => {
-                                        clearSelection();
-                                        setSelectedResponder(selectedResponder?.id === r.id ? null : r);
-                                        if (selectedResponder?.id !== r.id) focusOnLocation(r.latitude, r.longitude);
-                                    },
-                                }}
-                            >
-                                {selectedResponder?.id === r.id && (
-                                    <Popup
-                                        maxWidth={260}
-                                        minWidth={200}
-                                        eventHandlers={{ remove: () => setSelectedResponder(null) }}
-                                    >
-                                        <div className="flex flex-col gap-2 p-3 pt-3">
-                                            <div className="flex items-center gap-2">
-                                                <div className="flex size-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">
-                                                    {selectedResponder.name.charAt(0).toUpperCase()}
+                        {showResponders && liveResponders.map((r) => {
+                            const assignedReport = reports.find(rp => rp.status === 'assigned' && rp.assigned_to === r.id);
+                            const state = getResponderState(r.location_updated_at);
+                            const stale = state !== 'online';
+                            return (
+                                <Marker
+                                    key={`resp-${r.id}`}
+                                    position={[r.latitude, r.longitude]}
+                                    icon={getResponderIcon(r, mapZoom)}
+                                    zIndexOffset={20}
+                                >
+                                    <Popup maxWidth={280} minWidth={220}>
+                                        <div className="flex flex-col gap-2.5 p-3 pr-6 pt-3">
+                                            {/* Header */}
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-sm font-bold text-blue-700">
+                                                    {r.name.charAt(0).toUpperCase()}
                                                 </div>
-                                                <div>
-                                                    <p className="text-xs font-bold text-neutral-900">{selectedResponder.name}</p>
-                                                    {selectedResponder.team_name && (
-                                                        <p className="text-[10px] text-gray-500">{selectedResponder.team_name}</p>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-bold text-neutral-900">{r.name}</p>
+                                                    {r.team_name && (
+                                                        <p className="text-[10px] text-gray-500">{r.team_name}</p>
                                                     )}
                                                 </div>
                                             </div>
-                                            <div className="flex items-center gap-1.5 rounded-lg bg-gray-50 px-2.5 py-1.5">
-                                                <Clock className="size-3 text-gray-400" />
-                                                <span className="text-[11px] text-gray-500">Last seen:</span>
-                                                <span className={`text-[11px] font-semibold ${isStale(selectedResponder.location_updated_at) ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                                    {formatLastSeen(selectedResponder.location_updated_at)}
+
+                                            {/* Status row */}
+                                            <div className="flex items-center gap-2 text-[10px]">
+                                                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold ${
+                                                    stale
+                                                        ? 'bg-amber-50 text-amber-600'
+                                                        : 'bg-emerald-50 text-emerald-600'
+                                                }`}>
+                                                    <span className={`size-1.5 rounded-full ${stale ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                                    {state === 'online' ? 'Online' : state === 'stale' ? 'Stale' : 'Offline'}
                                                 </span>
+                                                <span className="text-gray-400">·</span>
+                                                <span className="text-gray-500">{formatLastSeen(r.location_updated_at)}</span>
                                             </div>
-                                            <div className="flex items-center gap-1.5">
-                                                <Radio className={`size-3 ${isStale(selectedResponder.location_updated_at) ? 'text-amber-500' : 'text-emerald-500'}`} />
-                                                <span className={`text-[11px] font-semibold ${isStale(selectedResponder.location_updated_at) ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                                    {isStale(selectedResponder.location_updated_at) ? 'Signal lost' : 'Active'}
-                                                </span>
+
+                                            {/* Assignment status */}
+                                            <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-2.5 py-2">
+                                                {assignedReport ? (
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="size-1.5 rounded-full" style={{ backgroundColor: SEVERITY_META[assignedReport.severity].hex }} />
+                                                            <span className="text-[10px] font-semibold text-neutral-700">Assigned — {assignedReport.severity}</span>
+                                                        </div>
+                                                        {assignedReport.address && (
+                                                            <p className="text-[10px] leading-snug text-gray-500">{assignedReport.address}</p>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-[10px] font-medium text-gray-400">Not assigned to any report</span>
+                                                )}
                                             </div>
                                         </div>
                                     </Popup>
-                                )}
-                            </Marker>
-                        ))}
+                                </Marker>
+                            );
+                        })}
 
                         {/* Hazard markers (active only) */}
                         {showHazards && hazards.map((h) => (
@@ -1417,19 +1448,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                             </Marker>
                         ))}
 
-                        {/* Assignment lines: responder → report */}
-                        {showAssignmentLines && assignmentLines.map((line) => (
-                            <Polyline
-                                key={`line-${line.reportId}`}
-                                positions={line.path}
-                                pathOptions={{
-                                    color: '#8b5cf6',
-                                    weight: 2,
-                                    opacity: 0.7,
-                                    dashArray: '8 6',
-                                }}
-                            />
-                        ))}
 
                     </MapContainer>
 

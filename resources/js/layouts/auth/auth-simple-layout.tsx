@@ -169,7 +169,7 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
                             style={{ background: 'radial-gradient(circle, #06b6d4, transparent 70%)' }}
                         />
                     </div>
-                    <div className="relative w-full max-w-[420px]">
+                    <div className="relative w-full max-w-[520px]">
 
                         {/* Mobile header */}
                         <div className="mb-6 flex items-center justify-center lg:hidden">

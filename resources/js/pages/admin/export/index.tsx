@@ -418,7 +418,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                                 <a
                                     href={buildUrl()}
                                     onClick={handleDownload}
-                                    className="inline-flex items-center gap-2 rounded-lg bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2 text-xs font-semibold shadow-sm transition-all active:scale-[0.97]"
+                                    className="inline-flex items-center gap-2 rounded-lg bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)] px-4 py-2 text-xs font-semibold shadow-sm transition-all active:scale-[0.97]"
                                 >
                                     <FileDown className="size-3.5" />
                                     Download Excel

@@ -417,7 +417,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/alerts" />
                         <button
                             onClick={() => { form.reset(); setShowCreateModal(true); }}
-                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
+                            className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)] px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
                         >
                             <Plus className="size-4" />
                             Publish Announcement
@@ -710,7 +710,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-all ${
                                                 link.active
-                                                    ? 'bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900'
+                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                     : 'border border-neutral-200/80 bg-white text-neutral-500 shadow-sm hover:border-neutral-300 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
@@ -854,7 +854,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                     <button
                                         type="submit"
                                         disabled={form.processing}
-                                        className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+                                        className="inline-flex items-center gap-2 rounded-xl bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)] px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                                     >
                                         <Send className="size-4" />
                                         {form.processing ? 'Publishing...' : 'Publish'}
@@ -1024,7 +1024,7 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
                             <button
                                 type="submit"
                                 disabled={editForm.processing || !editForm.isDirty}
-                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+                                className="inline-flex items-center gap-2 rounded-xl bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)] px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                             >
                                 <Save className="size-4" />
                                 {editForm.processing ? 'Saving...' : 'Save Changes'}

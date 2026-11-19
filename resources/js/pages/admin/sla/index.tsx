@@ -120,7 +120,7 @@ export default function SlaIndex({ configs, sla_enabled }: Props) {
                         onClick={handleToggle}
                         className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97] ${
                             sla_enabled
-                                ? 'bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200'
+                                ? 'bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)]'
                                 : 'bg-neutral-400 text-white hover:bg-neutral-500 dark:bg-neutral-600 dark:hover:bg-neutral-500'
                         }`}
                     >
@@ -195,7 +195,7 @@ export default function SlaIndex({ configs, sla_enabled }: Props) {
                             <button
                                 type="submit"
                                 disabled={form.processing || !form.isDirty}
-                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                                className="inline-flex items-center gap-2 rounded-xl bg-[oklch(0.55_0.14_240)] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[oklch(0.50_0.14_240)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)]"
                             >
                                 <Save className="size-4" />
                                 {form.processing ? 'Saving...' : 'Save Thresholds'}
@@ -218,7 +218,7 @@ export default function SlaIndex({ configs, sla_enabled }: Props) {
                         <button
                             onClick={handleSave}
                             disabled={form.processing}
-                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                            className="inline-flex items-center gap-2 rounded-xl bg-[oklch(0.55_0.14_240)] px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[oklch(0.50_0.14_240)] disabled:opacity-50 dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)]"
                         >
                             <Save className="size-4" />
                             {form.processing ? 'Saving...' : 'Save Thresholds'}

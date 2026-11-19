@@ -463,7 +463,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
                                                 link.active
-                                                    ? 'bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900'
+                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                     : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
                                             }`}
                                         >

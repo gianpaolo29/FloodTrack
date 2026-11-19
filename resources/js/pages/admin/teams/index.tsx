@@ -228,7 +228,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/teams" />
                         <button
                             onClick={() => setShowCreate(true)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
+                            className="inline-flex items-center gap-2 rounded-xl bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)] px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
                         >
                             <Plus className="size-4" />
                             Create Team
@@ -532,7 +532,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
                                                 link.active
-                                                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
+                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white shadow-sm'
                                                     : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800'
                                             }`}
                                         >
@@ -744,11 +744,11 @@ function TeamFormModal({
                                                 onClick={() => form.setData('shift', s)}
                                                 className={`flex flex-col items-center gap-1 rounded-xl border-2 px-3 py-3 transition-all ${
                                                     active
-                                                        ? 'border-neutral-900 bg-neutral-900 dark:border-white dark:bg-white'
+                                                        ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)]'
                                                         : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700 dark:hover:border-neutral-600'
                                                 }`}
                                             >
-                                                <span className={`text-sm font-bold ${active ? 'text-white dark:text-neutral-900' : 'text-neutral-900 dark:text-neutral-100'}`}>
+                                                <span className={`text-sm font-bold ${active ? 'text-white dark:text-white' : 'text-neutral-900 dark:text-neutral-100'}`}>
                                                     {meta.label}
                                                 </span>
                                                 <span className={`text-[11px] ${active ? 'text-neutral-300 dark:text-neutral-500' : 'text-neutral-400 dark:text-neutral-500'}`}>
@@ -837,7 +837,7 @@ function TeamFormModal({
                         <button
                             type="submit"
                             disabled={form.processing || isDuplicateName}
-                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+                            className="inline-flex items-center gap-2 rounded-xl bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)] px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                         >
                             {isEdit ? <Pencil className="size-3.5" /> : <Plus className="size-3.5" />}
                             {form.processing ? (isEdit ? 'Saving...' : 'Creating...') : isEdit ? 'Save Changes' : 'Create Team'}

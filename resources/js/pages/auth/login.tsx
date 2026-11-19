@@ -22,12 +22,12 @@ export default function Login({ status, canRegister }: Props) {
             <Head title="Log in" />
 
             {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-[2rem] font-bold tracking-tight text-neutral-900 dark:text-white">
+            <div className="mb-10">
+                <h1 className="text-[2.5rem] font-bold tracking-tight text-neutral-900 dark:text-white">
                     Log in to{' '}
                     <span className="bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent dark:from-cyan-400 dark:to-blue-400">your account</span>
                 </h1>
-                <p className="mt-1.5 text-base text-neutral-500 dark:text-neutral-400">
+                <p className="mt-2 text-lg text-neutral-500 dark:text-neutral-400">
                     Enter your credentials to continue
                 </p>
             </div>
@@ -41,17 +41,17 @@ export default function Login({ status, canRegister }: Props) {
             <Form
                 {...store.form()}
                 resetOnSuccess={['password']}
-                className="flex flex-col gap-5"
+                className="flex flex-col gap-6"
             >
                 {({ processing, errors }) => (
                     <>
                         {/* Email */}
-                        <div className="flex flex-col gap-1.5">
-                            <Label htmlFor="email" className="text-base font-semibold text-neutral-700 dark:text-neutral-300">
+                        <div className="flex flex-col gap-2">
+                            <Label htmlFor="email" className="text-lg font-semibold text-neutral-700 dark:text-neutral-300">
                                 Email address
                             </Label>
                             <div className="relative">
-                                <Mail className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
+                                <Mail className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500" />
                                 <Input
                                     id="email"
                                     type="email"
@@ -61,19 +61,19 @@ export default function Login({ status, canRegister }: Props) {
                                     tabIndex={1}
                                     autoComplete="email"
                                     placeholder="you@example.com"
-                                    className="h-12 rounded-xl border-neutral-200 bg-neutral-50 pl-11 pr-4 text-base text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:placeholder:text-neutral-500 dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20"
+                                    className="h-14 rounded-xl border-neutral-200 bg-neutral-50 pl-12 pr-4 text-lg text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:placeholder:text-neutral-500 dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20"
                                 />
                             </div>
                             <InputError message={errors.email} />
                         </div>
 
                         {/* Password */}
-                        <div className="flex flex-col gap-1.5">
-                            <Label htmlFor="password" className="text-base font-semibold text-neutral-700 dark:text-neutral-300">
+                        <div className="flex flex-col gap-2">
+                            <Label htmlFor="password" className="text-lg font-semibold text-neutral-700 dark:text-neutral-300">
                                 Password
                             </Label>
                             <div className="relative">
-                                <Lock className="pointer-events-none absolute left-3.5 top-1/2 size-[18px] -translate-y-1/2 text-neutral-400 dark:text-neutral-500 z-10" />
+                                <Lock className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-neutral-400 dark:text-neutral-500 z-10" />
                                 <PasswordInput
                                     id="password"
                                     name="password"
@@ -81,16 +81,16 @@ export default function Login({ status, canRegister }: Props) {
                                     tabIndex={2}
                                     autoComplete="current-password"
                                     placeholder="Enter your password"
-                                    className="h-12 rounded-xl border-neutral-200 bg-neutral-50 pl-11 pr-10 text-base text-neutral-900 focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20"
+                                    className="h-14 rounded-xl border-neutral-200 bg-neutral-50 pl-12 pr-12 text-lg text-neutral-900 focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20"
                                 />
                             </div>
                             <InputError message={errors.password} />
                         </div>
 
                         {/* Remember me */}
-                        <div className="flex items-center gap-2.5">
-                            <Checkbox id="remember" name="remember" tabIndex={3} />
-                            <Label htmlFor="remember" className="text-base text-neutral-600 cursor-pointer dark:text-neutral-400">
+                        <div className="flex items-center gap-3">
+                            <Checkbox id="remember" name="remember" tabIndex={3} className="size-5" />
+                            <Label htmlFor="remember" className="text-lg text-neutral-600 cursor-pointer dark:text-neutral-400">
                                 Remember me
                             </Label>
                         </div>
@@ -101,13 +101,13 @@ export default function Login({ status, canRegister }: Props) {
                             tabIndex={4}
                             disabled={processing}
                             data-test="login-button"
-                            className="auth-cta mt-1 h-12 w-full rounded-xl text-base font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:shadow-blue-500/30 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+                            className="auth-cta mt-2 h-14 w-full rounded-xl text-lg font-bold text-white shadow-lg shadow-blue-500/20 transition-all duration-300 hover:shadow-blue-500/30 hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
                         >
                             {processing ? (
                                 <Spinner />
                             ) : (
                                 <span className="flex items-center justify-center gap-2">
-                                    <ArrowRight className="size-4" />
+                                    <ArrowRight className="size-5" />
                                     Log in
                                 </span>
                             )}
@@ -127,7 +127,7 @@ export default function Login({ status, canRegister }: Props) {
                                     </div>
                                 </div>
 
-                                <p className="text-center text-base text-neutral-500 dark:text-neutral-400">
+                                <p className="text-center text-lg text-neutral-500 dark:text-neutral-400">
                                     Don't have an account?{' '}
                                     <TextLink
                                         href="/register"

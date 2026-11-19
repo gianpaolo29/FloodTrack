@@ -256,7 +256,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         <div className="flex shrink-0 flex-col items-center gap-1.5">
                                             <div className={`flex size-8 items-center justify-center rounded-full border-2 transition-colors ${
                                                 isCurrent
-                                                    ? 'border-neutral-900 bg-neutral-900 text-white shadow-sm dark:border-white dark:bg-white dark:text-neutral-900'
+                                                    ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                     : isActive
                                                     ? 'border-neutral-700 bg-neutral-700 text-white dark:border-neutral-300 dark:bg-neutral-300 dark:text-neutral-900'
                                                     : 'border-neutral-200 bg-neutral-50 text-neutral-400 dark:border-neutral-700 dark:bg-neutral-800'
@@ -389,7 +389,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                             <button
                                                 type="submit"
                                                 disabled={editForm.processing || !editForm.isDirty}
-                                                className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+                                                className="inline-flex items-center gap-2 rounded-xl bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)] px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                                             >
                                                 <Save className="size-4" />
                                                 {editForm.processing ? 'Saving...' : 'Save Changes'}
@@ -743,7 +743,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         <button
                                             type="submit"
                                             disabled={verifyForm.processing}
-                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)] px-4 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                                         >
                                             <CheckCircle2 className="size-4" />
                                             Verify Report

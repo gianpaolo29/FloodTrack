@@ -6,7 +6,7 @@ import type { ApexOptions } from 'apexcharts';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
-import { CircleMarker, MapContainer, TileLayer, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import {
     AlertTriangle,
     ArrowUpRight,
@@ -135,13 +135,6 @@ const MINI_MAP_BOUNDS: L.LatLngBoundsExpression = [
     [13.95, 120.55],
     [14.18, 120.80],
 ];
-const SEVERITY_HEX: Record<string, string> = {
-    critical: '#ef4444',
-    high: '#f97316',
-    moderate: '#fbbf24',
-    low: '#22c55e',
-};
-
 function MiniMapDarkTile() {
     const map = useMap();
     const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
@@ -225,19 +218,6 @@ function MiniMap({ reports }: { reports: MapReport[] }) {
             >
                 <MiniMapDarkTile />
                 <MiniHeatmapLayer points={heatPoints} />
-                {reports.map((r) => (
-                    <CircleMarker
-                        key={r.id}
-                        center={[r.latitude, r.longitude]}
-                        radius={7}
-                        pathOptions={{
-                            color: SEVERITY_HEX[r.severity] ?? '#94a3b8',
-                            fillColor: SEVERITY_HEX[r.severity] ?? '#94a3b8',
-                            fillOpacity: 0.45,
-                            weight: 2,
-                        }}
-                    />
-                ))}
             </MapContainer>
         </div>
     );
@@ -906,7 +886,7 @@ export default function AdminDashboard({
 
                                 <div className="ml-auto flex items-center gap-2">
                                     <button onClick={() => setCumulative(!cumulative)}
-                                        className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold transition-colors ${cumulative ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900' : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}`}
+                                        className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold transition-colors ${cumulative ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white' : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}`}
                                     >{cumulative ? t('dashboard.cumulative') : t('dashboard.daily')}</button>
                                 </div>
                             </div>
@@ -928,7 +908,7 @@ export default function AdminDashboard({
                                 <div className="pointer-events-auto flex items-center justify-between">
                                     <div>
                                         <p className="text-[13px] font-bold text-neutral-800 dark:text-white">Nasugbu, Batangas</p>
-                                        <p className="text-[10px] text-neutral-500 dark:text-neutral-400">{map_reports.length} active incident{map_reports.length !== 1 ? 's' : ''}</p>
+                                        <p className="text-[10px] text-neutral-500 dark:text-neutral-400">{map_reports.length} verified report{map_reports.length !== 1 ? 's' : ''}</p>
                                     </div>
                                     <Link href="/admin/reports/map" className="rounded-lg bg-white/80 px-2.5 py-1.5 text-[10px] font-semibold text-neutral-600 shadow-sm backdrop-blur transition hover:bg-white hover:text-neutral-900 dark:bg-neutral-800/80 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white">
                                         Full map →
@@ -1215,7 +1195,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                     <PopoverButton
                         className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold outline-none transition-all sm:text-xs ${
                             activeCount > 0
-                                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900'
+                                ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                 : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
                         }`}
                     >
@@ -1266,7 +1246,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                                         onClick={() => toggleSev(opt.value)}
                                                         className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-medium transition-all ${
                                                             localSev.includes(opt.value)
-                                                                ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
+                                                                ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                                 : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
                                                         }`}
                                                     >
@@ -1287,7 +1267,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                                         onClick={() => toggleStatus(opt.value)}
                                                         className={`rounded-lg border px-2.5 py-1 text-[10px] font-medium transition-all ${
                                                             localStatus.includes(opt.value)
-                                                                ? 'border-neutral-900 bg-neutral-900 text-white dark:border-white dark:bg-white dark:text-neutral-900'
+                                                                ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                                 : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
                                                         }`}
                                                     >
@@ -1302,7 +1282,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                             <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
                                                 {t('filter.barangay')}
                                                 {localBarangays.length > 0 && (
-                                                    <span className="ml-1.5 rounded-full bg-neutral-900 px-1.5 py-0.5 text-[8px] font-bold text-white dark:bg-white dark:text-neutral-900">{localBarangays.length}</span>
+                                                    <span className="ml-1.5 rounded-full bg-[oklch(0.55_0.14_240)] px-1.5 py-0.5 text-[8px] font-bold text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white">{localBarangays.length}</span>
                                                 )}
                                             </p>
                                             <input
@@ -1345,7 +1325,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                         </button>
                                         <button
                                             onClick={() => apply(close)}
-                                            className="rounded-lg bg-neutral-900 px-5 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                                            className="rounded-lg bg-[oklch(0.55_0.14_240)] px-5 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)]"
                                         >
                                             {t('filter.apply')}
                                         </button>

@@ -191,7 +191,7 @@ export default function AdminRespondersIndex({ responders, filters, barangay_lis
                         <PeriodToggle period={period} customFrom={custom_from} customTo={custom_to} baseUrl="/admin/responders" />
                         <button
                             onClick={() => setShowCreate(true)}
-                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
+                            className="inline-flex items-center gap-2 rounded-xl bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)] px-4 py-2.5 text-sm font-semibold shadow-sm transition-all active:scale-[0.97]"
                         >
                             <Plus className="size-4" />
                             Add Responder
@@ -520,7 +520,7 @@ export default function AdminRespondersIndex({ responders, filters, barangay_lis
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
                                                 link.active
-                                                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 shadow-sm'
+                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white shadow-sm'
                                                     : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
                                             }`}
                                         >
@@ -750,7 +750,7 @@ function ResponderFormModal({
                         <button
                             type="submit"
                             disabled={form.processing}
-                            className="inline-flex items-center gap-2 rounded-xl bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
+                            className="inline-flex items-center gap-2 rounded-xl bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)] px-5 py-2.5 text-sm font-semibold shadow-sm transition-all disabled:opacity-50"
                         >
                             {isEdit ? <Pencil className="size-3.5" /> : <Plus className="size-3.5" />}
                             {form.processing ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Responder'}

@@ -1,14 +1,11 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import {
     AlertTriangle,
-    Bell,
     Bot,
     CheckCircle2,
     Clock,
-    Facebook,
     Globe,
     Moon,
-    Phone,
     Save,
     Shield,
     Sun,
@@ -155,29 +152,11 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
                         )}
                     </div>
 
-                    {/* ─── Row 1: General + Notifications ─── */}
+                    {/* ─── Row 1: AI & Automation + Responder Schedule ─── */}
                     <div className="grid gap-4 lg:grid-cols-2">
-                        <SettingsCard icon={Globe} title="General" sub="Platform identity, map defaults, and contact info">
-                            <SettingInput title="System Name" description="Name displayed across the platform" value={get('system_name')} onChange={(v) => set('system_name', v)} />
-                            <SettingInput title="Default Region" description="Default map center label" value={get('default_region')} onChange={(v) => set('default_region', v)} />
-                            <SettingInput title="Default Latitude" description="Map center latitude" value={get('default_latitude')} onChange={(v) => set('default_latitude', v)} type="number" />
-                            <SettingInput title="Default Longitude" description="Map center longitude" value={get('default_longitude')} onChange={(v) => set('default_longitude', v)} type="number" />
-                            <SettingInput title="Contact Number" description="Shown in landing page footer" value={get('contact_number')} onChange={(v) => set('contact_number', v)} placeholder="e.g. 0917-123-4567" />
-                            <SettingInput title="Facebook Page URL" description="Shown in landing page footer" value={get('fb_page_url')} onChange={(v) => set('fb_page_url', v)} placeholder="e.g. https://facebook.com/FloodTrack" />
-                        </SettingsCard>
-
-                        <SettingsCard icon={Bell} title="Notifications" sub="Alert behaviour and push settings">
-                            <SettingToggle title="Notify on Critical" description="Push notification for critical reports" enabled={getBool('notify_on_critical')} onToggle={() => toggleBool('notify_on_critical')} />
-                            <SettingToggle title="SLA Breach Notifications" description="Push alerts when reports breach SLA" enabled={getBool('sla_notifications_enabled')} onToggle={() => toggleBool('sla_notifications_enabled')} />
-                            <SettingToggle title="Occupancy Alerts" description="Alert when evac centers near capacity" enabled={getBool('occupancy_notifications_enabled')} onToggle={() => toggleBool('occupancy_notifications_enabled')} />
-                            <SettingInput title="Occupancy Threshold" description="% to trigger occupancy alerts" value={get('occupancy_alert_threshold')} onChange={(v) => set('occupancy_alert_threshold', v)} type="number" />
-                        </SettingsCard>
-                    </div>
-
-                    {/* ─── Row 2: AI + Responder Schedule ─── */}
-                    <div className="grid gap-4 lg:grid-cols-2">
-                        <SettingsCard icon={Bot} title="AI & Automation" sub="Control AI-powered report analysis">
+                        <SettingsCard icon={Bot} title="AI & Automation" sub="Report analysis and assignment automation">
                             <SettingToggle title="AI Report Analysis" description="Automatically verify reports using AI. When off, all reports go to admin." enabled={getBool('ai_report_analysis')} onToggle={() => toggleBool('ai_report_analysis')} />
+                            <SettingToggle title="Auto-Assign Responders" description="Automatically assign the nearest on-duty team when a high/critical report is verified." enabled={getBool('auto_assign')} onToggle={() => toggleBool('auto_assign')} />
                             <SettingInput title="Report Cooldown (min)" description="Minutes between submissions per user. 0 to disable." value={get('report_cooldown_minutes')} onChange={(v) => set('report_cooldown_minutes', v)} type="number" />
                             <SettingInput title="Daily Report Cap" description="Max reports per user per day. 0 for unlimited." value={get('report_daily_cap')} onChange={(v) => set('report_daily_cap', v)} type="number" />
                         </SettingsCard>
@@ -228,72 +207,79 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
                         </SettingsCard>
                     </div>
 
-                    {/* ─── Row 3: SLA Rules (full width) ─── */}
-                    <SettingsCard icon={Clock} title="SLA Rules" sub="Response time thresholds per severity">
-                        <div className="px-4 py-3">
-                            <div className="mb-3 flex items-center justify-between">
-                                <div>
-                                    <p className="text-[10px] font-medium text-neutral-900 dark:text-neutral-100">SLA Monitoring</p>
-                                    <p className="text-[9px] text-neutral-400">Track and enforce response time limits</p>
-                                </div>
-                                <button type="button" onClick={handleSlaToggle}
-                                    className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-semibold transition-all ${sla_enabled ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'}`}>
-                                    {sla_enabled ? <CheckCircle2 className="size-2.5" /> : <Clock className="size-2.5" />}
-                                    {sla_enabled ? 'Enabled' : 'Disabled'}
-                                </button>
-                            </div>
+                    {/* ─── Row 2: Landing Page + SLA Rules ─── */}
+                    <div className="grid gap-4 lg:grid-cols-2">
+                        <SettingsCard icon={Globe} title="Landing Page" sub="Public-facing contact information">
+                            <SettingInput title="Contact Number" description="Shown in landing page footer" value={get('contact_number')} onChange={(v) => set('contact_number', v)} placeholder="e.g. 0917-123-4567" />
+                            <SettingInput title="Facebook Page URL" description="Shown in landing page footer" value={get('fb_page_url')} onChange={(v) => set('fb_page_url', v)} placeholder="e.g. https://facebook.com/FloodTrack" />
+                        </SettingsCard>
 
-                            <form onSubmit={handleSlaSave}>
-                                <div className="overflow-x-auto rounded-md border border-neutral-200/60 dark:border-neutral-700/60">
-                                    <table className="w-full">
-                                        <thead>
-                                            <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                                <th className="px-3 py-1.5 text-left text-[7px] font-bold uppercase tracking-[0.1em] text-neutral-400">Severity</th>
-                                                {STAGES.map(s => (
-                                                    <th key={s} className="px-2 py-1.5 text-center text-[7px] font-bold uppercase tracking-[0.1em] text-neutral-400">{SLA_STAGE_LABELS[s]}</th>
-                                                ))}
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/60">
-                                            {SEVERITIES.map(sev => (
-                                                <tr key={sev}>
-                                                    <td className="px-3 py-1.5">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className={`size-1.5 rounded-full ${SEV_DOT[sev]}`} />
-                                                            <span className={`text-[9px] font-bold uppercase ${SEV_COLORS[sev]}`}>{sev}</span>
-                                                        </div>
-                                                    </td>
-                                                    {STAGES.map(stage => (
-                                                        <td key={stage} className="px-2 py-1.5 text-center">
-                                                            <div className="flex items-center justify-center gap-1">
-                                                                <input
-                                                                    type="number" min={1} max={9999}
-                                                                    value={slaGet(sev, stage).threshold_minutes}
-                                                                    onChange={e => slaUpdate(sev, stage, parseInt(e.target.value) || 1)}
-                                                                    className="w-12 rounded border border-neutral-200 bg-neutral-50/50 px-1 py-0.5 text-center text-[9px] font-medium tabular-nums outline-none transition-all focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-                                                                />
-                                                                <span className="text-[7px] text-neutral-400">min</span>
-                                                            </div>
-                                                        </td>
+                        <SettingsCard icon={Clock} title="SLA Rules" sub="Response time thresholds per severity">
+                            <div className="px-4 py-3">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-medium text-neutral-900 dark:text-neutral-100">SLA Monitoring</p>
+                                        <p className="text-[9px] text-neutral-400">Track and enforce response time limits</p>
+                                    </div>
+                                    <button type="button" onClick={handleSlaToggle}
+                                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[9px] font-semibold transition-all ${sla_enabled ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400' : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'}`}>
+                                        {sla_enabled ? <CheckCircle2 className="size-2.5" /> : <Clock className="size-2.5" />}
+                                        {sla_enabled ? 'Enabled' : 'Disabled'}
+                                    </button>
+                                </div>
+
+                                <form onSubmit={handleSlaSave}>
+                                    <div className="overflow-x-auto rounded-md border border-neutral-200/60 dark:border-neutral-700/60">
+                                        <table className="w-full">
+                                            <thead>
+                                                <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                                    <th className="px-3 py-1.5 text-left text-[7px] font-bold uppercase tracking-[0.1em] text-neutral-400">Severity</th>
+                                                    {STAGES.map(s => (
+                                                        <th key={s} className="px-2 py-1.5 text-center text-[7px] font-bold uppercase tracking-[0.1em] text-neutral-400">{SLA_STAGE_LABELS[s]}</th>
                                                     ))}
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                                <div className="mt-2 flex items-center justify-between">
-                                    <p className="text-[8px] text-neutral-400">Exceeding limits triggers breach notifications and auto-escalation</p>
-                                    {slaForm.isDirty && (
-                                        <button type="submit" disabled={slaForm.processing}
-                                            className="inline-flex items-center gap-1 rounded-md bg-neutral-900 px-2.5 py-1 text-[9px] font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200">
-                                            <Save className="size-2.5" />
-                                            {slaForm.processing ? 'Saving...' : 'Save Thresholds'}
-                                        </button>
-                                    )}
-                                </div>
-                            </form>
-                        </div>
-                    </SettingsCard>
+                                            </thead>
+                                            <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/60">
+                                                {SEVERITIES.map(sev => (
+                                                    <tr key={sev}>
+                                                        <td className="px-3 py-1.5">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className={`size-1.5 rounded-full ${SEV_DOT[sev]}`} />
+                                                                <span className={`text-[9px] font-bold uppercase ${SEV_COLORS[sev]}`}>{sev}</span>
+                                                            </div>
+                                                        </td>
+                                                        {STAGES.map(stage => (
+                                                            <td key={stage} className="px-2 py-1.5 text-center">
+                                                                <div className="flex items-center justify-center gap-1">
+                                                                    <input
+                                                                        type="number" min={1} max={9999}
+                                                                        value={slaGet(sev, stage).threshold_minutes}
+                                                                        onChange={e => slaUpdate(sev, stage, parseInt(e.target.value) || 1)}
+                                                                        className="w-12 rounded border border-neutral-200 bg-neutral-50/50 px-1 py-0.5 text-center text-[9px] font-medium tabular-nums outline-none transition-all focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+                                                                    />
+                                                                    <span className="text-[7px] text-neutral-400">min</span>
+                                                                </div>
+                                                            </td>
+                                                        ))}
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div className="mt-2 flex items-center justify-between">
+                                        <p className="text-[8px] text-neutral-400">Exceeding limits triggers breach notifications and auto-escalation</p>
+                                        {slaForm.isDirty && (
+                                            <button type="submit" disabled={slaForm.processing}
+                                                className="inline-flex items-center gap-1 rounded-md bg-neutral-900 px-2.5 py-1 text-[9px] font-semibold text-white shadow-sm transition-all hover:bg-neutral-800 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200">
+                                                <Save className="size-2.5" />
+                                                {slaForm.processing ? 'Saving...' : 'Save Thresholds'}
+                                            </button>
+                                        )}
+                                    </div>
+                                </form>
+                            </div>
+                        </SettingsCard>
+                    </div>
 
                 </div>
             </form>
@@ -304,10 +290,9 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
 /* ─── Settings Card ─── */
 
 function SettingsCard({
-    icon: Icon, grad, title, sub, children,
+    icon: Icon, title, sub, children,
 }: {
     icon: React.ComponentType<{ className?: string }>;
-    grad?: string;
     title: string;
     sub: string;
     children: React.ReactNode;

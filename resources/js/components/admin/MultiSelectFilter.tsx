@@ -46,7 +46,7 @@ export function MultiSelectFilter({ label, options, selected, onChange }: Props)
                 onClick={() => setSearch('')}
                 className={`flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition-all outline-none ${
                     activeCount > 0
-                        ? 'border-neutral-900 bg-neutral-900 text-white shadow-sm dark:border-white dark:bg-white dark:text-neutral-900'
+                        ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                         : 'border-neutral-200/80 bg-white text-neutral-600 shadow-sm hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
                 }`}
             >

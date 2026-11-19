@@ -236,11 +236,11 @@ class DashboardController extends Controller
             ->distinct('address')
             ->count('address');
 
-        // Active flood reports (for map pins)
-        $map_reports = Report::whereIn('status', ['pending', 'verified', 'assigned'])
-            ->tap(fn ($q) => $this->scopeByPeriod($q, $from, $to))
+        // All verified flood reports (for heatmap)
+        $map_reports = Report::where('status', 'verified')
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
             ->latest()
-            ->limit(50)
             ->get(['id', 'reference_number', 'severity', 'status', 'latitude', 'longitude', 'address']);
 
         $team_stats = [

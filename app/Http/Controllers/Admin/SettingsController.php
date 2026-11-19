@@ -10,6 +10,7 @@ use App\Models\ReportSlaConfig;
 use App\Models\Setting;
 use App\Models\User;
 use App\Notifications\ScheduleLevelChanged;
+use App\Services\AutoAssignService;
 use App\Services\ExpoPushService;
 use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
@@ -40,6 +41,7 @@ class SettingsController extends Controller
         // Capture old values before saving
         $oldScheduleLevel = Setting::getValue('schedule_level', 'white');
         $oldAiAnalysis = Setting::getValue('ai_report_analysis', true);
+        $oldAutoAssign = Setting::getValue('auto_assign', false);
 
         foreach ($request->settings as $key => $value) {
             $setting = Setting::where('key', $key)->first();
@@ -63,6 +65,12 @@ class SettingsController extends Controller
             $this->dispatchPendingReportAnalysis();
         }
 
+        // If auto-assign was just turned ON, assign all verified high/critical reports
+        $newAutoAssign = Setting::getValue('auto_assign', false);
+        if (!$oldAutoAssign && $newAutoAssign) {
+            $this->autoAssignVerifiedReports($request->user());
+        }
+
         // If schedule level changed, notify all responders
         $newScheduleLevel = $request->settings['schedule_level'] ?? null;
 
@@ -73,6 +81,15 @@ class SettingsController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Settings saved.']);
 
         return back();
+    }
+
+    private function autoAssignVerifiedReports(?User $assignedBy): void
+    {
+        Report::where('status', 'verified')
+            ->whereIn('severity', ['high', 'critical'])
+            ->whereNull('assigned_team_id')
+            ->get()
+            ->each(fn (Report $report) => AutoAssignService::attemptAssign($report, $assignedBy));
     }
 
     private function dispatchPendingReportAnalysis(): void
