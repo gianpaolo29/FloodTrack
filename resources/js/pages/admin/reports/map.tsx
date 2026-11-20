@@ -1140,7 +1140,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                 </div>
                                 <div className="space-y-1">
                                     {[...liveTeams]
-                                        .filter((t) => t.members.some(m => getResponderState(m.location_updated_at) !== 'offline'))
+                                        .filter((t) => t.on_duty)
                                         .filter((t) => !selectedTeam || selectedTeam.id === t.id)
                                         .map((t) => {
                                         const isSelected = selectedTeam?.id === t.id;
@@ -1464,9 +1464,17 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                             );
                         })}
 
-                        {/* Responder markers — only visible when their team is selected */}
-                        {showResponders && selectedTeam && liveResponders.filter(r => r.team_id === selectedTeam.id).map((r) => {
-                            const assignedReport = selectedTeam.active_report;
+                        {/* Responder markers — show all on-duty, or filter to selected team */}
+                        {showResponders && liveResponders
+                          .filter(r => !selectedTeam || r.team_id === selectedTeam.id)
+                          .filter(r => {
+                            // Only show responders belonging to on-duty teams
+                            const team = liveTeams.find(t => t.id === r.team_id);
+                            return team?.on_duty;
+                          })
+                          .map((r) => {
+                            const team = liveTeams.find(t => t.id === r.team_id);
+                            const assignedReport = team?.active_report ?? selectedTeam?.active_report;
                             const state = getResponderState(r.location_updated_at);
                             const stale = state !== 'online';
                             const missionLabel = r.status === 'en_route' ? 'En Route' : r.status === 'on_scene' ? 'On Scene' : 'Idle';

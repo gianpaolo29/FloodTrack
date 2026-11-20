@@ -82,9 +82,22 @@ class TeamController extends Controller
             'notes'                 => 'nullable|string|max:1000',
             'media'                 => 'nullable|array|max:5',
             'media.*'               => 'file|mimes:jpg,jpeg,png,mp4,mov|max:51200',
-            'rescued_count'         => 'nullable|integer|min:0|max:9999',
+            'rescued_count'         => 'nullable|integer|min:1|max:9999',
             'evacuation_center_id'  => 'nullable|integer|exists:evacuation_centers,id',
         ]);
+
+        // Validate rescued count against evac center available space
+        if ($request->status === 'resolved' && $request->rescued_count && $request->evacuation_center_id) {
+            $center = \App\Models\EvacuationCenter::find($request->evacuation_center_id);
+            if ($center) {
+                $available = $center->capacity - $center->current_occupancy;
+                if ($request->rescued_count > $available) {
+                    return response()->json([
+                        'message' => "{$center->name} only has {$available} available space" . ($available !== 1 ? 's' : '') . ". Please enter a lower number.",
+                    ], 422);
+                }
+            }
+        }
 
         $user = $request->user();
 
