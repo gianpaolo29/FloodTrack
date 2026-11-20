@@ -43,7 +43,7 @@
             <title>{{ config('app.name', 'Laravel') }}</title>
         </x-inertia::head>
     </head>
-    <body class="font-sans antialiased text-[10px]">
+    <body class="font-sans antialiased">
         <x-inertia::app />
     </body>
 </html>

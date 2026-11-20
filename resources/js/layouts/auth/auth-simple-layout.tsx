@@ -94,7 +94,7 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
 
                         {/* Center — rotating text */}
                         <div className="max-w-md">
-                            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-[12px] font-semibold text-cyan-300 backdrop-blur-md">
+                            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-1.5 text-body font-semibold text-cyan-300 backdrop-blur-md">
                                 <Sparkles className="size-3.5" />
                                 Trusted by communities
                             </div>
@@ -114,7 +114,7 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
                                         <h1 className="mb-4 text-[2.25rem] font-extrabold leading-[1.15] tracking-tight text-white drop-shadow-lg xl:text-[2.5rem]">
                                             {item.heading}
                                         </h1>
-                                        <p className="text-[15px] leading-relaxed text-white/50 font-[350]">
+                                        <p className="text-[16px] leading-relaxed text-white/50 font-[350]">
                                             {item.sub}
                                         </p>
                                     </div>
@@ -150,7 +150,7 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
                         </div>
 
                         {/* Bottom */}
-                        <p className="text-[13px] text-white/20">&copy; {new Date().getFullYear()} FloodTrack</p>
+                        <p className="text-body text-white/20">&copy; {new Date().getFullYear()} FloodTrack</p>
                     </div>
                 </div>
 
@@ -190,7 +190,7 @@ function SplitAuthLayout({ children, title, description }: AuthLayoutProps) {
 
             {/* Mobile bottom features */}
             <div className="absolute bottom-0 left-0 right-0 z-20 border-t border-neutral-100/80 bg-white/90 px-6 py-4 backdrop-blur-xl lg:hidden dark:border-neutral-800/60 dark:bg-neutral-900/90">
-                <div className="flex items-center justify-center gap-5 text-[11px] text-neutral-400 dark:text-neutral-500">
+                <div className="flex items-center justify-center gap-5 text-label text-neutral-400 dark:text-neutral-500">
                     {[
                         { icon: MapPin, label: 'GPS Reports', color: 'text-cyan-500/60' },
                         { icon: Globe, label: 'Live Map', color: 'text-blue-500/60' },

@@ -23,14 +23,7 @@ interface Props {
     actionLink?: { label: string; href: string };
 }
 
-const ACCENT_STYLES = {
-    green: 'bg-emerald-500',
-    amber: 'bg-amber-500',
-    red: 'bg-red-500',
-    neutral: 'bg-neutral-300 dark:bg-neutral-600',
-} as const;
-
-export function PrimaryStatCard({ label, value, trend, trendLabel, desc, insights, icon: Icon, alert, accent, index, mounted, urgency, actionLink }: Props) {
+export function PrimaryStatCard({ label, value, trend, trendLabel, desc, insights, icon: Icon, alert, index, mounted, urgency, actionLink }: Props) {
     const count = useCountUp(value, mounted, index * 90);
     const cardRef = useRef<HTMLDivElement>(null);
     const btnRef = useRef<HTMLButtonElement>(null);
@@ -42,10 +35,9 @@ export function PrimaryStatCard({ label, value, trend, trendLabel, desc, insight
             className={`group relative overflow-hidden rounded-lg border border-neutral-200/70 bg-white px-3 py-2.5 transition-all duration-700 hover:shadow-md hover:border-neutral-300/80 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
             style={{ transitionDelay: `${index * 80}ms` }}
         >
-            {accent && <div className={`absolute inset-x-0 top-0 h-[2px] ${ACCENT_STYLES[accent]}`} />}
             <KpiTooltip desc={desc} insights={insights} visible={open} parentRef={cardRef} urgency={urgency} actionLink={actionLink} />
             <div className="flex items-start justify-between gap-2">
-                <p className="truncate text-[8px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{label}</p>
+                <p className="truncate font-mono text-tag font-medium uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{label}</p>
                 <button
                     ref={btnRef}
                     type="button"
@@ -55,12 +47,12 @@ export function PrimaryStatCard({ label, value, trend, trendLabel, desc, insight
                     <CircleHelp className="size-3 pointer-events-none" />
                 </button>
             </div>
-            <p className="mt-1 text-lg font-bold tabular-nums tracking-tight text-neutral-900 sm:text-xl dark:text-white">
+            <p className="mt-1 text-[22px] leading-tight font-semibold tabular-nums tracking-tight text-neutral-900 dark:text-white">
                 {count.toLocaleString()}
             </p>
             {trend !== undefined && (
                 <p className="mt-1 flex items-center gap-1">
-                    <span className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[8px] font-semibold tabular-nums ${
+                    <span className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-caption font-semibold tabular-nums ${
                         trend >= 0
                             ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
                             : 'bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400'
@@ -69,7 +61,7 @@ export function PrimaryStatCard({ label, value, trend, trendLabel, desc, insight
                     </span>
                 </p>
             )}
-            <p className="mt-0.5 truncate text-[8px] text-neutral-400 dark:text-neutral-500">{trendLabel}</p>
+            <p className="mt-0.5 truncate text-meta text-neutral-400 dark:text-neutral-500">{trendLabel}</p>
         </div>
     );
 }

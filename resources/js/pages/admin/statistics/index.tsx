@@ -144,7 +144,7 @@ function CardHeader({ icon: Icon, title, subtitle, children }: {
             </div>
             <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{title}</p>
-                <p className="truncate text-[11px] text-neutral-400 dark:text-neutral-500">{subtitle}</p>
+                <p className="truncate text-label text-neutral-400 dark:text-neutral-500">{subtitle}</p>
             </div>
             {children}
         </div>
@@ -190,11 +190,11 @@ function InsightBar({ question, answers }: { question: string; answers: string[]
                     <Sparkles className="size-3 text-neutral-400 dark:text-neutral-500" />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{question}</p>
+                    <p className="text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{question}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-x-0 gap-y-1">
                         {answers.map((a, i) => (
                             <span key={i} className="flex items-center">
-                                <span className="text-[11px] leading-relaxed text-neutral-600 dark:text-neutral-300 [&_strong]:font-bold [&_strong]:text-neutral-900 dark:[&_strong]:text-white" dangerouslySetInnerHTML={{ __html: a }} />
+                                <span className="text-label leading-relaxed text-neutral-600 dark:text-neutral-300 [&_strong]:font-bold [&_strong]:text-neutral-900 dark:[&_strong]:text-white" dangerouslySetInnerHTML={{ __html: a }} />
                                 {i < answers.length - 1 && <span className="mx-3 h-3.5 w-px shrink-0 bg-neutral-200/80 dark:bg-neutral-700/80" />}
                             </span>
                         ))}
@@ -468,8 +468,8 @@ export default function StatisticsPage({
         plotOptions: { bar: { borderRadius: 6, borderRadiusApplication: 'end', columnWidth: '55%', distributed: true } },
         fill: { type: 'gradient', gradient: { shade: 'light', type: 'vertical', shadeIntensity: 0.2, opacityFrom: 1, opacityTo: 0.85, stops: [0, 100] } },
         colors: DONUT_COLORS,
-        dataLabels: { enabled: true, offsetY: -18, style: { fontSize: '11px', fontWeight: 700, colors: ['#374151'] }, background: { enabled: false } },
-        xaxis: { categories: severityLabels, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', fontWeight: 500, colors: '#6b7280' } } },
+        dataLabels: { enabled: true, offsetY: -18, style: { fontSize: '12px', fontWeight: 700, colors: ['#374151'] }, background: { enabled: false } },
+        xaxis: { categories: severityLabels, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', fontWeight: 500, colors: '#6b7280' } } },
         yaxis: { show: false },
         grid: { show: false },
         legend: { show: false },
@@ -496,8 +496,8 @@ export default function StatisticsPage({
         legend: { show: false },
         colors: STATUS_COLORS,
         fill: { type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 0.3, opacityFrom: 1, opacityTo: 0.75, stops: [0, 100] } },
-        xaxis: { categories: ['Pending', 'Verified', 'Assigned', 'Resolved', 'Rejected'], axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
-        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
+        xaxis: { categories: ['Pending', 'Verified', 'Assigned', 'Resolved', 'Rejected'], axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', colors: '#94a3b8' } } },
+        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', colors: '#94a3b8' } } },
         grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } } },
         states: { hover: { filter: { type: 'darken', value: 0.88 } }, active: { filter: { type: 'none' } } },
         tooltip: {
@@ -518,8 +518,8 @@ export default function StatisticsPage({
         colors: ['#6366f1', '#f43f5e', '#f97316', '#eab308', '#22c55e'],
         fill: { type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 0.3, opacityFrom: 1, opacityTo: 0.75, stops: [0, 100] } },
         legend: { show: false },
-        xaxis: { categories: monthlyLabels, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
-        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
+        xaxis: { categories: monthlyLabels, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', colors: '#94a3b8' } } },
+        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', colors: '#94a3b8' } } },
         grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } } },
         states: { hover: { filter: { type: 'darken', value: 0.88 } }, active: { filter: { type: 'none' } } },
         tooltip: {
@@ -556,8 +556,8 @@ export default function StatisticsPage({
             { from: 11, to: 1000, color: '#1e3a8a', name: 'Very High' },
         ] } } },
         dataLabels: { enabled: false },
-        xaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '9px', colors: '#9ca3af' } }, position: 'bottom' },
-        yaxis: { labels: { style: { fontSize: '10px', fontWeight: 500, colors: '#6b7280' } } },
+        xaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '11px', colors: '#9ca3af' } }, position: 'bottom' },
+        yaxis: { labels: { style: { fontSize: '12px', fontWeight: 500, colors: '#6b7280' } } },
         grid: { show: false },
         legend: { show: false },
         states: { hover: { filter: { type: 'none' } } },
@@ -579,8 +579,8 @@ export default function StatisticsPage({
         colors: ['#f59e0b'],
         fill: { type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 0.3, opacityFrom: 1, opacityTo: 0.75, stops: [0, 100] } },
         legend: { show: false },
-        xaxis: { categories: peakHoursLabels, tickAmount: 12, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '9px', colors: '#94a3b8' }, rotate: -45 } },
-        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
+        xaxis: { categories: peakHoursLabels, tickAmount: 12, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '11px', colors: '#94a3b8' }, rotate: -45 } },
+        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', colors: '#94a3b8' } } },
         grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } } },
         states: { hover: { filter: { type: 'darken', value: 0.88 } }, active: { filter: { type: 'none' } } },
         tooltip: {
@@ -597,9 +597,9 @@ export default function StatisticsPage({
         chart: { type: 'bar', toolbar: { show: false }, fontFamily: 'inherit', animations: { enabled: true, speed: 600 } },
         plotOptions: { bar: { horizontal: true, borderRadius: 6, barHeight: '60%', distributed: true } },
         colors: ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#818cf8', '#6d28d9', '#4f46e5', '#4338ca', '#7c3aed', '#5b21b6'],
-        dataLabels: { enabled: true, style: { fontSize: '11px', fontWeight: 700, colors: ['#fff'] }, offsetX: -4 },
-        xaxis: { categories: sortedBarangays.map(b => b.area), axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
-        yaxis: { labels: { style: { fontSize: '11px', colors: '#94a3b8', fontWeight: 500 }, maxWidth: 160 } },
+        dataLabels: { enabled: true, style: { fontSize: '12px', fontWeight: 700, colors: ['#fff'] }, offsetX: -4 },
+        xaxis: { categories: sortedBarangays.map(b => b.area), axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', colors: '#94a3b8' } } },
+        yaxis: { labels: { style: { fontSize: '12px', colors: '#94a3b8', fontWeight: 500 }, maxWidth: 160 } },
         grid: { borderColor: '#f1f5f9', xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
         legend: { show: false },
         tooltip: {
@@ -619,9 +619,9 @@ export default function StatisticsPage({
         dataLabels: { enabled: false },
         colors: ['#6366f1', '#a78bfa'],
         grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } } },
-        xaxis: { categories: ['Critical', 'High', 'Moderate', 'Low'], axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
-        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
-        legend: { position: 'top', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
+        xaxis: { categories: ['Critical', 'High', 'Moderate', 'Low'], axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', colors: '#94a3b8' } } },
+        yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', colors: '#94a3b8' } } },
+        legend: { position: 'top', fontSize: '12px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
         tooltip: {
             shared: true, intersect: false,
             custom: ({ series, dataPointIndex, w }) => {
@@ -649,8 +649,8 @@ export default function StatisticsPage({
         plotOptions: { bar: { borderRadius: 6, borderRadiusApplication: 'end', columnWidth: '55%', distributed: true } },
         fill: { type: 'gradient', gradient: { shade: 'light', type: 'vertical', shadeIntensity: 0.2, opacityFrom: 1, opacityTo: 0.85, stops: [0, 100] } },
         colors: SOURCE_COLORS.slice(0, sourceLabels.length),
-        dataLabels: { enabled: true, offsetY: -18, style: { fontSize: '11px', fontWeight: 700, colors: ['#374151'] }, background: { enabled: false } },
-        xaxis: { categories: sourceFormattedLabels, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', fontWeight: 500, colors: '#6b7280' } } },
+        dataLabels: { enabled: true, offsetY: -18, style: { fontSize: '12px', fontWeight: 700, colors: ['#374151'] }, background: { enabled: false } },
+        xaxis: { categories: sourceFormattedLabels, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', fontWeight: 500, colors: '#6b7280' } } },
         yaxis: { show: false },
         grid: { show: false },
         legend: { show: false },
@@ -698,10 +698,10 @@ export default function StatisticsPage({
         dataLabels: { enabled: false },
         colors: STAGE_COLORS,
         fill: { type: 'gradient', gradient: { type: 'vertical', shadeIntensity: 0.2, opacityFrom: 1, opacityTo: 0.85, stops: [0, 100] } },
-        xaxis: { categories: breakdownCategories, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
-        yaxis: { title: { text: 'Minutes', style: { fontSize: '10px', color: '#94a3b8', fontWeight: 400 } }, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, formatter: (v: number) => fmtMinutes(v) } },
+        xaxis: { categories: breakdownCategories, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', colors: '#94a3b8' } } },
+        yaxis: { title: { text: 'Minutes', style: { fontSize: '12px', color: '#94a3b8', fontWeight: 400 } }, axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', colors: '#94a3b8' }, formatter: (v: number) => fmtMinutes(v) } },
         grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } } },
-        legend: { position: 'top', fontSize: '11px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
+        legend: { position: 'top', fontSize: '12px', fontWeight: 500, labels: { colors: '#6b7280' }, markers: { size: 4, offsetX: -2 } },
         tooltip: {
             shared: true, intersect: false,
             custom: ({ series, dataPointIndex, w }) => {
@@ -748,10 +748,10 @@ export default function StatisticsPage({
                             <BarChart3 className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="text-lg font-extrabold tracking-tight text-neutral-900 sm:text-2xl dark:text-white">
+                            <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-white">
                                 {t('stats.title')}
                             </h1>
-                            <p className="mt-0.5 text-[11px] text-neutral-500 sm:text-sm dark:text-neutral-400">
+                            <p className="mt-0.5 text-label text-neutral-500 sm:text-sm dark:text-neutral-400">
                                 {t('stats.subtitle')}
                             </p>
                         </div>
@@ -761,7 +761,7 @@ export default function StatisticsPage({
                         {/* Export button */}
                         <a
                             href="/admin/export"
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-[11px] font-semibold text-neutral-600 shadow-sm transition-all hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-white"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-label font-semibold text-neutral-600 transition-all hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-white"
                         >
                             <FileText className="size-3.5" />
                             Export
@@ -839,7 +839,7 @@ export default function StatisticsPage({
                                 {previousAi && (
                                     <button
                                         onClick={() => setShowPrevious(!showPrevious)}
-                                        className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${showPrevious ? 'border-indigo-300 bg-indigo-50 text-indigo-600 dark:border-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400' : 'border-neutral-200 text-neutral-400 hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-neutral-200'}`}
+                                        className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1 text-label font-medium transition-all ${showPrevious ? 'border-indigo-300 bg-indigo-50 text-indigo-600 dark:border-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-400' : 'border-neutral-200 text-neutral-400 hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-neutral-200'}`}
                                     >
                                         <History className="size-3" />
                                         Previous
@@ -847,14 +847,14 @@ export default function StatisticsPage({
                                 )}
                                 <button
                                     onClick={copyAnalysis}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1 text-[11px] font-medium text-neutral-400 transition-all hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-neutral-200"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1 text-label font-medium text-neutral-400 transition-all hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-neutral-200"
                                 >
                                     <ClipboardCopy className="size-3" />
                                     {copied ? 'Copied!' : 'Copy'}
                                 </button>
                                 <button
                                     onClick={generateInsights}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1 text-[11px] font-medium text-neutral-400 transition-all hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-neutral-200"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2.5 py-1 text-label font-medium text-neutral-400 transition-all hover:border-neutral-400 hover:text-neutral-700 dark:border-neutral-700 dark:hover:border-neutral-500 dark:hover:text-neutral-200"
                                 >
                                     <RefreshCw className="size-3" />
                                     Refresh
@@ -906,7 +906,7 @@ export default function StatisticsPage({
                                 </div>
                                 <button
                                     onClick={generateInsights}
-                                    className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-600 shadow-sm transition-all hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-neutral-100"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-medium text-neutral-600 transition-all hover:border-neutral-400 hover:text-neutral-900 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-neutral-100"
                                 >
                                     <RefreshCw className="size-3.5" />
                                     Retry
@@ -923,7 +923,7 @@ export default function StatisticsPage({
                                         {aiData.risk_level} risk
                                     </span>
                                     {aiData.confidence && (
-                                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider ${
+                                        <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-meta font-semibold uppercase tracking-wider ${
                                             aiData.confidence === 'high' ? 'bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800'
                                             : aiData.confidence === 'medium' ? 'bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800'
                                             : 'bg-neutral-100 text-neutral-500 border border-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:border-neutral-700'
@@ -933,7 +933,7 @@ export default function StatisticsPage({
                                         </span>
                                     )}
                                     {previousAi && showPrevious && previousAi.data.risk_level !== aiData.risk_level && (
-                                        <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
+                                        <span className="text-meta text-neutral-400 dark:text-neutral-500">
                                             was <span className="font-semibold">{previousAi.data.risk_level}</span>
                                         </span>
                                     )}
@@ -947,8 +947,8 @@ export default function StatisticsPage({
                                     <div className="rounded-xl border border-indigo-200 bg-indigo-50/50 p-3.5 dark:border-indigo-800 dark:bg-indigo-950/20">
                                         <div className="mb-2 flex items-center gap-1.5">
                                             <History className="size-3.5 text-indigo-500" />
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Previous Analysis</span>
-                                            <span className="ml-auto text-[10px] text-indigo-400">{new Date(previousAi.timestamp).toLocaleString()}</span>
+                                            <span className="text-meta font-bold uppercase tracking-widest text-indigo-500">Previous Analysis</span>
+                                            <span className="ml-auto text-meta text-indigo-400">{new Date(previousAi.timestamp).toLocaleString()}</span>
                                         </div>
                                         <p className="text-xs leading-relaxed text-indigo-700 dark:text-indigo-300">{previousAi.data.summary}</p>
                                     </div>
@@ -956,7 +956,7 @@ export default function StatisticsPage({
 
                                 {/* Key Findings */}
                                 <div>
-                                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Key Findings</p>
+                                    <p className="mb-2 text-label font-semibold uppercase tracking-widest text-neutral-400">Key Findings</p>
                                     <ul className="flex flex-col gap-2">
                                         {aiData.key_findings.map((finding, i) => (
                                             <li key={i} className="flex items-start gap-2 text-xs text-neutral-600 dark:text-neutral-300">
@@ -972,7 +972,7 @@ export default function StatisticsPage({
                                     <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-800 dark:bg-amber-950/20">
                                         <div className="mb-2 flex items-center gap-1.5">
                                             <Clock className="size-3.5 text-amber-600 dark:text-amber-400" />
-                                            <span className="text-[10px] font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">Response Bottleneck</span>
+                                            <span className="text-meta font-bold uppercase tracking-widest text-amber-600 dark:text-amber-400">Response Bottleneck</span>
                                         </div>
                                         <div className="mb-2 flex items-center gap-2">
                                             <span className="rounded-lg bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
@@ -997,17 +997,17 @@ export default function StatisticsPage({
                                         <div>
                                             <div className="mb-2 flex items-center gap-1.5">
                                                 <Navigation className="size-3.5 text-neutral-400" />
-                                                <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Affected Areas</p>
+                                                <p className="text-label font-semibold uppercase tracking-widest text-neutral-400">Affected Areas</p>
                                             </div>
                                             <div className="flex flex-col gap-2">
                                                 {aiData.affected_areas.map((area, i) => (
                                                     <div key={i} className="flex items-start gap-2 rounded-lg border border-neutral-100 bg-neutral-50/50 p-2.5 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                                        <span className={`mt-0.5 inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase ${RISK_STYLES[area.risk]}`}>
+                                                        <span className={`mt-0.5 inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-caption font-bold uppercase ${RISK_STYLES[area.risk]}`}>
                                                             {area.risk}
                                                         </span>
                                                         <div className="min-w-0">
                                                             <p className="text-xs font-semibold text-neutral-800 dark:text-white">{area.name}</p>
-                                                            <p className="mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">{area.reason}</p>
+                                                            <p className="mt-0.5 text-label text-neutral-500 dark:text-neutral-400">{area.reason}</p>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -1020,12 +1020,12 @@ export default function StatisticsPage({
                                         <div>
                                             <div className="mb-2 flex items-center gap-1.5">
                                                 <Users className="size-3.5 text-neutral-400" />
-                                                <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Team Actions</p>
+                                                <p className="text-label font-semibold uppercase tracking-widest text-neutral-400">Team Actions</p>
                                             </div>
                                             <div className="flex flex-col gap-2">
                                                 {aiData.team_actions.map((ta, i) => (
                                                     <div key={i} className="flex items-start gap-2 rounded-lg border border-neutral-100 bg-neutral-50/50 p-2.5 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                                        <span className={`mt-0.5 inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase ${
+                                                        <span className={`mt-0.5 inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-caption font-bold uppercase ${
                                                             ta.priority === 'high' ? 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400'
                                                             : ta.priority === 'medium' ? 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
                                                             : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-700 dark:text-neutral-400'
@@ -1034,7 +1034,7 @@ export default function StatisticsPage({
                                                         </span>
                                                         <div className="min-w-0">
                                                             <p className="text-xs font-semibold text-neutral-800 dark:text-white">{ta.team}</p>
-                                                            <p className="mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">{ta.action}</p>
+                                                            <p className="mt-0.5 text-label text-neutral-500 dark:text-neutral-400">{ta.action}</p>
                                                         </div>
                                                     </div>
                                                 ))}
@@ -1048,7 +1048,7 @@ export default function StatisticsPage({
                                     <div>
                                         <div className="mb-2 flex items-center gap-1.5">
                                             <MapPin className="size-3.5 text-neutral-400" />
-                                            <p className="text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Evacuation Actions</p>
+                                            <p className="text-label font-semibold uppercase tracking-widest text-neutral-400">Evacuation Actions</p>
                                         </div>
                                         <div className="grid gap-2 sm:grid-cols-2">
                                             {aiData.evacuation_actions.map((ea, i) => {
@@ -1061,12 +1061,12 @@ export default function StatisticsPage({
                                                 };
                                                 return (
                                                     <div key={i} className="flex items-start gap-2 rounded-lg border border-neutral-100 bg-neutral-50/50 p-2.5 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                                        <span className={`mt-0.5 inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase ${actionColors[ea.action] ?? 'bg-neutral-100 text-neutral-500'}`}>
+                                                        <span className={`mt-0.5 inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-caption font-bold uppercase ${actionColors[ea.action] ?? 'bg-neutral-100 text-neutral-500'}`}>
                                                             {ea.action}
                                                         </span>
                                                         <div className="min-w-0">
                                                             <p className="text-xs font-semibold text-neutral-800 dark:text-white">{ea.center}</p>
-                                                            <p className="mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">{ea.reason}</p>
+                                                            <p className="mt-0.5 text-label text-neutral-500 dark:text-neutral-400">{ea.reason}</p>
                                                         </div>
                                                     </div>
                                                 );
@@ -1077,11 +1077,11 @@ export default function StatisticsPage({
 
                                 {/* Recommendations */}
                                 <div>
-                                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-neutral-400">Recommendations</p>
+                                    <p className="mb-2 text-label font-semibold uppercase tracking-widest text-neutral-400">Recommendations</p>
                                     <ul className="flex flex-col gap-2">
                                         {aiData.recommendations.map((rec, i) => (
                                             <li key={i} className="flex items-start gap-2 text-xs text-neutral-600 dark:text-neutral-300">
-                                                <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-[9px] font-bold text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
+                                                <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-neutral-200 text-caption font-bold text-neutral-600 dark:bg-neutral-700 dark:text-neutral-300">
                                                     {i + 1}
                                                 </span>
                                                 {rec}
@@ -1094,7 +1094,7 @@ export default function StatisticsPage({
                                 <div className={`rounded-xl p-3.5 ${RISK_BOX_STYLES[aiData.risk_level]}`}>
                                     <div className="mb-1.5 flex items-center gap-1.5">
                                         <Zap className={`size-3.5 ${RISK_TEXT_STYLES[aiData.risk_level]}`} />
-                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${RISK_TEXT_STYLES[aiData.risk_level]}`}>
+                                        <span className={`text-meta font-bold uppercase tracking-widest ${RISK_TEXT_STYLES[aiData.risk_level]}`}>
                                             Priority Action
                                         </span>
                                     </div>
@@ -1103,7 +1103,7 @@ export default function StatisticsPage({
                                     </p>
                                 </div>
 
-                                <div className="flex items-center gap-1.5 text-[10px] text-neutral-300 dark:text-neutral-600">
+                                <div className="flex items-center gap-1.5 text-meta text-neutral-300 dark:text-neutral-600">
                                     <ChevronRight className="size-3" />
                                     AI-generated analysis. Always verify with on-ground information.
                                 </div>
@@ -1115,7 +1115,7 @@ export default function StatisticsPage({
                 {/* ── Response Time Breakdown ── */}
                 <Card>
                     <CardHeader icon={Clock} title={t('stats.response_time')} subtitle={t('stats.response_sub')}>
-                        <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
+                        <div className="ml-auto hidden items-center gap-3 text-meta sm:flex">
                             {STAGE_NAMES.map((name, i) => (
                                 <span key={name} className="flex items-center gap-1.5 text-neutral-400">
                                     <span className="size-2 rounded-full" style={{ backgroundColor: STAGE_COLORS[i] }} />
@@ -1145,21 +1145,21 @@ export default function StatisticsPage({
                                 const pct = overallTotal > 0 ? Math.round((stage.value / overallTotal) * 100) : 0;
                                 return (
                                     <div key={stage.label} className="rounded-xl border border-neutral-100 bg-neutral-50/50 p-3 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                        <p className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500">{stage.label}</p>
+                                        <p className="text-meta font-medium text-neutral-400 dark:text-neutral-500">{stage.label}</p>
                                         <p className="mt-1 text-lg font-bold tabular-nums text-neutral-900 dark:text-white">{fmtMinutes(stage.value)}</p>
                                         <div className="mt-1.5 flex items-center gap-2">
                                             <div className="h-1 flex-1 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-700">
                                                 <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: stage.color }} />
                                             </div>
-                                            <span className="text-[10px] tabular-nums text-neutral-400">{pct}%</span>
+                                            <span className="text-meta tabular-nums text-neutral-400">{pct}%</span>
                                         </div>
                                     </div>
                                 );
                             })}
                             <div className="rounded-xl border border-neutral-100 bg-neutral-50/50 p-3 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                <p className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500">Total Avg Response</p>
+                                <p className="text-meta font-medium text-neutral-400 dark:text-neutral-500">Total Avg Response</p>
                                 <p className="mt-1 text-lg font-bold tabular-nums text-neutral-900 dark:text-white">{fmtMinutes(overallTotal)}</p>
-                                <p className="mt-1.5 text-[10px] text-neutral-400">{response_breakdown.overall.total_resolved.toLocaleString()} resolved</p>
+                                <p className="mt-1.5 text-meta text-neutral-400">{response_breakdown.overall.total_resolved.toLocaleString()} resolved</p>
                             </div>
                         </div>
                         {/* Chart by severity */}
@@ -1192,7 +1192,7 @@ export default function StatisticsPage({
                         })()}
                         <div className="flex items-center gap-4 px-5 pt-3">
                             {severityLabels.map((name, i) => (
-                                <span key={name} className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500">
+                                <span key={name} className="flex items-center gap-1.5 text-meta font-medium text-neutral-500">
                                     <span className="size-2.5 rounded-sm" style={{ backgroundColor: DONUT_COLORS[i] }} />{name}
                                 </span>
                             ))}
@@ -1231,7 +1231,7 @@ export default function StatisticsPage({
                 {/* ── Charts Row 2: Monthly Trend (full width) ── */}
                 <Card>
                     <CardHeader icon={TrendingUp} title={t('stats.monthly_trend')} subtitle={t('stats.monthly_sub')}>
-                        <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
+                        <div className="ml-auto hidden items-center gap-3 text-meta sm:flex">
                             <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-indigo-500" />Total</span>
                             <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-rose-500" />Critical</span>
                             <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-orange-500" />High</span>
@@ -1294,11 +1294,11 @@ export default function StatisticsPage({
                             ) : null;
                         })()}
                         <div className="flex items-center gap-4 px-5 pt-2">
-                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#f1f5f9]" />None</span>
-                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#bfdbfe]" />Low</span>
-                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#60a5fa]" />Medium</span>
-                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#2563eb]" />High</span>
-                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#1e3a8a]" />Very High</span>
+                            <span className="flex items-center gap-1.5 text-meta font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#f1f5f9]" />None</span>
+                            <span className="flex items-center gap-1.5 text-meta font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#bfdbfe]" />Low</span>
+                            <span className="flex items-center gap-1.5 text-meta font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#60a5fa]" />Medium</span>
+                            <span className="flex items-center gap-1.5 text-meta font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#2563eb]" />High</span>
+                            <span className="flex items-center gap-1.5 text-meta font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#1e3a8a]" />Very High</span>
                         </div>
                         <div className="px-2 pb-2 pt-1 sm:px-3">
                             <ReactApexChart type="heatmap" series={heatmapSeries} options={heatmapOptions} height={220} />
@@ -1307,7 +1307,7 @@ export default function StatisticsPage({
 
                     <Card>
                         <CardHeader icon={BarChart3} title={t('stats.month_over_month')} subtitle={`${month_comparison.this_month.label} vs ${month_comparison.last_month.label}`}>
-                            <div className="ml-auto hidden items-center gap-3 text-[10px] sm:flex">
+                            <div className="ml-auto hidden items-center gap-3 text-meta sm:flex">
                                 <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-indigo-500" />{month_comparison.this_month.label}</span>
                                 <span className="flex items-center gap-1.5 text-neutral-400"><span className="size-2 rounded-full bg-violet-400" />{month_comparison.last_month.label}</span>
                             </div>
@@ -1379,7 +1379,7 @@ export default function StatisticsPage({
                         })()}
                         <div className="flex items-center gap-4 px-5 pt-3">
                             {sourceFormattedLabels.map((name, i) => (
-                                <span key={name} className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500">
+                                <span key={name} className="flex items-center gap-1.5 text-meta font-medium text-neutral-500">
                                     <span className="size-2.5 rounded-sm" style={{ backgroundColor: SOURCE_COLORS[i % SOURCE_COLORS.length] }} />{name}
                                 </span>
                             ))}

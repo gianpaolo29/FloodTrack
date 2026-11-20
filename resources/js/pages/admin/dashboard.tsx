@@ -115,7 +115,7 @@ function CardHeader({ icon: Icon, title, subtitle, children }: {
             </div>
             <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{title}</p>
-                <p className="truncate text-[11px] text-neutral-400 dark:text-neutral-500">{subtitle}</p>
+                <p className="truncate text-label text-neutral-400 dark:text-neutral-500">{subtitle}</p>
             </div>
             {children}
         </div>
@@ -125,7 +125,7 @@ function CardHeader({ icon: Icon, title, subtitle, children }: {
 /* ─── Section Header ─── */
 function SectionLabel({ children }: { children: React.ReactNode }) {
     return (
-        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-neutral-400 dark:text-neutral-500">{children}</p>
+        <p className="text-meta font-semibold uppercase tracking-[0.12em] text-neutral-400 dark:text-neutral-500">{children}</p>
     );
 }
 
@@ -246,7 +246,7 @@ function FloodRiskHeader() {
             </div>
             <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-neutral-900 dark:text-white">{t('dashboard.flood_risk')}</p>
-                <p className="truncate text-[11px] text-neutral-400 dark:text-neutral-500">{t('dashboard.barangay_ranking')}</p>
+                <p className="truncate text-label text-neutral-400 dark:text-neutral-500">{t('dashboard.barangay_ranking')}</p>
             </div>
             <button
                 ref={btnRef}
@@ -692,14 +692,14 @@ export default function AdminDashboard({
             y: avgValue,
             borderColor: '#94a3b8',
             strokeDashArray: 4,
-            label: { text: `Avg: ${avgValue}`, position: 'left', style: { fontSize: '10px', color: '#94a3b8', background: 'transparent' }, offsetX: 10 },
+            label: { text: `Avg: ${avgValue}`, position: 'left', style: { fontSize: '12px', color: '#94a3b8', background: 'transparent' }, offsetX: 10 },
         }];
 
         const xaxisAnnotations = alertDates.map(d => ({
             x: d,
             borderColor: '#ef4444',
             strokeDashArray: 3,
-            label: { text: 'Alert', orientation: 'horizontal' as const, style: { fontSize: '9px', color: '#ef4444', background: '#fef2f2', padding: { left: 4, right: 4, top: 2, bottom: 2 } } },
+            label: { text: 'Alert', orientation: 'horizontal' as const, style: { fontSize: '11px', color: '#ef4444', background: '#fef2f2', padding: { left: 4, right: 4, top: 2, bottom: 2 } } },
         }));
 
 
@@ -713,8 +713,8 @@ export default function AdminDashboard({
             },
             colors: seriesColors,
             grid: { borderColor: '#f1f5f9', strokeDashArray: 4, xaxis: { lines: { show: false } }, padding: { left: 0, right: 4 } },
-            xaxis: { categories: filteredDays.map(d => d.date), axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' }, rotate: 0 }, tooltip: { enabled: false } },
-            yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '10px', colors: '#94a3b8' } } },
+            xaxis: { categories: filteredDays.map(d => d.date), axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', colors: '#94a3b8' }, rotate: 0 }, tooltip: { enabled: false } },
+            yaxis: { axisBorder: { show: false }, axisTicks: { show: false }, labels: { style: { fontSize: '12px', colors: '#94a3b8' } } },
             legend: { show: false },
             markers: { size: 0, hover: { size: 5, sizeOffset: 1 } },
             annotations: {
@@ -759,13 +759,13 @@ export default function AdminDashboard({
                                 <LayoutDashboard className="size-5 text-white dark:text-neutral-900" />
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold tracking-tight text-neutral-900 sm:text-2xl dark:text-white">
+                                <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-white">
                                     {t('dashboard.title')}
                                 </h1>
                                 <p className="mt-0.5 text-xs text-neutral-500 dark:text-neutral-400">{t('dashboard.subtitle')}</p>
                             </div>
                         </div>
-                        <div className="relative z-30 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-1.5 rounded-xl border border-neutral-200/80 bg-white/80 p-1.5 sm:p-1 shadow-sm backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/60">
+                        <div className="relative z-30 flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-1.5 rounded-lg border border-neutral-200/70 bg-white p-1.5 sm:p-1 dark:border-neutral-800 dark:bg-neutral-900">
                             <div className="flex items-center gap-1.5">
                                 <DashboardFilters filters={filters} barangayList={barangay_list} period={period} customFrom={custom_from} customTo={custom_to} />
                                 <div className="hidden sm:block h-5 w-px bg-neutral-200/80 dark:bg-neutral-700/60" />
@@ -862,7 +862,7 @@ export default function AdminDashboard({
                                 <div className="ml-auto flex items-center gap-1">
                                     {([7, 14, 30, 90] as const).map(d => (
                                         <button key={d} onClick={() => setChartRange(d)}
-                                            className={`rounded-lg px-2 py-1 text-[10px] font-semibold transition-colors ${chartRange === d ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}`}
+                                            className={`rounded-lg px-2 py-1 text-meta font-semibold transition-colors ${chartRange === d ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400' : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}`}
                                         >{d}D</button>
                                     ))}
                                 </div>
@@ -875,7 +875,7 @@ export default function AdminDashboard({
                                     const active = visibleSeries.has(name);
                                     return (
                                         <button key={name} onClick={() => { const next = new Set(visibleSeries); if (active) next.delete(name); else next.add(name); setVisibleSeries(next); }}
-                                            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold transition-all ${active ? '' : 'opacity-40'}`}
+                                            className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-meta font-semibold transition-all ${active ? '' : 'opacity-40'}`}
                                             style={active ? { backgroundColor: color + '15', color } : {}}
                                         >
                                             <span className="size-1.5 rounded-full" style={{ backgroundColor: color }} />
@@ -886,7 +886,7 @@ export default function AdminDashboard({
 
                                 <div className="ml-auto flex items-center gap-2">
                                     <button onClick={() => setCumulative(!cumulative)}
-                                        className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold transition-colors ${cumulative ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white' : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}`}
+                                        className={`rounded-lg px-2.5 py-1 text-meta font-semibold transition-colors ${cumulative ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white' : 'text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300'}`}
                                     >{cumulative ? t('dashboard.cumulative') : t('dashboard.daily')}</button>
                                 </div>
                             </div>
@@ -907,10 +907,10 @@ export default function AdminDashboard({
                             <div className="pointer-events-none absolute inset-x-0 top-0 z-[400] bg-gradient-to-b from-white/90 via-white/60 to-transparent px-4 pb-6 pt-3 dark:from-neutral-900/90 dark:via-neutral-900/60">
                                 <div className="pointer-events-auto flex items-center justify-between">
                                     <div>
-                                        <p className="text-[13px] font-bold text-neutral-800 dark:text-white">Nasugbu, Batangas</p>
-                                        <p className="text-[10px] text-neutral-500 dark:text-neutral-400">{map_reports.length} verified report{map_reports.length !== 1 ? 's' : ''}</p>
+                                        <p className="text-body font-bold text-neutral-800 dark:text-white">Nasugbu, Batangas</p>
+                                        <p className="text-meta text-neutral-500 dark:text-neutral-400">{map_reports.length} verified report{map_reports.length !== 1 ? 's' : ''}</p>
                                     </div>
-                                    <Link href="/admin/reports/map" className="rounded-lg bg-white/80 px-2.5 py-1.5 text-[10px] font-semibold text-neutral-600 shadow-sm backdrop-blur transition hover:bg-white hover:text-neutral-900 dark:bg-neutral-800/80 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white">
+                                    <Link href="/admin/reports/map" className="rounded-lg bg-white/80 px-2.5 py-1.5 text-meta font-semibold text-neutral-600 shadow-sm backdrop-blur transition hover:bg-white hover:text-neutral-900 dark:bg-neutral-800/80 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white">
                                         Full map →
                                     </Link>
                                 </div>
@@ -925,9 +925,9 @@ export default function AdminDashboard({
                     <Card className="overflow-visible">
                         <FloodRiskHeader />
                         <div className="flex items-center gap-4 px-5 pt-3">
-                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#dc2626]" />High</span>
-                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#d97706]" />Moderate</span>
-                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#059669]" />Low</span>
+                            <span className="flex items-center gap-1.5 text-meta font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#dc2626]" />High</span>
+                            <span className="flex items-center gap-1.5 text-meta font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#d97706]" />Moderate</span>
+                            <span className="flex items-center gap-1.5 text-meta font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#059669]" />Low</span>
                         </div>
                         <div className="px-3 pb-0 pt-1 sm:px-5">
                             {flood_risk_scores.length > 0 ? (
@@ -949,14 +949,14 @@ export default function AdminDashboard({
                                         dataLabels: {
                                             enabled: true,
                                             offsetY: -18,
-                                            style: { fontSize: '10px', fontWeight: 700, colors: ['#374151'] },
+                                            style: { fontSize: '12px', fontWeight: 700, colors: ['#374151'] },
                                             formatter: (val: number) => String(val),
                                             background: { enabled: false },
                                         },
                                         states: { hover: { filter: { type: 'darken', value: 0.15 } }, active: { filter: { type: 'darken', value: 0.2 } } },
                                         xaxis: {
                                             categories: flood_risk_scores.map(r => r.barangay),
-                                            labels: { style: { fontSize: '10px', fontWeight: 500, colors: '#6b7280' }, rotate: 0, trim: true, hideOverlappingLabels: true },
+                                            labels: { style: { fontSize: '12px', fontWeight: 500, colors: '#6b7280' }, rotate: 0, trim: true, hideOverlappingLabels: true },
                                             axisBorder: { show: false },
                                             axisTicks: { show: false },
                                         },
@@ -965,7 +965,7 @@ export default function AdminDashboard({
                                         legend: { show: false },
                                         tooltip: {
                                             theme: 'light',
-                                            style: { fontSize: '11px' },
+                                            style: { fontSize: '12px' },
                                             followCursor: true,
                                             custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
                                                 const r = flood_risk_scores[dataPointIndex];
@@ -989,9 +989,9 @@ export default function AdminDashboard({
                     <Card>
                         <CardHeader icon={BarChart3} title={t('dashboard.top_barangays')} subtitle={t('dashboard.by_incident_count')} />
                         <div className="flex items-center gap-4 px-5 pt-3">
-                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#dc2626]" />Highest</span>
-                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#d97706]" />Top 3</span>
-                            <span className="flex items-center gap-1.5 text-[10px] font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#4f46e5]" />Others</span>
+                            <span className="flex items-center gap-1.5 text-meta font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#dc2626]" />Highest</span>
+                            <span className="flex items-center gap-1.5 text-meta font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#d97706]" />Top 3</span>
+                            <span className="flex items-center gap-1.5 text-meta font-medium text-neutral-500"><span className="size-2.5 rounded-sm bg-[#4f46e5]" />Others</span>
                         </div>
                         <div className="px-3 pb-3 pt-1 sm:px-5 sm:pb-5">
                             {barangay_breakdown.length > 0 ? (
@@ -1010,13 +1010,13 @@ export default function AdminDashboard({
                                         dataLabels: {
                                             enabled: true,
                                             offsetY: -18,
-                                            style: { fontSize: '10px', fontWeight: 700, colors: ['#374151'] },
+                                            style: { fontSize: '12px', fontWeight: 700, colors: ['#374151'] },
                                             background: { enabled: false },
                                         },
                                         states: { hover: { filter: { type: 'darken', value: 0.15 } } },
                                         xaxis: {
                                             categories: barangay_breakdown.map(b => b.barangay),
-                                            labels: { style: { fontSize: '10px', fontWeight: 500, colors: '#6b7280' }, rotate: 0, trim: true, hideOverlappingLabels: true },
+                                            labels: { style: { fontSize: '12px', fontWeight: 500, colors: '#6b7280' }, rotate: 0, trim: true, hideOverlappingLabels: true },
                                             axisBorder: { show: false },
                                             axisTicks: { show: false },
                                         },
@@ -1025,7 +1025,7 @@ export default function AdminDashboard({
                                         legend: { show: false },
                                         tooltip: {
                                             theme: 'light',
-                                            style: { fontSize: '11px' },
+                                            style: { fontSize: '12px' },
                                             y: { formatter: (val: number) => `${val} report${val !== 1 ? 's' : ''}` },
                                         },
                                     } as ApexOptions}
@@ -1045,7 +1045,7 @@ export default function AdminDashboard({
                             </div>
                             <div>
                                 <p className="text-sm font-semibold text-neutral-900 dark:text-white">Recent Flood Reports</p>
-                                <p className="text-[11px] text-neutral-400">Latest submitted flood incident reports</p>
+                                <p className="text-label text-neutral-400">Latest submitted flood incident reports</p>
                             </div>
                         </div>
                         <Link href="/admin/reports" className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200/80 bg-white px-3 py-1.5 text-xs font-medium text-neutral-500 transition-all hover:border-neutral-400 hover:text-neutral-900 hover:shadow-sm dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:text-white">
@@ -1060,11 +1060,11 @@ export default function AdminDashboard({
                                 <Link key={report.id} href={`/admin/reports/${report.id}`} className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-neutral-50/60 dark:hover:bg-neutral-800/30">
                                     <div className="min-w-0 flex-1">
                                         <p className="font-mono text-xs font-bold text-neutral-800 dark:text-neutral-200">{report.reference_number}</p>
-                                        <p className="mt-0.5 text-[10px] text-neutral-400">{report.user?.name ?? '—'} · {new Date(report.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                                        <p className="mt-0.5 text-meta text-neutral-400">{report.user?.name ?? '—'} · {new Date(report.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
                                     </div>
                                     <div className="flex shrink-0 items-center gap-1.5">
-                                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold ${SEV[report.severity]}`}>{report.severity}</span>
-                                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold ${STA[report.status]}`}>{report.status}</span>
+                                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-caption font-semibold ${SEV[report.severity]}`}>{report.severity}</span>
+                                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-caption font-semibold ${STA[report.status]}`}>{report.status}</span>
                                     </div>
                                 </Link>
                             ))}
@@ -1076,15 +1076,15 @@ export default function AdminDashboard({
                     <div className="hidden overflow-x-auto sm:block">
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-100/80 bg-neutral-50/30 dark:border-neutral-800/80 dark:bg-neutral-800/20">
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Reference</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Date</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Reporter</th>
-                                    <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Severity</th>
-                                    <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400">Status</th>
+                                <tr className="border-b border-neutral-200/70 bg-neutral-50/70 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Reference</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Date</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Reporter</th>
+                                    <th className="px-5 py-3 text-right text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Severity</th>
+                                    <th className="px-5 py-3 text-right text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Status</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-neutral-100/60 dark:divide-neutral-800/60">
+                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                                 {recent_reports.map((report) => (
                                     <tr key={report.id} className="group transition-colors hover:bg-neutral-50/60 dark:hover:bg-neutral-800/30">
                                         <td className="px-5 py-3.5">
@@ -1097,10 +1097,10 @@ export default function AdminDashboard({
                                         </td>
                                         <td className="px-5 py-3.5 text-xs text-neutral-500 dark:text-neutral-400">{report.user?.name ?? '—'}</td>
                                         <td className="px-5 py-3.5 text-right">
-                                            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${SEV[report.severity]}`}>{report.severity}</span>
+                                            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-label font-semibold ${SEV[report.severity]}`}>{report.severity}</span>
                                         </td>
                                         <td className="px-5 py-3.5 text-right">
-                                            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${STA[report.status]}`}>{report.status}</span>
+                                            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-label font-semibold ${STA[report.status]}`}>{report.status}</span>
                                         </td>
                                     </tr>
                                 ))}
@@ -1193,7 +1193,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
             {({ open }) => (
                 <>
                     <PopoverButton
-                        className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold outline-none transition-all sm:text-xs ${
+                        className={`flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-label font-semibold outline-none transition-all sm:text-xs ${
                             activeCount > 0
                                 ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                 : 'text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200'
@@ -1202,7 +1202,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                         <Filter className="size-3.5" />
                         {t('filter.filters')}
                         {activeCount > 0 && (
-                            <span className="flex size-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-neutral-900 dark:bg-neutral-900 dark:text-white">
+                            <span className="flex size-4 items-center justify-center rounded-full bg-white text-caption font-bold text-neutral-900 dark:bg-neutral-900 dark:text-white">
                                 {activeCount}
                             </span>
                         )}
@@ -1229,7 +1229,7 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                         <p className="text-xs font-bold text-neutral-800 dark:text-neutral-200">{t('filter.filters')}</p>
                                         {(localSev.length > 0 || localStatus.length > 0 || localBarangays.length > 0) && (
                                             <button onClick={() => { setLocalSev([]); setLocalStatus([]); setLocalBarangays([]); setBrgySearch(''); }}
-                                                className="text-[10px] font-medium text-red-500 hover:text-red-600">
+                                                className="text-meta font-medium text-red-500 hover:text-red-600">
                                                 {t('filter.clear_all')}
                                             </button>
                                         )}
@@ -1238,13 +1238,13 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                     <div className="max-h-[60vh] overflow-y-auto">
                                         {/* Severity */}
                                         <div className="px-4 pt-3 pb-2">
-                                            <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{t('filter.severity')}</p>
+                                            <p className="mb-2 text-caption font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{t('filter.severity')}</p>
                                             <div className="flex flex-wrap gap-1.5">
                                                 {SEVERITY_KEYS.map(opt => (
                                                     <button
                                                         key={opt.value}
                                                         onClick={() => toggleSev(opt.value)}
-                                                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-medium transition-all ${
+                                                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-meta font-medium transition-all ${
                                                             localSev.includes(opt.value)
                                                                 ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                                 : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
@@ -1259,13 +1259,13 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
 
                                         {/* Status */}
                                         <div className="border-t border-neutral-100 px-4 pt-3 pb-2 dark:border-neutral-800">
-                                            <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{t('filter.status')}</p>
+                                            <p className="mb-2 text-caption font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{t('filter.status')}</p>
                                             <div className="flex flex-wrap gap-1.5">
                                                 {STATUS_KEYS.map(opt => (
                                                     <button
                                                         key={opt.value}
                                                         onClick={() => toggleStatus(opt.value)}
-                                                        className={`rounded-lg border px-2.5 py-1 text-[10px] font-medium transition-all ${
+                                                        className={`rounded-lg border px-2.5 py-1 text-meta font-medium transition-all ${
                                                             localStatus.includes(opt.value)
                                                                 ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                                 : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
@@ -1279,10 +1279,10 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
 
                                         {/* Barangay */}
                                         <div className="border-t border-neutral-100 px-4 pt-3 pb-1 dark:border-neutral-800">
-                                            <p className="mb-2 text-[9px] font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
+                                            <p className="mb-2 text-caption font-bold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">
                                                 {t('filter.barangay')}
                                                 {localBarangays.length > 0 && (
-                                                    <span className="ml-1.5 rounded-full bg-[oklch(0.55_0.14_240)] px-1.5 py-0.5 text-[8px] font-bold text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white">{localBarangays.length}</span>
+                                                    <span className="ml-1.5 rounded-full bg-[oklch(0.55_0.14_240)] px-1.5 py-0.5 text-caption font-bold text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white">{localBarangays.length}</span>
                                                 )}
                                             </p>
                                             <input
@@ -1290,16 +1290,16 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                                 value={brgySearch}
                                                 onChange={(e) => setBrgySearch(e.target.value)}
                                                 placeholder={t('filter.search_barangay')}
-                                                className="mb-2 h-7 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-[10px] outline-none transition placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:placeholder:text-neutral-500 dark:focus:border-neutral-600"
+                                                className="mb-2 h-7 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-meta outline-none transition placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:placeholder:text-neutral-500 dark:focus:border-neutral-600"
                                             />
                                             <div className="max-h-36 overflow-y-auto rounded-lg border border-neutral-100 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-800/30">
                                                 {filteredBarangays.length === 0 ? (
-                                                    <p className="px-2.5 py-3 text-center text-[10px] text-neutral-400">{t('filter.no_barangays')}</p>
+                                                    <p className="px-2.5 py-3 text-center text-meta text-neutral-400">{t('filter.no_barangays')}</p>
                                                 ) : (
                                                     filteredBarangays.map(b => (
                                                         <label
                                                             key={b}
-                                                            className="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-[10px] transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
+                                                            className="flex cursor-pointer items-center gap-2 px-2.5 py-1.5 text-meta transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-700/50"
                                                         >
                                                             <input
                                                                 type="checkbox"
@@ -1319,13 +1319,13 @@ function DashboardFilters({ filters, barangayList, period, customFrom, customTo 
                                     <div className="flex items-center justify-between border-t border-neutral-100 px-4 py-2.5 dark:border-neutral-800">
                                         <button
                                             onClick={() => clearAll(close)}
-                                            className="rounded-lg px-3 py-1.5 text-[10px] font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                                            className="rounded-lg px-3 py-1.5 text-meta font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
                                         >
                                             {t('filter.reset')}
                                         </button>
                                         <button
                                             onClick={() => apply(close)}
-                                            className="rounded-lg bg-[oklch(0.55_0.14_240)] px-5 py-1.5 text-[10px] font-semibold text-white transition-colors hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)]"
+                                            className="rounded-lg bg-[oklch(0.55_0.14_240)] px-5 py-1.5 text-meta font-semibold text-white transition-colors hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)]"
                                         >
                                             {t('filter.apply')}
                                         </button>
@@ -1368,10 +1368,9 @@ function VerificationGauge({ rate, color, label, bg, mounted, locale }: { rate: 
             className={`group relative overflow-hidden rounded-lg border border-neutral-200/70 bg-white px-3 py-2.5 transition-all duration-700 hover:shadow-md hover:border-neutral-300/80 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'}`}
             style={{ transitionDelay: '800ms' }}
         >
-            <div className={`absolute inset-x-0 top-0 h-[2px] ${bg}`} />
             <KpiTooltip desc={desc} insights={[]} visible={open} parentRef={cardRef} urgency={rate >= 70 ? 'good' : rate >= 50 ? 'warning' : 'urgent'} />
             <div className="flex items-start justify-between">
-                <p className="truncate text-[8px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Verification Rate</p>
+                <p className="truncate text-caption font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">Verification Rate</p>
                 <button
                     ref={btnRef}
                     type="button"
@@ -1390,10 +1389,10 @@ function VerificationGauge({ rate, color, label, bg, mounted, locale }: { rate: 
                             strokeDasharray={`${(rate / 100) * 144.5} 144.5`}
                         />
                     </svg>
-                    <span className="absolute text-[10px] font-bold tabular-nums text-neutral-900 dark:text-white">{rate}%</span>
+                    <span className="absolute text-meta font-bold tabular-nums text-neutral-900 dark:text-white">{rate}%</span>
                 </div>
                 <div className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1.5 text-[9px]">
+                    <span className="flex items-center gap-1.5 text-caption">
                         <span className={`size-1.5 rounded-full ${bg}`} />
                         <span className="font-medium text-neutral-500 dark:text-neutral-400">{label}</span>
                     </span>

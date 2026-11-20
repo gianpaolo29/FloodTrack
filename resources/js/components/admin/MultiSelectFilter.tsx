@@ -46,14 +46,14 @@ export function MultiSelectFilter({ label, options, selected, onChange }: Props)
                 onClick={() => setSearch('')}
                 className={`flex h-9 items-center gap-1.5 rounded-lg border px-3 text-sm font-medium transition-all outline-none ${
                     activeCount > 0
-                        ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
-                        : 'border-neutral-200/80 bg-white text-neutral-600 shadow-sm hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
+                        ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
+                        : 'border-neutral-200/80 bg-white text-neutral-600 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
                 }`}
             >
                 <Filter className="size-3.5" />
                 {label}
                 {activeCount > 0 && (
-                    <span className="ml-0.5 flex size-4.5 items-center justify-center rounded-full bg-white text-[10px] font-bold leading-none text-neutral-900 dark:bg-neutral-900 dark:text-white">
+                    <span className="ml-0.5 flex size-4.5 items-center justify-center rounded-full bg-white text-meta font-bold leading-none text-neutral-900 dark:bg-neutral-900 dark:text-white">
                         {activeCount}
                     </span>
                 )}

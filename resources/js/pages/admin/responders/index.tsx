@@ -181,7 +181,7 @@ export default function AdminRespondersIndex({ responders, filters, barangay_lis
                             <ShieldCheck className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">{t('responders.title')}</h1>
+                            <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">{t('responders.title')}</h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Manage rescue personnel accounts and track their flood response assignments.
                             </p>
@@ -260,7 +260,7 @@ export default function AdminRespondersIndex({ responders, filters, barangay_lis
                 </div>
 
                 {/* Table card */}
-                <div className="overflow-visible rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                <div className="overflow-visible rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
 
                     {/* Toolbar */}
                     <div className="relative z-20 rounded-t-2xl flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
@@ -331,24 +331,24 @@ export default function AdminRespondersIndex({ responders, filters, barangay_lis
                                     <div className="flex items-center justify-between gap-2">
                                         <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{r.name}</p>
                                         {r.active_assignments > 0 ? (
-                                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-800/40">
+                                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-meta font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-800/40">
                                                 <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                                 Active
                                             </span>
                                         ) : (
-                                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700">
+                                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-meta font-semibold text-neutral-500 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700">
                                                 Idle
                                             </span>
                                         )}
                                     </div>
                                     <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{r.email}</p>
                                     {r.home_address && (
-                                        <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-neutral-400 dark:text-neutral-500">
+                                        <p className="mt-0.5 flex items-center gap-1 truncate text-label text-neutral-400 dark:text-neutral-500">
                                             <MapPin className="size-3 shrink-0" />
                                             {r.home_address}
                                         </p>
                                     )}
-                                    <div className="mt-1 flex items-center gap-3 text-[11px] text-neutral-400 dark:text-neutral-500">
+                                    <div className="mt-1 flex items-center gap-3 text-label text-neutral-400 dark:text-neutral-500">
                                         <span>{r.total_assigned} assigned</span>
                                         <span>{r.resolved_count} resolved</span>
                                         {r.contact_number && (
@@ -367,13 +367,13 @@ export default function AdminRespondersIndex({ responders, filters, barangay_lis
                     <div className="hidden sm:block overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Responder</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Team</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Home Address</th>
-                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Assignments</th>
-                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Status</th>
-                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
+                                <tr className="border-b border-neutral-200/70 bg-neutral-50/70 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Responder</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Team</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Home Address</th>
+                                    <th className="px-5 py-3 text-center text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Assignments</th>
+                                    <th className="px-5 py-3 text-center text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Status</th>
+                                    <th className="px-5 py-3 text-center text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -392,7 +392,7 @@ export default function AdminRespondersIndex({ responders, filters, barangay_lis
                                                     <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{r.name}</p>
                                                     <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{r.email}</p>
                                                     {r.contact_number && (
-                                                        <p className="flex items-center gap-1 text-[11px] text-neutral-400 dark:text-neutral-500">
+                                                        <p className="flex items-center gap-1 text-label text-neutral-400 dark:text-neutral-500">
                                                             <Phone className="size-3" />
                                                             {r.contact_number}
                                                         </p>
@@ -411,12 +411,12 @@ export default function AdminRespondersIndex({ responders, filters, barangay_lis
                                                         {r.team_name}
                                                     </Link>
                                                     {r.team_is_active === false && (
-                                                        <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                                                        <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-meta font-semibold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
                                                             Inactive
                                                         </span>
                                                     )}
                                                     {r.is_leader && (
-                                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-800/40">
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-meta font-semibold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:ring-amber-800/40">
                                                             <Star className="size-2.5" />
                                                             Leader
                                                         </span>
@@ -520,7 +520,7 @@ export default function AdminRespondersIndex({ responders, filters, barangay_lis
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
                                                 link.active
-                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white shadow-sm'
+                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                     : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
                                             }`}
                                         >
@@ -881,7 +881,7 @@ function HomeAddressAutocomplete({ value, onChange, className }: {
                             <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
                                 {pred.structured_formatting.main_text}
                             </span>
-                            <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                            <span className="text-label text-neutral-400 dark:text-neutral-500">
                                 {pred.structured_formatting.secondary_text}
                             </span>
                         </li>
@@ -897,7 +897,7 @@ function HomeAddressAutocomplete({ value, onChange, className }: {
 function FormField({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
         <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{label}</label>
+            <label className="text-label font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{label}</label>
             {children}
             {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
         </div>

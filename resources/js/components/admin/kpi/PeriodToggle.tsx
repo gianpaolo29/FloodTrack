@@ -92,7 +92,7 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef, t }: {
             </div>
             <div className="mb-1 grid grid-cols-7 text-center">
                 {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-                    <span key={d} className="py-1 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">{d}</span>
+                    <span key={d} className="py-1 text-meta font-semibold text-neutral-400 dark:text-neutral-500">{d}</span>
                 ))}
             </div>
             <div className="grid grid-cols-7 gap-y-0.5">
@@ -128,27 +128,27 @@ function CalendarPicker({ fromDate, toDate, onApply, onClose, anchorRef, t }: {
             </div>
             <div className="mt-3 flex items-center gap-2 rounded-xl bg-neutral-50 p-2.5 dark:bg-neutral-800/60">
                 <div className="flex-1 text-center">
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">{t('filter.from')}</p>
+                    <p className="text-caption font-semibold uppercase tracking-wider text-neutral-400">{t('filter.from')}</p>
                     <p className={`mt-0.5 text-xs font-bold ${rangeStart ? 'text-neutral-800 dark:text-neutral-200' : 'text-neutral-300 dark:text-neutral-600'}`}>
                         {formatDisplay(rangeStart)}
                     </p>
                 </div>
                 <ChevronRight className="size-3 text-neutral-300 dark:text-neutral-600" />
                 <div className="flex-1 text-center">
-                    <p className="text-[9px] font-semibold uppercase tracking-wider text-neutral-400">{t('filter.to')}</p>
+                    <p className="text-caption font-semibold uppercase tracking-wider text-neutral-400">{t('filter.to')}</p>
                     <p className={`mt-0.5 text-xs font-bold ${rangeEnd ? 'text-neutral-800 dark:text-neutral-200' : 'text-neutral-300 dark:text-neutral-600'}`}>
                         {formatDisplay(rangeEnd)}
                     </p>
                 </div>
             </div>
             <div className="mt-3 flex items-center gap-2">
-                <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2 text-[11px] font-semibold text-neutral-500 transition-all hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800">
+                <button onClick={onClose} className="flex-1 rounded-xl border border-neutral-200 py-2 text-label font-semibold text-neutral-500 transition-all hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800">
                     {t('filter.cancel')}
                 </button>
                 <button
                     onClick={() => { if (rangeStart && rangeEnd) onApply(rangeStart, rangeEnd); }}
                     disabled={!rangeStart || !rangeEnd}
-                    className={`flex-1 rounded-xl py-2 text-[11px] font-semibold transition-all ${
+                    className={`flex-1 rounded-xl py-2 text-label font-semibold transition-all ${
                         rangeStart && rangeEnd
                             ? 'bg-[oklch(0.55_0.14_240)] text-white hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)]'
                             : 'bg-neutral-100 text-neutral-300 cursor-not-allowed dark:bg-neutral-800 dark:text-neutral-600'
@@ -219,12 +219,12 @@ export function PeriodToggle({ period, customFrom, customTo, baseUrl, extraParam
     };
 
     return (
-        <div className={`relative flex flex-wrap items-center ${bare ? '' : 'rounded-xl border border-neutral-200/80 bg-white/80 p-1 shadow-sm backdrop-blur-sm dark:border-neutral-700/60 dark:bg-neutral-800/60'}`} ref={calendarRef}>
+        <div className={`relative flex flex-wrap items-center ${bare ? '' : 'rounded-lg border border-neutral-200/70 bg-white p-1 dark:border-neutral-800 dark:bg-neutral-900'}`} ref={calendarRef}>
             {PERIODS.map(({ key, labelKey }) => (
                 <button
                     key={key}
                     onClick={() => setPeriod(key)}
-                    className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all sm:px-3.5 sm:text-xs ${
+                    className={`whitespace-nowrap rounded-lg px-2.5 py-1.5 text-label font-semibold transition-all sm:px-3.5 sm:text-xs ${
                         period === key || (key === 'custom' && showCalendar)
                             ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                             : 'text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-200'

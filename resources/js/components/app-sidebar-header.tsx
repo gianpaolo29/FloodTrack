@@ -69,7 +69,7 @@ function LanguageDropdown() {
     return (
         <Popover className="relative">
             <PopoverButton
-                className="flex size-9 items-center justify-center rounded-xl text-[11px] font-bold text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95 focus:outline-none"
+                className="flex size-9 items-center justify-center rounded-xl text-label font-bold text-muted-foreground transition-all hover:bg-muted/60 hover:text-foreground hover:shadow-sm active:scale-95 focus:outline-none"
             >
                 {locale === 'en' ? 'EN' : 'FIL'}
             </PopoverButton>
@@ -263,7 +263,7 @@ export function AppSidebarHeader({
     }, [notificationsOpen]);
 
     return (
-        <header className="sticky top-0 z-[40] flex h-14 shrink-0 items-center justify-between gap-2 sm:gap-4 rounded-tl-xl rounded-tr-xl sm:rounded-tl-2xl sm:rounded-tr-2xl border-b border-border/[0.35] bg-background/90 px-3 sm:px-6 shadow-sm shadow-black/[0.025] backdrop-blur-2xl">
+        <header className="sticky top-0 z-[40] flex h-14 shrink-0 items-center justify-between gap-2 sm:gap-4 border-b border-border bg-background/90 px-4 sm:px-6 lg:px-8 backdrop-blur-2xl">
             {/* Left — trigger + breadcrumbs */}
             <div className="flex items-center gap-3">
                 <SidebarTrigger className="-ml-1 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white transition-colors" />
@@ -322,7 +322,7 @@ export function AppSidebarHeader({
                                                 <div key={group.category}>
                                                     <div className={`flex items-center gap-1.5 px-3 py-1.5 ${gi > 0 ? 'border-t border-border/30' : ''}`}>
                                                         <SearchCategoryIcon icon={group.icon} />
-                                                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">{group.category}</span>
+                                                        <span className="text-meta font-bold uppercase tracking-widest text-muted-foreground/60">{group.category}</span>
                                                     </div>
                                                     {group.items.map((item) => (
                                                         <button
@@ -335,7 +335,7 @@ export function AppSidebarHeader({
                                                                 <p className="truncate text-xs text-muted-foreground">{item.sub}</p>
                                                             </div>
                                                             {item.meta && (
-                                                                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${SEVERITY_BADGE[item.meta] ?? 'bg-muted text-muted-foreground'}`}>
+                                                                <span className={`shrink-0 rounded-full px-2 py-0.5 text-meta font-semibold capitalize ${SEVERITY_BADGE[item.meta] ?? 'bg-muted text-muted-foreground'}`}>
                                                                     {item.meta}
                                                                 </span>
                                                             )}
@@ -379,7 +379,7 @@ export function AppSidebarHeader({
                                     {localUnread > 0 && (
                                         <span className="absolute -right-0.5 -top-0.5 flex items-center justify-center">
                                             <span className="absolute inline-flex size-full animate-ping rounded-full bg-rose-400 opacity-75" />
-                                            <span className="relative inline-flex size-5 items-center justify-center rounded-full bg-rose-500 text-[10px] font-bold text-white ring-2 ring-card">
+                                            <span className="relative inline-flex size-5 items-center justify-center rounded-full bg-rose-500 text-meta font-bold text-white ring-2 ring-card">
                                                 {localUnread > 9 ? '9+' : localUnread}
                                             </span>
                                         </span>
@@ -471,11 +471,11 @@ export function AppSidebarHeader({
                             <button className="flex items-center gap-2.5 rounded-xl pl-1 pr-2 py-1 transition-all hover:bg-muted/60 hover:shadow-sm active:scale-[0.97] focus:outline-none">
                                 <div className="hidden text-right sm:block">
                                     <p className="text-sm font-medium leading-tight">{auth.user.name}</p>
-                                    <p className="text-[11px] leading-tight text-muted-foreground capitalize">{auth.user.role}</p>
+                                    <p className="text-label leading-tight text-muted-foreground capitalize">{auth.user.role}</p>
                                 </div>
                                 <Avatar className="size-8 ring-2 ring-primary/15 transition-all duration-200 group-hover:ring-primary/35 group-hover:shadow-md group-hover:shadow-primary/10">
                                     <AvatarImage src={auth.user.avatar_url ?? undefined} alt={auth.user.name} />
-                                    <AvatarFallback className="bg-gradient-to-br from-primary/80 to-primary text-[11px] font-semibold text-primary-foreground">
+                                    <AvatarFallback className="bg-gradient-to-br from-primary/80 to-primary text-label font-semibold text-primary-foreground">
                                         {getInitials(auth.user.name)}
                                     </AvatarFallback>
                                 </Avatar>
@@ -528,7 +528,7 @@ function NotificationItem({ notification, onClick }: { notification: AppNotifica
                 <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground line-clamp-2">
                     {data.message}
                 </p>
-                <p className="mt-1 text-[11px] text-muted-foreground/60">{timeAgo}</p>
+                <p className="mt-1 text-label text-muted-foreground/60">{timeAgo}</p>
             </div>
         </button>
     );

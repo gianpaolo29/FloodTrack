@@ -218,7 +218,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                             <Users className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">{t('teams.title')}</h1>
+                            <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">{t('teams.title')}</h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Organize rescue personnel into coordinated flood response teams.
                             </p>
@@ -299,7 +299,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                 </div>
 
                 {/* Table card */}
-                <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                <div className="overflow-hidden rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
 
                     {/* Toolbar */}
                     <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
@@ -333,7 +333,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center justify-between gap-2">
                                             <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{team.name}</p>
-                                            <span className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ${team.is_active ? 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-800' : 'bg-neutral-100 text-neutral-500 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700'}`}>
+                                            <span className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-meta font-semibold ring-1 ${team.is_active ? 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:ring-emerald-800' : 'bg-neutral-100 text-neutral-500 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700'}`}>
                                                 <span className={`size-1.5 rounded-full ${team.is_active ? 'bg-emerald-500' : 'bg-neutral-400'}`} />
                                                 {team.is_active ? 'Active' : 'Inactive'}
                                             </span>
@@ -342,12 +342,12 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                                             {team.members.length} members · <span className={`font-semibold ${shift?.color}`}>{shift?.label}</span> ({shift?.time})
                                         </p>
                                         {leader && (
-                                            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                                            <p className="mt-0.5 flex items-center gap-1 text-label text-amber-600 dark:text-amber-400">
                                                 <Star className="size-3 shrink-0" />
                                                 {leader.name}
                                             </p>
                                         )}
-                                        <div className="mt-1 flex items-center gap-3 text-[11px] text-neutral-400 dark:text-neutral-500">
+                                        <div className="mt-1 flex items-center gap-3 text-label text-neutral-400 dark:text-neutral-500">
                                             <span>{team.total_assigned} assigned</span>
                                             <span>{team.resolved_count} resolved</span>
                                             {team.active_assignments > 0 && (
@@ -367,15 +367,15 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                     <div className="hidden sm:block overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Team</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Leader</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Shift</th>
-                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Members</th>
-                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Assign</th>
-                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Performance</th>
-                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Status</th>
-                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
+                                <tr className="border-b border-neutral-200/70 bg-neutral-50/70 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Team</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Leader</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Shift</th>
+                                    <th className="px-5 py-3 text-center text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Members</th>
+                                    <th className="px-5 py-3 text-center text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Assign</th>
+                                    <th className="px-5 py-3 text-center text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Performance</th>
+                                    <th className="px-5 py-3 text-center text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Status</th>
+                                    <th className="px-5 py-3 text-center text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
@@ -398,13 +398,13 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                                                                 m.avatar_url ? (
                                                                     <img key={m.id} src={m.avatar_url} alt={m.name} className="size-5 rounded-full border-2 border-white object-cover dark:border-neutral-900" title={m.name} />
                                                                 ) : (
-                                                                    <div key={m.id} className="flex size-5 items-center justify-center rounded-full border-2 border-white bg-neutral-200 text-[8px] font-bold text-neutral-600 dark:border-neutral-900 dark:bg-neutral-700 dark:text-neutral-300" title={m.name}>
+                                                                    <div key={m.id} className="flex size-5 items-center justify-center rounded-full border-2 border-white bg-neutral-200 text-caption font-bold text-neutral-600 dark:border-neutral-900 dark:bg-neutral-700 dark:text-neutral-300" title={m.name}>
                                                                         {m.name.charAt(0)}
                                                                     </div>
                                                                 )
                                                             ))}
                                                             {team.members.length > 5 && (
-                                                                <div className="flex size-5 items-center justify-center rounded-full border-2 border-white bg-neutral-100 text-[8px] font-bold text-neutral-500 dark:border-neutral-900 dark:bg-neutral-800 dark:text-neutral-400">
+                                                                <div className="flex size-5 items-center justify-center rounded-full border-2 border-white bg-neutral-100 text-caption font-bold text-neutral-500 dark:border-neutral-900 dark:bg-neutral-800 dark:text-neutral-400">
                                                                     +{team.members.length - 5}
                                                                 </div>
                                                             )}
@@ -454,7 +454,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                                                 ) : (
                                                     <div className="flex flex-col items-center gap-0.5">
                                                         <span className="text-xs font-semibold text-neutral-900 dark:text-white">{resolvePct}%</span>
-                                                        <span className="text-[10px] text-neutral-400">{team.resolved_count}/{team.total_assigned}</span>
+                                                        <span className="text-meta text-neutral-400">{team.resolved_count}/{team.total_assigned}</span>
                                                     </div>
                                                 )}
                                             </td>
@@ -544,7 +544,7 @@ export default function AdminTeamsIndex({ teams, responders, filters, stats, tre
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
                                                 link.active
-                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white shadow-sm'
+                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                     : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800'
                                             }`}
                                         >
@@ -763,7 +763,7 @@ function TeamFormModal({
                                                 <span className={`text-sm font-bold ${active ? 'text-white dark:text-white' : 'text-neutral-900 dark:text-neutral-100'}`}>
                                                     {meta.label}
                                                 </span>
-                                                <span className={`text-[11px] ${active ? 'text-neutral-300 dark:text-neutral-500' : 'text-neutral-400 dark:text-neutral-500'}`}>
+                                                <span className={`text-label ${active ? 'text-neutral-300 dark:text-neutral-500' : 'text-neutral-400 dark:text-neutral-500'}`}>
                                                     {meta.time}
                                                 </span>
                                             </button>
@@ -823,7 +823,7 @@ function TeamFormModal({
                                                         <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{r.email}</p>
                                                     </div>
                                                     {isLeader && (
-                                                        <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300">
+                                                        <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-meta font-semibold text-amber-700 ring-1 ring-amber-200 dark:bg-amber-950/30 dark:text-amber-300">
                                                             <Star className="size-2.5" />
                                                             Leader
                                                         </span>
@@ -866,7 +866,7 @@ function TeamFormModal({
 function FormField({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
         <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            <label className="text-label font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                 {label}
             </label>
             {children}

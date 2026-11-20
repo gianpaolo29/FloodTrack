@@ -39,7 +39,7 @@ function formatPhoneNumber(value: string) {
 const fieldCls = 'flex flex-col gap-1.5';
 const inputCls = 'h-11 rounded-xl border-neutral-200 bg-neutral-50/80 pl-11 pr-4 text-sm text-neutral-900 placeholder:text-neutral-400 transition-colors focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:placeholder:text-neutral-500 dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20';
 const pwInputCls = 'h-11 rounded-xl border-neutral-200 bg-neutral-50/80 pl-11 pr-10 text-sm text-neutral-900 transition-colors focus:border-blue-500 focus:bg-white focus:ring-blue-500/20 dark:border-neutral-700 dark:bg-neutral-800/50 dark:text-white dark:focus:border-cyan-500 dark:focus:bg-neutral-800 dark:focus:ring-cyan-500/20';
-const labelCls = 'text-[13px] font-medium text-neutral-600 dark:text-neutral-400';
+const labelCls = 'text-body font-medium text-neutral-600 dark:text-neutral-400';
 const iconCls = 'pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-neutral-400 dark:text-neutral-500';
 
 export default function Register() {
@@ -154,7 +154,7 @@ export default function Register() {
                                             />
                                         ))}
                                     </div>
-                                    <span className={`min-w-[52px] text-right text-[10px] font-semibold uppercase tracking-wide ${strength.textColor}`}>
+                                    <span className={`min-w-[52px] text-right text-meta font-semibold uppercase tracking-wide ${strength.textColor}`}>
                                         {strength.label}
                                     </span>
                                 </div>
@@ -168,7 +168,7 @@ export default function Register() {
                                                 ) : (
                                                     <X className="size-2.5 text-neutral-300 dark:text-neutral-600" />
                                                 )}
-                                                <span className={`text-[10px] leading-none ${passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-400 dark:text-neutral-500'}`}>
+                                                <span className={`text-meta leading-none ${passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-neutral-400 dark:text-neutral-500'}`}>
                                                     {rule.label}
                                                 </span>
                                             </span>
@@ -214,7 +214,7 @@ export default function Register() {
                         </Button>
 
                         {/* Login link */}
-                        <p className="text-center text-[13px] text-neutral-500 dark:text-neutral-400">
+                        <p className="text-center text-body text-neutral-500 dark:text-neutral-400">
                             Already have an account?{' '}
                             <TextLink
                                 href={login()}

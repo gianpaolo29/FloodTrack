@@ -188,7 +188,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                             <History className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">{t('activity.title')}</h1>
+                            <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">{t('activity.title')}</h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                                 Track every status change across all reports.
                             </p>
@@ -262,7 +262,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                 </div>
 
                 {/* Timeline card */}
-                <div className="overflow-visible rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                <div className="overflow-visible rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
 
                     {/* Toolbar */}
                     <div className="relative z-20 flex flex-wrap items-center gap-2 rounded-t-2xl border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
@@ -332,21 +332,21 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                     <div key={a.id} className="flex flex-col gap-1.5 px-4 py-3.5 transition-colors hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                                         <div className="flex items-center justify-between gap-2">
                                             <div className="flex items-center gap-2 min-w-0">
-                                                <div className={`flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${ROLE_AVATAR[userRole] ?? ROLE_AVATAR.resident} text-[10px] font-bold text-white shadow-sm`}>
+                                                <div className={`flex size-7 shrink-0 items-center justify-center rounded-full bg-gradient-to-br ${ROLE_AVATAR[userRole] ?? ROLE_AVATAR.resident} text-meta font-bold text-white shadow-sm`}>
                                                     {userName.charAt(0).toUpperCase()}
                                                 </div>
                                                 <span className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{userName}</span>
-                                                <span className={`shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${ROLE_STYLES[userRole] ?? ROLE_STYLES.resident}`}>
+                                                <span className={`shrink-0 inline-flex items-center rounded-full px-1.5 py-0.5 text-caption font-semibold ${ROLE_STYLES[userRole] ?? ROLE_STYLES.resident}`}>
                                                     {userRole}
                                                 </span>
                                             </div>
-                                            <span className="shrink-0 text-[10px] text-neutral-400 dark:text-neutral-500">
+                                            <span className="shrink-0 text-meta text-neutral-400 dark:text-neutral-500">
                                                 {new Date(a.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                         </div>
                                         <div className="flex flex-wrap items-center gap-1.5 pl-9 text-xs text-neutral-400 dark:text-neutral-500">
                                             <span>changed to</span>
-                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[a.status as ReportStatus] ?? 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-meta font-semibold ${STATUS_COLORS[a.status as ReportStatus] ?? 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
                                                 {a.status.replace('_', ' ')}
                                             </span>
                                             <span>on</span>
@@ -358,13 +358,13 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                                 <span className="font-mono text-xs font-semibold text-neutral-400">Deleted Report</span>
                                             )}
                                             {severity && (
-                                                <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${SEVERITY_COLORS[severity]}`}>
+                                                <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-meta font-semibold ${SEVERITY_COLORS[severity]}`}>
                                                     {severity}
                                                 </span>
                                             )}
                                         </div>
                                         {a.notes && (
-                                            <p className="pl-9 text-[11px] leading-relaxed text-neutral-400 dark:text-neutral-500">{a.notes}</p>
+                                            <p className="pl-9 text-label leading-relaxed text-neutral-400 dark:text-neutral-500">{a.notes}</p>
                                         )}
                                     </div>
                                 );
@@ -394,11 +394,11 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                                             <span className="font-semibold text-neutral-900 dark:text-neutral-100">{userName}</span>
-                                            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${ROLE_STYLES[userRole] ?? ROLE_STYLES.resident}`}>
+                                            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-meta font-semibold ${ROLE_STYLES[userRole] ?? ROLE_STYLES.resident}`}>
                                                 {userRole}
                                             </span>
                                             <span className="text-neutral-400 dark:text-neutral-500">changed status to</span>
-                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ${STATUS_COLORS[a.status as ReportStatus] ?? 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-meta font-semibold ${STATUS_COLORS[a.status as ReportStatus] ?? 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'}`}>
                                                 {a.status.replace('_', ' ')}
                                             </span>
                                             <span className="text-neutral-400 dark:text-neutral-500">on</span>
@@ -413,7 +413,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                             <span className="font-mono text-xs font-semibold text-neutral-400">Deleted Report</span>
                                             )}
                                             {severity && (
-                                            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${SEVERITY_COLORS[severity]}`}>
+                                            <span className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-meta font-semibold ${SEVERITY_COLORS[severity]}`}>
                                                 {severity}
                                             </span>
                                             )}
@@ -426,7 +426,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                     </div>
 
                                     {/* Timestamp */}
-                                    <span className="shrink-0 whitespace-nowrap text-[11px] font-medium text-neutral-400 dark:text-neutral-500">
+                                    <span className="shrink-0 whitespace-nowrap text-label font-medium text-neutral-400 dark:text-neutral-500">
                                         {new Date(a.created_at).toLocaleString('en-PH', {
                                             month: 'short', day: 'numeric',
                                             hour: '2-digit', minute: '2-digit',
@@ -463,7 +463,7 @@ export default function AdminActivityLog({ activities, filters, stats, trends, p
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-medium transition-colors ${
                                                 link.active
-                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
+                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                     : 'text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200'
                                             }`}
                                         >

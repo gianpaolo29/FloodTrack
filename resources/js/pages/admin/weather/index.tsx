@@ -114,7 +114,7 @@ function CardHeader({ icon: Icon, title, subtitle, iconColor, iconBg, children }
         <div className="flex items-center gap-3 border-b border-neutral-100/80 px-5 py-3 dark:border-neutral-800/80">
             <div className="min-w-0 flex-1">
                 <p className="text-xs font-semibold text-neutral-900 dark:text-white">{title}</p>
-                <p className="text-[9px] text-neutral-400 truncate dark:text-neutral-500">{subtitle}</p>
+                <p className="text-caption text-neutral-400 truncate dark:text-neutral-500">{subtitle}</p>
             </div>
             {children}
         </div>
@@ -129,11 +129,11 @@ function InsightBar({ question, answers }: { question: string; answers: string[]
                     <Sparkles className="size-2.5 text-neutral-400 dark:text-neutral-500" />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <p className="text-[8px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{question}</p>
+                    <p className="text-caption font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{question}</p>
                     <div className="mt-1 flex flex-wrap items-center gap-x-0 gap-y-1">
                         {answers.map((a, i) => (
                             <span key={i} className="flex items-center">
-                                <span className="text-[9px] leading-relaxed text-neutral-600 dark:text-neutral-300 [&_strong]:font-bold [&_strong]:text-neutral-900 dark:[&_strong]:text-white" dangerouslySetInnerHTML={{ __html: a }} />
+                                <span className="text-caption leading-relaxed text-neutral-600 dark:text-neutral-300 [&_strong]:font-bold [&_strong]:text-neutral-900 dark:[&_strong]:text-white" dangerouslySetInnerHTML={{ __html: a }} />
                                 {i < answers.length - 1 && <span className="mx-2.5 h-3 w-px shrink-0 bg-neutral-200/80 dark:bg-neutral-700/80" />}
                             </span>
                         ))}
@@ -146,12 +146,12 @@ function InsightBar({ question, answers }: { question: string; answers: string[]
 
 function Metric({ icon, value, label, iconBg }: { icon: React.ReactNode; value: string; label: string; iconBg: string }) {
     return (
-        <div className="flex flex-col items-center gap-1 rounded-lg border border-neutral-200/50 bg-white py-2.5 transition-all hover:border-neutral-300/60 hover:shadow-sm dark:border-neutral-700/50 dark:bg-neutral-800/40 dark:hover:border-neutral-600/50">
+        <div className="flex flex-col items-center gap-1 rounded-lg border border-neutral-200/50 bg-white py-2.5 transition-all hover:border-neutral-300/60 dark:border-neutral-700/50 dark:bg-neutral-800/40 dark:hover:border-neutral-600/50">
             <div className={`flex size-5 items-center justify-center rounded ${iconBg}`}>
                 {icon}
             </div>
-            <span className="text-[10px] font-bold text-neutral-900 tabular-nums dark:text-white">{value}</span>
-            <span className="text-[7px] font-bold text-neutral-400 uppercase tracking-widest">{label}</span>
+            <span className="text-meta font-bold text-neutral-900 tabular-nums dark:text-white">{value}</span>
+            <span className="text-tag font-bold text-neutral-400 uppercase tracking-widest">{label}</span>
         </div>
     );
 }
@@ -295,14 +295,14 @@ export default function AdminWeather({ barangay_data }: Props) {
                 {/* ═══════════════════════════════════════════════════
                     HERO
                 ═══════════════════════════════════════════════════ */}
-                <div className="relative overflow-hidden rounded-lg border border-neutral-200/60 bg-white/80 backdrop-blur-sm dark:border-neutral-800/80 dark:bg-neutral-900/80">
+                <div className="relative overflow-hidden rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
                     <div className="relative flex flex-col gap-4 p-4">
                         <div className="flex items-start justify-between gap-4">
                             <div>
-                                <h1 className="text-sm font-bold tracking-tight text-neutral-900 dark:text-white">Barangay Weather Monitor</h1>
-                                <p className="text-[9px] text-neutral-400 dark:text-neutral-500">Nasugbu, Batangas — {barangay_data.barangays.length} barangays monitored</p>
+                                <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-white">Barangay Weather Monitor</h1>
+                                <p className="text-caption text-neutral-400 dark:text-neutral-500">Nasugbu, Batangas — {barangay_data.barangays.length} barangays monitored</p>
                             </div>
-                            <span className="hidden shrink-0 items-center gap-1.5 rounded-md border border-neutral-200/60 bg-neutral-50/50 px-2 py-1 text-[8px] font-medium text-neutral-400 sm:inline-flex dark:border-neutral-700/60 dark:bg-neutral-800/50">
+                            <span className="hidden shrink-0 items-center gap-1.5 rounded-md border border-neutral-200/60 bg-neutral-50/50 px-2 py-1 text-caption font-medium text-neutral-400 sm:inline-flex dark:border-neutral-700/60 dark:bg-neutral-800/50">
                                 <span className="relative flex size-1.5">
                                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                                     <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
@@ -328,9 +328,8 @@ export default function AdminWeather({ barangay_data }: Props) {
                                 { val: `${stats.raining}`, label: 'Raining', accent: 'bg-indigo-500' },
                                 { val: `${stats.avgRisk}`, label: 'Avg Risk', accent: 'bg-amber-500' },
                             ].map((s) => (
-                                <div key={s.label} className="relative overflow-hidden rounded-lg border border-neutral-200/70 bg-white px-3 py-2.5 transition-all hover:shadow-md hover:border-neutral-300/80 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700">
-                                    <div className={`absolute inset-x-0 top-0 h-[2px] ${s.accent}`} />
-                                    <p className="text-[8px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{s.label}</p>
+                                <div key={s.label} className="relative overflow-hidden rounded-lg border border-neutral-200/70 bg-white px-3 py-2.5 transition-all hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700">
+                                    <p className="text-caption font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{s.label}</p>
                                     <p className="mt-1 text-lg font-bold tabular-nums tracking-tight text-neutral-900 dark:text-white">{s.val}</p>
                                 </div>
                             ))}
@@ -352,7 +351,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                         {locLabel && gpsCoords && (
                             <button
                                 onClick={resetToMyLocation}
-                                className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-neutral-600 shadow-sm transition-all hover:border-neutral-400 hover:text-neutral-900 cursor-pointer dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-white"
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-label font-semibold text-neutral-600 transition-all hover:border-neutral-400 hover:text-neutral-900 cursor-pointer dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-500 dark:hover:text-white"
                             >
                                 <Navigation className="size-3" /> My Location
                             </button>
@@ -405,7 +404,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                         </span>
                                         <span className="ml-1 text-lg font-medium text-neutral-300 dark:text-neutral-600">C</span>
                                         <p className="mt-0.5 text-sm capitalize text-neutral-500 dark:text-neutral-400">{myWeather.current.description}</p>
-                                        <p className="mt-0.5 flex items-center gap-1.5 text-[10px] text-neutral-400">
+                                        <p className="mt-0.5 flex items-center gap-1.5 text-meta text-neutral-400">
                                             <MapPin className="size-3 text-sky-500" />
                                             {myWeather.current.city}{myWeather.current.country ? `, ${myWeather.current.country}` : ''} · {myCoords.lat.toFixed(4)}, {myCoords.lng.toFixed(4)}
                                         </p>
@@ -425,7 +424,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                 {/* 24h prediction */}
                                 {myWeather.hourly.length > 0 && (
                                     <div>
-                                        <p className="mb-2.5 flex items-center gap-1.5 text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
+                                        <p className="mb-2.5 flex items-center gap-1.5 text-caption font-bold text-neutral-400 uppercase tracking-widest">
                                             <Clock className="size-3 text-amber-500" />
                                             24-Hour Prediction
                                         </p>
@@ -433,17 +432,17 @@ export default function AdminWeather({ barangay_data }: Props) {
                                             {myWeather.hourly.map((h, i) => {
                                                 const t = new Date(h.dt * 1000).toLocaleTimeString('en-PH', { hour: 'numeric', hour12: true });
                                                 return (
-                                                    <div key={i} className="flex shrink-0 flex-col items-center gap-1 rounded-xl border border-neutral-200/50 bg-white px-3 py-2.5 min-w-[68px] transition-all hover:shadow-sm dark:border-neutral-700/50 dark:bg-neutral-800/40">
-                                                        <span className="text-[10px] font-bold text-neutral-400">{t}</span>
+                                                    <div key={i} className="flex shrink-0 flex-col items-center gap-1 rounded-xl border border-neutral-200/50 bg-white px-3 py-2.5 min-w-[68px] transition-all dark:border-neutral-700/50 dark:bg-neutral-800/40">
+                                                        <span className="text-meta font-bold text-neutral-400">{t}</span>
                                                         <img src={iconUrl(h.icon)} alt="" className="size-7 drop-shadow-sm" />
                                                         <span className="text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{Math.round(h.temperature)}°</span>
                                                         {h.rain_3h > 0 && (
                                                             <div className="flex items-center gap-0.5 text-sky-500">
                                                                 <Droplets className="size-2" />
-                                                                <span className="text-[9px] font-semibold tabular-nums">{h.rain_3h}mm</span>
+                                                                <span className="text-caption font-semibold tabular-nums">{h.rain_3h}mm</span>
                                                             </div>
                                                         )}
-                                                        <span className="text-[8px] text-neutral-400 tabular-nums">{h.pop}%</span>
+                                                        <span className="text-caption text-neutral-400 tabular-nums">{h.pop}%</span>
                                                     </div>
                                                 );
                                             })}
@@ -454,21 +453,21 @@ export default function AdminWeather({ barangay_data }: Props) {
                                 {/* 3-day forecast */}
                                 {myWeather.forecast.length > 0 && (
                                     <div>
-                                        <p className="mb-2.5 flex items-center gap-1.5 text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
+                                        <p className="mb-2.5 flex items-center gap-1.5 text-caption font-bold text-neutral-400 uppercase tracking-widest">
                                             <Sun className="size-3 text-indigo-500" />
                                             3-Day Forecast
                                         </p>
                                         <div className="grid grid-cols-3 gap-2">
                                             {myWeather.forecast.slice(0, 3).map((day, i) => (
-                                                <div key={i} className="flex flex-col items-center gap-1.5 rounded-xl border border-neutral-200/50 bg-white py-3.5 transition-all hover:shadow-sm dark:border-neutral-700/50 dark:bg-neutral-800/40">
-                                                    <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400">{day.day}</span>
+                                                <div key={i} className="flex flex-col items-center gap-1.5 rounded-xl border border-neutral-200/50 bg-white py-3.5 transition-all dark:border-neutral-700/50 dark:bg-neutral-800/40">
+                                                    <span className="text-meta font-bold text-neutral-500 dark:text-neutral-400">{day.day}</span>
                                                     <img src={iconUrl(day.icon)} alt="" className="size-9 drop-shadow-sm" />
                                                     <span className="text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{day.temp_max}° / {day.temp_min}°</span>
                                                     <div className="flex items-center gap-1 text-sky-500">
                                                         <Droplets className="size-2.5" />
-                                                        <span className="text-[10px] font-semibold tabular-nums">{day.rain_total} mm</span>
+                                                        <span className="text-meta font-semibold tabular-nums">{day.rain_total} mm</span>
                                                     </div>
-                                                    <span className="text-[9px] text-neutral-400 tabular-nums">{day.pop}% chance</span>
+                                                    <span className="text-caption text-neutral-400 tabular-nums">{day.pop}% chance</span>
                                                 </div>
                                             ))}
                                         </div>
@@ -494,7 +493,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                         {locSearch && !locSearching && (
                                             <button
                                                 onClick={() => searchLocation(locSearch)}
-                                                className="shrink-0 rounded-md bg-neutral-900 px-2.5 py-0.5 text-[10px] font-semibold text-white transition-all hover:bg-neutral-800 cursor-pointer dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
+                                                className="shrink-0 rounded-md bg-neutral-900 px-2.5 py-0.5 text-meta font-semibold text-white transition-all hover:bg-neutral-800 cursor-pointer dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100"
                                             >
                                                 Search
                                             </button>
@@ -518,7 +517,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                                     <MapPin className="mt-0.5 size-3.5 shrink-0 text-sky-500" />
                                                     <div className="min-w-0 flex-1">
                                                         <p className="truncate text-xs font-bold text-neutral-900 dark:text-white">{r.name}</p>
-                                                        <p className="truncate text-[10px] text-neutral-400">{r.display}</p>
+                                                        <p className="truncate text-meta text-neutral-400">{r.display}</p>
                                                     </div>
                                                 </button>
                                             ))}
@@ -573,7 +572,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                     <button
                                         key={level}
                                         onClick={() => setRiskFilter(active ? null : level)}
-                                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold transition-all cursor-pointer ${
+                                        className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-meta font-semibold transition-all cursor-pointer ${
                                             active
                                                 ? `${rc.bg} ${rc.text}`
                                                 : 'text-neutral-400 hover:bg-neutral-50 hover:text-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300'
@@ -587,12 +586,12 @@ export default function AdminWeather({ barangay_data }: Props) {
                             {(search || riskFilter) && (
                                 <button
                                     onClick={() => { setSearch(''); setRiskFilter(null); }}
-                                    className="rounded-md px-1.5 py-1 text-[10px] font-semibold text-red-500 transition-colors hover:bg-red-50 cursor-pointer dark:hover:bg-red-950/30"
+                                    className="rounded-md px-1.5 py-1 text-meta font-semibold text-red-500 transition-colors hover:bg-red-50 cursor-pointer dark:hover:bg-red-950/30"
                                 >
                                     <X className="size-3" />
                                 </button>
                             )}
-                            <span className="ml-1 text-[10px] tabular-nums text-neutral-300 dark:text-neutral-600">
+                            <span className="ml-1 text-meta tabular-nums text-neutral-300 dark:text-neutral-600">
                                 {filteredBarangays.length}/{barangay_data.barangays.length}
                             </span>
                         </div>
@@ -608,9 +607,9 @@ export default function AdminWeather({ barangay_data }: Props) {
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead>
-                                    <tr className="border-b border-neutral-100 dark:border-neutral-800">
+                                    <tr className="border-b border-neutral-200/70 bg-neutral-50/70 dark:border-neutral-800 dark:bg-neutral-800/30">
                                         {['Barangay', 'Weather', 'Temp', 'Humidity', 'Wind', 'Rain', 'Clouds', 'Risk'].map((h) => (
-                                            <th key={h} className="whitespace-nowrap px-4 py-3 text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">{h}</th>
+                                            <th key={h} className="whitespace-nowrap px-4 py-3 text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
@@ -630,9 +629,9 @@ export default function AdminWeather({ barangay_data }: Props) {
                                                             <div className="min-w-0">
                                                                 <p className="text-xs font-bold text-neutral-900 dark:text-white">{brgy.name}</p>
                                                                 <div className="mt-0.5 flex items-center gap-1 flex-wrap">
-                                                                    {brgy.flood_prone && <span className="text-[7px] font-bold uppercase tracking-wider px-1 py-px rounded bg-orange-100/80 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400">Flood-prone</span>}
-                                                                    {brgy.coastal && <span className="text-[7px] font-bold uppercase tracking-wider px-1 py-px rounded bg-sky-100/80 text-sky-600 dark:bg-sky-900/40 dark:text-sky-400">Coastal</span>}
-                                                                    {brgy.near_river && <span className="text-[7px] font-bold uppercase tracking-wider px-1 py-px rounded bg-blue-100/80 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">River</span>}
+                                                                    {brgy.flood_prone && <span className="text-tag font-bold uppercase tracking-wider px-1 py-px rounded bg-orange-100/80 text-orange-600 dark:bg-orange-900/40 dark:text-orange-400">Flood-prone</span>}
+                                                                    {brgy.coastal && <span className="text-tag font-bold uppercase tracking-wider px-1 py-px rounded bg-sky-100/80 text-sky-600 dark:bg-sky-900/40 dark:text-sky-400">Coastal</span>}
+                                                                    {brgy.near_river && <span className="text-tag font-bold uppercase tracking-wider px-1 py-px rounded bg-blue-100/80 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">River</span>}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -640,7 +639,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                                     <td className="px-4 py-3">
                                                         <div className="flex items-center gap-1.5">
                                                             <img src={iconUrl(brgy.weather.icon)} alt="" className="size-7" />
-                                                            <span className="text-[10px] capitalize text-neutral-500 dark:text-neutral-400">{brgy.weather.description}</span>
+                                                            <span className="text-meta capitalize text-neutral-500 dark:text-neutral-400">{brgy.weather.description}</span>
                                                         </div>
                                                     </td>
                                                     <td className="px-4 py-3 text-xs font-bold tabular-nums text-neutral-900 dark:text-white">{brgy.weather.temperature}°C</td>
@@ -657,7 +656,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                                                             <div className="h-1.5 w-16 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
                                                                 <div className={`h-full rounded-full ${RISK_BAR_COLORS[brgy.flood_risk.level]}`} style={{ width: `${brgy.flood_risk.score}%` }} />
                                                             </div>
-                                                            <span className={`text-[10px] font-bold tabular-nums ${rc.text}`}>{brgy.flood_risk.score}</span>
+                                                            <span className={`text-meta font-bold tabular-nums ${rc.text}`}>{brgy.flood_risk.score}</span>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -665,17 +664,17 @@ export default function AdminWeather({ barangay_data }: Props) {
                                                     <tr>
                                                         <td colSpan={8} className="border-b border-neutral-100 bg-neutral-50/60 px-5 py-4 dark:border-neutral-800 dark:bg-neutral-800/20">
                                                             <div className="flex items-center gap-6">
-                                                                <p className="shrink-0 text-[9px] font-bold text-neutral-400 uppercase tracking-widest">
+                                                                <p className="shrink-0 text-caption font-bold text-neutral-400 uppercase tracking-widest">
                                                                     3-Day Forecast
                                                                 </p>
                                                                 <div className="flex items-center gap-4">
                                                                     {brgy.forecast.map((day, idx) => (
                                                                         <div key={idx} className="flex items-center gap-2 rounded-lg border border-neutral-200/50 bg-white px-3 py-2 dark:border-neutral-700/50 dark:bg-neutral-800/40">
-                                                                            <span className="text-[10px] font-bold text-neutral-500 dark:text-neutral-400">{day.day}</span>
+                                                                            <span className="text-meta font-bold text-neutral-500 dark:text-neutral-400">{day.day}</span>
                                                                             <img src={iconUrl(day.icon)} alt="" className="size-6" />
-                                                                            <span className="text-[11px] font-bold tabular-nums text-neutral-900 dark:text-white">{day.temp_max}°/{day.temp_min}°</span>
-                                                                            <span className="text-[10px] tabular-nums text-sky-500 font-medium">{day.rain_total}mm</span>
-                                                                            <span className="text-[9px] tabular-nums text-neutral-400">{day.pop}%</span>
+                                                                            <span className="text-label font-bold tabular-nums text-neutral-900 dark:text-white">{day.temp_max}°/{day.temp_min}°</span>
+                                                                            <span className="text-meta tabular-nums text-sky-500 font-medium">{day.rain_total}mm</span>
+                                                                            <span className="text-caption tabular-nums text-neutral-400">{day.pop}%</span>
                                                                         </div>
                                                                     ))}
                                                                 </div>
@@ -695,7 +694,7 @@ export default function AdminWeather({ barangay_data }: Props) {
                 {/* Footer */}
                 <div className="flex items-center justify-center gap-2 py-4">
                     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-neutral-200 to-transparent dark:via-neutral-700" />
-                    <p className="shrink-0 flex items-center gap-2 text-[10px] text-neutral-400 px-3">
+                    <p className="shrink-0 flex items-center gap-2 text-meta text-neutral-400 px-3">
                         <span className="relative flex size-1.5">
                             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                             <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />

@@ -239,7 +239,7 @@ export default function Profile({ mustVerifyEmail, status }: Props) {
                                     maxLength={11}
                                     className={inputCls}
                                 />
-                                <p className="text-[11px] text-neutral-400">Philippine mobile number · starts with 09 · 11 digits</p>
+                                <p className="text-label text-neutral-400">Philippine mobile number · starts with 09 · 11 digits</p>
                                 <InputError message={profileForm.errors.contact_number} />
                             </div>
 
@@ -463,7 +463,7 @@ function HomeAddressAutocomplete({ value, onChange, className }: {
                             <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
                                 {pred.structured_formatting.main_text}
                             </span>
-                            <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                            <span className="text-label text-neutral-400 dark:text-neutral-500">
                                 {pred.structured_formatting.secondary_text}
                             </span>
                         </li>
