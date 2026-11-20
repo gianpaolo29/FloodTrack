@@ -6,18 +6,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', WelcomeController::class)->name('home');
 Route::inertia('/privacy', 'privacy')->name('privacy');
 
-// Download APK — redirects to EAS build URL with proper filename
-Route::get('/download', function () {
-    $url = \App\Models\Setting::getValue('apk_download_url', '');
-    if (!$url) {
-        return redirect('/')->with('error', 'Download not available yet.');
-    }
-    return response()->streamDownload(function () use ($url) {
-        echo file_get_contents($url);
-    }, 'FloodTrack.apk', [
-        'Content-Type' => 'application/vnd.android.package-archive',
-    ]);
-})->name('download');
+
 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Resident dashboard (default)

@@ -798,7 +798,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                                 {/* Download button */}
                                 <a
-                                    href="/download"
+                                    href="https://github.com/gianpaolo29/FloodTrack/releases/download/v1.3/FloodTrack.apk"
                                     aria-label="Download FloodTrack app"
                                     className={`group relative flex h-10 items-center justify-center gap-2 overflow-hidden rounded-xl border px-3 text-[15px] font-semibold transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:h-11 sm:px-4 sm:text-base ${isDark ? 'border-white/[0.08] text-slate-300 hover:border-white/15 hover:text-white' : 'border-slate-200/80 text-slate-600 hover:border-slate-300 hover:text-slate-900 hover:shadow-sm'}`}
                                 >

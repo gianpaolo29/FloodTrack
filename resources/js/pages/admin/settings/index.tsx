@@ -287,7 +287,6 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
                         </SettingsCard>
 
                         <SettingsCard icon={Globe} title="Landing Page" sub="Public-facing contact information">
-                            <SettingInput title="APK Download URL" description="EAS build link for the mobile app. Paste after each new build." value={get('apk_download_url')} onChange={(v) => set('apk_download_url', v)} placeholder="https://expo.dev/artifacts/eas/..." />
                             <SettingInput title="Contact Number" description="Shown in landing page footer" value={get('contact_number')} onChange={(v) => set('contact_number', v)} placeholder="e.g. 0917-123-4567" />
                             <SettingInput title="Facebook Page URL" description="Shown in landing page footer" value={get('fb_page_url')} onChange={(v) => set('fb_page_url', v)} placeholder="e.g. https://facebook.com/FloodTrack" />
                         </SettingsCard>
