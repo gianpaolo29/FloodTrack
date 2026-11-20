@@ -29,7 +29,7 @@ export function StatRowSkeleton({ count = 5 }: { count?: number }) {
 /** Chart card skeleton */
 export function ChartCardSkeleton({ height = 280 }: { height?: number }) {
     return (
-        <div className="overflow-hidden rounded-lg border border-neutral-200/60 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="overflow-hidden rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
             <div className="flex items-center gap-3 border-b border-neutral-100/80 px-5 py-3 dark:border-neutral-800/80">
                 <div>
                     <Skeleton className="h-3 w-28" />
@@ -46,7 +46,7 @@ export function ChartCardSkeleton({ height = 280 }: { height?: number }) {
 /** Table skeleton */
 export function TableSkeleton({ rows = 8, cols = 6 }: { rows?: number; cols?: number }) {
     return (
-        <div className="overflow-hidden rounded-lg border border-neutral-200/60 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="overflow-hidden rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
             {/* Toolbar */}
             <div className="flex items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-4 py-2.5 dark:border-neutral-800 dark:bg-neutral-800/30">
                 <Skeleton className="h-6 w-40 rounded-lg" />
@@ -76,7 +76,7 @@ export function TableSkeleton({ rows = 8, cols = 6 }: { rows?: number; cols?: nu
 /** Settings card skeleton */
 export function SettingsCardSkeleton() {
     return (
-        <div className="overflow-hidden rounded-lg border border-neutral-200/60 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="overflow-hidden rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
             <div className="flex items-center gap-3 border-b border-neutral-100 px-4 py-3 dark:border-neutral-800">
                 <Skeleton className="size-6 rounded-lg" />
                 <div>
@@ -191,7 +191,7 @@ export function ManagementListSkeleton() {
 export function WeatherSkeleton() {
     return (
         <div className="flex flex-col gap-4 p-3 sm:gap-5 sm:p-6 lg:p-8">
-            <div className="rounded-lg border border-neutral-200/60 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+            <div className="rounded-lg border border-neutral-200/70 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
                 <Skeleton className="h-4 w-48" />
                 <Skeleton className="mt-1 h-2.5 w-64" />
                 <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">

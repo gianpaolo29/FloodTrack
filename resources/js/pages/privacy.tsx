@@ -21,7 +21,7 @@ export default function Privacy() {
     const { resolvedAppearance } = useAppearance();
     const isDark = resolvedAppearance === 'dark';
 
-    const sectionClass = `text-[15px] leading-relaxed ${isDark ? 'text-white/60' : 'text-neutral-600'}`;
+    const sectionClass = `text-[16px] leading-relaxed ${isDark ? 'text-white/60' : 'text-neutral-600'}`;
     const headingClass = `text-lg font-semibold mb-3 ${isDark ? 'text-white/90' : 'text-neutral-800'}`;
 
     return (
@@ -181,7 +181,7 @@ export default function Privacy() {
                                 <AppLogoIcon className="size-9 rounded-[12px] shadow-lg shadow-blue-500/15" />
                                 <span className={`text-sm font-bold ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>FloodTrack</span>
                             </div>
-                            <p className={`text-[12px] ${isDark ? 'text-white/15' : 'text-neutral-400'}`}>&copy; {new Date().getFullYear()} FloodTrack. All rights reserved.</p>
+                            <p className={`text-body ${isDark ? 'text-white/15' : 'text-neutral-400'}`}>&copy; {new Date().getFullYear()} FloodTrack. All rights reserved.</p>
                         </div>
                     </div>
                 </footer>

@@ -315,7 +315,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                             <FileText className="size-4 sm:size-5 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-white">
+                            <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-white">
                                 {activeStatusLabel}
                             </h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
@@ -405,9 +405,9 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -8, scale: 0.98 }}
                             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-                            className="flex flex-wrap items-center gap-2 rounded-2xl border border-neutral-200/70 bg-neutral-50 px-5 py-3.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900"
+                            className="flex flex-wrap items-center gap-2 rounded-lg border border-neutral-200/70 bg-neutral-50 px-5 py-3.5 dark:border-neutral-800 dark:bg-neutral-900"
                         >
-                            <div className="flex size-6 items-center justify-center rounded-full bg-neutral-900 dark:bg-white text-[11px] font-bold text-white dark:text-neutral-900 shadow-sm">
+                            <div className="flex size-6 items-center justify-center rounded-full bg-neutral-900 dark:bg-white text-label font-bold text-white dark:text-neutral-900 shadow-sm">
                                 {selected.length}
                             </div>
                             <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">selected</span>
@@ -455,7 +455,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                 value={searchValue}
                                 onChange={(e) => setSearchValue(e.target.value)}
                                 placeholder={t('reports.search_placeholder')}
-                                className="h-9 w-full rounded-lg border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
+                                className="h-9 w-full rounded-lg border border-neutral-200/80 bg-white pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
                             />
                             {searchValue && (
                                 <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -509,14 +509,14 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                 <Link key={report.id} href={`/admin/reports/${report.id}`}
                                     className="flex flex-col gap-2.5 px-4 py-4 transition-colors hover:bg-neutral-50/80 dark:hover:bg-neutral-800/40">
                                     <div className="flex items-center justify-between gap-2">
-                                        <span className="rounded-lg bg-neutral-100 px-2 py-0.5 font-mono text-[11px] font-bold tracking-wide text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+                                        <span className="rounded-lg bg-neutral-100 px-2 py-0.5 font-mono text-label font-bold tracking-wide text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
                                             {report.reference_number}
                                         </span>
                                         <div className="flex items-center gap-1.5">
-                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${SEVERITY_COLORS[report.severity as Severity]}`}>{report.severity}</span>
-                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold capitalize ${STATUS_COLORS[report.status as ReportStatus]}`}>{STATUS_LABEL[report.status] ?? report.status}</span>
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-meta font-bold capitalize ${SEVERITY_COLORS[report.severity as Severity]}`}>{report.severity}</span>
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-meta font-bold capitalize ${STATUS_COLORS[report.status as ReportStatus]}`}>{STATUS_LABEL[report.status] ?? report.status}</span>
                                             {report.sla_status && (
-                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${SLA_STATUS_COLORS[report.sla_status as SlaStatus]}`}>
+                                                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-meta font-bold ${SLA_STATUS_COLORS[report.sla_status as SlaStatus]}`}>
                                                     {SLA_STATUS_LABELS[report.sla_status as SlaStatus]}
                                                 </span>
                                             )}
@@ -525,16 +525,16 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                     {report.address && (
                                         <div className="flex items-center gap-1.5">
                                             <MapPin className="size-3 shrink-0 text-neutral-300 dark:text-neutral-600" />
-                                            <span className="truncate text-[11px] text-neutral-500 dark:text-neutral-400">{report.address}</span>
+                                            <span className="truncate text-label text-neutral-500 dark:text-neutral-400">{report.address}</span>
                                         </div>
                                     )}
-                                    <div className="flex items-center justify-between text-[10px] text-neutral-400 dark:text-neutral-500">
+                                    <div className="flex items-center justify-between text-meta text-neutral-400 dark:text-neutral-500">
                                         <span>
                                             {report.source === 'messenger' && report.messenger_sender_name
                                                 ? report.messenger_sender_name
                                                 : report.user?.name ?? 'Unknown'}
                                             {report.source && report.source !== 'app' && (
-                                                <span className="ml-1 text-[10px] text-neutral-300 dark:text-neutral-600">
+                                                <span className="ml-1 text-meta text-neutral-300 dark:text-neutral-600">
                                                     ({report.source === 'messenger' ? 'Messenger' : 'Facebook'})
                                                 </span>
                                             )}
@@ -549,7 +549,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                         <div className="hidden sm:block overflow-x-auto">
                             <table className="w-full min-w-[720px] border-collapse text-sm">
                                 <thead>
-                                    <tr className="border-b border-neutral-100 bg-neutral-50/50 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                    <tr className="border-b border-neutral-200/70 bg-neutral-50/70 dark:border-neutral-800 dark:bg-neutral-800/30">
                                         <th className="w-12 px-5 py-3.5 text-center">
                                             <input
                                                 type="checkbox"
@@ -559,13 +559,13 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                             />
                                         </th>
                                         {['Report', 'Location', 'Severity', 'Status', 'SLA', 'Team', 'Reporter', 'Date', ''].map((h) => (
-                                            <th key={h} className="px-4 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 dark:text-neutral-500">
+                                            <th key={h} className="px-4 py-3.5 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                                                 {h}
                                             </th>
                                         ))}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/60">
+                                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                                     {filtered.map((report) => (
                                         <ReportRow
                                             key={report.id}
@@ -603,7 +603,7 @@ export default function AdminReportsIndex({ reports, filters, stats, trends, per
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-all ${
                                                 link.active
                                                     ? 'bg-[oklch(0.55_0.14_240)] text-white shadow-md dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
-                                                    : 'border border-neutral-200/80 bg-white text-neutral-500 shadow-sm hover:border-neutral-300 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
+                                                    : 'border border-neutral-200/80 bg-white text-neutral-500 hover:border-neutral-300 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
                                             }`}
                                         >
                                             {link.label}
@@ -666,13 +666,13 @@ function ReportRow({ report, isSelected, onToggle }: {
 
             {/* Reference + AI flags */}
             <td className="px-3 py-2">
-                <span className="inline-block rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-[10px] font-bold tracking-wide text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+                <span className="inline-block rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-meta font-bold tracking-wide text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
                     {report.reference_number}
                 </span>
                 {aiFlags.length > 0 && (
                     <div className="mt-1 flex flex-wrap gap-0.5">
                         {aiFlags.map(({ icon: Icon, label, cls }) => (
-                            <span key={label} className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[8px] font-semibold ${cls}`}>
+                            <span key={label} className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-caption font-semibold ${cls}`}>
                                 <Icon className="size-2" />
                                 {label}
                             </span>
@@ -685,7 +685,7 @@ function ReportRow({ report, isSelected, onToggle }: {
             <td className="px-3 py-2">
                 <div className="flex items-start gap-1">
                     <MapPin className="mt-0.5 size-2.5 shrink-0 text-neutral-300 dark:text-neutral-600" />
-                    <span className="max-w-[160px] truncate text-[10px] text-neutral-500 dark:text-neutral-400" title={report.address ?? undefined}>
+                    <span className="max-w-[160px] truncate text-meta text-neutral-500 dark:text-neutral-400" title={report.address ?? undefined}>
                         {report.address ?? <span className="italic text-neutral-300 dark:text-neutral-600">No address</span>}
                     </span>
                 </div>
@@ -693,17 +693,17 @@ function ReportRow({ report, isSelected, onToggle }: {
 
             {/* Severity */}
             <td className="px-3 py-2">
-                <span className={`text-[10px] font-bold capitalize ${SEVERITY_COLORS[report.severity as Severity]}`}>
+                <span className={`text-meta font-bold capitalize ${SEVERITY_COLORS[report.severity as Severity]}`}>
                     {report.severity}
                 </span>
                 {report.depth_ft != null && (
-                    <span className="ml-1 text-[9px] font-medium text-blue-600 dark:text-blue-400">{report.depth_ft}ft</span>
+                    <span className="ml-1 text-caption font-medium text-blue-600 dark:text-blue-400">{report.depth_ft}ft</span>
                 )}
             </td>
 
             {/* Status */}
             <td className="px-3 py-2">
-                <span className={`text-[10px] font-bold capitalize ${STATUS_COLORS[report.status as ReportStatus]}`}>
+                <span className={`text-meta font-bold capitalize ${STATUS_COLORS[report.status as ReportStatus]}`}>
                     {STATUS_LABEL[report.status] ?? report.status}
                 </span>
             </td>
@@ -711,35 +711,35 @@ function ReportRow({ report, isSelected, onToggle }: {
             {/* SLA */}
             <td className="px-3 py-2">
                 {report.sla_status ? (
-                    <span className={`text-[10px] font-bold ${SLA_STATUS_COLORS[report.sla_status as SlaStatus]}`}>
+                    <span className={`text-meta font-bold ${SLA_STATUS_COLORS[report.sla_status as SlaStatus]}`}>
                         {SLA_STATUS_LABELS[report.sla_status as SlaStatus]}
                     </span>
                 ) : (
-                    <span className="text-[10px] text-neutral-300 dark:text-neutral-600">—</span>
+                    <span className="text-meta text-neutral-300 dark:text-neutral-600">—</span>
                 )}
             </td>
 
             {/* Team */}
             <td className="px-3 py-2">
                 {report.assigned_team ? (
-                    <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400">
+                    <span className="text-meta font-semibold text-violet-600 dark:text-violet-400">
                         {report.assigned_team.name}
                     </span>
                 ) : (
-                    <span className="text-[10px] text-neutral-300 dark:text-neutral-600">—</span>
+                    <span className="text-meta text-neutral-300 dark:text-neutral-600">—</span>
                 )}
             </td>
 
             {/* Reporter */}
             <td className="px-3 py-2">
-                <span className="text-[10px] font-medium text-neutral-700 dark:text-neutral-300">
+                <span className="text-meta font-medium text-neutral-700 dark:text-neutral-300">
                     {report.user?.name ?? 'Unknown'}
                 </span>
             </td>
 
             {/* Date */}
             <td className="px-3 py-2">
-                <span className="text-[10px] tabular-nums text-neutral-400 dark:text-neutral-500">
+                <span className="text-meta tabular-nums text-neutral-400 dark:text-neutral-500">
                     {new Date(report.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </span>
             </td>
@@ -748,7 +748,7 @@ function ReportRow({ report, isSelected, onToggle }: {
             <td className="px-3 py-2 text-right">
                 <Link
                     href={`/admin/reports/${report.id}`}
-                    className="inline-flex translate-x-1 items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-[10px] font-semibold text-neutral-600 opacity-0 shadow-sm transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-white"
+                    className="inline-flex translate-x-1 items-center gap-1 rounded-lg border border-neutral-200 bg-white px-2 py-1 text-meta font-semibold text-neutral-600 opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-900 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600 dark:hover:bg-neutral-700 dark:hover:text-white"
                 >
                     View
                     <ArrowUpRight className="size-2.5" />

@@ -321,7 +321,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                             </span>
                         </div>
                         <div>
-                            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                            <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
                                 {t('hazards.title')}
                             </h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
@@ -423,7 +423,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -8, scale: 0.99 }}
                             transition={{ duration: 0.18 }}
-                            className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-neutral-50 px-5 py-3.5 dark:border-neutral-700/40 dark:bg-neutral-800/50"
+                            className="overflow-hidden rounded-lg border border-neutral-200/60 bg-neutral-50 px-5 py-3.5 dark:border-neutral-700/40 dark:bg-neutral-800/50"
                         >
                             <div className="flex flex-wrap items-center gap-3">
                                 <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-200">
@@ -452,7 +452,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                 </AnimatePresence>
 
                 {/* ── Table Card ── */}
-                <div className="overflow-visible rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                <div className="overflow-visible rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
 
                     {/* Toolbar */}
                     <div className="relative z-20 flex flex-wrap items-center gap-2 rounded-t-2xl border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
@@ -506,22 +506,22 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                                         <div className="flex items-center justify-between gap-2">
                                             <p className="truncate text-sm font-semibold text-neutral-800 dark:text-neutral-200">{hazard.title}</p>
                                             {hazard.active ? (
-                                                <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-700/40">
+                                                <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-meta font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-700/40">
                                                     <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" /> Active
                                                 </span>
                                             ) : (
-                                                <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700">
+                                                <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-meta font-semibold text-neutral-500 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700">
                                                     Inactive
                                                 </span>
                                             )}
                                         </div>
                                         <div className="mt-0.5 flex items-center gap-2">
-                                            <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${CATEGORY_COLORS[hazard.category]}`}>
+                                            <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-meta font-semibold ${CATEGORY_COLORS[hazard.category]}`}>
                                                 {getTypeLabel(hazard.category, hazard.type)}
                                             </span>
                                         </div>
                                         {hazard.address && (
-                                            <p className="mt-0.5 truncate text-[11px] text-neutral-400 dark:text-neutral-500">{hazard.address}</p>
+                                            <p className="mt-0.5 truncate text-label text-neutral-400 dark:text-neutral-500">{hazard.address}</p>
                                         )}
                                     </div>
                                     <button onClick={() => setEditingHazard(hazard)}
@@ -537,20 +537,20 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                     <div className="hidden sm:block overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-neutral-100 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-800/40">
+                                <tr className="border-b border-neutral-200/70 bg-neutral-50/70 dark:border-neutral-800 dark:bg-neutral-800/30">
                                     <th className="w-10 px-5 py-3 text-center">
                                         <input type="checkbox" checked={allOnPageSelected} onChange={toggleAll}
                                             className="size-3.5 rounded border-neutral-300 text-[oklch(0.55_0.14_240)] focus:ring-[oklch(0.55_0.14_240)]/20 dark:border-neutral-600 dark:text-[oklch(0.62_0.14_240)]" />
                                     </th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Hazard</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Type</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Status</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Location</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Created</th>
-                                    <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Hazard</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Type</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Status</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Location</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Created</th>
+                                    <th className="px-5 py-3 text-right text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/80">
+                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                                 {filtered.map((hazard) => (
                                     <HazardRow
                                         key={hazard.id}
@@ -610,7 +610,7 @@ export default function AdminHazardsIndex({ hazards, stats, trends, period, cust
                                         <button key={i} onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                                                 link.active
-                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
+                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                     : 'border border-neutral-200 text-neutral-500 hover:border-neutral-300 hover:bg-neutral-50 hover:text-neutral-700 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
@@ -661,7 +661,7 @@ function HazardRow({ hazard, isSelected, onToggle, onEdit }: {
                         <p className="truncate text-sm font-semibold text-neutral-800 dark:text-neutral-200">
                             {hazard.title}
                         </p>
-                        <span className={`mt-0.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${CATEGORY_COLORS[hazard.category]}`}>
+                        <span className={`mt-0.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-meta font-semibold ${CATEGORY_COLORS[hazard.category]}`}>
                             {HAZARD_CATEGORY_LABELS[hazard.category]}
                         </span>
                     </div>
@@ -678,11 +678,11 @@ function HazardRow({ hazard, isSelected, onToggle, onEdit }: {
             {/* Status */}
             <td className="px-5 py-4">
                 {hazard.active ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-700/40">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-label font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-700/40">
                         <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" /> Active
                     </span>
                 ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-[11px] font-semibold text-neutral-500 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-2.5 py-1 text-label font-semibold text-neutral-500 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700">
                         <span className="size-1.5 rounded-full bg-neutral-400 dark:bg-neutral-500" /> Inactive
                     </span>
                 )}
@@ -832,7 +832,7 @@ function HazardFormModal({ hazard, onClose }: { hazard?: Hazard; onClose: () => 
                                 {isEditing ? 'Edit Hazard' : 'Create New Hazard'}
                             </h3>
                             {isEditing && hazard?.type && (
-                                <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold ${CATEGORY_COLORS[hazard.category]}`}>
+                                <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-label font-semibold ${CATEGORY_COLORS[hazard.category]}`}>
                                     {getTypeLabel(hazard.category, hazard.type)}
                                 </span>
                             )}
@@ -911,7 +911,7 @@ function HazardFormModal({ hazard, onClose }: { hazard?: Hazard; onClose: () => 
 
                         {/* RIGHT — map */}
                         <div className="flex flex-col gap-2 px-4 py-4">
-                            <label className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
+                            <label className="text-label font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
                                 Pin Location
                             </label>
                             <div className="flex-1">
@@ -1066,7 +1066,7 @@ function MapPicker({ latitude, longitude, address, onChange, onGeocode }: {
 
     return (
         <div className="flex flex-col gap-2">
-            <div className="relative overflow-hidden rounded-xl border border-neutral-200 shadow-sm dark:border-neutral-700">
+            <div className="relative overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-700">
                 <GoogleMap
                     mapContainerStyle={MAP_CONTAINER}
                     center={hasPin ? { lat, lng } : MAP_DEFAULT}
@@ -1092,7 +1092,7 @@ function MapPicker({ latitude, longitude, address, onChange, onGeocode }: {
                 </AnimatePresence>
             </div>
 
-            <p className="flex items-center gap-1 text-[10px] text-neutral-400 dark:text-neutral-500">
+            <p className="flex items-center gap-1 text-meta text-neutral-400 dark:text-neutral-500">
                 <Crosshair className="size-3" />
                 {hasPin ? 'Drag the pin to fine-tune the location' : 'Click on the map to place the pin'}
                 {resolving && <span className="ml-1 text-neutral-500">· Resolving…</span>}
@@ -1250,7 +1250,7 @@ function AddressAutocomplete({ value, onAddressChange, onPlaceSelect, className,
                             <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
                                 {r.name}
                             </span>
-                            <span className="truncate text-[11px] text-neutral-400 dark:text-neutral-500">
+                            <span className="truncate text-label text-neutral-400 dark:text-neutral-500">
                                 {r.address}
                             </span>
                         </li>
@@ -1266,7 +1266,7 @@ function AddressAutocomplete({ value, onAddressChange, onPlaceSelect, className,
 function FormField({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
         <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">{label}</label>
+            <label className="text-label font-semibold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">{label}</label>
             {children}
             {error && <p className="text-xs font-medium text-red-600 dark:text-red-400">{error}</p>}
         </div>

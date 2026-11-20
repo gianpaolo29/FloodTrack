@@ -28,7 +28,6 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { useLocale } from '@/hooks/use-locale';
 import { dashboard } from '@/routes';
@@ -82,7 +81,7 @@ export function AppSidebar() {
     return (
         <Sidebar collapsible="icon" variant="sidebar">
             {/* Logo */}
-            <SidebarHeader className="p-2 pb-2.5">
+            <SidebarHeader className="h-14 shrink-0 justify-center border-b border-sidebar-border px-3 py-0 group-data-[collapsible=icon]:px-2">
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild className="rounded-xl transition-all duration-200 hover:bg-sidebar-foreground/[0.04] hover:shadow-sm active:scale-[0.97] group-data-[collapsible=icon]:justify-center">
@@ -94,18 +93,13 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarSeparator className="mx-4 opacity-30" />
-
             {/* Nav */}
-            <SidebarContent className="py-2 gap-1">
+            <SidebarContent className="gap-5 px-3 py-4 group-data-[collapsible=icon]:px-2">
                 {isAdmin ? (
                     <>
                         <NavSection label={t('sidebar.overview')} items={mainItems} />
-                        <SidebarSeparator className="mx-4 my-1 opacity-20" />
                         <NavSection label={t('sidebar.management')} items={managementItems} />
-                        <SidebarSeparator className="mx-4 my-1 opacity-20" />
                         <NavSection label={t('sidebar.analytics')} items={analyticsItems} />
-                        <SidebarSeparator className="mx-4 my-1 opacity-20" />
                         <NavSection label={t('sidebar.system')} items={systemItems} />
                     </>
                 ) : (

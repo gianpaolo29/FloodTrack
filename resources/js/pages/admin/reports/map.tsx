@@ -424,16 +424,16 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogTrigger asChild>
                     <button
-                        className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11px] font-medium outline-none transition-all ${
+                        className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-label font-medium outline-none transition-all ${
                             activeCount > 0
-                                ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
-                                : 'border-neutral-200 bg-white text-neutral-600 shadow-sm hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
+                                ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
+                                : 'border-neutral-200 bg-white text-neutral-600 hover:border-neutral-300 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:border-neutral-600'
                         }`}
                     >
                         <Filter className="size-3" />
                         Filters
                         {activeCount > 0 && (
-                            <span className="flex size-4 items-center justify-center rounded-full bg-white text-[9px] font-bold text-neutral-900 dark:bg-neutral-900 dark:text-white">
+                            <span className="flex size-4 items-center justify-center rounded-full bg-white text-caption font-bold text-neutral-900 dark:bg-neutral-900 dark:text-white">
                                 {activeCount}
                             </span>
                         )}
@@ -442,8 +442,8 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
 
                 <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
                     <DialogHeader className="px-5 pt-5 pb-4">
-                        <DialogTitle className="text-[14px]">Filter Reports</DialogTitle>
-                        <DialogDescription className="text-[11px]">
+                        <DialogTitle className="text-[15px]">Filter Reports</DialogTitle>
+                        <DialogDescription className="text-label">
                             Narrow down reports by status, severity, and date.
                         </DialogDescription>
                     </DialogHeader>
@@ -451,13 +451,13 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
                     <div className="space-y-4 px-5 pb-4">
                         {/* Status */}
                         <div>
-                            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Status</p>
+                            <p className="mb-2 text-meta font-bold uppercase tracking-wider text-neutral-400">Status</p>
                             <div className="flex flex-wrap gap-1.5">
                                 {STATUS_FILTER_OPTIONS.map(opt => (
                                     <button
                                         key={opt.value}
                                         onClick={() => toggleStatus(opt.value)}
-                                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                                        className={`rounded-lg border px-2.5 py-1 text-label font-medium transition-all ${
                                             localStatuses.includes(opt.value)
                                                 ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                 : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
@@ -471,13 +471,13 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
 
                         {/* Severity */}
                         <div>
-                            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Severity</p>
+                            <p className="mb-2 text-meta font-bold uppercase tracking-wider text-neutral-400">Severity</p>
                             <div className="flex flex-wrap gap-1.5">
                                 {SEVERITY_FILTER_OPTIONS.map(opt => (
                                     <button
                                         key={opt.value}
                                         onClick={() => toggleSeverity(opt.value)}
-                                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-label font-medium transition-all ${
                                             localSeverities.includes(opt.value)
                                                 ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                 : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
@@ -492,13 +492,13 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
 
                         {/* Quick Date Presets */}
                         <div>
-                            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Quick Date</p>
+                            <p className="mb-2 text-meta font-bold uppercase tracking-wider text-neutral-400">Quick Date</p>
                             <div className="flex flex-wrap gap-1.5">
                                 {DATE_PRESETS.map(preset => (
                                     <button
                                         key={preset.value}
                                         onClick={() => selectDatePreset(preset.value)}
-                                        className={`rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-all ${
+                                        className={`rounded-lg border px-2.5 py-1 text-label font-medium transition-all ${
                                             activeDatePreset === preset.value
                                                 ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                 : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:border-neutral-300 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-300'
@@ -512,17 +512,17 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
 
                         {/* Custom Date Range */}
                         <div>
-                            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-neutral-400">Custom Range</p>
+                            <p className="mb-2 text-meta font-bold uppercase tracking-wider text-neutral-400">Custom Range</p>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label className="mb-1 block text-[10px] font-medium text-neutral-500">From</label>
+                                    <label className="mb-1 block text-meta font-medium text-neutral-500">From</label>
                                     <input type="date" value={localDateFrom} onChange={(e) => { setLocalDateFrom(e.target.value); setActiveDatePreset(null); }}
-                                        className="h-8 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-[11px] outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
+                                        className="h-8 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-label outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
                                 </div>
                                 <div>
-                                    <label className="mb-1 block text-[10px] font-medium text-neutral-500">To</label>
+                                    <label className="mb-1 block text-meta font-medium text-neutral-500">To</label>
                                     <input type="date" value={localDateTo} onChange={(e) => { setLocalDateTo(e.target.value); setActiveDatePreset(null); }} min={localDateFrom || undefined}
-                                        className="h-8 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-[11px] outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
+                                        className="h-8 w-full rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 text-label outline-none transition focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-600 dark:bg-neutral-700 dark:text-neutral-200" />
                                 </div>
                             </div>
                         </div>
@@ -532,13 +532,13 @@ function MapCombinedFilter({ filters, onFilter, hasFilters }: {
                     <div className="flex items-center justify-between border-t border-neutral-100 px-5 py-3.5 dark:border-neutral-800">
                         <button
                             onClick={clearAll}
-                            className="rounded-lg px-3 py-1.5 text-[11px] font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
+                            className="rounded-lg px-3 py-1.5 text-label font-medium text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200"
                         >
                             Reset all
                         </button>
                         <button
                             onClick={apply}
-                            className="rounded-lg bg-[oklch(0.55_0.14_240)] px-5 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)]"
+                            className="rounded-lg bg-[oklch(0.55_0.14_240)] px-5 py-1.5 text-label font-semibold text-white transition-colors hover:bg-[oklch(0.50_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white dark:hover:bg-[oklch(0.57_0.14_240)]"
                         >
                             Apply filters
                         </button>
@@ -979,10 +979,10 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 sm:px-5 py-4">
                         <div>
-                            <h1 className="text-[13px] font-bold tracking-tight text-neutral-900 dark:text-white">Map View</h1>
-                            <p className="mt-0.5 text-[11px] text-neutral-400">{reports.length} report{reports.length !== 1 ? 's' : ''} found</p>
+                            <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-white">Map View</h1>
+                            <p className="mt-0.5 text-label text-neutral-400">{reports.length} report{reports.length !== 1 ? 's' : ''} found</p>
                         </div>
-                        <Link href="/admin/reports" className="flex items-center gap-1.5 rounded-lg border border-neutral-200/80 bg-neutral-50 px-2.5 py-1.5 text-[11px] font-medium text-neutral-600 transition hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700">
+                        <Link href="/admin/reports" className="flex items-center gap-1.5 rounded-lg border border-neutral-200/80 bg-neutral-50 px-2.5 py-1.5 text-label font-medium text-neutral-600 transition hover:bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700">
                             <List className="size-3" /> List view
                         </Link>
                     </div>
@@ -1005,7 +1005,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                         : 'text-neutral-900 dark:text-white'
                                 }`}>{counts[s]}</span>
                                 <span className={`mt-1 h-1 w-6 rounded-full ${SEVERITY_META[s].color}`} />
-                                <span className={`mt-1 text-[9px] font-medium ${
+                                <span className={`mt-1 text-caption font-medium ${
                                     filters.severity === s
                                         ? 'text-neutral-400 dark:text-neutral-500'
                                         : 'text-neutral-400'
@@ -1022,7 +1022,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
 
                         {/* Layer toggles */}
                         <div className="border-b border-neutral-100/80 px-4 sm:px-5 py-3 dark:border-neutral-800/60">
-                            <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-neutral-400/80">Layers</p>
+                            <p className="mb-2 text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400/80">Layers</p>
                             <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
                                 {([
                                     { key: 'heatmap',     label: 'Heatmap',      checked: showHeatmap,         toggle: () => setShowHeatmap(v => !v) },
@@ -1043,7 +1043,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                 <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="dark:stroke-neutral-900" />
                                             </svg>
                                         </div>
-                                        <span className={`text-[11px] font-medium transition ${checked ? 'text-neutral-700 dark:text-neutral-300' : 'text-neutral-400 dark:text-neutral-500'}`}>{label}</span>
+                                        <span className={`text-label font-medium transition ${checked ? 'text-neutral-700 dark:text-neutral-300' : 'text-neutral-400 dark:text-neutral-500'}`}>{label}</span>
                                     </label>
                                 ))}
                             </div>
@@ -1051,11 +1051,11 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
 
                         {/* Hazard Map Legend */}
                         <div className="border-b border-neutral-100/80 px-4 sm:px-5 py-3 dark:border-neutral-800/60">
-                            <p className="mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400/80">Hazard Map Legend</p>
+                            <p className="mb-2.5 text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400/80">Hazard Map Legend</p>
                             <div className="grid grid-cols-2 gap-x-4 gap-y-0">
                                 {/* Flood */}
                                 <div>
-                                    <p className="mb-1.5 text-[10px] font-bold text-blue-600 dark:text-blue-400">Flood</p>
+                                    <p className="mb-1.5 text-meta font-bold text-blue-600 dark:text-blue-400">Flood</p>
                                     <div className="flex flex-col gap-1">
                                         {HAZARD_TYPE_OPTIONS.flood.map(opt => {
                                             const active = hazards.some(h => h.category === 'flood' && h.type === opt.value);
@@ -1069,7 +1069,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                         <path d="M16.27 3.5a2 2 0 0 1 3.46 0L33.05 28.5a2 2 0 0 1-1.73 3H4.68a2 2 0 0 1-1.73-3z" fill="none" stroke="#000" strokeWidth="0.8" opacity="0.15" />
                                                         <g transform="translate(3, 3)" dangerouslySetInnerHTML={{ __html: icon }} />
                                                     </svg>
-                                                    <span className={`text-[10px] leading-tight font-medium ${active ? 'text-neutral-700 dark:text-neutral-300' : 'text-neutral-400 dark:text-neutral-500'}`}>{opt.label}</span>
+                                                    <span className={`text-meta leading-tight font-medium ${active ? 'text-neutral-700 dark:text-neutral-300' : 'text-neutral-400 dark:text-neutral-500'}`}>{opt.label}</span>
                                                 </div>
                                             );
                                         })}
@@ -1077,7 +1077,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                 </div>
                                 {/* Road */}
                                 <div>
-                                    <p className="mb-1.5 text-[10px] font-bold text-orange-600 dark:text-orange-400">Road</p>
+                                    <p className="mb-1.5 text-meta font-bold text-orange-600 dark:text-orange-400">Road</p>
                                     <div className="flex flex-col gap-1">
                                         {HAZARD_TYPE_OPTIONS.road.map(opt => {
                                             const active = hazards.some(h => h.category === 'road' && h.type === opt.value);
@@ -1091,7 +1091,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                         <path d="M16.27 3.5a2 2 0 0 1 3.46 0L33.05 28.5a2 2 0 0 1-1.73 3H4.68a2 2 0 0 1-1.73-3z" fill="none" stroke="#000" strokeWidth="0.8" opacity="0.15" />
                                                         <g transform="translate(3, 3)" dangerouslySetInnerHTML={{ __html: icon }} />
                                                     </svg>
-                                                    <span className={`text-[10px] leading-tight font-medium ${active ? 'text-neutral-700 dark:text-neutral-300' : 'text-neutral-400 dark:text-neutral-500'}`}>{opt.label}</span>
+                                                    <span className={`text-meta leading-tight font-medium ${active ? 'text-neutral-700 dark:text-neutral-300' : 'text-neutral-400 dark:text-neutral-500'}`}>{opt.label}</span>
                                                 </div>
                                             );
                                         })}
@@ -1105,28 +1105,28 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                         {showResponders && (
                             <div className="border-b border-neutral-100/80 px-4 sm:px-5 py-3 dark:border-neutral-800/60">
                                 <div className="mb-2 flex items-center justify-between">
-                                    <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400/80">
+                                    <span className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400/80">
                                         <Users className="size-3" />Teams
                                     </span>
                                     {selectedTeam && (
                                         <button
                                             onClick={() => setSelectedTeam(null)}
-                                            className="text-[10px] font-semibold text-[oklch(0.55_0.14_240)] hover:underline cursor-pointer"
+                                            className="text-meta font-semibold text-[oklch(0.55_0.14_240)] hover:underline cursor-pointer"
                                         >
                                             Show all
                                         </button>
                                     )}
                                 </div>
                                 <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
-                                    <span className="flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                    <span className="flex items-center gap-1 rounded-md bg-emerald-50 px-2 py-0.5 text-caption font-bold text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
                                         <span className="relative flex size-1.5"><span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-400 opacity-60" /><span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" /></span>
                                         {onDutyCount} On Duty
                                     </span>
-                                    <span className="flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[9px] font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                                    <span className="flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-caption font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                                         <Radio className="size-2.5" />
                                         {liveResponders.length} Live
                                     </span>
-                                    <span className="flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-0.5 text-[9px] font-bold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                                    <span className="flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-0.5 text-caption font-bold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
                                         {offDutyCount} Off
                                     </span>
                                 </div>
@@ -1149,22 +1149,22 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                 >
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div className="flex items-center gap-2 min-w-0">
-                                                            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[9px] font-bold text-emerald-700">
+                                                            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-caption font-bold text-emerald-700">
                                                                 {t.name.charAt(0).toUpperCase()}
                                                             </span>
                                                             <div className="min-w-0">
-                                                                <span className="block truncate text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">{t.name}</span>
-                                                                <span className="block truncate text-[9px] text-neutral-400">{t.members.length} members · {onlineMembers} online</span>
+                                                                <span className="block truncate text-label font-semibold text-neutral-700 dark:text-neutral-300">{t.name}</span>
+                                                                <span className="block truncate text-caption text-neutral-400">{t.members.length} members · {onlineMembers} online</span>
                                                             </div>
                                                         </div>
-                                                        <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                        <span className="shrink-0 rounded-full px-1.5 py-0.5 text-caption font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                                                             On Duty
                                                         </span>
                                                     </div>
                                                     {!isSelected && t.active_report && (
                                                         <div className="mt-1.5 ml-8 flex items-center gap-1">
                                                             <span className="size-1.5 rounded-full" style={{ backgroundColor: SEVERITY_META[t.active_report.severity as Severity]?.hex ?? '#6b7280' }} />
-                                                            <span className="text-[9px] font-medium text-neutral-500">Assigned — {t.active_report.severity}</span>
+                                                            <span className="text-caption font-medium text-neutral-500">Assigned — {t.active_report.severity}</span>
                                                         </div>
                                                     )}
                                                 </button>
@@ -1177,17 +1177,17 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                                 {m.avatar_url ? (
                                                                     <img src={m.avatar_url} alt="" className="size-5 shrink-0 rounded-full object-cover" />
                                                                 ) : (
-                                                                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[8px] font-bold text-blue-700">
+                                                                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-caption font-bold text-blue-700">
                                                                         {m.name.charAt(0).toUpperCase()}
                                                                     </span>
                                                                 )}
                                                                 <div className="flex-1 min-w-0">
-                                                                    <span className="block truncate text-[10px] font-medium text-neutral-700 dark:text-neutral-300">
+                                                                    <span className="block truncate text-meta font-medium text-neutral-700 dark:text-neutral-300">
                                                                         {m.name}
-                                                                        {m.is_leader && <span className="ml-1 text-[8px] font-bold text-blue-500">Leader</span>}
+                                                                        {m.is_leader && <span className="ml-1 text-caption font-bold text-blue-500">Leader</span>}
                                                                     </span>
                                                                 </div>
-                                                                <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-bold ${
+                                                                <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-caption font-bold ${
                                                                     m.has_location
                                                                         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
                                                                         : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'
@@ -1200,9 +1200,9 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                             <div className="mt-1.5 mx-2 rounded-md border border-neutral-100 bg-neutral-50 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-800">
                                                                 <div className="flex items-center gap-1">
                                                                     <span className="size-1.5 rounded-full" style={{ backgroundColor: SEVERITY_META[t.active_report.severity as Severity]?.hex ?? '#6b7280' }} />
-                                                                    <span className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-300">Assigned — {t.active_report.severity}</span>
+                                                                    <span className="text-meta font-semibold text-neutral-600 dark:text-neutral-300">Assigned — {t.active_report.severity}</span>
                                                                 </div>
-                                                                {t.active_report.address && <p className="text-[9px] text-neutral-400 leading-snug mt-0.5">{t.active_report.address}</p>}
+                                                                {t.active_report.address && <p className="text-caption text-neutral-400 leading-snug mt-0.5">{t.active_report.address}</p>}
                                                             </div>
                                                         )}
                                                     </div>
@@ -1217,9 +1217,9 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                         {/* Reports */}
                         <div className="px-4 sm:px-5 py-3">
                             <div className="mb-2 flex items-center justify-between">
-                                <span className="text-[10px] font-semibold uppercase tracking-widest text-neutral-400/80">Reports</span>
+                                <span className="text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400/80">Reports</span>
                                 {reports.length > 0 && (
-                                    <span className="text-[9px] text-neutral-300 dark:text-neutral-600">tap to locate</span>
+                                    <span className="text-caption text-neutral-300 dark:text-neutral-600">tap to locate</span>
                                 )}
                             </div>
                             <div className="space-y-1">
@@ -1234,14 +1234,14 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                 <svg width="10" height="10" viewBox="0 0 10 10" className="shrink-0">
                                                     <circle cx="5" cy="5" r="4" fill={SEVERITY_META[r.severity].hex} fillOpacity="0.3" stroke={SEVERITY_META[r.severity].hex} strokeWidth="1.5" />
                                                 </svg>
-                                                <span className="truncate font-mono text-[11px] font-bold text-neutral-700 dark:text-neutral-300">{r.reference_number}</span>
+                                                <span className="truncate font-mono text-label font-bold text-neutral-700 dark:text-neutral-300">{r.reference_number}</span>
                                             </div>
-                                            <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${STATUS_COLORS[r.status]}`}>{r.status}</span>
+                                            <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-caption font-semibold ${STATUS_COLORS[r.status]}`}>{r.status}</span>
                                         </div>
                                         {r.address && (
-                                            <p className="mt-0.5 truncate pl-[18px] text-[10px] text-neutral-400">{r.address}</p>
+                                            <p className="mt-0.5 truncate pl-[18px] text-meta text-neutral-400">{r.address}</p>
                                         )}
-                                        <div className="mt-0.5 flex items-center justify-between pl-[18px] text-[10px] text-neutral-400">
+                                        <div className="mt-0.5 flex items-center justify-between pl-[18px] text-meta text-neutral-400">
                                             <span>{r.user?.name ?? 'Unknown'}</span>
                                             <span>{new Date(r.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                         </div>
@@ -1293,9 +1293,9 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                 }, { preserveState: true, replace: true });
                                             }
                                         }}
-                                        className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition-all ${
+                                        className={`rounded-md px-2.5 py-1 text-label font-semibold transition-all ${
                                             active
-                                                ? 'bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:bg-[oklch(0.62_0.14_240)]'
+                                                ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)]'
                                                 : 'text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-700/50 dark:hover:text-neutral-200'
                                         }`}
                                     >
@@ -1312,14 +1312,14 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                     <span className="absolute inline-flex size-full animate-ping rounded-full bg-red-500 opacity-60" />
                                     <span className="relative inline-flex size-1.5 rounded-full bg-red-500" />
                                 </span>
-                                <span className="text-[10px] font-bold uppercase tracking-wider text-red-600 dark:text-red-400">Live</span>
+                                <span className="text-meta font-bold uppercase tracking-wider text-red-600 dark:text-red-400">Live</span>
                             </span>
                             <span className="h-3 w-px bg-neutral-300/60 dark:bg-neutral-600/60" />
-                            <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <span className="flex items-center gap-1 text-meta font-semibold text-emerald-600 dark:text-emerald-400">
                                 <span className="size-1.5 rounded-full bg-emerald-500" />
                                 {onDutyCount} {onDutyCount === 1 ? 'Team' : 'Teams'} On Duty
                             </span>
-                            <span className="flex items-center gap-1 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
+                            <span className="flex items-center gap-1 text-meta font-semibold text-neutral-400 dark:text-neutral-500">
                                 <span className="size-1.5 rounded-full bg-neutral-400" />
                                 {offDutyCount} Off
                             </span>
@@ -1356,9 +1356,9 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                 <span className="flex size-[18px] items-center justify-center rounded-full" style={{ backgroundColor: SEVERITY_META[r.severity].hex + '18' }}>
                                                     <span className="size-[7px] rounded-full" style={{ backgroundColor: SEVERITY_META[r.severity].hex }} />
                                                 </span>
-                                                <span className="text-[11px] font-bold capitalize text-neutral-800">{r.severity}</span>
+                                                <span className="text-label font-bold capitalize text-neutral-800">{r.severity}</span>
                                             </div>
-                                            <span className={`rounded-full px-2 py-[3px] text-[10px] font-semibold leading-none ${STATUS_COLORS[r.status]}`}>
+                                            <span className={`rounded-full px-2 py-[3px] text-meta font-semibold leading-none ${STATUS_COLORS[r.status]}`}>
                                                 {r.status}
                                             </span>
                                         </div>
@@ -1366,9 +1366,9 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                         {/* Body */}
                                         <div className="border-t border-neutral-100 px-3 py-2.5">
                                             {r.address && (
-                                                <p className="text-[11px] leading-relaxed text-neutral-500">{r.address}</p>
+                                                <p className="text-label leading-relaxed text-neutral-500">{r.address}</p>
                                             )}
-                                            <div className="mt-1.5 flex items-center justify-between text-[10px] text-neutral-400">
+                                            <div className="mt-1.5 flex items-center justify-between text-meta text-neutral-400">
                                                 <span className="font-medium">{r.user?.name ?? 'Unknown'}</span>
                                                 <span>{new Date(r.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                                             </div>
@@ -1379,7 +1379,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                             <Link
                                                 href={`/admin/reports/${r.id}`}
                                                 style={{ color: '#fff' }}
-                                                className="block rounded-lg bg-[oklch(0.55_0.14_240)] px-3 py-1.5 text-center text-[11px] font-semibold !text-white shadow-sm transition hover:bg-[oklch(0.50_0.14_240)] hover:shadow-md"
+                                                className="block rounded-lg bg-[oklch(0.55_0.14_240)] px-3 py-1.5 text-center text-label font-semibold !text-white shadow-sm transition hover:bg-[oklch(0.50_0.14_240)] hover:shadow-md"
                                             >
                                                 View details
                                             </Link>
@@ -1404,12 +1404,12 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                     <Popup maxWidth={320} minWidth={260}>
                                         <div className="flex flex-col gap-2 p-3 pr-6 pt-3">
                                             {ec.address && (
-                                                <p className="text-[11px] text-gray-500 leading-snug">{ec.address}</p>
+                                                <p className="text-label text-gray-500 leading-snug">{ec.address}</p>
                                             )}
 
                                             {/* Occupancy bar */}
                                             <div>
-                                                <div className="mb-1 flex items-center justify-between text-[10px] text-gray-500">
+                                                <div className="mb-1 flex items-center justify-between text-meta text-gray-500">
                                                     <span>Occupancy</span>
                                                     <span className="font-semibold">
                                                         {ec.current_occupancy} / {ec.capacity}
@@ -1425,14 +1425,14 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                         style={{ width: `${occupancyPct}%` }}
                                                     />
                                                 </div>
-                                                <p className={`mt-1 text-[10px] font-semibold ${isFull ? 'text-red-600' : 'text-teal-600'}`}>
+                                                <p className={`mt-1 text-meta font-semibold ${isFull ? 'text-red-600' : 'text-teal-600'}`}>
                                                     {isFull ? 'Full — no available space' : `${slotsLeft} slots available`}
                                                 </p>
                                             </div>
 
                                             <Link
                                                 href="/admin/evacuation-centers"
-                                                className="mt-1 block text-center text-[11px] font-semibold text-[oklch(0.55_0.14_240)] transition hover:underline"
+                                                className="mt-1 block text-center text-label font-semibold text-[oklch(0.55_0.14_240)] transition hover:underline"
                                             >
                                                 Manage centers →
                                             </Link>
@@ -1470,14 +1470,14 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                 <div className="min-w-0">
                                                     <p className="text-xs font-bold text-neutral-900">
                                                         {r.name}
-                                                        {r.is_leader && <span className="ml-1 text-[9px] font-bold text-blue-500">Leader</span>}
+                                                        {r.is_leader && <span className="ml-1 text-caption font-bold text-blue-500">Leader</span>}
                                                     </p>
-                                                    <p className="text-[10px] text-gray-500">{r.team_name}</p>
+                                                    <p className="text-meta text-gray-500">{r.team_name}</p>
                                                 </div>
                                             </div>
 
                                             {/* Status row */}
-                                            <div className="flex items-center gap-2 text-[10px]">
+                                            <div className="flex items-center gap-2 text-meta">
                                                 <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold ${
                                                     stale
                                                         ? 'bg-amber-50 text-amber-600'
@@ -1491,7 +1491,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                             </div>
 
                                             {/* Mission status */}
-                                            <div className="flex items-center gap-1.5 text-[10px]">
+                                            <div className="flex items-center gap-1.5 text-meta">
                                                 <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold ${missionColor}`}>
                                                     {missionLabel}
                                                 </span>
@@ -1501,23 +1501,23 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                             <div className="border-t border-neutral-100 pt-2">
                                                 {assignedReport ? (
                                                     <div>
-                                                        <p className="text-[10px] font-semibold text-neutral-500 mb-1">Assignment</p>
+                                                        <p className="text-meta font-semibold text-neutral-500 mb-1">Assignment</p>
                                                         <div className="flex items-center gap-1.5">
                                                             <span className="size-1.5 rounded-full" style={{ backgroundColor: SEVERITY_META[assignedReport.severity as Severity]?.hex ?? '#6b7280' }} />
                                                             <Link
                                                                 href={`/admin/reports/${assignedReport.id}`}
-                                                                className="text-[11px] font-semibold text-[oklch(0.55_0.14_240)] hover:underline"
+                                                                className="text-label font-semibold text-[oklch(0.55_0.14_240)] hover:underline"
                                                             >
                                                                 {assignedReport.reference_number}
                                                             </Link>
-                                                            <span className="text-[9px] font-medium text-neutral-400 capitalize">{assignedReport.severity}</span>
+                                                            <span className="text-caption font-medium text-neutral-400 capitalize">{assignedReport.severity}</span>
                                                         </div>
                                                         {assignedReport.address && (
-                                                            <p className="mt-0.5 text-[10px] text-gray-400 leading-snug ml-3">{assignedReport.address}</p>
+                                                            <p className="mt-0.5 text-meta text-gray-400 leading-snug ml-3">{assignedReport.address}</p>
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <p className="text-[10px] text-neutral-400 italic">No assignment</p>
+                                                    <p className="text-meta text-neutral-400 italic">No assignment</p>
                                                 )}
                                             </div>
                                         </div>
@@ -1549,19 +1549,19 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                     >
                                         <div className="flex flex-col gap-2 p-1" style={{ minWidth: 180 }}>
                                             <div className="flex items-center gap-1.5 mb-0.5">
-                                                <span className={`text-[10px] font-bold capitalize ${SEVERITY_COLORS[selectedHazard.severity]}`}>
+                                                <span className={`text-meta font-bold capitalize ${SEVERITY_COLORS[selectedHazard.severity]}`}>
                                                     {selectedHazard.severity}
                                                 </span>
-                                                <span className="text-[10px] font-semibold text-neutral-500">
+                                                <span className="text-meta font-semibold text-neutral-500">
                                                     {selectedHazard.category === 'flood' ? 'Flood' : 'Road'}
                                                 </span>
                                             </div>
                                             <p className="text-xs font-bold text-neutral-900">{selectedHazard.title}</p>
-                                            <p className="text-[11px] text-gray-500">
+                                            <p className="text-label text-gray-500">
                                                 {hazardTypeLabel(selectedHazard.category, selectedHazard.type)}
                                             </p>
                                             {selectedHazard.address && (
-                                                <p className="text-[10px] text-gray-400">{selectedHazard.address}</p>
+                                                <p className="text-meta text-gray-400">{selectedHazard.address}</p>
                                             )}
                                         </div>
                                     </Popup>

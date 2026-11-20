@@ -111,7 +111,7 @@ export default function SlaIndex({ configs, sla_enabled }: Props) {
                 {/* Header */}
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">SLA Rules</h1>
+                        <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">SLA Rules</h1>
                         <p className="mt-1 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
                             Set maximum response times for each stage of the report pipeline.
                         </p>
@@ -130,14 +130,14 @@ export default function SlaIndex({ configs, sla_enabled }: Props) {
                 </div>
 
                 {/* Threshold table */}
-                <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                <div className="overflow-hidden rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
                     <div className="flex items-center gap-3 border-b border-neutral-100 px-6 py-4 dark:border-neutral-800">
                         <div className="flex size-8 items-center justify-center rounded-xl bg-neutral-900 dark:bg-white">
                             <Clock className="size-3.5 text-white dark:text-neutral-900" />
                         </div>
                         <div>
                             <h2 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Response Time Thresholds</h2>
-                            <p className="text-[11px] text-neutral-400">Time limits in minutes for each severity and stage</p>
+                            <p className="text-label text-neutral-400">Time limits in minutes for each severity and stage</p>
                         </div>
                     </div>
 
@@ -145,16 +145,16 @@ export default function SlaIndex({ configs, sla_enabled }: Props) {
                         <div className="overflow-x-auto">
                             <table className="w-full min-w-[600px] text-sm">
                                 <thead>
-                                    <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
-                                        <th className="px-6 py-3 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400">Severity</th>
+                                    <tr className="border-b border-neutral-200/70 bg-neutral-50/70 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                        <th className="px-6 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Severity</th>
                                         {STAGES.map((s) => (
-                                            <th key={s} className="px-4 py-3 text-center text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400">
+                                            <th key={s} className="px-4 py-3 text-center text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                                                 {SLA_STAGE_LABELS[s]}
                                             </th>
                                         ))}
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/60">
+                                <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                                     {SEVERITIES.map((sev) => (
                                         <tr key={sev} className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
                                             <td className="px-6 py-3.5">
@@ -176,7 +176,7 @@ export default function SlaIndex({ configs, sla_enabled }: Props) {
                                                                 onChange={(e) => updateField(sev, stage, parseInt(e.target.value) || 1)}
                                                                 className="w-20 rounded-lg border border-neutral-200 bg-neutral-50/50 px-2.5 py-1.5 text-center text-xs font-medium tabular-nums outline-none transition-all focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
                                                             />
-                                                            <span className="text-[10px] text-neutral-400">min</span>
+                                                            <span className="text-meta text-neutral-400">min</span>
                                                         </div>
                                                     </td>
                                                 );
@@ -189,7 +189,7 @@ export default function SlaIndex({ configs, sla_enabled }: Props) {
 
                         {/* Save bar */}
                         <div className="flex items-center justify-between border-t border-neutral-100 px-6 py-4 dark:border-neutral-800">
-                            <p className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                            <p className="text-label text-neutral-400 dark:text-neutral-500">
                                 Reports exceeding these limits will trigger SLA breach notifications.
                             </p>
                             <button

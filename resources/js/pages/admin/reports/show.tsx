@@ -257,7 +257,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                         </Link>
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                                <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
                                     {report.reference_number}
                                 </h1>
                                 <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${SEVERITY_COLORS[report.severity]}`}>
@@ -267,7 +267,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                     {report.status}
                                 </span>
                             </div>
-                            <p className="mt-0.5 text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400">
+                            <p className="mt-0.5 text-label sm:text-xs text-neutral-500 dark:text-neutral-400">
                                 Submitted {new Date(report.created_at).toLocaleString('en-PH', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                             </p>
                         </div>
@@ -277,7 +277,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                         {!editing && (
                             <button
                                 onClick={() => setEditing(true)}
-                                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-sm font-medium text-neutral-700 shadow-sm transition-all hover:bg-neutral-50 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                                className="inline-flex items-center gap-1.5 rounded-xl border border-neutral-200 bg-white px-3.5 py-2 text-sm font-medium text-neutral-700 transition-all hover:bg-neutral-50 hover:shadow-md dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
                             >
                                 <Pencil className="size-3.5" />
                                 Edit
@@ -286,7 +286,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                         <button
                             onClick={handleDelete}
                             disabled={deleting}
-                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3.5 py-2 text-sm font-medium text-red-600 shadow-sm transition-all hover:bg-red-50 hover:shadow-md disabled:opacity-50 dark:border-red-800/40 dark:bg-neutral-900 dark:text-red-400 dark:hover:bg-red-950/20"
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-white px-3.5 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50 hover:shadow-md disabled:opacity-50 dark:border-red-800/40 dark:bg-neutral-900 dark:text-red-400 dark:hover:bg-red-950/20"
                         >
                             <Trash2 className="size-3.5" />
                             Delete
@@ -296,7 +296,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
 
                 {/* Status progress bar (non-rejected reports) */}
                 {report.status !== 'rejected' && (
-                    <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                    <div className="rounded-lg border border-neutral-200/70 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
                         <div className="flex w-full items-center">
                             {statusFlow.map((step, i) => {
                                 const isActive = i <= currentStep;
@@ -307,7 +307,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         <div className="flex shrink-0 flex-col items-center gap-1.5">
                                             <div className={`flex size-8 items-center justify-center rounded-full border-2 transition-colors ${
                                                 isCurrent
-                                                    ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
+                                                    ? 'border-[oklch(0.55_0.14_240)] bg-[oklch(0.55_0.14_240)] text-white dark:border-[oklch(0.62_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
                                                     : isActive
                                                     ? 'border-neutral-700 bg-neutral-700 text-white dark:border-neutral-300 dark:bg-neutral-300 dark:text-neutral-900'
                                                     : 'border-neutral-200 bg-neutral-50 text-neutral-400 dark:border-neutral-700 dark:bg-neutral-800'
@@ -318,7 +318,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                     <span className="text-xs font-bold">{i + 1}</span>
                                                 )}
                                             </div>
-                                            <span className={`text-[10px] font-semibold uppercase tracking-wider ${
+                                            <span className={`text-meta font-semibold uppercase tracking-wider ${
                                                 isCurrent ? 'text-neutral-900 dark:text-white' : isActive ? 'text-neutral-700 dark:text-neutral-300' : 'text-neutral-400 dark:text-neutral-500'
                                             }`}>
                                                 {step.label}
@@ -344,7 +344,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
 
                 {/* Rejected banner */}
                 {report.status === 'rejected' && (
-                    <div className="flex items-center gap-3 rounded-2xl border border-red-200/60 bg-red-50/80 px-5 py-3.5 dark:border-red-800/40 dark:bg-red-950/20">
+                    <div className="flex items-center gap-3 rounded-lg border border-red-200/60 bg-red-50/80 px-5 py-3.5 dark:border-red-800/40 dark:bg-red-950/20">
                         <XCircle className="size-5 shrink-0 text-red-500" />
                         <div>
                             <p className="text-sm font-semibold text-red-800 dark:text-red-300">This report has been rejected</p>
@@ -370,7 +370,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -8 }}
                                     transition={{ duration: 0.2 }}
-                                    className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900"
+                                    className="rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900"
                                 >
                                     <div className="flex items-center justify-between border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
                                         <div className="flex items-center gap-3">
@@ -455,7 +455,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -8 }}
                                     transition={{ duration: 0.2 }}
-                                    className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900"
+                                    className="rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900"
                                 >
                                     <div className="border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
                                         <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Report Details</h3>
@@ -521,7 +521,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
 
                         {/* Description */}
                         {!editing && report.description && (
-                            <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                            <div className="rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
                                 <div className="border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
                                     <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Description</h3>
                                 </div>
@@ -535,7 +535,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
 
                         {/* Evidence */}
                         {(report.media?.length ?? 0) > 0 && (
-                            <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                            <div className="rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
                                 <div className="flex items-center gap-2 border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
                                     <Image className="size-4 text-neutral-500" />
                                     <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
@@ -572,7 +572,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                     </div>
                                                     {report.voice_transcription && (
                                                         <div className="border-t border-neutral-200/60 px-4 py-3 dark:border-neutral-700/60">
-                                                            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-400">Transcription</p>
+                                                            <p className="text-meta font-medium uppercase tracking-wider text-neutral-400">Transcription</p>
                                                             <p className="mt-1 text-xs leading-relaxed text-neutral-600 dark:text-neutral-300">
                                                                 {report.voice_transcription}
                                                             </p>
@@ -589,7 +589,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                     />
                                                     <div className="flex items-center gap-1.5 bg-neutral-50 px-3 py-1.5 dark:bg-neutral-800">
                                                         <Video className="size-3 text-neutral-400" />
-                                                        <span className="text-[10px] font-medium text-neutral-500 dark:text-neutral-400">Video evidence</span>
+                                                        <span className="text-meta font-medium text-neutral-500 dark:text-neutral-400">Video evidence</span>
                                                         <a href={m.url} target="_blank" rel="noreferrer" className="ml-auto text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
                                                             <ExternalLink className="size-3" />
                                                         </a>
@@ -604,7 +604,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
 
                         {/* Timeline */}
                         {(report.status_updates?.length ?? 0) > 0 && (
-                            <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                            <div className="rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
                                 <div className="flex items-center gap-2 border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
                                     <Clock className="size-4 text-neutral-500" />
                                     <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Status Timeline</h3>
@@ -657,7 +657,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                     <div className="flex flex-col gap-6">
 
                         {/* Reporter */}
-                        <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <div className="rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
                             <div className="flex items-center gap-2 border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
                                 <User className="size-4 text-neutral-500" />
                                 <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Reporter</h3>
@@ -697,12 +697,12 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                         </div>
 
                         {/* Assigned team / responder */}
-                        <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <div className="rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
                             <div className="flex items-center gap-2 border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
                                 <Users className="size-4 text-neutral-500" />
                                 <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Assigned Team</h3>
                                 {report.assigned_team && (
-                                    <span className="ml-auto inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-700 ring-1 ring-neutral-600/10 dark:bg-neutral-800 dark:text-neutral-300">
+                                    <span className="ml-auto inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-meta font-semibold text-neutral-700 ring-1 ring-neutral-600/10 dark:bg-neutral-800 dark:text-neutral-300">
                                         {report.assigned_team.name}
                                     </span>
                                 )}
@@ -723,15 +723,15 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                     <div className={`relative flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white shadow-sm ${m.is_leader ? 'bg-neutral-900 dark:bg-white dark:text-neutral-900' : 'bg-neutral-500 dark:bg-neutral-400'}`}>
                                                         {m.name.charAt(0).toUpperCase()}
                                                         {m.is_leader && (
-                                                            <span className="absolute -bottom-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-neutral-700 dark:bg-neutral-300 text-[8px] font-bold text-white dark:text-neutral-900 ring-1 ring-white dark:ring-neutral-900">★</span>
+                                                            <span className="absolute -bottom-1 -right-1 flex size-3.5 items-center justify-center rounded-full bg-neutral-700 dark:bg-neutral-300 text-caption font-bold text-white dark:text-neutral-900 ring-1 ring-white dark:ring-neutral-900">★</span>
                                                         )}
                                                     </div>
                                                     <div className="min-w-0 flex-1">
                                                         <p className="truncate text-xs font-semibold text-neutral-900 dark:text-neutral-100">
                                                             {m.name}
-                                                            {m.is_leader && <span className="ml-1.5 text-[10px] font-normal text-neutral-500 dark:text-neutral-400">Leader</span>}
+                                                            {m.is_leader && <span className="ml-1.5 text-meta font-normal text-neutral-500 dark:text-neutral-400">Leader</span>}
                                                         </p>
-                                                        <div className="mt-0.5 flex items-center gap-2 text-[10px]">
+                                                        <div className="mt-0.5 flex items-center gap-2 text-meta">
                                                             {isOnline ? (
                                                                 <>
                                                                     <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
@@ -782,7 +782,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                         </div>
 
                         {/* Actions */}
-                        <div className="rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                        <div className="rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
                             <div className="border-b border-neutral-200/60 px-6 py-4 dark:border-neutral-700/60">
                                 <h3 className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Quick Actions</h3>
                             </div>
@@ -818,7 +818,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         {schedule_level === 'red' && (
                                             <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 dark:border-red-800/40 dark:bg-red-950/20">
                                                 <AlertTriangle className="size-3 shrink-0 text-red-500" />
-                                                <p className="text-[10px] font-semibold text-red-600 dark:text-red-400">RED ALERT — All teams available</p>
+                                                <p className="text-meta font-semibold text-red-600 dark:text-red-400">RED ALERT — All teams available</p>
                                             </div>
                                         )}
                                         <div className="max-h-[220px] space-y-1.5 overflow-y-auto rounded-xl border border-neutral-200 bg-neutral-50/50 p-1.5 dark:border-neutral-700 dark:bg-neutral-800/50">
@@ -839,7 +839,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                     <div className="flex flex-col items-center gap-1.5 py-6">
                                                         <Users className="size-5 text-neutral-300 dark:text-neutral-600" />
                                                         <p className="text-xs font-medium text-neutral-400 dark:text-neutral-500">No available responder teams</p>
-                                                        <p className="text-[10px] text-neutral-300 dark:text-neutral-600">All teams are currently assigned</p>
+                                                        <p className="text-meta text-neutral-300 dark:text-neutral-600">All teams are currently assigned</p>
                                                     </div>
                                                 );
                                                 return availableTeams.map((t) => {
@@ -863,7 +863,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                                 {selected && <div className="size-2 shrink-0 rounded-full bg-blue-500" />}
                                                             </div>
                                                         </div>
-                                                        <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[10px] text-neutral-400 dark:text-neutral-500">
+                                                        <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-meta text-neutral-400 dark:text-neutral-500">
                                                             <span className="flex items-center gap-1">
                                                                 <Users className="size-2.5" />
                                                                 {t.members.length} member{t.members.length !== 1 ? 's' : ''}
@@ -893,7 +893,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                                 : (leader as any).member_distance_km;
                                                             const lLastSeen = formatLastSeen(lLocTime);
                                                             return (
-                                                                <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
+                                                                <div className="mt-1.5 flex items-center gap-1.5 text-meta">
                                                                     <span className={`size-1.5 shrink-0 rounded-full ${lOnline ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-600'}`} />
                                                                     <span className="truncate text-neutral-600 dark:text-neutral-400">
                                                                         {leader.name} <span className="text-neutral-400 dark:text-neutral-500">★ Leader</span>
@@ -917,7 +917,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         <button
                                             type="submit"
                                             disabled={assignForm.processing}
-                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 shadow-sm transition-all hover:bg-neutral-50 hover:shadow-md disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                                            className="w-full inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-700 transition-all hover:bg-neutral-50 hover:shadow-md disabled:opacity-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                                         >
                                             <UserCheck className="size-4" />
                                             {report.assigned_team ? 'Reassign' : report.status === 'acknowledged' ? 'Escalate & Assign' : 'Assign'}
@@ -1041,7 +1041,7 @@ function AiAnalysisPanel({ report }: { report: Report }) {
                     }`}>
                         AI Analysis
                     </h3>
-                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wide ${
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-meta font-bold tracking-wide ${
                         allClear
                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300'
                             : 'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300'
@@ -1084,25 +1084,25 @@ function AiAnalysisPanel({ report }: { report: Report }) {
             <div className="flex flex-col gap-2">
                 {ai_image_notes && (
                     <div className="rounded-lg bg-white/60 px-3.5 py-2.5 dark:bg-black/20">
-                        <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Image notes</p>
+                        <p className="mb-0.5 text-meta font-semibold uppercase tracking-wider text-neutral-400">Image notes</p>
                         <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">{ai_image_notes}</p>
                     </div>
                 )}
                 {ai_exif_notes && (
                     <div className="rounded-lg bg-white/60 px-3.5 py-2.5 dark:bg-black/20">
-                        <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">EXIF metadata</p>
+                        <p className="mb-0.5 text-meta font-semibold uppercase tracking-wider text-neutral-400">EXIF metadata</p>
                         <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">{ai_exif_notes}</p>
                     </div>
                 )}
                 {ai_flag_reason && (
                     <div className="rounded-lg bg-white/60 px-3.5 py-2.5 dark:bg-black/20">
-                        <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-neutral-400">Flag reason</p>
+                        <p className="mb-0.5 text-meta font-semibold uppercase tracking-wider text-neutral-400">Flag reason</p>
                         <p className="text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">{ai_flag_reason}</p>
                     </div>
                 )}
             </div>
 
-            <p className="mt-3 text-[10px] text-neutral-400 dark:text-neutral-500">
+            <p className="mt-3 text-meta text-neutral-400 dark:text-neutral-500">
                 AI analysis is advisory only. Admin decision takes precedence.
             </p>
         </div>
@@ -1128,7 +1128,7 @@ function DetailRow({ icon: Icon, label, children }: { icon: typeof Clock; label:
         <div className="flex items-center gap-3 px-3 sm:px-5 py-3.5">
             <Icon className="size-4 shrink-0 text-neutral-400 dark:text-neutral-500" />
             <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{label}</p>
+                <p className="text-meta font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-500">{label}</p>
                 <div className="mt-0.5">{children}</div>
             </div>
         </div>
@@ -1153,17 +1153,17 @@ function TeamReadinessSummary({ members, memberStatuses }: { members: import('@/
                 <span className={`text-xs font-semibold ${allResolved ? 'text-emerald-700 dark:text-emerald-400' : 'text-neutral-700 dark:text-neutral-300'}`}>
                     Team status
                 </span>
-                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${RESPONDER_STATUS_COLORS[mostAdvanced]}`}>
+                <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-meta font-bold ${RESPONDER_STATUS_COLORS[mostAdvanced]}`}>
                     {RESPONDER_STATUS_LABELS[mostAdvanced]}
                 </span>
             </div>
             <div className="flex items-center gap-1">
                 {STATUS_ORDER.map((s) => counts[s] > 0 && (
-                    <span key={s} className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${RESPONDER_STATUS_COLORS[s]}`}>
+                    <span key={s} className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-meta font-semibold ${RESPONDER_STATUS_COLORS[s]}`}>
                         {counts[s]}
                     </span>
                 ))}
-                <span className="text-[10px] text-neutral-400 ml-1">{members.length} total</span>
+                <span className="text-meta text-neutral-400 ml-1">{members.length} total</span>
             </div>
         </div>
     );
@@ -1194,7 +1194,7 @@ function SlaComplianceCard({ tracking }: { tracking: SlaTracking[] }) {
     const stages: SlaStage[] = ['pending_to_verified', 'verified_to_assigned', 'assigned_to_resolved'];
 
     return (
-        <div className="rounded-2xl border border-neutral-200/60 bg-white p-5 shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+        <div className="rounded-lg border border-neutral-200/70 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
             <div className="mb-4 flex items-center gap-2.5">
                 <div className="flex size-8 items-center justify-center rounded-lg bg-neutral-900 dark:bg-white shadow-sm">
                     <Clock className="size-3.5 text-white dark:text-neutral-900" />
@@ -1221,10 +1221,10 @@ function SlaComplianceCard({ tracking }: { tracking: SlaTracking[] }) {
                                     {SLA_STAGE_LABELS[stage]}
                                 </span>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[11px] tabular-nums text-neutral-500 dark:text-neutral-400">
+                                    <span className="text-label tabular-nums text-neutral-500 dark:text-neutral-400">
                                         {Math.round(elapsed)} min / {t.threshold_minutes} min
                                     </span>
-                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${SLA_STATUS_COLORS[status]}`}>
+                                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-meta font-bold ${SLA_STATUS_COLORS[status]}`}>
                                         {SLA_STATUS_LABELS[status]}
                                     </span>
                                 </div>
@@ -1236,7 +1236,7 @@ function SlaComplianceCard({ tracking }: { tracking: SlaTracking[] }) {
                                 />
                             </div>
                             {!t.completed_at && (
-                                <p className={`text-[10px] font-medium ${remaining > 0 ? 'text-neutral-400' : 'text-red-500'}`}>
+                                <p className={`text-meta font-medium ${remaining > 0 ? 'text-neutral-400' : 'text-red-500'}`}>
                                     {remaining > 0
                                         ? `${Math.round(remaining)} min remaining`
                                         : `${Math.round(Math.abs(remaining))} min overdue`}
@@ -1264,13 +1264,13 @@ interface AdvisoryData {
 
 function AdvisoryPanel({ advisory }: { advisory: AdvisoryData }) {
     return (
-        <div className="rounded-2xl border border-teal-200/60 bg-teal-50/60 p-5 dark:border-teal-800/40 dark:bg-teal-950/20">
+        <div className="rounded-lg border border-teal-200/60 bg-teal-50/60 p-5 dark:border-teal-800/40 dark:bg-teal-950/20">
             <div className="mb-4 flex items-center gap-2.5">
                 <div className="flex size-8 items-center justify-center rounded-lg bg-teal-500">
                     <Shield className="size-4 text-white" />
                 </div>
                 <h3 className="text-sm font-semibold text-teal-900 dark:text-teal-100">AI Advisory Sent to Resident</h3>
-                <span className="ml-auto text-[10px] text-teal-600 dark:text-teal-400">
+                <span className="ml-auto text-meta text-teal-600 dark:text-teal-400">
                     {new Date(advisory.generated_at).toLocaleString()}
                 </span>
             </div>
@@ -1287,10 +1287,10 @@ function AdvisoryPanel({ advisory }: { advisory: AdvisoryData }) {
                                     <span className="ml-2 text-neutral-500">{c.address}</span>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <span className="rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-900/50 dark:text-teal-300">
+                                    <span className="rounded-full bg-teal-100 px-2 py-0.5 text-meta font-semibold text-teal-700 dark:bg-teal-900/50 dark:text-teal-300">
                                         {c.distance_km} km
                                     </span>
-                                    <span className={`text-[10px] font-medium ${c.occupancy_pct >= 90 ? 'text-red-500' : 'text-neutral-500'}`}>
+                                    <span className={`text-meta font-medium ${c.occupancy_pct >= 90 ? 'text-red-500' : 'text-neutral-500'}`}>
                                         {c.occupancy_pct}% full
                                     </span>
                                 </div>

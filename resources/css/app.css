@@ -17,6 +17,28 @@
     --font-outfit:
         'Outfit', sans-serif;
 
+    /* Type scale, same as artemis-frontend (src/app/globals.css) */
+    --text-micro: 9px; /* mono pill badges, uppercase */
+    --text-micro--line-height: 12px;
+    --text-tag: 10px; /* avatar initials, tiny labels */
+    --text-tag--line-height: 14px;
+    --text-caption: 11px; /* section labels, meta */
+    --text-caption--line-height: 16px;
+    --text-meta: 12px; /* table meta, helper text */
+    --text-meta--line-height: 16px;
+    --text-label: 13px; /* nav rows, menu items, buttons, inputs */
+    --text-label--line-height: 18px;
+    --text-body: 14px;
+    --text-body--line-height: 20px;
+    --text-title: 17px; /* wordmark, card titles */
+    --text-title--line-height: 24px;
+    --text-heading: 22px; /* page headings: font-semibold tracking-tight */
+    --text-heading--line-height: 28px;
+    --text-headline: 28px; /* auth / page titles that need more presence */
+    --text-headline--line-height: 34px;
+    --text-display: 32px; /* hero headings: font-bold tracking-tight */
+    --text-display--line-height: 1.25;
+
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
@@ -151,51 +173,13 @@
 /* ─── Sidebar ─── */
 [data-sidebar] {
     font-family: var(--font-sans) !important;
-    font-size: 10px;
-}
-[data-sidebar] [data-sidebar="group-label"] {
-    font-size: 8px;
-    letter-spacing: 0.06em;
-}
-[data-sidebar] [data-sidebar="menu-button"] {
-    font-size: 10px;
-    height: 28px;
-}
-[data-sidebar] [data-sidebar="menu-sub-button"] {
-    font-size: 9px;
-    height: 24px;
-}
-[data-sidebar] [data-sidebar="menu-badge"] {
-    font-size: 8px;
-}
-[data-sidebar] [data-sidebar="menu-button"] svg {
-    width: 14px;
-    height: 14px;
-}
-
-/* ─── Font Scale ─── */
-h1, .text-2xl, .sm\:text-2xl { font-size: 16px !important; }
-h2, .text-xl, .sm\:text-xl   { font-size: 14px !important; }
-h3, .text-lg, .sm\:text-lg   { font-size: 12px !important; }
-.text-base                    { font-size: 10px !important; }
-.text-sm                      { font-size: 9px !important; }
-.text-xs                      { font-size: 8px !important; }
-
-/* KPI big numbers */
-.sm\:text-3xl { font-size: 20px !important; }
-
-/* Badges & pills */
-span[class*="rounded-full"][class*="px-"] {
-    font-size: 8px;
-    padding: 1px 5px;
 }
 
 /* ─── Tables ─── */
 table {
-    font-size: 12px;
+    font-size: 14px;
 }
 table th {
-    font-size: 10px;
     padding: 10px 14px;
     letter-spacing: 0.05em;
 }
@@ -204,10 +188,9 @@ table td {
 }
 table td img[class*="rounded"],
 table td div[class*="rounded-full"][class*="size-"] {
-    width: 26px;
-    height: 26px;
-    min-width: 26px;
-    font-size: 10px;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
 }
 
 /* ─── Scrollbar ─── */
@@ -278,43 +261,35 @@ table td div[class*="rounded-full"][class*="size-"] {
 .stat-card {
     position: relative;
     overflow: hidden;
-    border-radius: 1rem;
-    border: 0;
+    border-radius: var(--radius); /* 10px, same as every card */
+    border: 1px solid oklch(0.91 0.01 250 / 0.7);
     background: var(--card);
-    box-shadow: 0 1px 2px oklch(0 0 0 / 0.04);
-    ring: 1px oklch(0.91 0.01 250 / 0.3);
+    box-shadow: none;
     transition: all 0.2s ease;
 }
 .stat-card:hover {
-    box-shadow: 0 4px 12px oklch(0 0 0 / 0.08);
-    transform: translateY(-1px);
+    border-color: oklch(0.87 0.012 250);
 }
-.stat-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--stat-gradient, linear-gradient(to right, oklch(0.50 0.12 250), oklch(0.55 0.14 230)));
-    opacity: 0;
-    transition: opacity 0.2s ease;
+.dark .stat-card {
+    border-color: oklch(0.25 0.03 260);
 }
-.stat-card:hover::before {
-    opacity: 1;
+.dark .stat-card:hover {
+    border-color: oklch(0.32 0.03 260);
 }
 
 /* ─── Premium Card ─── */
 .premium-card {
-    border-radius: 1rem;
-    border: 0;
+    border-radius: var(--radius);
+    border: 1px solid oklch(0.91 0.01 250 / 0.7);
     background: var(--card);
-    box-shadow: 0 1px 3px oklch(0 0 0 / 0.04), 0 1px 2px oklch(0 0 0 / 0.02);
-    ring: 1px oklch(0.91 0.01 250 / 0.3);
-    transition: all 0.25s ease;
+    box-shadow: none;
+    transition: border-color 0.2s ease;
 }
 .premium-card:hover {
-    box-shadow: 0 4px 16px oklch(0 0 0 / 0.08), 0 2px 4px oklch(0 0 0 / 0.04);
+    border-color: oklch(0.87 0.012 250);
+}
+.dark .premium-card {
+    border-color: oklch(0.25 0.03 260);
 }
 .dark .premium-card {
     box-shadow: 0 1px 3px oklch(0 0 0 / 0.2), 0 1px 2px oklch(0 0 0 / 0.1);
@@ -475,4 +450,29 @@ table td div[class*="rounded-full"][class*="size-"] {
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
     pointer-events: none;
     z-index: 9999;
+}
+
+/* ─── Sidebar scrollbar ─── */
+/* Thin and hidden until you hover the sidebar. */
+[data-sidebar="content"] {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    overscroll-behavior: contain;
+    transition: scrollbar-color 0.2s;
+}
+[data-sidebar="content"]:hover {
+    scrollbar-color: oklch(0.70 0.02 250 / 0.35) transparent;
+}
+[data-sidebar="content"]::-webkit-scrollbar {
+    width: 6px;
+}
+[data-sidebar="content"]::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 9999px;
+}
+[data-sidebar="content"]:hover::-webkit-scrollbar-thumb {
+    background: oklch(0.70 0.02 250 / 0.35);
+}
+[data-sidebar="content"]::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.70 0.02 250 / 0.6);
 }

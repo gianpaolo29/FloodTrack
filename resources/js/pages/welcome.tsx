@@ -425,8 +425,8 @@ function FloatingHeroCards({ isDark, heroVis }: { isDark: boolean; heroVis: bool
                     </span>
                 </div>
                 <div>
-                    <p className={`text-[12px] font-semibold ${isDark ? 'text-white/80' : 'text-neutral-700'}`}>Report Verified</p>
-                    <p className={`text-[10px] ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>FT-B3M7P2 · just now</p>
+                    <p className={`text-body font-semibold ${isDark ? 'text-white/80' : 'text-neutral-700'}`}>Report Verified</p>
+                    <p className={`text-meta ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>FT-B3M7P2 · just now</p>
                 </div>
             </div>
 
@@ -440,8 +440,8 @@ function FloatingHeroCards({ isDark, heroVis }: { isDark: boolean; heroVis: bool
                     <Truck className="size-4 text-blue-400" />
                 </div>
                 <div>
-                    <p className={`text-[12px] font-semibold ${isDark ? 'text-white/80' : 'text-neutral-700'}`}>Responder Dispatched</p>
-                    <p className={`text-[10px] ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>En route · 2 min ago</p>
+                    <p className={`text-body font-semibold ${isDark ? 'text-white/80' : 'text-neutral-700'}`}>Responder Dispatched</p>
+                    <p className={`text-meta ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>En route · 2 min ago</p>
                 </div>
             </div>
 
@@ -459,8 +459,8 @@ function FloatingHeroCards({ isDark, heroVis }: { isDark: boolean; heroVis: bool
                     </span>
                 </div>
                 <div>
-                    <p className={`text-[12px] font-semibold ${isDark ? 'text-white/80' : 'text-neutral-700'}`}>3 Active Incidents</p>
-                    <p className={`text-[10px] ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>Being monitored live</p>
+                    <p className={`text-body font-semibold ${isDark ? 'text-white/80' : 'text-neutral-700'}`}>3 Active Incidents</p>
+                    <p className={`text-meta ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>Being monitored live</p>
                 </div>
             </div>
         </div>
@@ -480,7 +480,7 @@ function MarqueeTicker({ isDark }: { isDark: boolean }) {
             <div className="flex animate-[marquee_45s_linear_infinite] whitespace-nowrap py-3">
                 {doubled.map((item, i) => (
                     <div key={i} className="flex shrink-0 items-center gap-5 px-5">
-                        <span className={`text-[10px] font-bold tracking-[0.25em] ${isDark ? 'text-white/[0.10]' : 'text-neutral-300'}`}>{item}</span>
+                        <span className={`text-meta font-bold tracking-[0.25em] ${isDark ? 'text-white/[0.10]' : 'text-neutral-300'}`}>{item}</span>
                         <div className={`size-[3px] rounded-full ${isDark ? 'bg-cyan-500/20' : 'bg-cyan-400/40'}`} />
                     </div>
                 ))}
@@ -790,19 +790,19 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     ref={themeBtnRef}
                                     onClick={handleThemeToggle}
                                     aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-                                    className={`group relative flex size-9 shrink-0 items-center justify-center rounded-xl transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:size-10 ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-900'}`}
+                                    className={`group relative flex size-10 shrink-0 items-center justify-center rounded-xl transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:size-11 ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-900'}`}
                                 >
                                     <div className={`absolute inset-0 rounded-xl opacity-0 transition-opacity duration-200 group-hover:opacity-100 ${isDark ? 'bg-white/[0.06]' : 'bg-slate-100/80'}`} />
-                                    {isDark ? <Sun className="relative size-[18px] sm:size-4" /> : <Moon className="relative size-[18px] sm:size-4" />}
+                                    {isDark ? <Sun className="relative size-5" /> : <Moon className="relative size-5" />}
                                 </button>
 
                                 {/* Download button */}
                                 <a
                                     href="https://github.com/gianpaolo29/FloodTrack/releases/download/v1.2/FloodTrack.apk"
                                     aria-label="Download FloodTrack app"
-                                    className={`group relative flex h-9 items-center justify-center gap-2 overflow-hidden rounded-xl border px-2.5 text-sm font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:h-10 sm:px-3.5 ${isDark ? 'border-white/[0.08] text-slate-300 hover:border-white/15 hover:text-white' : 'border-slate-200/80 text-slate-600 hover:border-slate-300 hover:text-slate-900 hover:shadow-sm'}`}
+                                    className={`group relative flex h-10 items-center justify-center gap-2 overflow-hidden rounded-xl border px-3 text-[15px] font-semibold transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:h-11 sm:px-4 sm:text-base ${isDark ? 'border-white/[0.08] text-slate-300 hover:border-white/15 hover:text-white' : 'border-slate-200/80 text-slate-600 hover:border-slate-300 hover:text-slate-900 hover:shadow-sm'}`}
                                 >
-                                    <Download className="size-4 transition-transform duration-200 group-hover:translate-y-[1px]" />
+                                    <Download className="size-[18px] transition-transform duration-200 group-hover:translate-y-[1px]" />
                                     <span className="hidden sm:inline">Download</span>
                                 </a>
 
@@ -810,7 +810,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                                 {auth.user ? (
                                     <Link
-                                        className="group relative inline-flex h-9 items-center justify-center whitespace-nowrap overflow-hidden rounded-xl px-4 text-xs font-semibold text-white transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:h-10 sm:px-5 sm:text-sm"
+                                        className="group relative inline-flex h-10 items-center justify-center whitespace-nowrap overflow-hidden rounded-xl px-4 text-[15px] font-semibold text-white transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:h-11 sm:px-6 sm:text-base"
                                         href={auth.user.role === 'admin' ? '/admin' : dashboard.url()}
                                         style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', boxShadow: '0 2px 12px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.15)' }}
                                     >
@@ -819,19 +819,19 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     </Link>
                                 ) : (
                                     <>
-                                        <Link href={login()} className={`${canRegister ? 'hidden sm:inline-flex' : 'inline-flex'} h-9 items-center whitespace-nowrap rounded-xl px-3 text-sm font-medium transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:h-10 ${isDark ? 'text-slate-400 hover:bg-white/[0.06] hover:text-white' : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900'}`}>
+                                        <Link href={login()} className={`${canRegister ? 'hidden sm:inline-flex' : 'inline-flex'} h-10 items-center whitespace-nowrap rounded-xl px-4 text-[15px] font-semibold transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:h-11 sm:text-base ${isDark ? 'text-slate-400 hover:bg-white/[0.06] hover:text-white' : 'text-slate-500 hover:bg-slate-100/80 hover:text-slate-900'}`}>
                                             Sign in
                                         </Link>
                                         {canRegister && (
                                             <Link
                                                 href="/register"
-                                                className="group relative inline-flex h-9 items-center justify-center whitespace-nowrap overflow-hidden rounded-xl px-3.5 text-xs font-semibold text-white transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:h-10 sm:px-5 sm:text-sm"
+                                                className="group relative inline-flex h-10 items-center justify-center whitespace-nowrap overflow-hidden rounded-xl px-4 text-[15px] font-semibold text-white transition-all duration-200 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 sm:h-11 sm:px-6 sm:text-base"
                                                 style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', boxShadow: '0 2px 12px rgba(99,102,241,0.3), inset 0 1px 0 rgba(255,255,255,0.15)' }}
                                             >
                                                 <span className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
                                                 <span className="relative flex items-center gap-1.5">
                                                     Get started
-                                                    <ArrowRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+                                                    <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
                                                 </span>
                                             </Link>
                                         )}
@@ -898,7 +898,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                 <ShinyText
                                     text="Live hazard reporting"
                                     speed={3}
-                                    className={`text-[11px] sm:text-[13px] font-medium ${isDark ? 'text-white/40' : 'text-neutral-500'}`}
+                                    className={`text-body sm:text-[15px] font-medium ${isDark ? 'text-white/40' : 'text-neutral-500'}`}
                                     color={isDark ? 'rgba(255,255,255,0.25)' : 'rgba(100,116,139,0.6)'}
                                     shineColor={isDark ? 'rgba(255,255,255,0.7)' : 'rgba(6,182,212,0.9)'}
                                 />
@@ -907,7 +907,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     <GradientTextRB
                                         colors={isDark ? ['#67e8f9', '#60a5fa', '#67e8f9'] : ['#0891b2', '#2563eb', '#0891b2']}
                                         animationSpeed={4}
-                                        className="text-[13px] font-semibold"
+                                        className="text-body font-semibold"
                                     >
                                         Nasugbu, Batangas
                                     </GradientTextRB>
@@ -915,7 +915,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                             </div>
 
                             {/* Heading */}
-                            <h1 ref={heroHeadingRef} className="mb-5 sm:mb-8 text-[clamp(1.85rem,5.5vw,5rem)] font-extrabold leading-[1.1] tracking-[-0.035em]" style={{ opacity: 0 }}>
+                            <h1 ref={heroHeadingRef} className="mb-5 sm:mb-8 text-[clamp(2.4rem,6.5vw,6rem)] font-extrabold leading-[1.1] tracking-[-0.035em]" style={{ opacity: 0 }}>
                                 <span className={`block bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white via-white to-white/60' : 'bg-gradient-to-b from-slate-900 via-slate-800 to-slate-500'}`}>
                                     Report floods & hazards
                                 </span>
@@ -923,7 +923,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     <GradientTextRB
                                         colors={isDark ? ['#67e8f9', '#60a5fa', '#a78bfa', '#67e8f9'] : ['#06b6d4', '#3b82f6', '#6366f1', '#06b6d4']}
                                         animationSpeed={5}
-                                        className="text-[clamp(1.85rem,5.5vw,5rem)] font-extrabold leading-[1.1] tracking-[-0.035em]"
+                                        className="text-[clamp(2.4rem,6.5vw,6rem)] font-extrabold leading-[1.1] tracking-[-0.035em]"
                                     >
                                         in real time
                                     </GradientTextRB>
@@ -939,7 +939,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                         delay={30}
                                         animateBy="words"
                                         direction="bottom"
-                                        className={`text-[0.95rem] sm:text-[1.1rem] leading-relaxed font-[350] justify-center ${isDark ? 'text-white/35' : 'text-slate-500'}`}
+                                        className={`text-base sm:text-lg md:text-xl leading-relaxed font-[350] justify-center ${isDark ? 'text-white/35' : 'text-slate-500'}`}
                                     />
                                 )}
                             </div>
@@ -950,7 +950,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     <div className="w-full sm:w-auto">
                                         <Magnet padding={60} magnetStrength={3}>
                                             <StarBorder color={isDark ? 'rgba(56,189,248,0.6)' : 'rgba(59,130,246,0.5)'} speed="5s" thickness={1} className="rounded-2xl">
-                                                <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-7 py-3.5 text-sm font-bold text-white shadow-2xl text-center transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:shadow-cyan-500/25 active:scale-[0.97]">
+                                                <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-8 py-4 text-base font-bold text-white shadow-2xl text-center transition-all duration-300 sm:px-11 sm:py-5 sm:text-lg hover:shadow-cyan-500/25 active:scale-[0.97]">
                                                     <span className="relative z-10 flex items-center justify-center gap-2.5">
                                                         Create free account
                                                         <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -964,7 +964,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     <Magnet padding={50} magnetStrength={4}>
                                         <Link
                                             href={auth.user ? (auth.user.role === 'admin' ? '/admin' : dashboard()) : login()}
-                                            className={`group flex items-center justify-center gap-2 rounded-2xl border px-7 py-3.5 text-sm font-semibold backdrop-blur-md transition-all duration-300 sm:px-10 sm:py-4 sm:text-[15px] hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white/90 hover:border-white/[0.12]' : 'border-neutral-200/80 bg-white/70 text-slate-600 hover:bg-white hover:text-slate-900 hover:border-blue-200/60 shadow-lg shadow-blue-500/[0.04] ring-1 ring-neutral-100 hover:ring-blue-100/50'}`}
+                                            className={`group flex items-center justify-center gap-2 rounded-2xl border px-8 py-4 text-base font-semibold backdrop-blur-md transition-all duration-300 sm:px-11 sm:py-5 sm:text-lg hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white/90 hover:border-white/[0.12]' : 'border-neutral-200/80 bg-white/70 text-slate-600 hover:bg-white hover:text-slate-900 hover:border-blue-200/60 shadow-lg shadow-blue-500/[0.04] ring-1 ring-neutral-100 hover:ring-blue-100/50'}`}
                                         >
                                             {auth.user ? 'Go to dashboard' : 'Sign in'}
                                             <ArrowUpRight className="size-4 opacity-40 transition-all duration-300 group-hover:opacity-80 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
@@ -979,7 +979,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                         {/* Scroll cue */}
                         <div ref={heroScrollCueRef} className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2.5" style={{ opacity: 0 }}>
-                            <span className={`text-[10px] font-semibold tracking-[0.2em] uppercase ${isDark ? 'text-white/30' : 'text-neutral-300'}`}>Scroll</span>
+                            <span className={`text-meta font-semibold tracking-[0.2em] uppercase ${isDark ? 'text-white/30' : 'text-neutral-300'}`}>Scroll</span>
                             <div ref={scrollCueBounceRef}>
                                 <ChevronDown className={`size-4 ${isDark ? 'text-white/20' : 'text-neutral-300'}`} />
                             </div>
@@ -994,7 +994,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                         <ScrollVelocity
                             texts={['LIVE REPORTING  ·  REAL-TIME ALERTS  ·  GPS TRACKING  ·  PHOTO PROOF  ·  MDRRMO NASUGBU  ·  FAST RESPONSE  ·  INSTANT DISPATCH  ·  24/7 MONITORING  ·  COMMUNITY POWERED  ·  FLOOD TRACKING  ·  ']}
                             velocity={30}
-                            className={`text-[10px] font-bold tracking-[0.25em] ${isDark ? 'text-white/[0.10]' : 'text-neutral-300'}`}
+                            className={`text-meta font-bold tracking-[0.25em] ${isDark ? 'text-white/[0.10]' : 'text-neutral-300'}`}
                             numCopies={4}
                         />
                     </div>
@@ -1049,7 +1049,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className={`mt-1.5 text-[13px] font-semibold ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>
+                                                <p className={`mt-1.5 text-[15px] font-semibold ${isDark ? 'text-white/50' : 'text-neutral-500'}`}>
                                                     <DecryptedText
                                                         text={s.label}
                                                         speed={40}
@@ -1061,7 +1061,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                         encryptedClassName={isDark ? 'text-white/20' : 'text-neutral-300'}
                                                     />
                                                 </p>
-                                                <p className={`mt-0.5 text-[11px] ${isDark ? 'text-white/20' : 'text-neutral-400'}`}>{s.sub}</p>
+                                                <p className={`mt-0.5 text-label ${isDark ? 'text-white/20' : 'text-neutral-400'}`}>{s.sub}</p>
                                             </div>
                                         );
                                     })}
@@ -1107,7 +1107,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                 <Icon className="size-[22px] text-white transition-transform duration-500 group-hover:scale-110" />
                                                 <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />
                                             </div>
-                                            <h3 className={`relative mb-2 text-[17px] font-semibold transition-colors duration-300 ${isDark ? 'text-white/90 group-hover:text-white' : 'text-neutral-800 group-hover:text-neutral-900'}`}>
+                                            <h3 className={`relative mb-2 text-xl font-semibold transition-colors duration-300 ${isDark ? 'text-white/90 group-hover:text-white' : 'text-neutral-800 group-hover:text-neutral-900'}`}>
                                                 <DecryptedText
                                                     text={f.title}
                                                     animateOn="hover"
@@ -1119,7 +1119,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                     encryptedClassName={isDark ? 'text-cyan-400/40' : 'text-blue-400/50'}
                                                 />
                                             </h3>
-                                            <p className={`relative text-[14px] leading-relaxed font-[350] transition-colors duration-300 ${isDark ? 'text-white/35 group-hover:text-white/50' : 'text-neutral-500 group-hover:text-neutral-600'}`}>{f.body}</p>
+                                            <p className={`relative text-base sm:text-title leading-relaxed font-[350] transition-colors duration-300 ${isDark ? 'text-white/35 group-hover:text-white/50' : 'text-neutral-500 group-hover:text-neutral-600'}`}>{f.body}</p>
                                         </SpotlightCard>
                                     );
                                 })}
@@ -1161,9 +1161,9 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                             <StepCard isDark={isDark} grad={s.grad} ring={s.ring} stepsIn={stepsIn} index={i}>
                                                 <Icon className="size-6 sm:size-7 text-white transition-transform duration-500 group-hover/step:scale-125 group-hover/step:rotate-6" />
                                             </StepCard>
-                                            <span className={`mt-3 text-[11px] font-bold tracking-[0.15em] uppercase transition-colors duration-300 ${isDark ? 'text-white/15' : 'text-neutral-400'}`}>{s.n}</span>
-                                            <h3 className={`mb-2 mt-4 text-base sm:text-[1.15rem] font-bold ${isDark ? 'text-white/90' : 'text-neutral-800'}`}>{s.title}</h3>
-                                            <p className={`max-w-[260px] text-[13px] sm:text-[14px] leading-relaxed font-[350] ${isDark ? 'text-white/35' : 'text-neutral-500'}`}>{s.body}</p>
+                                            <span className={`mt-3 text-label font-bold tracking-[0.15em] uppercase transition-colors duration-300 ${isDark ? 'text-white/15' : 'text-neutral-400'}`}>{s.n}</span>
+                                            <h3 className={`mb-2 mt-4 text-lg sm:text-xl font-bold ${isDark ? 'text-white/90' : 'text-neutral-800'}`}>{s.title}</h3>
+                                            <p className={`max-w-[280px] text-[15px] sm:text-base leading-relaxed font-[350] ${isDark ? 'text-white/35' : 'text-neutral-500'}`}>{s.body}</p>
                                         </div>
                                     );
                                 })}
@@ -1277,7 +1277,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                 </div>
                                                 <div className={`flex-1 flex items-center justify-center gap-2 rounded-lg px-3 py-1 ${isDark ? 'bg-white/[0.03]' : 'bg-neutral-100'}`}>
                                                     <MapPin className="size-3 text-emerald-400/60" />
-                                                    <span className={`text-[10px] font-medium tracking-wide ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>Nasugbu, Batangas</span>
+                                                    <span className={`text-meta font-medium tracking-wide ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>Nasugbu, Batangas</span>
                                                 </div>
                                                 <div className="w-[52px]" />
                                             </div>
@@ -1303,8 +1303,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                                         <Icon className={`size-3.5 ${c.color}`} />
                                                     </div>
                                                     <div className="flex items-center gap-1.5">
-                                                        <span className={`text-[13px] font-medium ${isDark ? 'text-white/40' : 'text-neutral-500'}`}>{c.label}</span>
-                                                        {c.value && <span className={`text-[13px] font-bold ${isDark ? 'text-white/70' : 'text-neutral-700'}`}>{c.value}</span>}
+                                                        <span className={`text-body font-medium ${isDark ? 'text-white/40' : 'text-neutral-500'}`}>{c.label}</span>
+                                                        {c.value && <span className={`text-body font-bold ${isDark ? 'text-white/70' : 'text-neutral-700'}`}>{c.value}</span>}
                                                     </div>
                                                 </div>
                                             );
@@ -1333,18 +1333,18 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                     {/* Ripple rings via anime.js-driven pseudo replacement */}
                                     <CtaRippleRings active={ctaIn} />
                                 </div>
-                                <h2 className="mb-4 sm:mb-5 text-3xl font-bold tracking-tight sm:text-5xl">
+                                <h2 className="mb-4 sm:mb-5 text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
                                     <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white to-white/70' : 'bg-gradient-to-b from-slate-900 to-slate-500'}`}>Help keep </span>
                                     <Gradient>Nasugbu safe</Gradient>
                                 </h2>
-                                <p className={`mx-auto mb-8 sm:mb-14 max-w-md text-base sm:text-lg font-[350] ${isDark ? 'text-white/35' : 'text-neutral-500'}`}>
+                                <p className={`mx-auto mb-8 sm:mb-14 max-w-lg text-lg sm:text-xl font-[350] ${isDark ? 'text-white/35' : 'text-neutral-500'}`}>
                                     Join your neighbors and local responders on FloodTrack. It's free, always.
                                 </p>
                                 <ClickSpark sparkColor={isDark ? '#38bdf8' : '#3b82f6'} sparkSize={12} sparkRadius={25} sparkCount={10} duration={500}>
                                     <div ref={ctaButtonsRef} className="flex flex-col items-center gap-3 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4">
                                         <div className="w-full sm:w-auto" style={{ opacity: 0 }}><Magnet padding={60} magnetStrength={3}>
                                             <StarBorder color={isDark ? 'rgba(56,189,248,0.6)' : 'rgba(59,130,246,0.5)'} speed="5s" thickness={1} className="rounded-2xl">
-                                                <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-8 py-3.5 text-sm font-bold text-white shadow-2xl transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:shadow-cyan-500/25 active:scale-[0.97]">
+                                                <Link href={'/register'} className="hero-cta group relative overflow-hidden rounded-2xl px-9 py-4 text-base font-bold text-white shadow-2xl transition-all duration-300 sm:px-12 sm:py-5 sm:text-lg hover:shadow-cyan-500/25 active:scale-[0.97]">
                                                     <span className="relative z-10 flex items-center gap-2.5">
                                                         Create free account
                                                         <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" />
@@ -1353,7 +1353,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                             </StarBorder>
                                         </Magnet></div>
                                         <div className="w-full sm:w-auto" style={{ opacity: 0 }}><Magnet padding={50} magnetStrength={4}>
-                                            <Link href={login()} className={`group flex items-center justify-center gap-2 rounded-2xl border px-8 py-3.5 text-sm font-bold backdrop-blur-md transition-all duration-300 sm:px-12 sm:py-4.5 sm:text-[15px] hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/80' : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 shadow-sm'}`}>
+                                            <Link href={login()} className={`group flex items-center justify-center gap-2 rounded-2xl border px-9 py-4 text-base font-bold backdrop-blur-md transition-all duration-300 sm:px-12 sm:py-5 sm:text-lg hover:scale-[1.04] active:scale-[0.97] ${isDark ? 'border-white/[0.08] bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/80' : 'border-neutral-200 bg-neutral-50 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 shadow-sm'}`}>
                                                 Sign in
                                             </Link>
                                         </Magnet></div>
@@ -1388,21 +1388,21 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                         style={isDark ? { filter: 'brightness(1.3) drop-shadow(0 0 6px rgba(56,189,248,0.15))' } : undefined}
                                     />
                                 </div>
-                                <p className={`text-[13px] leading-relaxed max-w-[280px] mx-auto sm:mx-0 ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>
+                                <p className={`text-[15px] leading-relaxed max-w-[280px] mx-auto sm:mx-0 ${isDark ? 'text-white/25' : 'text-neutral-400'}`}>
                                     Community-driven flood and hazard reporting for Nasugbu, Batangas. In partnership with MDRRMO.
                                 </p>
                             </div>
 
                             {/* Quick links */}
                             <div>
-                                <h4 className={`text-[11px] font-bold tracking-[0.15em] uppercase mb-5 ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Quick Links</h4>
+                                <h4 className={`text-body font-bold tracking-[0.15em] uppercase mb-5 ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Quick Links</h4>
                                 <ul className="space-y-3">
                                     {([
                                         { label: 'Sign in', href: login() },
                                         ...(canRegister ? [{ label: 'Create account', href: '/register' }] : []),
                                     ]).map(l => (
                                         <li key={l.label}>
-                                            <Link href={l.href} className={`group inline-flex items-center justify-center gap-2 text-[13px] transition-colors duration-200 sm:justify-start ${isDark ? 'text-white/30 hover:text-white/60' : 'text-neutral-400 hover:text-neutral-600'}`}>
+                                            <Link href={l.href} className={`group inline-flex items-center justify-center gap-2 text-[15px] transition-colors duration-200 sm:justify-start ${isDark ? 'text-white/30 hover:text-white/60' : 'text-neutral-400 hover:text-neutral-600'}`}>
                                                 <ArrowRight className="size-3 opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0 hidden sm:block" />
                                                 {l.label}
                                             </Link>
@@ -1413,14 +1413,14 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                             {/* Contact & Emergency */}
                             <div>
-                                <h4 className={`text-[11px] font-bold tracking-[0.15em] uppercase mb-5 ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Contact</h4>
+                                <h4 className={`text-body font-bold tracking-[0.15em] uppercase mb-5 ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Contact</h4>
                                 <ul className="space-y-3">
                                     {contactNumber ? (
                                         <li className="flex items-center justify-center gap-2.5 sm:justify-start">
                                             <div className="flex size-7 items-center justify-center rounded-lg bg-emerald-500/[0.08]">
                                                 <PhoneCall className="size-3.5 text-emerald-400/60" />
                                             </div>
-                                            <a href={`tel:${contactNumber.replace(/[^0-9+]/g, '')}`} className={`text-[13px] transition-colors hover:underline ${isDark ? 'text-white/30 hover:text-white/50' : 'text-neutral-400 hover:text-neutral-600'}`}>
+                                            <a href={`tel:${contactNumber.replace(/[^0-9+]/g, '')}`} className={`text-[15px] transition-colors hover:underline ${isDark ? 'text-white/30 hover:text-white/50' : 'text-neutral-400 hover:text-neutral-600'}`}>
                                                 <span className={`font-bold ${isDark ? 'text-white/50' : 'text-neutral-600'}`}>{contactNumber}</span>
                                             </a>
                                         </li>
@@ -1430,7 +1430,7 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                             <div className="flex size-7 items-center justify-center rounded-lg bg-blue-500/[0.08]">
                                                 <Facebook className="size-3.5 text-blue-400/60" />
                                             </div>
-                                            <a href={fbPageUrl} target="_blank" rel="noopener noreferrer" className={`text-[13px] transition-colors hover:underline ${isDark ? 'text-white/30 hover:text-white/50' : 'text-neutral-400 hover:text-neutral-600'}`}>
+                                            <a href={fbPageUrl} target="_blank" rel="noopener noreferrer" className={`text-[15px] transition-colors hover:underline ${isDark ? 'text-white/30 hover:text-white/50' : 'text-neutral-400 hover:text-neutral-600'}`}>
                                                 Facebook Page
                                             </a>
                                         </li>
@@ -1439,19 +1439,19 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
                                         <div className="flex size-7 items-center justify-center rounded-lg bg-red-500/[0.08]">
                                             <Siren className="size-3.5 text-red-400/60" />
                                         </div>
-                                        <span className={`text-[13px] ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Emergency: <span className={`font-bold ${isDark ? 'text-white/50' : 'text-neutral-600'}`}>911</span></span>
+                                        <span className={`text-[15px] ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Emergency: <span className={`font-bold ${isDark ? 'text-white/50' : 'text-neutral-600'}`}>911</span></span>
                                     </li>
                                     <li className="flex items-center justify-center gap-2.5 sm:justify-start">
                                         <div className="flex size-7 items-center justify-center rounded-lg bg-cyan-500/[0.08]">
                                             <Shield className="size-3.5 text-cyan-400/60" />
                                         </div>
-                                        <span className={`text-[13px] ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>MDRRMO Nasugbu</span>
+                                        <span className={`text-[15px] ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>MDRRMO Nasugbu</span>
                                     </li>
                                     <li className="flex items-center justify-center gap-2.5 sm:justify-start">
                                         <div className="flex size-7 items-center justify-center rounded-lg bg-amber-500/[0.08]">
                                             <Siren className="size-3.5 text-amber-400/60" />
                                         </div>
-                                        <span className={`text-[13px] ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Red Cross: <span className={`font-bold ${isDark ? 'text-white/50' : 'text-neutral-600'}`}>143</span></span>
+                                        <span className={`text-[15px] ${isDark ? 'text-white/30' : 'text-neutral-400'}`}>Red Cross: <span className={`font-bold ${isDark ? 'text-white/50' : 'text-neutral-600'}`}>143</span></span>
                                     </li>
                                 </ul>
                             </div>
@@ -1459,8 +1459,8 @@ export default function Welcome({ canRegister = true, stats, evacuationCenters =
 
                         {/* Bottom bar */}
                         <div className={`mt-8 sm:mt-12 pt-5 sm:pt-6 border-t flex flex-col items-center justify-between gap-2 sm:gap-3 sm:flex-row ${isDark ? 'border-white/[0.04]' : 'border-neutral-200/60'}`}>
-                            <p className={`text-[11px] sm:text-[12px] ${isDark ? 'text-white/15' : 'text-neutral-400'}`}>&copy; {new Date().getFullYear()} FloodTrack. All rights reserved.</p>
-                            <p className={`text-[11px] sm:text-[12px] ${isDark ? 'text-white/10' : 'text-neutral-300'}`}>Built for the community of Nasugbu, Batangas</p>
+                            <p className={`text-label sm:text-[15px] ${isDark ? 'text-white/15' : 'text-neutral-400'}`}>&copy; {new Date().getFullYear()} FloodTrack. All rights reserved.</p>
+                            <p className={`text-label sm:text-[15px] ${isDark ? 'text-white/10' : 'text-neutral-300'}`}>Built for the community of Nasugbu, Batangas</p>
                         </div>
                     </div>
                 </footer>
@@ -1742,16 +1742,16 @@ function SeverityGrid({ isDark, sevIn, activeSev, setActiveSev }: {
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                             <span className="text-sm font-bold sm:text-base" style={{ color: s.color }}>{s.level}</span>
-                            <span className="rounded-md px-1.5 py-0.5 text-[10px] font-extrabold tracking-wide sm:text-[11px]"
+                            <span className="rounded-md px-1.5 py-0.5 text-meta font-extrabold tracking-wide sm:text-label"
                                 style={{ backgroundColor: s.color + '12', color: s.color }}
                             >
                                 {s.depth}
                             </span>
                         </div>
-                        <div className={`mt-0.5 text-[10px] font-semibold uppercase tracking-widest ${isDark ? 'text-white/20' : 'text-neutral-400'}`}>
+                        <div className={`mt-0.5 text-meta font-semibold uppercase tracking-widest ${isDark ? 'text-white/20' : 'text-neutral-400'}`}>
                             {s.bodyPart} level
                         </div>
-                        <p className={`mt-1.5 text-[13px] leading-snug ${isDark ? 'text-white/45' : 'text-neutral-500'}`}>{s.meaning}</p>
+                        <p className={`mt-1.5 text-[15px] leading-snug ${isDark ? 'text-white/45' : 'text-neutral-500'}`}>{s.meaning}</p>
                     </div>
                 </div>
                 {/* Active bar */}
@@ -1817,7 +1817,7 @@ function SeverityGrid({ isDark, sevIn, activeSev, setActiveSev }: {
                                 }} />
                                 {/* Label pill */}
                                 <div
-                                    className="absolute rounded-md px-2 py-0.5 text-[10px] font-bold text-white shadow-sm transition-all duration-300"
+                                    className="absolute rounded-md px-2 py-0.5 text-meta font-bold text-white shadow-sm transition-all duration-300"
                                     style={{
                                         backgroundColor: m.lvl.color,
                                         ...(idx % 2 === 0
@@ -1862,7 +1862,7 @@ function SeverityGrid({ isDark, sevIn, activeSev, setActiveSev }: {
                     }} />
 
                     {activeSev === null && (
-                        <div className={`absolute inset-x-0 top-4 text-center text-[11px] font-medium ${isDark ? 'text-white/25' : 'text-neutral-400'}`} style={{ zIndex: 10 }}>
+                        <div className={`absolute inset-x-0 top-4 text-center text-label font-medium ${isDark ? 'text-white/25' : 'text-neutral-400'}`} style={{ zIndex: 10 }}>
                             Click a level to see water rise
                         </div>
                     )}
@@ -1939,11 +1939,11 @@ function RolesGrid({ isDark, rolesIn }: { isDark: boolean; rolesIn: boolean }) {
                             <Icon className="size-6 sm:size-7 text-white transition-transform duration-500 group-hover:scale-110" />
                             <div className="absolute inset-[1px] rounded-[17px] sm:rounded-[21px] bg-gradient-to-b from-white/20 to-transparent" />
                         </div>
-                        <h3 className={`mb-1.5 text-xl font-bold transition-colors duration-300 ${isDark ? 'text-white/90 group-hover:text-white' : 'text-neutral-800 group-hover:text-neutral-900'}`}>{r.role}</h3>
+                        <h3 className={`mb-1.5 text-2xl font-bold transition-colors duration-300 ${isDark ? 'text-white/90 group-hover:text-white' : 'text-neutral-800 group-hover:text-neutral-900'}`}>{r.role}</h3>
                         <div className={`mb-6 h-[3px] w-10 rounded-full ${r.accent} opacity-50 transition-all duration-700 group-hover:w-24 group-hover:opacity-100`} />
                         <ul className="space-y-3.5">
                             {r.points.map((p, pi) => (
-                                <li key={p} className={`flex items-start gap-3 text-[14px] font-[350] transition-all duration-500 ${isDark ? 'text-white/40 group-hover:text-white/55' : 'text-neutral-500 group-hover:text-neutral-600'}`}
+                                <li key={p} className={`flex items-start gap-3 text-base font-[350] transition-all duration-500 ${isDark ? 'text-white/40 group-hover:text-white/55' : 'text-neutral-500 group-hover:text-neutral-600'}`}
                                     style={{ transitionDelay: `${pi * 50}ms` }}
                                 >
                                     <CheckCircle2 className="mt-[3px] size-4 shrink-0 text-emerald-500/50 transition-all duration-500 group-hover:text-emerald-400/80 group-hover:scale-110" />
@@ -2121,15 +2121,15 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                     {isActive && <div className="absolute inset-[1px] rounded-[15px] bg-gradient-to-b from-white/20 to-transparent" />}
                                     <Icon className={`size-5 transition-all duration-500 ${isActive ? 'text-white scale-110' : isPast ? isDark ? 'text-white/40' : 'text-neutral-400' : isDark ? 'text-white/20' : 'text-neutral-300'}`} />
                                     {/* Step number */}
-                                    <span className={`absolute -top-1 -right-1 flex size-[18px] items-center justify-center rounded-full text-[9px] font-bold transition-all duration-300 ${
+                                    <span className={`absolute -top-1 -right-1 flex size-[18px] items-center justify-center rounded-full text-caption font-bold transition-all duration-300 ${
                                         isActive ? isDark ? 'bg-white text-[#06090f] shadow-md' : 'bg-neutral-900 text-white shadow-md' : isPast ? isDark ? 'bg-white/10 text-white/40' : 'bg-neutral-200 text-neutral-500' : isDark ? 'bg-white/[0.05] text-white/20' : 'bg-neutral-100 text-neutral-400'
                                     }`}>{i + 1}</span>
                                 </div>
 
                                 {/* Text */}
                                 <div className="relative min-w-0 pt-0.5">
-                                    <h4 className={`text-[15px] font-semibold transition-colors duration-300 ${isActive ? isDark ? 'text-white' : 'text-neutral-900' : isDark ? 'text-white/40' : 'text-neutral-400'}`}>{s.title}</h4>
-                                    <p className={`mt-1 text-[13px] leading-relaxed font-[350] transition-all duration-500 overflow-hidden ${
+                                    <h4 className={`text-lg font-semibold transition-colors duration-300 ${isActive ? isDark ? 'text-white' : 'text-neutral-900' : isDark ? 'text-white/40' : 'text-neutral-400'}`}>{s.title}</h4>
+                                    <p className={`mt-1 text-[15px] sm:text-base leading-relaxed font-[350] transition-all duration-500 overflow-hidden ${
                                         isActive ? isDark ? 'text-white/45 max-h-20 opacity-100' : 'text-neutral-500 max-h-20 opacity-100' : isDark ? 'text-white/20 max-h-0 sm:max-h-20 opacity-0 sm:opacity-100' : 'text-neutral-300 max-h-0 sm:max-h-20 opacity-0 sm:opacity-100'
                                     }`}>{s.desc}</p>
                                 </div>
@@ -2174,7 +2174,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
 
                                 {/* Status bar */}
                                 <div className="relative z-20 flex items-center justify-between px-7 pt-[14px] pb-1">
-                                    <span className="text-[11px] font-semibold text-white/40 tabular-nums">9:41</span>
+                                    <span className="text-label font-semibold text-white/40 tabular-nums">9:41</span>
                                     <div className="flex items-center gap-1.5">
                                         <div className="flex gap-px">
                                             <div className="h-[10px] w-[3px] rounded-[1px] bg-white/30" />
@@ -2192,8 +2192,8 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                 <div className="relative z-20 mx-3 mb-2 mt-1 flex items-center gap-2.5 rounded-2xl bg-white/[0.03] px-3 py-2.5 border border-white/[0.04]">
                                     <AppLogoIcon className="size-8 rounded-xl shadow-md" />
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-[12px] font-bold text-white/80 transition-all duration-300">{DEMO_STEPS[active].title}</p>
-                                        <p className="text-[9px] text-white/25 font-medium">Step {active + 1} of 3</p>
+                                        <p className="text-body font-bold text-white/80 transition-all duration-300">{DEMO_STEPS[active].title}</p>
+                                        <p className="text-caption text-white/25 font-medium">Step {active + 1} of 3</p>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         {[0, 1, 2].map(i => (
@@ -2209,7 +2209,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                     {/* Screen 0: Flood Depth */}
                                     <div className={`absolute inset-0 transition-all duration-500 ${active === 0 ? 'opacity-100 translate-y-0' : active > 0 ? 'opacity-0 -translate-y-4 pointer-events-none' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
                                         <div className="flex flex-col h-full p-3.5 gap-2">
-                                            <p className="text-[11px] font-semibold text-white/30 px-1 mb-1">How deep is the flood?</p>
+                                            <p className="text-label font-semibold text-white/30 px-1 mb-1">How deep is the flood?</p>
                                             {([
                                                 { level: 'Ankle-deep', color: '#22c55e', sub: '~ 1 ft — passable with caution', selected: false },
                                                 { level: 'Knee-deep', color: '#eab308', sub: '~ 1.5-2 ft — difficult for vehicles', selected: true },
@@ -2230,8 +2230,8 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                                         {!s.selected && <div className="absolute inset-1 rounded-full bg-white/[0.04]" />}
                                                     </div>
                                                     <div className="flex-1 min-w-0">
-                                                        <span className={`text-[12px] font-semibold transition-colors ${s.selected ? 'text-white/85' : 'text-white/30'}`}>{s.level}</span>
-                                                        <p className={`text-[9px] ${s.selected ? 'text-white/30' : 'text-white/15'}`}>{s.sub}</p>
+                                                        <span className={`text-body font-semibold transition-colors ${s.selected ? 'text-white/85' : 'text-white/30'}`}>{s.level}</span>
+                                                        <p className={`text-caption ${s.selected ? 'text-white/30' : 'text-white/15'}`}>{s.sub}</p>
                                                     </div>
                                                     {s.selected && (
                                                         <div className="flex size-5 items-center justify-center rounded-full" style={{ backgroundColor: s.color + '20' }}>
@@ -2246,8 +2246,8 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                                     <Navigation className="size-3.5 text-sky-400" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-[11px] font-semibold text-white/70">Nasugbu, Batangas</p>
-                                                    <p className="text-[9px] text-white/25 font-mono tabular-nums">14.0714, 120.6328</p>
+                                                    <p className="text-label font-semibold text-white/70">Nasugbu, Batangas</p>
+                                                    <p className="text-caption text-white/25 font-mono tabular-nums">14.0714, 120.6328</p>
                                                 </div>
                                                 <div className="flex size-6 items-center justify-center rounded-full bg-cyan-500/15">
                                                     <CheckCircle2 className="size-3 text-cyan-400" />
@@ -2264,7 +2264,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                                     <div className="absolute inset-0 bg-gradient-to-br from-sky-500/[0.03] to-transparent" />
                                                     <div className="flex flex-col items-center gap-1.5">
                                                         <Droplets className="size-8 text-cyan-400/30" />
-                                                        <span className="text-[9px] font-medium text-white/20">flood_01.jpg</span>
+                                                        <span className="text-caption font-medium text-white/20">flood_01.jpg</span>
                                                     </div>
                                                     {/* Checkmark badge */}
                                                     <div className="absolute top-2 right-2 flex size-5 items-center justify-center rounded-full bg-emerald-500/20">
@@ -2275,7 +2275,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                                     <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.03] to-transparent" />
                                                     <div className="flex flex-col items-center gap-1.5">
                                                         <Droplets className="size-8 text-violet-400/30" />
-                                                        <span className="text-[9px] font-medium text-white/20">flood_02.jpg</span>
+                                                        <span className="text-caption font-medium text-white/20">flood_02.jpg</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -2284,7 +2284,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                                 <div className="flex size-7 items-center justify-center rounded-lg bg-white/[0.04]">
                                                     <Camera className="size-3.5 text-white/25" />
                                                 </div>
-                                                <span className="text-[11px] font-medium text-white/25">Add more photos or videos</span>
+                                                <span className="text-label font-medium text-white/25">Add more photos or videos</span>
                                             </div>
                                             {/* AI banner */}
                                             <div className="flex items-center gap-2.5 rounded-2xl bg-emerald-500/[0.05] px-4 py-3 border border-emerald-500/[0.08]">
@@ -2292,8 +2292,8 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                                     <Sparkles className="size-4 text-emerald-400" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-[11px] font-semibold text-emerald-400/80">AI Verified</p>
-                                                    <p className="text-[9px] text-emerald-400/40">Flood pattern detected with high confidence</p>
+                                                    <p className="text-label font-semibold text-emerald-400/80">AI Verified</p>
+                                                    <p className="text-caption text-emerald-400/40">Flood pattern detected with high confidence</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -2312,8 +2312,8 @@ function PhoneDemo({ visible }: { visible: boolean }) {
 
                                             <p className="text-[16px] font-bold text-white/85">Report submitted!</p>
                                             <div className="mt-2 inline-flex items-center gap-1.5 rounded-lg bg-white/[0.04] px-3 py-1 border border-white/[0.05]">
-                                                <span className="text-[10px] text-white/30">Ref:</span>
-                                                <span className="text-[11px] font-mono font-bold text-cyan-400/70">FT-A7X2K9M1</span>
+                                                <span className="text-meta text-white/30">Ref:</span>
+                                                <span className="text-label font-mono font-bold text-cyan-400/70">FT-A7X2K9M1</span>
                                             </div>
 
                                             {/* Status timeline */}
@@ -2332,7 +2332,7 @@ function PhoneDemo({ visible }: { visible: boolean }) {
                                                         <div className={`relative z-10 flex size-6 shrink-0 items-center justify-center rounded-full ${st.done ? 'bg-emerald-500/15' : 'bg-white/[0.03]'}`}>
                                                             {st.done ? <CheckCircle2 className="size-3.5 text-emerald-400" /> : <div className="size-1.5 rounded-full bg-white/[0.08]" />}
                                                         </div>
-                                                        <span className={`text-[11px] py-2 ${st.done ? 'text-white/50 font-medium' : 'text-white/20'}`}>{st.label}</span>
+                                                        <span className={`text-label py-2 ${st.done ? 'text-white/50 font-medium' : 'text-white/20'}`}>{st.label}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -2441,7 +2441,7 @@ function EvacuationMap({ centers }: { centers: EvacuationCenterData[] }) {
 
 function PremiumButton({ href, children }: { href: string; children: ReactNode }) {
     return (
-        <Link href={href} className="group relative overflow-hidden rounded-[14px] bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 px-6 py-2.5 text-sm font-semibold text-white shadow-xl shadow-blue-500/15 transition-all duration-300 hover:shadow-blue-500/30 hover:scale-105 active:scale-95">
+        <Link href={href} className="group relative overflow-hidden rounded-[14px] bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 px-7 py-3.5 text-base font-semibold text-white shadow-xl shadow-blue-500/15 transition-all duration-300 hover:shadow-blue-500/30 hover:scale-105 active:scale-95">
             <span className="relative z-10">{children}</span>
             <div className="absolute inset-[1px] rounded-[13px] bg-gradient-to-b from-white/15 to-transparent opacity-100" />
             <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
@@ -2521,14 +2521,14 @@ function SectionHead({ visible, badge, badgeIcon, badgeColor, title, sub }: {
     const isDark = resolvedAppearance === 'dark';
     return (
         <div className={`mb-8 text-center transition-all duration-[800ms] sm:mb-20 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}>
-            <span className={`mb-4 sm:mb-5 inline-flex items-center gap-2 rounded-full border px-3 sm:px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] ${isDark ? badgeColor : badgeColor.replace(/\/20/g, '/30').replace(/\/\[0\.06\]/g, '/[0.08]')}`}>
+            <span className={`mb-4 sm:mb-5 inline-flex items-center gap-2 rounded-full border px-3 sm:px-4 py-1.5 text-label font-semibold uppercase tracking-[0.15em] ${isDark ? badgeColor : badgeColor.replace(/\/20/g, '/30').replace(/\/\[0\.06\]/g, '/[0.08]')}`}>
                 {badgeIcon}
                 {badge}
             </span>
-            <h2 className="mt-4 sm:mt-5 text-[clamp(1.5rem,4vw,3rem)] font-bold tracking-tight">
+            <h2 className="mt-4 sm:mt-5 text-[clamp(2rem,5vw,3.75rem)] font-bold tracking-tight">
                 <span className={`bg-clip-text text-transparent ${isDark ? 'bg-gradient-to-b from-white to-white/60' : 'bg-gradient-to-b from-slate-900 to-slate-400'}`}>{title}</span>
             </h2>
-            <p className={`mx-auto mt-3 sm:mt-4 max-w-xl text-[0.95rem] sm:text-[1.05rem] font-[350] ${isDark ? 'text-white/30' : 'text-neutral-500'}`}>{sub}</p>
+            <p className={`mx-auto mt-3 sm:mt-4 max-w-2xl text-base sm:text-lg md:text-xl font-[350] ${isDark ? 'text-white/30' : 'text-neutral-500'}`}>{sub}</p>
         </div>
     );
 }

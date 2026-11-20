@@ -217,7 +217,7 @@ export default function AdminUsersIndex({ users, filters, barangay_list, stats, 
                             <Users2 className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                         </div>
                         <div>
-                            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                            <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
                                 {t('users.title')}
                             </h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
@@ -305,7 +305,7 @@ export default function AdminUsersIndex({ users, filters, barangay_list, stats, 
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -8, scale: 0.99 }}
                             transition={{ duration: 0.18 }}
-                            className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-neutral-50 px-5 py-3.5 dark:border-neutral-700/40 dark:bg-neutral-800/30"
+                            className="overflow-hidden rounded-lg border border-neutral-200/60 bg-neutral-50 px-5 py-3.5 dark:border-neutral-700/40 dark:bg-neutral-800/30"
                         >
                             <div className="flex flex-wrap items-center gap-3">
                                 <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-200">
@@ -331,7 +331,7 @@ export default function AdminUsersIndex({ users, filters, barangay_list, stats, 
                 </AnimatePresence>
 
                 {/* ── Table Card ── */}
-                <div className="overflow-visible rounded-2xl border border-neutral-200/80 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                <div className="overflow-visible rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
 
                     {/* Toolbar */}
                     <div className="relative z-20 rounded-t-2xl flex flex-wrap items-center gap-2 border-b border-neutral-100 bg-neutral-50/50 px-3 sm:px-5 py-3 dark:border-neutral-800 dark:bg-neutral-800/30">
@@ -393,12 +393,12 @@ export default function AdminUsersIndex({ users, filters, barangay_list, stats, 
                                     <div className="flex items-center justify-between gap-2">
                                         <p className="truncate text-sm font-semibold text-neutral-900 dark:text-neutral-100">{user.name}</p>
                                         {user.email_verified_at ? (
-                                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 ring-1 ring-emerald-600/10 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-700/40">
+                                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-meta font-semibold text-emerald-700 ring-1 ring-emerald-600/10 dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-700/40">
                                                 <CheckCircle2 className="size-2.5" />
                                                 Verified
                                             </span>
                                         ) : (
-                                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-amber-600/10 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-700/40">
+                                            <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-meta font-semibold text-amber-700 ring-1 ring-amber-600/10 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-700/40">
                                                 <XCircle className="size-2.5" />
                                                 Unverified
                                             </span>
@@ -406,10 +406,10 @@ export default function AdminUsersIndex({ users, filters, barangay_list, stats, 
                                     </div>
                                     <p className="truncate text-xs text-neutral-400 dark:text-neutral-500">{user.email}</p>
                                     {user.contact_number && (
-                                        <p className="text-[11px] text-neutral-400 dark:text-neutral-500">{user.contact_number}</p>
+                                        <p className="text-label text-neutral-400 dark:text-neutral-500">{user.contact_number}</p>
                                     )}
                                     {user.home_address && (
-                                        <p className="mt-0.5 flex items-center gap-1 truncate text-[11px] text-neutral-400 dark:text-neutral-500">
+                                        <p className="mt-0.5 flex items-center gap-1 truncate text-label text-neutral-400 dark:text-neutral-500">
                                             <MapPin className="size-3 shrink-0" />
                                             {user.home_address}
                                         </p>
@@ -437,7 +437,7 @@ export default function AdminUsersIndex({ users, filters, barangay_list, stats, 
                     <div className="hidden sm:block overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-neutral-100 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-800/40">
+                                <tr className="border-b border-neutral-200/70 bg-neutral-50/70 dark:border-neutral-800 dark:bg-neutral-800/30">
                                     <th className="w-10 px-5 py-3 text-center">
                                         <input
                                             type="checkbox"
@@ -446,14 +446,14 @@ export default function AdminUsersIndex({ users, filters, barangay_list, stats, 
                                             className="size-3.5 rounded border-neutral-300 text-[oklch(0.55_0.14_240)] focus:ring-[oklch(0.55_0.14_240)]/20 dark:border-neutral-600 dark:text-[oklch(0.62_0.14_240)]"
                                         />
                                     </th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Resident</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Contact</th>
-                                    <th className="px-5 py-3 text-left text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Home Address</th>
-                                    <th className="px-5 py-3 text-center text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Status</th>
-                                    <th className="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">Actions</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Resident</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Contact</th>
+                                    <th className="px-5 py-3 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Home Address</th>
+                                    <th className="px-5 py-3 text-center text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Status</th>
+                                    <th className="px-5 py-3 text-right text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/80">
+                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                                 {filtered.map((user) => (
                                     <tr
                                         key={user.id}
@@ -598,7 +598,7 @@ export default function AdminUsersIndex({ users, filters, barangay_list, stats, 
                                         <button key={i} onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
                                                 link.active
-                                                    ? 'bg-[oklch(0.55_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] text-white dark:text-white shadow-sm'
+                                                    ? 'bg-[oklch(0.55_0.14_240)] dark:bg-[oklch(0.62_0.14_240)] text-white dark:text-white'
                                                     : 'border border-neutral-200 text-neutral-500 hover:border-neutral-300 hover:bg-neutral-100 hover:text-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:hover:border-neutral-600 dark:hover:bg-neutral-800'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
@@ -846,7 +846,7 @@ function UserFormModal({
 function FormField({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
     return (
         <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{label}</label>
+            <label className="text-label font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">{label}</label>
             {children}
             {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
         </div>
@@ -972,7 +972,7 @@ function HomeAddressAutocomplete({ value, onChange, className }: {
                             <span className="text-sm font-medium text-neutral-800 dark:text-neutral-100">
                                 {pred.structured_formatting.main_text}
                             </span>
-                            <span className="text-[11px] text-neutral-400 dark:text-neutral-500">
+                            <span className="text-label text-neutral-400 dark:text-neutral-500">
                                 {pred.structured_formatting.secondary_text}
                             </span>
                         </li>

@@ -180,7 +180,7 @@ function BarangayMultiSelect({
                     {selected.map((b) => (
                         <span
                             key={b}
-                            className="inline-flex items-center gap-1 rounded-lg bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700/40"
+                            className="inline-flex items-center gap-1 rounded-lg bg-neutral-100 px-2 py-0.5 text-label font-medium text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700/40"
                         >
                             <MapPin className="size-2.5" />
                             {b}
@@ -399,13 +399,13 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                         <div className="relative flex size-10 sm:size-12 shrink-0 items-center justify-center rounded-xl sm:rounded-2xl bg-neutral-900 shadow-sm dark:bg-white">
                             <Bell className="size-5 sm:size-6 text-white dark:text-neutral-900" />
                             {stats.critical > 0 && (
-                                <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-[8px] font-bold text-white ring-2 ring-white dark:ring-neutral-900">
+                                <span className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-caption font-bold text-white ring-2 ring-white dark:ring-neutral-900">
                                     {stats.critical > 9 ? '9+' : stats.critical}
                                 </span>
                             )}
                         </div>
                         <div>
-                            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                            <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
                                 {t('alerts.title')}
                             </h1>
                             <p className="mt-0.5 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
@@ -498,7 +498,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: -8, scale: 0.99 }}
                             transition={{ duration: 0.18 }}
-                            className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-neutral-50 px-5 py-3.5 dark:border-neutral-700/40 dark:bg-neutral-800/30"
+                            className="overflow-hidden rounded-lg border border-neutral-200/60 bg-neutral-50 px-5 py-3.5 dark:border-neutral-700/40 dark:bg-neutral-800/30"
                         >
                             <div className="flex flex-wrap items-center gap-3">
                                 <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-200">
@@ -524,7 +524,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                 </AnimatePresence>
 
                 {/* ── Table Card ── */}
-                <div className="overflow-visible rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                <div className="overflow-visible rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
 
                     {/* Animated top border */}
                     <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-neutral-500/25 to-transparent" />
@@ -540,7 +540,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                 value={searchValue}
                                 onChange={(e) => setSearchValue(e.target.value)}
                                 placeholder={t('alerts.search_placeholder')}
-                                className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm shadow-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
+                                className="h-9 w-full rounded-xl border border-neutral-200/80 bg-white pl-9 pr-8 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500"
                             />
                             {searchValue && (
                                 <button onClick={() => setSearchValue('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300">
@@ -594,15 +594,15 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                     <p className="line-clamp-2 text-xs text-neutral-400 dark:text-neutral-500">{alert.body}</p>
                                     <div className="flex items-center justify-between gap-2">
                                         <div className="flex items-center gap-1.5">
-                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[9px] font-semibold capitalize ${TYPE_STYLES[alert.type] ?? TYPE_STYLES.update}`}>{alert.type}</span>
+                                            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-caption font-semibold capitalize ${TYPE_STYLES[alert.type] ?? TYPE_STYLES.update}`}>{alert.type}</span>
                                             {alert.target_barangays && alert.target_barangays.length > 0 && (
-                                                <span className="inline-flex items-center gap-0.5 rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] font-medium text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700/40">
+                                                <span className="inline-flex items-center gap-0.5 rounded-full bg-neutral-100 px-1.5 py-0.5 text-caption font-medium text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700/40">
                                                     <MapPin className="size-2" />
                                                     {alert.target_barangays.length}
                                                 </span>
                                             )}
                                         </div>
-                                        <div className="flex items-center gap-1 text-[10px] text-neutral-400 dark:text-neutral-500">
+                                        <div className="flex items-center gap-1 text-meta text-neutral-400 dark:text-neutral-500">
                                             <Calendar className="size-2.5" />
                                             {publishedStr}
                                         </div>
@@ -616,7 +616,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                     <div className="hidden overflow-x-auto sm:block">
                         <table className="w-full min-w-[720px] border-collapse text-sm">
                             <thead>
-                                <tr className="border-b border-neutral-100 bg-neutral-50/60 dark:border-neutral-800 dark:bg-neutral-800/30">
+                                <tr className="border-b border-neutral-200/70 bg-neutral-50/70 dark:border-neutral-800 dark:bg-neutral-800/30">
                                     <th className="w-12 px-5 py-3.5 text-center">
                                         <input
                                             type="checkbox"
@@ -626,29 +626,29 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                         />
                                     </th>
                                     <th className="px-4 py-3.5 text-left">
-                                        <button onClick={() => toggleSort('title')} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
+                                        <button onClick={() => toggleSort('title')} className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
                                             Alert <SortIcon field="title" />
                                         </button>
                                     </th>
                                     <th className="px-4 py-3.5 text-left">
-                                        <button onClick={() => toggleSort('type')} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
+                                        <button onClick={() => toggleSort('type')} className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
                                             Type <SortIcon field="type" />
                                         </button>
                                     </th>
-                                    <th className="px-4 py-3.5 text-left text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 dark:text-neutral-500">
+                                    <th className="px-4 py-3.5 text-left text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                                         Target
                                     </th>
                                     <th className="px-4 py-3.5 text-left">
-                                        <button onClick={() => toggleSort('created_at')} className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
+                                        <button onClick={() => toggleSort('created_at')} className="flex items-center gap-1.5 text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 transition-colors hover:text-neutral-600 dark:text-neutral-500 dark:hover:text-neutral-300">
                                             Published <SortIcon field="created_at" />
                                         </button>
                                     </th>
-                                    <th className="px-4 py-3.5 text-right text-[10px] font-bold uppercase tracking-[0.1em] text-neutral-400 dark:text-neutral-500">
+                                    <th className="px-4 py-3.5 text-right text-meta font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                                         Actions
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-neutral-100/80 dark:divide-neutral-800/60">
+                            <tbody className="divide-y divide-neutral-100 dark:divide-neutral-800">
                                 {filtered.map((alert) => (
                                     <AlertRow
                                         key={alert.id}
@@ -710,8 +710,8 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                             onClick={() => router.get(link.url!)}
                                             className={`flex size-8 items-center justify-center rounded-lg text-xs font-semibold transition-all ${
                                                 link.active
-                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white shadow-sm dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
-                                                    : 'border border-neutral-200/80 bg-white text-neutral-500 shadow-sm hover:border-neutral-300 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
+                                                    ? 'bg-[oklch(0.55_0.14_240)] text-white dark:bg-[oklch(0.62_0.14_240)] dark:text-white'
+                                                    : 'border border-neutral-200/80 bg-white text-neutral-500 hover:border-neutral-300 hover:text-neutral-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400 dark:hover:bg-neutral-700 dark:hover:text-neutral-200'
                                             }`}
                                             dangerouslySetInnerHTML={{ __html: link.label }}
                                         />
@@ -758,7 +758,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Publish Alert</h3>
-                                        <p className="text-[11px] text-neutral-400 dark:text-neutral-500">Broadcast to all or specific barangays</p>
+                                        <p className="text-label text-neutral-400 dark:text-neutral-500">Broadcast to all or specific barangays</p>
                                     </div>
                                 </div>
                                 <button onClick={() => setShowCreateModal(false)} className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800">
@@ -777,7 +777,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                     <FileText className="size-4 shrink-0 text-neutral-500 dark:text-neutral-400" />
                                     <div>
                                         <p className="text-xs font-semibold text-neutral-700 dark:text-neutral-300">Use Template</p>
-                                        <p className="text-[10px] text-neutral-500 dark:text-neutral-500">Fill form with a ready-made alert structure</p>
+                                        <p className="text-meta text-neutral-500 dark:text-neutral-500">Fill form with a ready-made alert structure</p>
                                     </div>
                                 </button>
 
@@ -835,7 +835,7 @@ export default function AdminAlertsIndex({ alerts, filters, stats, trends, perio
                                                 selected={form.data.target_barangays}
                                                 onChange={(val) => form.setData('target_barangays', val)}
                                             />
-                                            <p className="text-[10px] text-neutral-400 dark:text-neutral-500">
+                                            <p className="text-meta text-neutral-400 dark:text-neutral-500">
                                                 Leave empty to send to all users. Select specific addresses to target notifications.
                                             </p>
                                         </FormField>
@@ -930,7 +930,7 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
                         </div>
                         <div>
                             <h3 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Edit Alert</h3>
-                            <p className="max-w-[200px] truncate text-[11px] text-neutral-400 dark:text-neutral-500">{alert.title}</p>
+                            <p className="max-w-[200px] truncate text-label text-neutral-400 dark:text-neutral-500">{alert.title}</p>
                         </div>
                     </div>
                     <button onClick={onClose} className="rounded-lg p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 dark:hover:bg-neutral-800">
@@ -991,7 +991,7 @@ function EditModal({ alert, barangays, onClose }: { alert: Alert; barangays: str
                                     selected={editForm.data.target_barangays}
                                     onChange={(val) => editForm.setData('target_barangays', val)}
                                 />
-                                <p className="text-[10px] text-neutral-400 dark:text-neutral-500">
+                                <p className="text-meta text-neutral-400 dark:text-neutral-500">
                                     Leave empty to send to all users. Select specific addresses to target notifications.
                                 </p>
                             </FormField>
@@ -1106,7 +1106,7 @@ function AlertRow({
             <td className="px-4 py-4">
                 {alert.target_barangays && alert.target_barangays.length > 0 ? (
                     <span
-                        className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-medium text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700"
+                        className="inline-flex items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-meta font-medium text-neutral-600 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-700"
                         title={alert.target_barangays.join(', ')}
                     >
                         <MapPin className="size-2.5" />
@@ -1120,7 +1120,7 @@ function AlertRow({
             {/* Published */}
             <td className="whitespace-nowrap px-4 py-4">
                 <p className="text-xs font-medium text-neutral-600 dark:text-neutral-400">{publishedDate}</p>
-                <p className="mt-0.5 text-[11px] text-neutral-400 dark:text-neutral-500">{publishedTime}</p>
+                <p className="mt-0.5 text-label text-neutral-400 dark:text-neutral-500">{publishedTime}</p>
             </td>
 
             {/* Actions */}

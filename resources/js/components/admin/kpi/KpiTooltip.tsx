@@ -71,14 +71,14 @@ export function KpiTooltip({ title, desc, insights, visible, parentRef, urgency,
             <div className="w-[280px] rounded-xl bg-white/95 backdrop-blur-xl px-4 py-3.5 shadow-2xl shadow-black/15 ring-1 ring-neutral-200/60 dark:bg-neutral-900/95 dark:ring-neutral-700/60">
                 {/* Title */}
                 {title && (
-                    <p className="mb-2.5 text-[12px] font-bold text-neutral-800 dark:text-neutral-200">{title}</p>
+                    <p className="mb-2.5 text-body font-bold text-neutral-800 dark:text-neutral-200">{title}</p>
                 )}
 
                 {/* Urgency badge */}
                 {u && (
                     <div className={`mb-2.5 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 ${u.bg}`}>
                         <span className={`size-1.5 rounded-full ${u.dot}`} />
-                        <span className={`text-[10px] font-semibold ${u.text}`}>{u.label}</span>
+                        <span className={`text-meta font-semibold ${u.text}`}>{u.label}</span>
                     </div>
                 )}
 
@@ -90,15 +90,15 @@ export function KpiTooltip({ title, desc, insights, visible, parentRef, urgency,
                                 <div className="flex items-center justify-between gap-2">
                                     <div className="flex items-center gap-1.5">
                                         <span className="size-1.5 rounded-full shrink-0" style={{ backgroundColor: row.color ?? '#94a3b8' }} />
-                                        <span className="text-[11px] text-neutral-500 dark:text-neutral-400">{row.label}</span>
+                                        <span className="text-label text-neutral-500 dark:text-neutral-400">{row.label}</span>
                                     </div>
                                     <div className="flex items-center gap-1">
                                         {row.trend && (
-                                            <span className={`text-[9px] ${row.trend === 'up' ? 'text-emerald-500' : row.trend === 'down' ? 'text-red-500' : 'text-neutral-400'}`}>
+                                            <span className={`text-caption ${row.trend === 'up' ? 'text-emerald-500' : row.trend === 'down' ? 'text-red-500' : 'text-neutral-400'}`}>
                                                 {row.trend === 'up' ? '\u2191' : row.trend === 'down' ? '\u2193' : '\u2014'}
                                             </span>
                                         )}
-                                        <span className="text-[11px] font-bold tabular-nums text-neutral-800 dark:text-neutral-200">{row.value}</span>
+                                        <span className="text-label font-bold tabular-nums text-neutral-800 dark:text-neutral-200">{row.value}</span>
                                     </div>
                                 </div>
                                 {/* Progress bar */}
@@ -123,13 +123,13 @@ export function KpiTooltip({ title, desc, insights, visible, parentRef, urgency,
                 )}
 
                 {/* Description */}
-                {desc && <p className="text-[11px] leading-relaxed text-neutral-500 dark:text-neutral-400">{desc}</p>}
+                {desc && <p className="text-label leading-relaxed text-neutral-500 dark:text-neutral-400">{desc}</p>}
 
                 {/* Action link */}
                 {actionLink && (
                     <a
                         href={actionLink.href}
-                        className="mt-2.5 inline-flex items-center gap-1 text-[10px] font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 pointer-events-auto"
+                        className="mt-2.5 inline-flex items-center gap-1 text-meta font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 pointer-events-auto"
                     >
                         {actionLink.label}
                         <span>&rarr;</span>
@@ -137,7 +137,7 @@ export function KpiTooltip({ title, desc, insights, visible, parentRef, urgency,
                 )}
 
                 {/* Timestamp */}
-                <p className="mt-2 text-[9px] text-neutral-300 dark:text-neutral-600">{t('dashboard.updated_just_now')}</p>
+                <p className="mt-2 text-caption text-neutral-300 dark:text-neutral-600">{t('dashboard.updated_just_now')}</p>
             </div>
         </div>,
         document.body

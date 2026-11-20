@@ -9,7 +9,7 @@ type Props = React.ComponentProps<'main'> & {
 
 export function AppContent({ variant = 'sidebar', className, children, ...props }: Props) {
     if (variant === 'sidebar') {
-        return <SidebarInset className={cn('rounded-tl-2xl', className)} {...props}>{children}</SidebarInset>;
+        return <SidebarInset className={className} {...props}>{children}</SidebarInset>;
     }
 
     return (

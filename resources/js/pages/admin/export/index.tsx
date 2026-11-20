@@ -196,7 +196,7 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                 {/* ─── Header ─── */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-100">
+                        <h1 className="text-heading font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">
                             {t('export.title')}
                         </h1>
                         <p className="mt-1 text-xs sm:text-sm text-neutral-500 dark:text-neutral-400">
@@ -301,14 +301,14 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                 <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
 
                     {/* PDF Export */}
-                    <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                    <div className="overflow-hidden rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
                         <div className="flex items-center gap-2.5 border-b border-neutral-100 px-5 py-3.5 dark:border-neutral-800">
                             <div className="flex size-8 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
                                 <Printer className="size-3.5 text-white dark:text-neutral-900" />
                             </div>
                             <div>
                                 <h2 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">PDF Report</h2>
-                                <p className="text-[11px] text-neutral-400">Dashboard summary with charts</p>
+                                <p className="text-label text-neutral-400">Dashboard summary with charts</p>
                             </div>
                         </div>
                         <div className="flex flex-col gap-3 p-4 sm:p-5">
@@ -331,14 +331,14 @@ export default function AdminExport({ stats, trends, period, custom_from, custom
                     </div>
 
                     {/* Excel Export */}
-                    <div className="overflow-hidden rounded-2xl border border-neutral-200/60 bg-white shadow-sm dark:border-neutral-700/60 dark:bg-neutral-900">
+                    <div className="overflow-hidden rounded-lg border border-neutral-200/70 bg-white dark:border-neutral-800 dark:bg-neutral-900">
                         <div className="flex items-center gap-2.5 border-b border-neutral-100 px-5 py-3.5 dark:border-neutral-800">
                             <div className="flex size-8 items-center justify-center rounded-xl bg-neutral-900 shadow-sm dark:bg-white">
                                 <Download className="size-3.5 text-white dark:text-neutral-900" />
                             </div>
                             <div>
                                 <h2 className="text-sm font-bold text-neutral-900 dark:text-neutral-100">Excel Export</h2>
-                                <p className="text-[11px] text-neutral-400">Reports with SLA &amp; response time data</p>
+                                <p className="text-label text-neutral-400">Reports with SLA &amp; response time data</p>
                             </div>
                         </div>
                         <div className="flex flex-col gap-3 p-4 sm:p-5">
@@ -452,11 +452,11 @@ const selectCls =
 function FilterField({ label, error, children }: FilterFieldProps) {
     return (
         <div className="flex flex-col gap-1.5">
-            <label className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            <label className="text-label font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                 {label}
             </label>
             {children}
-            {error && <p className="text-[11px] text-red-500 dark:text-red-400">{error}</p>}
+            {error && <p className="text-label text-red-500 dark:text-red-400">{error}</p>}
         </div>
     );
 }
