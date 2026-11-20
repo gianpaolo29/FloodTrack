@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Jobs\AnalyzeReportJob;
 use App\Notifications\ReportStatusChanged;
+use App\Services\AutoAssignService;
 use App\Services\ExpoPushService;
 use App\Services\SlaService;
 use App\Services\SocketService;
@@ -401,7 +402,13 @@ class ReportController extends Controller
         SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'verified']);
         SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'verified']);
 
-        return response()->json($report->fresh());
+        // Attempt auto-assign if enabled (same as admin web verify)
+        $autoAssignedTeam = AutoAssignService::attemptAssign($report, $request->user());
+
+        return response()->json([
+            ...$report->fresh()->toArray(),
+            'auto_assigned_team' => $autoAssignedTeam?->name,
+        ]);
     }
 
     public function update(Request $request, Report $report)

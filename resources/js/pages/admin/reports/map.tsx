@@ -786,6 +786,14 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
     const { liveResponders, onDutyCount } = useMapSocket(initialResponders, responder_counts.on_duty, handleReportEvent);
     const offDutyCount = responder_counts.total_responders - onDutyCount;
 
+    // Poll responder locations every 15s as fallback for missed socket events
+    useEffect(() => {
+        const iv = setInterval(() => {
+            router.reload({ only: ['responders', 'responder_counts', 'teams'], preserveState: true });
+        }, 15_000);
+        return () => clearInterval(iv);
+    }, []);
+
     // Enrich teams with live location data — a member has_location if they appear in liveResponders
     const liveIdSet = useMemo(() => new Set(liveResponders.map(r => r.id)), [liveResponders]);
     const liveTeams = useMemo(() => teams.map(t => ({
@@ -887,9 +895,11 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
             ? `<div style="text-align:center;margin-top:1px;font-size:${nameFontSize}px;font-weight:700;color:#1e293b;white-space:nowrap;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff;">${firstName}</div>`
             : '';
 
+        const initial = (r.name?.charAt(0) ?? '?').toUpperCase();
+        const fallbackSpan = `<span style="color:white;font-size:${fontSize}px;font-weight:700;line-height:${size - border * 2}px;text-align:center;display:block;width:100%;">${initial}</span>`;
         const avatarContent = r.avatar_url
-            ? `<img src="${r.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block;" />`
-            : `<span style="color:white;font-size:${fontSize}px;font-weight:700;line-height:${size - border * 2}px;text-align:center;display:block;width:100%;">${(r.name?.charAt(0) ?? '?').toUpperCase()}</span>`;
+            ? `<img src="${r.avatar_url}" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.style.display='none';this.parentElement.style.background='${color}';this.insertAdjacentHTML('afterend',\`${fallbackSpan}\`)" />`
+            : fallbackSpan;
         const avatarBg = r.avatar_url ? '#fff' : color;
 
         const totalH = size + (showName ? nameFontSize + 4 : 0);
@@ -1437,6 +1447,8 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                             const assignedReport = selectedTeam.active_report;
                             const state = getResponderState(r.location_updated_at);
                             const stale = state !== 'online';
+                            const missionLabel = r.status === 'en_route' ? 'En Route' : r.status === 'on_scene' ? 'On Scene' : 'Idle';
+                            const missionColor = r.status === 'en_route' ? 'text-amber-600 bg-amber-50' : r.status === 'on_scene' ? 'text-emerald-600 bg-emerald-50' : 'text-blue-600 bg-blue-50';
                             return (
                                 <Marker
                                     key={`resp-${r.id}`}
@@ -1476,6 +1488,37 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                 </span>
                                                 <span className="text-gray-400">·</span>
                                                 <span className="text-gray-500">{formatLastSeen(r.location_updated_at)}</span>
+                                            </div>
+
+                                            {/* Mission status */}
+                                            <div className="flex items-center gap-1.5 text-[10px]">
+                                                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-semibold ${missionColor}`}>
+                                                    {missionLabel}
+                                                </span>
+                                            </div>
+
+                                            {/* Assignment */}
+                                            <div className="border-t border-neutral-100 pt-2">
+                                                {assignedReport ? (
+                                                    <div>
+                                                        <p className="text-[10px] font-semibold text-neutral-500 mb-1">Assignment</p>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="size-1.5 rounded-full" style={{ backgroundColor: SEVERITY_META[assignedReport.severity as Severity]?.hex ?? '#6b7280' }} />
+                                                            <Link
+                                                                href={`/admin/reports/${assignedReport.id}`}
+                                                                className="text-[11px] font-semibold text-[oklch(0.55_0.14_240)] hover:underline"
+                                                            >
+                                                                {assignedReport.reference_number}
+                                                            </Link>
+                                                            <span className="text-[9px] font-medium text-neutral-400 capitalize">{assignedReport.severity}</span>
+                                                        </div>
+                                                        {assignedReport.address && (
+                                                            <p className="mt-0.5 text-[10px] text-gray-400 leading-snug ml-3">{assignedReport.address}</p>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-[10px] text-neutral-400 italic">No assignment</p>
+                                                )}
                                             </div>
                                         </div>
                                     </Popup>
