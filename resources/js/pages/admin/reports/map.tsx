@@ -173,8 +173,8 @@ function hazardTypeLabel(category: 'flood' | 'road', type: string): string {
 
 const DEFAULT_CENTER = [14.0681, 120.6236] as L.LatLngExpression;
 const NASUGBU_BOUNDS: L.LatLngBoundsExpression = [
-    [13.95, 120.50], // southwest
-    [14.18, 120.75], // northeast
+    [14.02, 120.608],    // southwest
+    [14.1741, 120.7919], // northeast
 ];
 
 /* ─── Helper: create a Leaflet DivIcon from an image URL ─── */

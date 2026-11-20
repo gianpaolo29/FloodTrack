@@ -110,7 +110,27 @@ class ReportController extends Controller
         if ($coverageArea === 'nasugbu') {
             $lat = (float) $data['latitude'];
             $lng = (float) $data['longitude'];
-            if ($lat < 13.95 || $lat > 14.18 || $lng < 120.50 || $lng > 120.75) {
+            $address = strtolower($data['address'] ?? '');
+
+            // Primary check: address must contain "nasugbu"
+            // Fallback: if address is raw coordinates or geocode failed, check distance to nearest barangay
+            $isInNasugbu = str_contains($address, 'nasugbu');
+
+            if (! $isInNasugbu) {
+                // Check if within 2km of any Nasugbu barangay (~0.018 degrees)
+                $barangays = config('barangays', []);
+                foreach ($barangays as $brgy) {
+                    $dLat = $lat - $brgy['latitude'];
+                    $dLng = $lng - $brgy['longitude'];
+                    $approxKm = sqrt($dLat * $dLat + $dLng * $dLng) * 111;
+                    if ($approxKm <= 2.0) {
+                        $isInNasugbu = true;
+                        break;
+                    }
+                }
+            }
+
+            if (! $isInNasugbu) {
                 return response()->json([
                     'message' => 'FloodTrack only covers Nasugbu, Batangas. Your location is outside the service area.',
                 ], 422);
