@@ -75,7 +75,7 @@ class ReportController extends Controller
             'address'     => 'nullable|string|max:255',
             'media'       => 'nullable|array|max:5',
             'media.*'     => 'file|mimes:jpg,jpeg,png,mp4,mov,avi,mkv,webm|max:51200',
-            'voice_note'  => 'nullable|file|mimes:m4a,mp4,webm,ogg,wav,mp3,caf,3gp,aac|max:10240',
+            'voice_note'  => 'nullable|file|mimetypes:audio/mp4,audio/mpeg,audio/ogg,audio/wav,audio/webm,audio/aac,audio/x-m4a,audio/3gpp,audio/x-caf,video/mp4,application/octet-stream|max:10240',
         ]);
 
         // Spam protection: cooldown + daily cap
@@ -135,6 +135,11 @@ class ReportController extends Controller
         }
 
         // Store voice note
+        \Log::info('Voice note check', [
+            'has_file' => $request->hasFile('voice_note'),
+            'has_key'  => $request->has('voice_note'),
+            'all_keys' => array_keys($request->allFiles()),
+        ]);
         if ($request->hasFile('voice_note')) {
             try {
                 $voiceFile = $request->file('voice_note');
