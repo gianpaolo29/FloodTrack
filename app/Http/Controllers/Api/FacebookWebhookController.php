@@ -242,7 +242,7 @@ class FacebookWebhookController extends Controller
                 $facebook->commentOnPost($postId, $comment);
 
                 // Notify via socket
-                SocketService::toAll('new-notification', [
+                SocketService::emit('admin:responders', 'new-report', [
                     'type' => 'facebook_import',
                     'message' => "New flood report imported from Facebook: {$report->reference_number}",
                     'reportId' => $report->id,

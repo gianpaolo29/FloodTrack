@@ -122,6 +122,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     // Settings
     Route::get('/settings',  [SettingsController::class, 'index'])->name('settings.index');
     Route::put('/settings',  [SettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/reset-occupancy', [SettingsController::class, 'resetOccupancy'])->name('settings.reset-occupancy');
 
     // Socket token — issues a short-lived Sanctum token for Socket.IO auth
     Route::get('/socket-token', function () {

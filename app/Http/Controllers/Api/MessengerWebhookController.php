@@ -917,7 +917,7 @@ PROMPT;
         $admins = User::where('role', 'admin')->get();
         Notification::send($admins, new NewReportSubmitted($report));
 
-        SocketService::toAll('new-report', [
+        SocketService::emit('admin:responders', 'new-report', [
             'reportId'  => $report->id,
             'reference' => $report->reference_number,
             'severity'  => $report->severity,

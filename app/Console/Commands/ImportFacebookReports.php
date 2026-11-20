@@ -245,7 +245,7 @@ class ImportFacebookReports extends Command
         }
 
         if ($imported > 0) {
-            SocketService::toAll('new-notification', [
+            SocketService::emit('admin:responders', 'new-report', [
                 'type'    => 'facebook_import',
                 'message' => "{$imported} new report(s) imported from Facebook.",
             ]);

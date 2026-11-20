@@ -6,6 +6,7 @@ use App\Models\DutyLog;
 use App\Models\Setting;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\AutoAssignService;
 use App\Services\ExpoPushService;
 use App\Services\SocketService;
 use Carbon\Carbon;
@@ -142,7 +143,10 @@ class SyncDutyStatus extends Command
                 'location_updated_at' => null,
             ]);
 
-        $this->info("Shift {$activeShift} | {$changed} responder(s) updated.");
+        // Unassign active missions from teams that are now off-duty
+        $unassigned = $changed > 0 ? AutoAssignService::unassignOffDutyMissions() : 0;
+
+        $this->info("Shift {$activeShift} | {$changed} responder(s) updated | {$unassigned} mission(s) reassigned.");
         return 0;
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Traits\HasPeriodStats;
 use App\Models\Report;
 use App\Models\Team;
 use App\Models\User;
+use App\Services\AutoAssignService;
 use App\Services\SocketService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -168,6 +169,9 @@ class TeamController extends Controller
 
         Artisan::call('duty:sync');
 
+        // Unassign active missions from teams that are now off-duty after shift change
+        AutoAssignService::unassignOffDutyMissions();
+
         // Notify new + removed members so their app refreshes duty/schedule state
         $allAffected = array_unique(array_merge($newMemberIds, $removedIds));
         foreach ($allAffected as $uid) {
@@ -185,6 +189,16 @@ class TeamController extends Controller
 
     public function toggleActive(Team $team): RedirectResponse
     {
+        // Block deactivation if the team has an active mission
+        if ($team->is_active && $team->hasActiveAssignment()) {
+            Inertia::flash('toast', [
+                'type'    => 'error',
+                'message' => "Cannot deactivate \"{$team->name}\" — the team has an active mission. Resolve or reassign the report first.",
+            ]);
+
+            return back();
+        }
+
         $memberIds = $team->members()->pluck('id')->all();
 
         $team->update(['is_active' => ! $team->is_active]);

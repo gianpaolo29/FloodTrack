@@ -7,15 +7,17 @@ import {
     Globe,
     MapPin,
     Moon,
+    RotateCcw,
     Save,
     Shield,
     Sun,
     Sunset,
+    Users,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import AppLayout from '@/layouts/app-layout';
 import { useLocale } from '@/hooks/use-locale';
-import { swalSuccess } from '@/lib/swal';
+import { swalConfirm, swalSuccess } from '@/lib/swal';
 import type { BreadcrumbItem } from '@/types';
 import type { Severity, SlaConfig, SlaStage } from '@/types/admin';
 import { SLA_STAGE_LABELS } from '@/types/admin';
@@ -117,6 +119,22 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
 
     const handleSlaToggle = () => {
         router.post('/admin/sla/toggle', {}, { preserveState: false });
+    };
+
+    const [resettingOccupancy, setResettingOccupancy] = useState(false);
+    const handleResetOccupancy = async () => {
+        const confirmed = await swalConfirm(
+            'Reset All Occupancy?',
+            'This will set the current occupancy of every evacuation center to 0. This action cannot be undone.',
+            'Yes, reset all',
+        );
+        if (!confirmed) return;
+        setResettingOccupancy(true);
+        router.post('/admin/settings/reset-occupancy', {}, {
+            preserveState: false,
+            onFinish: () => setResettingOccupancy(false),
+            onSuccess: () => swalSuccess('All evacuation center occupancies have been reset to 0.'),
+        });
     };
 
     if (!mounted) return (
@@ -243,6 +261,28 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
                                         <p className="text-[9px] text-emerald-600/80 dark:text-emerald-400/70">Reports can be submitted from any location.</p>
                                     </div>
                                 )}
+                            </div>
+                        </SettingsCard>
+
+                        <SettingsCard icon={Users} title="Evacuation Occupancy" sub="Reset occupancy counts after an evacuation event">
+                            <div className="px-6 py-4">
+                                <p className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Reset All Occupancy</p>
+                                <p className="mb-3 text-xs text-neutral-400">
+                                    Set every evacuation center's current occupancy back to 0. Use this after an evacuation event has concluded and all evacuees have returned home.
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={handleResetOccupancy}
+                                    disabled={resettingOccupancy}
+                                    className="inline-flex items-center gap-1.5 rounded-lg border-2 border-red-200 bg-red-50 px-3.5 py-2 text-xs font-semibold text-red-700 transition-all hover:border-red-300 hover:bg-red-100 active:scale-[0.97] disabled:opacity-50 dark:border-red-800/40 dark:bg-red-950/20 dark:text-red-400 dark:hover:border-red-700 dark:hover:bg-red-950/40"
+                                >
+                                    <RotateCcw className={`size-3.5 ${resettingOccupancy ? 'animate-spin' : ''}`} />
+                                    {resettingOccupancy ? 'Resetting…' : 'Reset All Occupancy to 0'}
+                                </button>
+                                <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-800/40 dark:bg-amber-950/20">
+                                    <AlertTriangle className="mt-0.5 size-3 shrink-0 text-amber-500" />
+                                    <p className="text-[9px] text-amber-600/80 dark:text-amber-400/70">This resets all centers at once and logs the change. Individual occupancy can still be updated from the Evacuation Centers page.</p>
+                                </div>
                             </div>
                         </SettingsCard>
 

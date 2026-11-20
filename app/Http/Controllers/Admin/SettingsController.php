@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\Api\ScheduleController;
 use App\Jobs\AnalyzeReportJob;
+use App\Models\EvacuationCenter;
+use App\Models\OccupancyLog;
 use App\Models\Report;
 use App\Models\ReportSlaConfig;
 use App\Models\Setting;
@@ -101,32 +103,70 @@ class SettingsController extends Controller
             ->each(fn (int $id) => AnalyzeReportJob::dispatch($id));
     }
 
+    public function resetOccupancy(Request $request): RedirectResponse
+    {
+        $centers = EvacuationCenter::where('current_occupancy', '>', 0)->get();
+
+        foreach ($centers as $center) {
+            OccupancyLog::create([
+                'evacuation_center_id' => $center->id,
+                'previous_occupancy'   => $center->current_occupancy,
+                'new_occupancy'        => 0,
+                'changed_by'           => $request->user()->id,
+                'change_type'          => 'bulk_update',
+                'notes'                => 'Evacuation reset — all occupancy cleared via settings.',
+            ]);
+
+            SocketService::toAll('evacuation-updated', [
+                'id'                => $center->id,
+                'name'              => $center->name,
+                'current_occupancy' => 0,
+                'capacity'          => $center->capacity,
+                'occupancy_pct'     => 0,
+            ]);
+        }
+
+        EvacuationCenter::where('current_occupancy', '>', 0)->update(['current_occupancy' => 0]);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Occupancy reset for {$centers->count()} evacuation center(s)."]);
+
+        return back();
+    }
+
     private function handleScheduleChange(string $newLevel): void
     {
         // Sync duty flags immediately so map counts update in real-time
         Artisan::call('duty:sync');
 
+        // Unassign active missions from teams that are now off-duty
+        AutoAssignService::unassignOffDutyMissions();
+
         $currentShift = ScheduleController::currentShift();
 
-        // 1. Broadcast real-time socket event to all connected clients
-        SocketService::toAll('schedule-updated', [
-            'level'         => $newLevel,
-            'current_shift' => $currentShift,
-        ]);
-
-        // 2. Create database notification for each responder (appears in alerts tab)
+        // 1. Notify each responder individually — not residents
         $responders = User::where('role', 'responder')->get();
         $responderIds = $responders->pluck('id')->toArray();
 
+        // 2. Create database notification for each responder (appears in alerts tab)
         Notification::send($responders, new ScheduleLevelChanged($newLevel, $currentShift));
 
-        // 3. Emit per-user socket event so alerts tab updates instantly
+        // 3. Emit per-user socket events so responder app updates instantly
         foreach ($responderIds as $uid) {
+            SocketService::toUser($uid, 'schedule-updated', [
+                'level'         => $newLevel,
+                'current_shift' => $currentShift,
+            ]);
             SocketService::toUser($uid, 'new-notification', [
                 'id'   => 'schedule_' . now()->timestamp,
                 'type' => 'schedule_change',
             ]);
         }
+
+        // Also notify admin dashboard
+        SocketService::emit('admin:responders', 'schedule-updated', [
+            'level'         => $newLevel,
+            'current_shift' => $currentShift,
+        ]);
 
         // 4. Send push notifications
         if ($newLevel === 'red') {

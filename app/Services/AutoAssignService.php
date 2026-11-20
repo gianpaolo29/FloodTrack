@@ -59,7 +59,7 @@ class AutoAssignService
 
         // Get on-duty teams with their members (need location data)
         $teams = Team::with(['members' => function ($q) {
-            $q->select('id', 'name', 'team_id', 'current_latitude', 'current_longitude', 'location_updated_at');
+            $q->select('id', 'name', 'role', 'team_id', 'current_latitude', 'current_longitude', 'location_updated_at');
         }])
             ->whereIn('id', $onDutyTeamIds)
             ->where('is_active', true)
@@ -144,6 +144,81 @@ class AutoAssignService
     }
 
     /**
+     * Unassign active missions from teams that are no longer on duty after a schedule/shift change.
+     * Reports revert to 'verified' so they can be reassigned manually or via auto-assign.
+     */
+    public static function unassignOffDutyMissions(): int
+    {
+        $onDutyTeamIds = ScheduleController::onDutyTeamIds();
+
+        // Find assigned reports whose team is no longer on duty
+        $orphanedReports = Report::where('status', 'assigned')
+            ->whereNotNull('assigned_team_id')
+            ->when(!empty($onDutyTeamIds), fn ($q) => $q->whereNotIn('assigned_team_id', $onDutyTeamIds))
+            ->with(['assignedTeam.members:id,name,team_id', 'user'])
+            ->get();
+
+        if ($orphanedReports->isEmpty()) {
+            return 0;
+        }
+
+        foreach ($orphanedReports as $report) {
+            $team = $report->assignedTeam;
+
+            // Resolve existing responder rows
+            DB::table('report_responders')
+                ->where('report_id', $report->id)
+                ->where('status', '!=', 'resolved')
+                ->update([
+                    'status'      => 'resolved',
+                    'resolved_at' => now(),
+                    'updated_at'  => now(),
+                ]);
+
+            // Refresh socket for old team members
+            if ($team) {
+                foreach ($team->members as $member) {
+                    SocketService::refreshAssignments($member->id);
+                    SocketService::toUser($member->id, 'assignment-removed', [
+                        'reportId'  => $report->id,
+                        'reference' => $report->reference_number,
+                        'reason'    => 'schedule_change',
+                    ]);
+                }
+            }
+
+            // Revert report to verified
+            $report->update([
+                'status'           => 'verified',
+                'assigned_team_id' => null,
+                'assigned_to'      => null,
+                'assigned_at'      => null,
+            ]);
+
+            ReportStatusUpdate::create([
+                'report_id' => $report->id,
+                'user_id'   => null,
+                'status'    => 'verified',
+                'notes'     => 'Unassigned — team went off-duty due to schedule change. Awaiting reassignment.',
+            ]);
+
+            // Notify admin dashboard
+            SocketService::toAll('report-status', [
+                'reportId' => $report->id,
+                'status'   => 'verified',
+            ]);
+        }
+
+        // Try auto-assigning the orphaned reports to on-duty teams
+        foreach ($orphanedReports as $report) {
+            $report->refresh();
+            static::attemptAssign($report);
+        }
+
+        return $orphanedReports->count();
+    }
+
+    /**
      * Assign a team to a report — shared logic used by both auto-assign and manual assign.
      */
     public static function assignTeamToReport(Report $report, Team $team, ?User $assignedBy = null): void
@@ -176,8 +251,8 @@ class AutoAssignService
             'assigned_at'      => now(),
         ]);
 
-        // Load members if not already loaded
-        $team->loadMissing('members:id,name,team_id');
+        // Load members with role so notifications can distinguish responder vs resident
+        $team->loadMissing('members:id,name,role,team_id');
 
         // Seed report_responders for all team members
         foreach ($team->members as $member) {
@@ -244,8 +319,8 @@ class AutoAssignService
         // Notify the resident (report owner) that a responder has been assigned
         // Skip if the report owner is already a team member (they got the responder notification)
         $report->loadMissing('user');
-        $memberIds = $team->members->pluck('id')->toArray();
-        if ($report->user && !in_array($report->user_id, $memberIds)) {
+        $memberIds = $team->members->pluck('id')->map(fn ($id) => (int) $id)->toArray();
+        if ($report->user && !in_array((int) $report->user_id, $memberIds, true)) {
             $report->user->notify(new ReportStatusChanged($report, $oldStatus, 'assigned', $assignerName));
 
             ExpoPushService::sendToUsers(
