@@ -794,15 +794,24 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
         return () => clearInterval(iv);
     }, []);
 
-    // Enrich teams with live location data — a member has_location if they appear in liveResponders
-    const liveIdSet = useMemo(() => new Set(liveResponders.map(r => r.id)), [liveResponders]);
+    // Enrich teams with live location data from socket responders
+    const liveResponderMap = useMemo(() => {
+        const map = new Map<number, LiveResponder>();
+        for (const r of liveResponders) map.set(r.id, r);
+        return map;
+    }, [liveResponders]);
     const liveTeams = useMemo(() => teams.map(t => ({
         ...t,
-        members: t.members.map(m => ({
-            ...m,
-            has_location: m.has_location || liveIdSet.has(m.id),
-        })),
-    })), [teams, liveIdSet]);
+        members: t.members.map(m => {
+            const live = liveResponderMap.get(m.id);
+            const locTime = live?.location_updated_at ?? m.location_updated_at;
+            return {
+                ...m,
+                has_location: m.has_location || !!live,
+                location_updated_at: locTime,
+            };
+        }),
+    })), [teams, liveResponderMap]);
 
     const [mounted, setMounted] = useState(false);
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
@@ -827,13 +836,12 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
     // Track zoom for responsive responder markers
     const [mapZoom, setMapZoom] = useState(13);
 
-    // Keep "last seen" text live
+    // Keep online/offline status and "last seen" text live — tick every 5s
     const [, setTick] = useState(0);
     useEffect(() => {
-        if (!showResponders || liveResponders.length === 0) return;
         const id = setInterval(() => setTick((t) => t + 1), 5_000);
         return () => clearInterval(id);
-    }, [showResponders, liveResponders.length]);
+    }, []);
 
     const hasFilters  = !!(filters.status || filters.severity || filters.date_from || filters.date_to);
 
@@ -1132,11 +1140,11 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                 </div>
                                 <div className="space-y-1">
                                     {[...liveTeams]
-                                        .filter((t) => t.members.some(m => m.has_location))
+                                        .filter((t) => t.members.some(m => getResponderState(m.location_updated_at) !== 'offline'))
                                         .filter((t) => !selectedTeam || selectedTeam.id === t.id)
                                         .map((t) => {
                                         const isSelected = selectedTeam?.id === t.id;
-                                        const onlineMembers = t.members.filter(m => m.has_location).length;
+                                        const onlineMembers = t.members.filter(m => getResponderState(m.location_updated_at) === 'online').length;
                                         return (
                                             <div key={`team-${t.id}`}>
                                                 <button
@@ -1171,9 +1179,20 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                 {isSelected && (
                                                     <div className="mt-1 ml-2 space-y-0.5">
                                                         {[...t.members]
-                                                            .sort((a, b) => (a.is_leader ? -1 : b.is_leader ? 1 : (a.has_location === b.has_location ? 0 : a.has_location ? -1 : 1)))
-                                                            .map((m) => (
-                                                            <div key={`member-${m.id}`} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${!m.has_location ? 'opacity-40' : ''}`}>
+                                                            .sort((a, b) => {
+                                                                if (a.is_leader) return -1;
+                                                                if (b.is_leader) return 1;
+                                                                const aState = getResponderState(a.location_updated_at);
+                                                                const bState = getResponderState(b.location_updated_at);
+                                                                const order = { online: 0, stale: 1, offline: 2 };
+                                                                return order[aState] - order[bState];
+                                                            })
+                                                            .map((m) => {
+                                                            const mState = getResponderState(m.location_updated_at);
+                                                            const mOnline = mState === 'online';
+                                                            const mStale = mState === 'stale';
+                                                            return (
+                                                            <div key={`member-${m.id}`} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${!mOnline && !mStale ? 'opacity-40' : ''}`}>
                                                                 {m.avatar_url ? (
                                                                     <img src={m.avatar_url} alt="" className="size-5 shrink-0 rounded-full object-cover" />
                                                                 ) : (
@@ -1188,14 +1207,17 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                                     </span>
                                                                 </div>
                                                                 <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-bold ${
-                                                                    m.has_location
+                                                                    mOnline
                                                                         ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                                        : mStale
+                                                                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
                                                                         : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'
                                                                 }`}>
-                                                                    {m.has_location ? 'Online' : 'Offline'}
+                                                                    {mOnline ? 'Online' : mStale ? 'Stale' : 'Offline'}
                                                                 </span>
                                                             </div>
-                                                        ))}
+                                                            );
+                                                        })}
                                                         {t.active_report && (
                                                             <div className="mt-1.5 mx-2 rounded-md border border-neutral-100 bg-neutral-50 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-800">
                                                                 <div className="flex items-center gap-1">

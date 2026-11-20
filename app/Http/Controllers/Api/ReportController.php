@@ -105,6 +105,18 @@ class ReportController extends Controller
             }
         }
 
+        // Restrict reports outside Nasugbu when coverage area is set
+        $coverageArea = Setting::getValue('coverage_area', 'nasugbu');
+        if ($coverageArea === 'nasugbu') {
+            $lat = (float) $data['latitude'];
+            $lng = (float) $data['longitude'];
+            if ($lat < 13.95 || $lat > 14.18 || $lng < 120.50 || $lng > 120.75) {
+                return response()->json([
+                    'message' => 'FloodTrack only covers Nasugbu, Batangas. Your location is outside the service area.',
+                ], 422);
+            }
+        }
+
         // Normalize address to nearest barangay using coordinates
         $data['address'] = $this->resolveBarangay(
             $data['address'] ?? null,
@@ -443,14 +455,20 @@ class ReportController extends Controller
             return response()->json(['message' => 'Only pending reports can be withdrawn.'], 422);
         }
 
+        $reportId = $report->id;
+        $userId = $report->user_id;
+
         foreach ($report->media as $media) {
             Storage::disk('public')->delete($media->file_path);
         }
 
         $report->media()->delete();
-        ReportStatusUpdate::where('report_id', $report->id)->delete();
-        IncidentMessage::where('report_id', $report->id)->delete();
+        ReportStatusUpdate::where('report_id', $reportId)->delete();
+        IncidentMessage::where('report_id', $reportId)->delete();
         $report->delete();
+
+        // Notify the resident's UI to refresh
+        SocketService::toUser($userId, 'report-status', ['reportId' => $reportId, 'status' => 'withdrawn']);
 
         return response()->noContent();
     }

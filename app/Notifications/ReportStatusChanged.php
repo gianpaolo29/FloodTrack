@@ -30,11 +30,11 @@ class ReportStatusChanged extends Notification
 
         // Responder-facing messages for assignment
         if ($isResponder && $this->newStatus === 'assigned') {
-            $address = $this->report->address ?? 'Unknown location';
+            $address = $this->report->address ? " at {$this->report->address}" : '';
             return [
                 'type'             => 'assignment',
-                'title'            => "New Assignment — {$ref}",
-                'message'          => "You have been assigned to a {$this->report->severity} flood report at {$address}. Open the app for details.",
+                'title'            => 'Your team has been dispatched!',
+                'message'          => "A {$this->report->severity} flood incident{$address} needs your response. Stay safe, stay ready!",
                 'report_id'        => $this->report->id,
                 'reference_number' => $ref,
                 'old_status'       => $this->oldStatus,
@@ -45,15 +45,15 @@ class ReportStatusChanged extends Notification
         }
 
         $messages = [
-            'pending'  => "Your report {$ref} has been submitted and is awaiting review.",
-            'verified' => "Your report {$ref} has been verified. Responders will be dispatched shortly.",
-            'rejected' => $this->reason
+            'pending'      => "Your report {$ref} has been submitted and is awaiting review.",
+            'verified'     => "Your report {$ref} has been verified. Responders will be dispatched shortly.",
+            'rejected'     => $this->reason
                 ? "Your report {$ref} could not be verified. Reason: {$this->reason}"
                 : "Your report {$ref} could not be verified.",
-            'assigned' => "A responder has been assigned to your report {$ref}.",
-            'en_route' => "A responder is on the way to your location (Report {$ref}).",
-            'on_scene' => "A responder has arrived at your location (Report {$ref}).",
-            'resolved'     => "Your report {$ref} has been resolved. Thank you for helping keep your community safe.",
+            'assigned'     => "A rescue team has been dispatched to your report ({$ref}). Hang tight!",
+            'en_route'     => "A responder is now heading to your location. Stay safe! (Report {$ref})",
+            'on_scene'     => "A responder has arrived at your location. (Report {$ref})",
+            'resolved'     => "Your report {$ref} has been resolved. Thank you for helping keep your community safe!",
             'acknowledged' => "We've reviewed your report {$ref} and prepared safety guidance for you. Open the app for details.",
         ];
 
@@ -61,7 +61,7 @@ class ReportStatusChanged extends Notification
             'pending'      => 'Report Received',
             'verified'     => 'Report Verified',
             'rejected'     => 'Report Not Verified',
-            'assigned'     => 'Responder Assigned',
+            'assigned'     => 'Help is on the way!',
             'en_route'     => 'Responder En Route',
             'on_scene'     => 'Responder On Scene',
             'resolved'     => 'Report Resolved',

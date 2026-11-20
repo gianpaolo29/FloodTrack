@@ -5,6 +5,7 @@ import {
     CheckCircle2,
     Clock,
     Globe,
+    MapPin,
     Moon,
     Save,
     Shield,
@@ -207,8 +208,44 @@ export default function AdminSettings({ settings, sla_configs, sla_enabled }: Pr
                         </SettingsCard>
                     </div>
 
-                    {/* ─── Row 2: Landing Page + SLA Rules ─── */}
+                    {/* ─── Row 2: Coverage Area + Landing Page ─── */}
                     <div className="grid gap-4 lg:grid-cols-2">
+                        <SettingsCard icon={MapPin} title="Coverage Area" sub="Restrict where reports can be submitted">
+                            <div className="px-4 py-3">
+                                <p className="text-[10px] font-medium text-neutral-900 dark:text-neutral-100">Allowed Reporting Area</p>
+                                <p className="mb-3 text-[9px] text-neutral-400">Only accept reports from within this area.</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button type="button" onClick={() => set('coverage_area', 'nasugbu')}
+                                        className={`flex items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-all ${get('coverage_area') === 'nasugbu' ? 'border-blue-500 bg-blue-50/50 dark:border-blue-400 dark:bg-blue-950/20' : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700'}`}>
+                                        <MapPin className={`size-3.5 ${get('coverage_area') === 'nasugbu' ? 'text-blue-500' : 'text-neutral-400'}`} />
+                                        <div className="text-left">
+                                            <p className={`text-[10px] font-bold ${get('coverage_area') === 'nasugbu' ? 'text-blue-700 dark:text-blue-400' : 'text-neutral-600 dark:text-neutral-300'}`}>Nasugbu</p>
+                                            <p className="text-[8px] text-neutral-400">Batangas only</p>
+                                        </div>
+                                    </button>
+                                    <button type="button" onClick={() => set('coverage_area', 'none')}
+                                        className={`flex items-center gap-2 rounded-lg border-2 px-3 py-2.5 transition-all ${get('coverage_area') === 'none' ? 'border-emerald-500 bg-emerald-50/50 dark:border-emerald-400 dark:bg-emerald-950/20' : 'border-neutral-200 hover:border-neutral-300 dark:border-neutral-700'}`}>
+                                        <Globe className={`size-3.5 ${get('coverage_area') === 'none' ? 'text-emerald-500' : 'text-neutral-400'}`} />
+                                        <div className="text-left">
+                                            <p className={`text-[10px] font-bold ${get('coverage_area') === 'none' ? 'text-emerald-700 dark:text-emerald-400' : 'text-neutral-600 dark:text-neutral-300'}`}>None</p>
+                                            <p className="text-[8px] text-neutral-400">Allow anywhere</p>
+                                        </div>
+                                    </button>
+                                </div>
+                                {get('coverage_area') === 'nasugbu' ? (
+                                    <div className="mt-2 flex items-start gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 dark:border-blue-800/40 dark:bg-blue-950/20">
+                                        <MapPin className="mt-0.5 size-3 shrink-0 text-blue-500" />
+                                        <p className="text-[9px] text-blue-600/80 dark:text-blue-400/70">Reports outside Nasugbu, Batangas will be rejected.</p>
+                                    </div>
+                                ) : (
+                                    <div className="mt-2 flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-800/40 dark:bg-emerald-950/20">
+                                        <Globe className="mt-0.5 size-3 shrink-0 text-emerald-500" />
+                                        <p className="text-[9px] text-emerald-600/80 dark:text-emerald-400/70">Reports can be submitted from any location.</p>
+                                    </div>
+                                )}
+                            </div>
+                        </SettingsCard>
+
                         <SettingsCard icon={Globe} title="Landing Page" sub="Public-facing contact information">
                             <SettingInput title="Contact Number" description="Shown in landing page footer" value={get('contact_number')} onChange={(v) => set('contact_number', v)} placeholder="e.g. 0917-123-4567" />
                             <SettingInput title="Facebook Page URL" description="Shown in landing page footer" value={get('fb_page_url')} onChange={(v) => set('fb_page_url', v)} placeholder="e.g. https://facebook.com/FloodTrack" />

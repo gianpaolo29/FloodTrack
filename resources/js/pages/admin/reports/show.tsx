@@ -66,6 +66,14 @@ function formatLastSeen(isoDate: string | null | undefined): string | null {
     return `${Math.floor(diff / 86400)}d ago`;
 }
 
+function getResponderState(updatedAt: string | null | undefined): 'online' | 'stale' | 'offline' {
+    if (!updatedAt) return 'offline';
+    const age = (Date.now() - new Date(updatedAt).getTime()) / 60_000;
+    if (age >= 5) return 'offline';
+    if (age >= 2) return 'stale';
+    return 'online';
+}
+
 const inputClass =
     'w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-800 dark:focus:ring-neutral-500/20';
 
@@ -97,11 +105,19 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
 
     // Real-time location state — patched directly from socket events
     const [liveLocations, setLiveLocations] = useState<Record<number, { lat: number; lng: number; recorded_at: string }>>({});
-    // Tick every 30s so "Xm ago" labels stay fresh
+    // Tick every 5s so online/stale/offline status and "Xm ago" labels stay fresh
     const [, setTick] = useState(0);
     useEffect(() => {
-        const id = setInterval(() => setTick(t => t + 1), 30_000);
+        const id = setInterval(() => setTick(t => t + 1), 5_000);
         return () => clearInterval(id);
+    }, []);
+
+    // Poll report + teams data every 15s to keep statuses and distances fresh
+    useEffect(() => {
+        const iv = setInterval(() => {
+            router.reload({ only: ['report', 'teams', 'schedule_level'], preserveState: true, preserveScroll: true });
+        }, 15_000);
+        return () => clearInterval(iv);
     }, []);
 
     const verifyForm  = useForm({});
@@ -713,13 +729,13 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         {report.team_members.map((m) => {
                                             const live = liveLocations[m.id];
                                             const locTime = live?.recorded_at ?? m.location_updated_at;
-                                            const isOnline = live ? true : (m.is_online ?? false);
+                                            const state = getResponderState(locTime);
                                             const lastSeen = formatLastSeen(locTime);
                                             const distKm = live
                                                 ? Math.round(haversineKm(report.latitude, report.longitude, live.lat, live.lng) * 10) / 10
                                                 : m.distance_km;
                                             return (
-                                                <div key={m.id} className="flex items-center gap-3 px-4 py-3">
+                                                <div key={m.id} className={`flex items-center gap-3 px-4 py-3 ${state === 'offline' ? 'opacity-50' : ''}`}>
                                                     <div className={`relative flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white shadow-sm ${m.is_leader ? 'bg-neutral-900 dark:bg-white dark:text-neutral-900' : 'bg-neutral-500 dark:bg-neutral-400'}`}>
                                                         {m.name.charAt(0).toUpperCase()}
                                                         {m.is_leader && (
@@ -732,7 +748,7 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                             {m.is_leader && <span className="ml-1.5 text-[10px] font-normal text-neutral-500 dark:text-neutral-400">Leader</span>}
                                                         </p>
                                                         <div className="mt-0.5 flex items-center gap-2 text-[10px]">
-                                                            {isOnline ? (
+                                                            {state === 'online' ? (
                                                                 <>
                                                                     <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
                                                                         <span className="relative flex size-1.5">
@@ -740,6 +756,19 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                                             <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
                                                                         </span>
                                                                         Online
+                                                                    </span>
+                                                                    {distKm != null && (
+                                                                        <span className="font-semibold text-blue-600 dark:text-blue-400">{distKm} km</span>
+                                                                    )}
+                                                                    {lastSeen && (
+                                                                        <span className="text-neutral-400">{lastSeen}</span>
+                                                                    )}
+                                                                </>
+                                                            ) : state === 'stale' ? (
+                                                                <>
+                                                                    <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400">
+                                                                        <span className="size-1.5 rounded-full bg-amber-500" />
+                                                                        Stale
                                                                     </span>
                                                                     {distKm != null && (
                                                                         <span className="font-semibold text-blue-600 dark:text-blue-400">{distKm} km</span>
@@ -823,17 +852,24 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         )}
                                         <div className="max-h-[220px] space-y-1.5 overflow-y-auto rounded-xl border border-neutral-200 bg-neutral-50/50 p-1.5 dark:border-neutral-700 dark:bg-neutral-800/50">
                                             {(() => {
+                                                // Compute live distance per team for sorting
+                                                const getLiveDist = (t: any) => {
+                                                    const ll = liveLocations[t.leader_id];
+                                                    return ll && report.latitude && report.longitude
+                                                        ? haversineKm(report.latitude, report.longitude, ll.lat, ll.lng)
+                                                        : t.distance_km;
+                                                };
                                                 const availableTeams = [...teams].sort((a, b) => {
                                                     // Prioritize: unassigned first, then by distance
                                                     const aAssigned = (a.active_assignments ?? 0) > 0 ? 1 : 0;
                                                     const bAssigned = (b.active_assignments ?? 0) > 0 ? 1 : 0;
                                                     if (aAssigned !== bAssigned) return aAssigned - bAssigned;
-                                                    return 0;
-                                                }).sort((a, b) => {
-                                                    if (a.distance_km == null && b.distance_km == null) return 0;
-                                                    if (a.distance_km == null) return 1;
-                                                    if (b.distance_km == null) return -1;
-                                                    return a.distance_km - b.distance_km;
+                                                    const aDist = getLiveDist(a);
+                                                    const bDist = getLiveDist(b);
+                                                    if (aDist == null && bDist == null) return 0;
+                                                    if (aDist == null) return 1;
+                                                    if (bDist == null) return -1;
+                                                    return aDist - bDist;
                                                 });
                                                 if (availableTeams.length === 0) return (
                                                     <div className="flex flex-col items-center gap-1.5 py-6">
@@ -845,6 +881,11 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                 return availableTeams.map((t) => {
                                                 const selected = assignForm.data.team_id === String(t.id);
                                                 const onShift = (t as any).is_on_shift ?? true;
+                                                // Use live leader location for distance if available
+                                                const leaderLive = liveLocations[t.leader_id];
+                                                const teamDistKm = leaderLive && report.latitude && report.longitude
+                                                    ? Math.round(haversineKm(report.latitude, report.longitude, leaderLive.lat, leaderLive.lng) * 10) / 10
+                                                    : t.distance_km;
                                                 return (
                                                     <button
                                                         key={t.id}
@@ -874,10 +915,10 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                             {(t as any).shift && (
                                                                 <span className="text-neutral-400">Shift {(t as any).shift}</span>
                                                             )}
-                                                            {t.distance_km != null && (
+                                                            {teamDistKm != null && (
                                                                 <span className="flex items-center gap-1 font-medium text-blue-600 dark:text-blue-400">
                                                                     <Navigation className="size-2.5" />
-                                                                    {t.distance_km} km
+                                                                    {teamDistKm} km
                                                                 </span>
                                                             )}
                                                         </div>
@@ -887,24 +928,26 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                             if (!leader) return null;
                                                             const lLive = liveLocations[leader.id];
                                                             const lLocTime = lLive?.recorded_at ?? (leader as any).location_updated_at;
-                                                            const lOnline = lLive ? true : ((leader as any).is_online ?? false);
+                                                            const lState = getResponderState(lLocTime);
                                                             const lDist = lLive
                                                                 ? Math.round(haversineKm(report.latitude, report.longitude, lLive.lat, lLive.lng) * 10) / 10
                                                                 : (leader as any).member_distance_km;
                                                             const lLastSeen = formatLastSeen(lLocTime);
+                                                            const dotColor = lState === 'online' ? 'bg-emerald-500' : lState === 'stale' ? 'bg-amber-500' : 'bg-neutral-300 dark:bg-neutral-600';
+                                                            const statusLabel = lState === 'online' ? null : lState === 'stale' ? 'Stale' : 'Offline';
                                                             return (
                                                                 <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
-                                                                    <span className={`size-1.5 shrink-0 rounded-full ${lOnline ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-600'}`} />
+                                                                    <span className={`size-1.5 shrink-0 rounded-full ${dotColor}`} />
                                                                     <span className="truncate text-neutral-600 dark:text-neutral-400">
                                                                         {leader.name} <span className="text-neutral-400 dark:text-neutral-500">★ Leader</span>
                                                                     </span>
-                                                                    {lOnline ? (
+                                                                    {lState !== 'offline' ? (
                                                                         <span className="ml-auto flex items-center gap-1.5 shrink-0">
                                                                             {lDist != null && <span className="font-semibold text-blue-600 dark:text-blue-400">{lDist}km</span>}
                                                                             {lLastSeen && <span className="text-neutral-400">{lLastSeen}</span>}
                                                                         </span>
                                                                     ) : (
-                                                                        <span className="ml-auto text-neutral-400 dark:text-neutral-500 shrink-0">Offline</span>
+                                                                        <span className="ml-auto text-neutral-400 dark:text-neutral-500 shrink-0">{statusLabel}</span>
                                                                     )}
                                                                 </div>
                                                             );

@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Notifications\ReportStatusChanged;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Services\SmsService;
 
 class AutoAssignService
 {
@@ -215,11 +216,12 @@ class AutoAssignService
         }
 
         // Push notifications
+        $address = $report->address ? " at {$report->address}" : '';
         $memberIds = $team->members->pluck('id')->toArray();
         ExpoPushService::sendToUsers(
             $memberIds,
-            "New Assignment — {$report->reference_number}",
-            "You have been assigned to a {$report->severity} flood report. Open the app for details.",
+            "🚨 Your team has been dispatched!",
+            "A {$report->severity} flood incident{$address} needs your response. Stay safe, stay ready!",
             ['type' => 'assignment', 'reportId' => $report->id]
         );
 
@@ -237,6 +239,36 @@ class AutoAssignService
                 'reference' => $report->reference_number,
                 'status'    => 'assigned',
             ]);
+        }
+
+        // Notify the resident (report owner) that a responder has been assigned
+        $report->loadMissing('user');
+        if ($report->user) {
+            $report->user->notify(new ReportStatusChanged($report, $oldStatus, 'assigned', $assignerName));
+
+            ExpoPushService::sendToUsers(
+                $report->user_id,
+                "🛟 Help is on the way!",
+                "A rescue team has been dispatched to your report ({$report->reference_number}). Hang tight!",
+                [
+                    'type'     => 'assignment_update',
+                    'reportId' => $report->id,
+                    'status'   => 'assigned',
+                ],
+                'my_reports'
+            );
+
+            SmsService::queueToUsers(
+                $report->user_id,
+                SmsService::format(
+                    "Help is on the way!",
+                    "A rescue team has been dispatched to your report ({$report->reference_number}). Hang tight!"
+                ),
+                'my_reports'
+            );
+
+            SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'assigned']);
+            SocketService::toUser($report->user_id, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'assigned']);
         }
     }
 }

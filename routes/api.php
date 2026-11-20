@@ -98,6 +98,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me',   [UserController::class, 'me']);
     Route::patch('/me', [UserController::class, 'update']);
 
+    // App config
+    Route::get('/app-config', function () {
+        return response()->json([
+            'default_latitude'  => (float) \App\Models\Setting::getValue('default_latitude', 14.0681),
+            'default_longitude' => (float) \App\Models\Setting::getValue('default_longitude', 120.6236),
+            'coverage_area'     => \App\Models\Setting::getValue('coverage_area', 'nasugbu'),
+            'quick_chips'       => [],
+        ]);
+    });
+
     // Push notification tokens
     Route::post('/device-tokens',   [DeviceTokenController::class, 'store']);
     Route::delete('/device-tokens', [DeviceTokenController::class, 'destroy']);

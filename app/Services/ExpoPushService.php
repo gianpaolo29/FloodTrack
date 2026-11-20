@@ -121,10 +121,11 @@ class ExpoPushService
         $type = $data['type'] ?? '';
 
         return match (true) {
-            in_array($type, ['critical_alert', 'emergency']) => 'floodtrack-critical',
-            in_array($type, ['advisory', 'weather_alert'])   => 'floodtrack-advisory',
-            in_array($type, ['new_message', 'chat'])         => 'floodtrack-messages',
-            default                                          => 'floodtrack-updates',
+            in_array($type, ['critical_alert', 'emergency'])          => 'floodtrack-critical',
+            in_array($type, ['advisory', 'weather_alert'])            => 'floodtrack-advisory',
+            in_array($type, ['assignment', 'assignment_update'])      => 'floodtrack-advisory',
+            in_array($type, ['new_message', 'chat'])                  => 'floodtrack-messages',
+            default                                                   => 'floodtrack-updates',
         };
     }
 

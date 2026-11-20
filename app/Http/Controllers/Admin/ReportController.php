@@ -120,12 +120,13 @@ class ReportController extends Controller
                 'leader_id' => $t->leader_id,
                 'on_duty'   => $t->members->contains('is_on_duty', true),
                 'members'   => $t->members->map(fn (User $m) => [
-                    'id'           => $m->id,
-                    'name'         => $m->name,
-                    'avatar_url'   => $m->avatar_url,
-                    'is_on_duty'   => (bool) $m->is_on_duty,
-                    'is_leader'    => $m->id === $t->leader_id,
-                    'has_location' => (bool) ($m->current_latitude && $m->current_longitude),
+                    'id'                  => $m->id,
+                    'name'                => $m->name,
+                    'avatar_url'          => $m->avatar_url,
+                    'is_on_duty'          => (bool) $m->is_on_duty,
+                    'is_leader'           => $m->id === $t->leader_id,
+                    'has_location'        => (bool) ($m->current_latitude && $m->current_longitude),
+                    'location_updated_at' => $m->location_updated_at?->toIso8601String(),
                 ]),
                 'active_report' => Report::where('status', 'assigned')
                     ->where('assigned_team_id', $t->id)
@@ -328,6 +329,31 @@ class ReportController extends Controller
     public function destroy(Report $report, Request $request): RedirectResponse
     {
         $ref = $report->reference_number;
+
+        // Notify assigned responders before deleting
+        if ($report->assigned_team_id) {
+            $memberIds = DB::table('report_responders')
+                ->where('report_id', $report->id)
+                ->pluck('user_id');
+
+            foreach ($memberIds as $uid) {
+                SocketService::toUser($uid, 'report-status', ['reportId' => $report->id, 'status' => 'deleted']);
+                SocketService::toUser($uid, 'new-notification', ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'deleted']);
+                SocketService::refreshAssignments($uid);
+            }
+
+            if ($memberIds->isNotEmpty()) {
+                ExpoPushService::sendToUsers(
+                    $memberIds->toArray(),
+                    "Assignment Cancelled — {$ref}",
+                    'This report has been removed. No further action is needed.',
+                    ['type' => 'assignment', 'reportId' => $report->id]
+                );
+            }
+        }
+
+        // Notify the resident
+        SocketService::toUser($report->user_id, 'report-status', ['reportId' => $report->id, 'status' => 'deleted']);
 
         $report->statusUpdates()->delete();
         $report->media()->delete();
@@ -615,8 +641,6 @@ class ReportController extends Controller
         $oldStatus = $report->status;
 
         AutoAssignService::assignTeamToReport($report, $team, $request->user());
-
-        $this->notifyStatusChange($report, $oldStatus, 'assigned', $request->user()->name);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Assigned to team \"{$team->name}\"."]);
 

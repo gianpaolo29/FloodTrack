@@ -155,6 +155,7 @@ export interface MapTeamMember {
     is_on_duty: boolean;
     is_leader: boolean;
     has_location: boolean;
+    location_updated_at: string | null;
 }
 
 export interface MapTeam {
