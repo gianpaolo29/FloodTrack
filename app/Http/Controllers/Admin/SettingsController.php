@@ -53,6 +53,7 @@ class SettingsController extends Controller
             // Convert frontend values to proper storage format
             $storeValue = match ($setting->type) {
                 'boolean' => in_array($value, ['1', 'true', true], true) ? '1' : '0',
+                'integer' => (string) max(0, (int) $value),
                 default   => (string) $value,
             };
 

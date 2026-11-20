@@ -339,8 +339,13 @@ function SettingInput({
             <input
                 type={type}
                 value={value}
-                onChange={(e) => onChange(e.target.value)}
+                onChange={(e) => {
+                    const val = e.target.value;
+                    if (type === 'number' && val !== '' && Number(val) < 0) return;
+                    onChange(val);
+                }}
                 placeholder={placeholder}
+                {...(type === 'number' ? { min: 0 } : {})}
                 className={inputCls}
             />
         </div>

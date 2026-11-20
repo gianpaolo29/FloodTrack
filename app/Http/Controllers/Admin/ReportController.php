@@ -339,7 +339,7 @@ class ReportController extends Controller
     public function resolve(Report $report, Request $request): RedirectResponse
     {
         $request->validate([
-            'notes' => 'required|string|max:1000',
+            'notes' => 'nullable|string|max:1000',
         ]);
 
         if (in_array($report->status, ['resolved', 'rejected'])) {

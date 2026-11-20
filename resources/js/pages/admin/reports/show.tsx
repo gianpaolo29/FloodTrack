@@ -916,19 +916,9 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                         <label className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
                                             Resolve report
                                         </label>
-                                        <textarea
-                                            placeholder="Resolution notes (required) — e.g. Floodwaters receded, road cleared"
-                                            value={resolveForm.data.notes}
-                                            onChange={(e) => resolveForm.setData('notes', e.target.value)}
-                                            rows={2}
-                                            className={`${inputClass} resize-none`}
-                                        />
-                                        {resolveForm.errors.notes && (
-                                            <p className="text-[10px] font-medium text-red-500">{resolveForm.errors.notes}</p>
-                                        )}
                                         <button
                                             type="submit"
-                                            disabled={resolveForm.processing || !resolveForm.data.notes.trim()}
+                                            disabled={resolveForm.processing}
                                             className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 hover:shadow-md disabled:opacity-50"
                                         >
                                             <CheckCircle2 className="size-4" />
