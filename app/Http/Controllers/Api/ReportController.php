@@ -136,13 +136,19 @@ class ReportController extends Controller
 
         // Store voice note
         if ($request->hasFile('voice_note')) {
-            $voiceFile = $request->file('voice_note');
-            $voicePath = $voiceFile->store('reports/' . $report->id, 'public');
-            $report->media()->create([
-                'file_path' => $voicePath,
-                'file_type' => 'audio',
-                'file_size' => $voiceFile->getSize(),
-            ]);
+            try {
+                $voiceFile = $request->file('voice_note');
+                $voicePath = $voiceFile->store('reports/' . $report->id, 'public');
+                if ($voicePath) {
+                    $report->media()->create([
+                        'file_path' => $voicePath,
+                        'file_type' => 'audio',
+                        'file_size' => $voiceFile->getSize(),
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('Voice note storage failed: ' . $e->getMessage());
+            }
         }
 
         ReportStatusUpdate::create([
