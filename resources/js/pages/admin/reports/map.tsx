@@ -582,10 +582,9 @@ interface LiveResponder {
     avatar_url: string | null;
     team_id: number | null;
     team_name: string | null;
-    team_member_count: number;
+    is_leader: boolean;
     status: ResponderMapStatus;
     location_updated_at: string;
-    active_report?: { id: number; reference_number: string; severity: string; address: string | null } | null;
 }
 
 function getResponderState(updatedAt: string | null): 'online' | 'stale' | 'offline' {
@@ -612,10 +611,9 @@ function useMapSocket(initial: MapResponder[], initialOnDuty: number, onNewRepor
                     avatar_url: r.avatar_url,
                     team_id: r.team_id,
                     team_name: r.team?.name ?? null,
-                    team_member_count: (r as any).team_member_count ?? 0,
+                    is_leader: !!(r as any).is_leader,
                     status: 'idle',
                     location_updated_at: r.location_updated_at ?? new Date().toISOString(),
-                    active_report: (r as any).active_report ?? null,
                 });
             }
         }
@@ -663,7 +661,7 @@ function useMapSocket(initial: MapResponder[], initialOnDuty: number, onNewRepor
                             avatar_url: existing?.avatar_url ?? null,
                             team_id: p.team_id ?? existing?.team_id ?? null,
                             team_name: existing?.team_name ?? null,
-                            team_member_count: existing?.team_member_count ?? 0,
+                            is_leader: existing?.is_leader ?? false,
                             status: existing?.status ?? 'idle',
                             location_updated_at: p.recorded_at,
                         });
@@ -686,7 +684,7 @@ function useMapSocket(initial: MapResponder[], initialOnDuty: number, onNewRepor
                             avatar_url: existing?.avatar_url ?? null,
                             team_id: existing?.team_id ?? null,
                             team_name: existing?.team_name ?? null,
-                            team_member_count: existing?.team_member_count ?? 0,
+                            is_leader: existing?.is_leader ?? false,
                             status: existing?.status ?? 'idle',
                             location_updated_at: p.timestamp,
                         });
@@ -1069,11 +1067,11 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                 </div>
                                 <div className="space-y-1">
                                     {[...teams]
-                                        .filter((t) => t.on_duty)
+                                        .filter((t) => t.members.some(m => m.has_location))
                                         .filter((t) => !selectedTeam || selectedTeam.id === t.id)
                                         .map((t) => {
                                         const isSelected = selectedTeam?.id === t.id;
-                                        const onDutyMembers = t.members.filter(m => m.is_on_duty).length;
+                                        const onlineMembers = t.members.filter(m => m.has_location).length;
                                         return (
                                             <div key={`team-${t.id}`}>
                                                 <button
@@ -1082,24 +1080,20 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                         isSelected
                                                             ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-900/20 dark:ring-blue-700'
                                                             : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
-                                                    } ${!t.on_duty ? 'opacity-50' : ''}`}
+                                                    }`}
                                                 >
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div className="flex items-center gap-2 min-w-0">
-                                                            <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${t.on_duty ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>
+                                                            <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-[9px] font-bold text-emerald-700">
                                                                 {t.name.charAt(0).toUpperCase()}
                                                             </span>
                                                             <div className="min-w-0">
                                                                 <span className="block truncate text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">{t.name}</span>
-                                                                <span className="block truncate text-[9px] text-neutral-400">{t.members.length} members · {onDutyMembers} on duty</span>
+                                                                <span className="block truncate text-[9px] text-neutral-400">{t.members.length} members · {onlineMembers} online</span>
                                                             </div>
                                                         </div>
-                                                        <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
-                                                            t.on_duty
-                                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                                                                : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'
-                                                        }`}>
-                                                            {t.on_duty ? 'On Duty' : 'Off Duty'}
+                                                        <span className="shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                            On Duty
                                                         </span>
                                                     </div>
                                                     {!isSelected && t.active_report && (
@@ -1112,9 +1106,9 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                 {isSelected && (
                                                     <div className="mt-1 ml-2 space-y-0.5">
                                                         {[...t.members]
-                                                            .sort((a, b) => (a.is_leader ? -1 : b.is_leader ? 1 : (a.is_on_duty === b.is_on_duty ? 0 : a.is_on_duty ? -1 : 1)))
+                                                            .sort((a, b) => (a.is_leader ? -1 : b.is_leader ? 1 : (a.has_location === b.has_location ? 0 : a.has_location ? -1 : 1)))
                                                             .map((m) => (
-                                                            <div key={`member-${m.id}`} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${!m.is_on_duty ? 'opacity-40' : ''}`}>
+                                                            <div key={`member-${m.id}`} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${!m.has_location ? 'opacity-40' : ''}`}>
                                                                 {m.avatar_url ? (
                                                                     <img src={m.avatar_url} alt="" className="size-5 shrink-0 rounded-full object-cover" />
                                                                 ) : (
@@ -1128,7 +1122,13 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                                         {m.is_leader && <span className="ml-1 text-[8px] font-bold text-blue-500">Leader</span>}
                                                                     </span>
                                                                 </div>
-                                                                <span className={`size-1.5 shrink-0 rounded-full ${m.is_on_duty ? 'bg-emerald-500' : 'bg-neutral-300'}`} />
+                                                                <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[8px] font-bold ${
+                                                                    m.has_location
+                                                                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                                        : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'
+                                                                }`}>
+                                                                    {m.has_location ? 'Online' : 'Offline'}
+                                                                </span>
                                                             </div>
                                                         ))}
                                                         {t.active_report && (
@@ -1377,9 +1377,9 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                             );
                         })}
 
-                        {/* Responder markers */}
-                        {showResponders && liveResponders.map((r) => {
-                            const assignedReport = r.active_report ?? reports.find(rp => rp.status === 'assigned' && (rp.assigned_to === r.id || rp.assigned_team?.id === r.team_id));
+                        {/* Responder markers — only visible when their team is selected */}
+                        {showResponders && selectedTeam && liveResponders.filter(r => r.team_id === selectedTeam.id).map((r) => {
+                            const assignedReport = selectedTeam.active_report;
                             const state = getResponderState(r.location_updated_at);
                             const stale = state !== 'online';
                             return (
@@ -1401,8 +1401,11 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                     </div>
                                                 )}
                                                 <div className="min-w-0">
-                                                    <p className="text-xs font-bold text-neutral-900">{r.team_name ?? r.name}</p>
-                                                    <p className="text-[10px] text-gray-500">{r.name} · {r.team_member_count} member{r.team_member_count !== 1 ? 's' : ''}</p>
+                                                    <p className="text-xs font-bold text-neutral-900">
+                                                        {r.name}
+                                                        {r.is_leader && <span className="ml-1 text-[9px] font-bold text-blue-500">Leader</span>}
+                                                    </p>
+                                                    <p className="text-[10px] text-gray-500">{r.team_name}</p>
                                                 </div>
                                             </div>
 
@@ -1418,23 +1421,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                                 </span>
                                                 <span className="text-gray-400">·</span>
                                                 <span className="text-gray-500">{formatLastSeen(r.location_updated_at)}</span>
-                                            </div>
-
-                                            {/* Assignment status */}
-                                            <div className="rounded-lg border border-neutral-100 bg-neutral-50 px-2.5 py-2">
-                                                {assignedReport ? (
-                                                    <div className="flex flex-col gap-1">
-                                                        <div className="flex items-center gap-1.5">
-                                                            <span className="size-1.5 rounded-full" style={{ backgroundColor: SEVERITY_META[assignedReport.severity].hex }} />
-                                                            <span className="text-[10px] font-semibold text-neutral-700">Assigned — {assignedReport.severity}</span>
-                                                        </div>
-                                                        {assignedReport.address && (
-                                                            <p className="text-[10px] leading-snug text-gray-500">{assignedReport.address}</p>
-                                                        )}
-                                                    </div>
-                                                ) : (
-                                                    <span className="text-[10px] font-medium text-gray-400">Not assigned to any report</span>
-                                                )}
                                             </div>
                                         </div>
                                     </Popup>

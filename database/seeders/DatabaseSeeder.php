@@ -10,7 +10,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             DumpSeeder::class,
-            ReportDumpSeeder::class,
         ]);
     }
 }

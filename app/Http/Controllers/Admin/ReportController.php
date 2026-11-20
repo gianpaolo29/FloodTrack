@@ -77,24 +77,17 @@ class ReportController extends Controller
             ->whereNotNull('longitude')
             ->get();
 
+        // All on-duty responders with GPS — shown on map only when their team is selected
         $responders = User::where('role', 'responder')
             ->where('is_on_duty', true)
             ->whereNotNull('current_latitude')
             ->whereNotNull('current_longitude')
-            ->whereHas('team', fn ($q) => $q->whereColumn('leader_id', 'users.id'))
+            ->whereNotNull('team_id')
             ->select(['id', 'name', 'avatar', 'team_id', 'current_latitude', 'current_longitude', 'location_updated_at'])
-            ->with(['team:id,name', 'team.members' => fn ($q) => $q->select('id', 'team_id')->where('is_on_duty', true)])
+            ->with('team:id,name,leader_id')
             ->get()
             ->map(function ($r) {
-                $r->team_member_count = $r->team?->members?->count() ?? 0;
-                unset($r->team->members);
-
-                // Attach the active assigned report (if any) so the popup always shows it
-                $r->active_report = Report::where('status', 'assigned')
-                    ->where(fn ($q) => $q->where('assigned_to', $r->id)->orWhere('assigned_team_id', $r->team_id))
-                    ->select(['id', 'reference_number', 'severity', 'address'])
-                    ->first();
-
+                $r->is_leader = $r->id === $r->team?->leader_id;
                 return $r;
             });
 

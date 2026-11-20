@@ -141,11 +141,11 @@ export interface MapResponder {
     name: string;
     avatar_url: string | null;
     team_id: number | null;
-    team?: { id: number; name: string } | null;
+    team?: { id: number; name: string; leader_id?: number } | null;
     current_latitude: number;
     current_longitude: number;
     location_updated_at: string | null;
-    active_report?: { id: number; reference_number: string; severity: string; address: string | null } | null;
+    is_leader?: boolean;
 }
 
 export interface MapTeamMember {
