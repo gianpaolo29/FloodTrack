@@ -934,21 +934,12 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                                 : (leader as any).member_distance_km;
                                                             const lLastSeen = formatLastSeen(lLocTime);
                                                             const dotColor = lState === 'online' ? 'bg-emerald-500' : lState === 'stale' ? 'bg-amber-500' : 'bg-neutral-300 dark:bg-neutral-600';
-                                                            const statusLabel = lState === 'online' ? null : lState === 'stale' ? 'Stale' : 'Offline';
                                                             return (
                                                                 <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
                                                                     <span className={`size-1.5 shrink-0 rounded-full ${dotColor}`} />
                                                                     <span className="truncate text-neutral-600 dark:text-neutral-400">
                                                                         {leader.name} <span className="text-neutral-400 dark:text-neutral-500">★ Leader</span>
                                                                     </span>
-                                                                    {lState !== 'offline' ? (
-                                                                        <span className="ml-auto flex items-center gap-1.5 shrink-0">
-                                                                            {lDist != null && <span className="font-semibold text-blue-600 dark:text-blue-400">{lDist}km</span>}
-                                                                            {lLastSeen && <span className="text-neutral-400">{lLastSeen}</span>}
-                                                                        </span>
-                                                                    ) : (
-                                                                        <span className="ml-auto text-neutral-400 dark:text-neutral-500 shrink-0">{statusLabel}</span>
-                                                                    )}
                                                                 </div>
                                                             );
                                                         })()}
