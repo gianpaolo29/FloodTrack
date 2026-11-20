@@ -207,19 +207,18 @@ class DumpSeeder extends Seeder
         $this->call(EvacuationCenterSeeder::class);
         $this->call(ProtocolSeeder::class);
 
-        $admin      = $this->seedAdmin();
-        $residents  = $this->seedResidents();
-        $teams      = $this->seedTeams();
-        $responders = collect($teams)->flatMap(fn ($t) => $t->responders)->values()->all();
-        $images     = $this->downloadImages();
+        $this->seedAdmin();
+        $this->seedResidents();
+        $this->seedTeams();
 
-        $this->seedReports($residents, $teams, $responders, $admin, $images);
+        $admin = User::where('role', 'admin')->first();
         $this->seedHazards($admin);
         $this->seedAlerts($admin);
         $this->resetEvacuationOccupancy();
 
         $this->command->info('');
-        $this->command->info('Done! DumpSeeder complete.');
+        $this->command->info('Done! DumpSeeder complete (base data only, no reports).');
+        $this->command->info('Run `php artisan db:seed --class=ReportDumpSeeder` to seed 600 reports.');
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════
@@ -403,11 +402,11 @@ class DumpSeeder extends Seeder
     private function seedReports(array $residents, array $teams, array $responders, User $admin, array $images): void
     {
         // ── Distribution targets ──
-        // Status: pending 108, rejected 60 (45 dup + 15 invalid), verified 18,
-        //         assigned 18, en_route 12, on_scene 24, resolved 360 = 600
+        // Status: resolved 540, rejected 60 (45 dup + 15 invalid) = 600
         // Severity: low 210, moderate 210, high 120, critical 60
         // Channel: app 450 (GPS), messenger 150 (landmark)
         // Location: 360 in flood-prone (first 10 brgys), 240 in other 32
+        // Avg response time (created_at → resolved_at): ~20-30 min
 
         $total    = 600;
         $now      = Carbon::now();
@@ -429,16 +428,11 @@ class DumpSeeder extends Seeder
         );
         shuffle($severityPool);
 
-        // Build status pool
+        // Build status pool: only resolved and rejected
         $statusPool = array_merge(
-            array_fill(0, 108, 'pending'),
             array_fill(0, 45, 'rejected_dup'),
             array_fill(0, 15, 'rejected_invalid'),
-            array_fill(0, 18, 'verified'),
-            array_fill(0, 18, 'assigned'),
-            array_fill(0, 12, 'en_route'),
-            array_fill(0, 24, 'on_scene'),
-            array_fill(0, 360, 'resolved'),
+            array_fill(0, 540, 'resolved'),
         );
         shuffle($statusPool);
 
@@ -500,10 +494,7 @@ class DumpSeeder extends Seeder
 
             // Map internal statuses to reports.status enum
             $reportStatus = match ($finalStatus) {
-                'pending'   => 'pending',
                 'rejected'  => 'rejected',
-                'verified'  => 'verified',
-                'assigned','en_route','on_scene' => 'assigned',
                 'resolved'  => 'resolved',
             };
 
@@ -536,33 +527,35 @@ class DumpSeeder extends Seeder
 
             $verifiedAt = null;
             $assignedAt = null;
+            $enRouteAt  = null;
+            $onSceneAt  = null;
             $resolvedAt = null;
             $assignedTeam = null;
             $assignedResponder = null;
 
             // Status progression timestamps
             // Target: 20-30 min avg total response time (created_at → resolved_at)
-            if (!in_array($finalStatus, ['pending'])) {
-                // Submitted → Verified/Rejected: 2-5 min
-                $verifiedAt = $createdAt->copy()->addMinutes((int)(rand(2, 5) * $speedFactor));
-            }
+            // Base total: 3-5 + 2-4 + 2-3 + 5-8 + 8-12 = 20-32 min
+            // With speedFactor: critical ~13 min, high ~18 min, moderate ~26 min, low ~34 min
+            // Weighted avg ≈ 25 min
 
-            if (in_array($finalStatus, ['assigned','en_route','on_scene','resolved'])) {
-                // Verified → Assigned: 1-3 min
-                $assignedAt = $verifiedAt->copy()->addMinutes((int)(rand(1, 3) * $speedFactor));
+            // Submitted → Verified/Rejected: 3-5 min
+            $verifiedAt = $createdAt->copy()->addMinutes((int)(rand(3, 5) * $speedFactor));
+
+            if ($finalStatus === 'resolved') {
+                // Verified → Assigned: 2-4 min
+                $assignedAt = $verifiedAt->copy()->addMinutes((int)(rand(2, 4) * $speedFactor));
                 $teamIdx = $responderIdx % $teamCount;
                 $assignedTeam = $teams[$teamIdx];
                 $assignedResponder = $responders[$responderIdx % $responderCount];
                 $responderIdx++;
-            }
 
-            if ($finalStatus === 'resolved') {
-                // Assigned → En Route: 1-3 min
-                $enRouteAt = $assignedAt->copy()->addMinutes((int)(rand(1, 3) * $speedFactor));
-                // En Route → On Scene: 3-8 min
-                $onSceneAt = $enRouteAt->copy()->addMinutes((int)(rand(3, 8) * $speedFactor));
-                // On Scene → Resolved: 5-15 min
-                $resolvedAt = $onSceneAt->copy()->addMinutes((int)(rand(5, 15) * $speedFactor));
+                // Assigned → En Route: 2-3 min
+                $enRouteAt = $assignedAt->copy()->addMinutes((int)(rand(2, 3) * $speedFactor));
+                // En Route → On Scene: 5-8 min
+                $onSceneAt = $enRouteAt->copy()->addMinutes((int)(rand(5, 8) * $speedFactor));
+                // On Scene → Resolved: 8-12 min
+                $resolvedAt = $onSceneAt->copy()->addMinutes((int)(rand(8, 12) * $speedFactor));
             }
 
             // depth_ft based on severity
@@ -607,36 +600,28 @@ class DumpSeeder extends Seeder
             // ── Status history ──
             $statusHistoryCount += $this->seedStatusHistory(
                 $report, $finalStatus, $admin, $assignedResponder,
-                $createdAt, $verifiedAt, $assignedAt, $resolvedAt, $severity
+                $createdAt, $verifiedAt, $assignedAt, $enRouteAt, $onSceneAt, $resolvedAt
             );
 
             // ── SLA tracking ──
             $this->seedSla($report, $severity, $createdAt, $verifiedAt, $assignedAt, $resolvedAt);
 
-            // ── Responder assignments ──
-            if ($assignedResponder && in_array($finalStatus, ['assigned','en_route','on_scene','resolved'])) {
-                $pivotStatus = match ($finalStatus) {
-                    'assigned'  => 'pending',
-                    'en_route'  => 'en_route',
-                    'on_scene'  => 'on_scene',
-                    'resolved'  => 'resolved',
-                };
+            // ── Responder assignments (only for resolved reports) ──
+            if ($assignedResponder && $finalStatus === 'resolved') {
                 ReportResponder::firstOrCreate(
                     ['report_id' => $report->id, 'user_id' => $assignedResponder->id],
                     [
                         'role'        => 'lead',
-                        'status'      => $pivotStatus,
-                        'en_route_at' => in_array($finalStatus, ['en_route','on_scene','resolved'])
-                            ? $assignedAt->copy()->addMinutes((int)(rand(1, 3) * $speedFactor)) : null,
-                        'on_scene_at' => in_array($finalStatus, ['on_scene','resolved'])
-                            ? $assignedAt->copy()->addMinutes((int)(rand(4, 10) * $speedFactor)) : null,
-                        'resolved_at' => $finalStatus === 'resolved' ? $resolvedAt : null,
+                        'status'      => 'resolved',
+                        'en_route_at' => $enRouteAt,
+                        'on_scene_at' => $onSceneAt,
+                        'resolved_at' => $resolvedAt,
                     ]
                 );
                 $responderAssignCount++;
 
-                // Second responder on critical resolved reports
-                if ($severity === 'critical' && $finalStatus === 'resolved') {
+                // Second responder on critical reports
+                if ($severity === 'critical') {
                     $secondResp = $responders[($responderIdx) % $responderCount];
                     if ($secondResp->id !== $assignedResponder->id) {
                         ReportResponder::firstOrCreate(
@@ -644,8 +629,8 @@ class DumpSeeder extends Seeder
                             [
                                 'role'        => 'support',
                                 'status'      => 'resolved',
-                                'en_route_at' => $assignedAt->copy()->addMinutes((int)(rand(1, 4) * $speedFactor)),
-                                'on_scene_at' => $assignedAt->copy()->addMinutes((int)(rand(5, 12) * $speedFactor)),
+                                'en_route_at' => $enRouteAt->copy()->addMinutes(rand(1, 3)),
+                                'on_scene_at' => $onSceneAt->copy()->addMinutes(rand(1, 3)),
                                 'resolved_at' => $resolvedAt,
                             ]
                         );
@@ -696,16 +681,13 @@ class DumpSeeder extends Seeder
         $this->command->info("  Notifications: {$notifCount}");
     }
 
-    // ── Status history with correct row counts per final status ──
+    // ── Status history — only resolved (6 rows) or rejected (2 rows) ──
     private function seedStatusHistory(
         Report $report, string $finalStatus, User $admin, ?User $responder,
-        Carbon $created, ?Carbon $verified, ?Carbon $assigned, ?Carbon $resolved,
-        string $severity
+        Carbon $created, ?Carbon $verified, ?Carbon $assigned,
+        ?Carbon $enRoute, ?Carbon $onScene, ?Carbon $resolved
     ): int {
         $rows = 0;
-        $speedFactor = match ($severity) {
-            'critical' => 0.5, 'high' => 0.7, 'moderate' => 1.0, 'low' => 1.3,
-        };
 
         // Row 1: pending (always)
         ReportStatusUpdate::create([
@@ -715,9 +697,7 @@ class DumpSeeder extends Seeder
         ]);
         $rows++;
 
-        if ($finalStatus === 'pending') return $rows;
-
-        // Row 2: verified or rejected
+        // Rejected: pending → rejected (2 rows)
         if ($finalStatus === 'rejected') {
             ReportStatusUpdate::create([
                 'report_id' => $report->id, 'user_id' => $admin->id,
@@ -727,61 +707,44 @@ class DumpSeeder extends Seeder
                     : 'Report does not meet verification criteria.',
                 'created_at' => $verified, 'updated_at' => $verified,
             ]);
-            return $rows + 1; // 2 rows total for rejected
+            return $rows + 1;
         }
 
-        // Row 2: verified
+        // Resolved: pending → verified → assigned → en_route → on_scene → resolved (6 rows)
+        $teamName = $report->assignedTeam?->name ?? 'response team';
+
         ReportStatusUpdate::create([
             'report_id' => $report->id, 'user_id' => $admin->id,
             'status' => 'verified', 'notes' => 'Report verified by MDRRMO admin.',
             'created_at' => $verified, 'updated_at' => $verified,
         ]);
-        $rows++;
 
-        if ($finalStatus === 'verified') return $rows; // 2 rows
-
-        // Row 3: assigned
-        $teamName = $report->assignedTeam?->name ?? 'response team';
         ReportStatusUpdate::create([
             'report_id' => $report->id, 'user_id' => $admin->id,
-            'status' => 'assigned',
-            'notes' => "Assigned to {$teamName}.",
+            'status' => 'assigned', 'notes' => "Assigned to {$teamName}.",
             'created_at' => $assigned, 'updated_at' => $assigned,
         ]);
-        $rows++;
 
-        if ($finalStatus === 'assigned') return $rows; // 3 rows
-
-        // Row 4: en_route
-        $enRouteAt = $assigned->copy()->addMinutes((int)(rand(1, 5) * $speedFactor));
         ReportStatusUpdate::create([
             'report_id' => $report->id, 'user_id' => $responder?->id,
             'status' => 'en_route', 'notes' => 'Responder en route to location.',
-            'created_at' => $enRouteAt, 'updated_at' => $enRouteAt,
+            'created_at' => $enRoute, 'updated_at' => $enRoute,
         ]);
-        $rows++;
 
-        if ($finalStatus === 'en_route') return $rows; // 4 rows
-
-        // Row 5: on_scene
-        $onSceneAt = $enRouteAt->copy()->addMinutes((int)(rand(15, 45) * $speedFactor));
         ReportStatusUpdate::create([
             'report_id' => $report->id, 'user_id' => $responder?->id,
             'status' => 'on_scene', 'notes' => 'Responder arrived on scene. Assessing situation.',
-            'created_at' => $onSceneAt, 'updated_at' => $onSceneAt,
+            'created_at' => $onScene, 'updated_at' => $onScene,
         ]);
-        $rows++;
 
-        if ($finalStatus === 'on_scene') return $rows; // 5 rows
-
-        // Row 6: resolved
         ReportStatusUpdate::create([
             'report_id' => $report->id, 'user_id' => $responder?->id ?? $admin->id,
             'status' => 'resolved',
             'notes' => 'Situation resolved. Floodwater receded and affected residents assisted.',
             'created_at' => $resolved, 'updated_at' => $resolved,
         ]);
-        return $rows + 1; // 6 rows for resolved
+
+        return $rows + 5; // 6 rows total for resolved
     }
 
     // ── SLA tracking ──

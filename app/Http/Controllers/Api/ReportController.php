@@ -163,6 +163,17 @@ class ReportController extends Controller
             'notes'     => 'Report submitted.',
         ]);
 
+        // Notify all connected clients (responders + admin) in real-time
+        SocketService::toAll('new-report', [
+            'reportId' => $report->id,
+            'severity' => $report->severity,
+            'address'  => $report->address,
+        ]);
+        SocketService::toAll('new-notification', [
+            'type'     => 'new_report',
+            'reportId' => $report->id,
+        ]);
+
         // Dispatch async AI analysis (duplicate detection, verification, auto-processing)
         AnalyzeReportJob::dispatch($report->id);
 

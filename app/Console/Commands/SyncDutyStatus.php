@@ -96,9 +96,12 @@ class SyncDutyStatus extends Command
             }
 
             // Emit duty.changed via socket — to admin and to the responder
+            // Include team-level on-duty count so admin map can track teams (not individuals)
+            $teamOnDutyCount = \App\Models\Team::whereHas('members', fn ($q) => $q->where('is_on_duty', true))->count();
             SocketService::toAll('duty.changed', [
-                'user_id' => $responder->id,
-                'on_duty' => $shouldBeOnDuty,
+                'user_id'             => $responder->id,
+                'on_duty'             => $shouldBeOnDuty,
+                'teams_on_duty_count' => $teamOnDutyCount,
             ]);
             SocketService::toUser($responder->id, 'duty.changed', [
                 'user_id' => $responder->id,

@@ -49,6 +49,23 @@ interface Props {
 
 const SEVERITY_OPTIONS = ['low', 'moderate', 'high', 'critical'] as const;
 
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatLastSeen(isoDate: string | null | undefined): string | null {
+    if (!isoDate) return null;
+    const diff = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return `${Math.floor(diff / 86400)}d ago`;
+}
+
 const inputClass =
     'w-full rounded-xl border border-neutral-200 bg-neutral-50/50 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-neutral-400 focus:border-neutral-400 focus:bg-white focus:ring-2 focus:ring-neutral-500/10 dark:border-neutral-700 dark:bg-neutral-800/50 dark:placeholder:text-neutral-500 dark:focus:border-neutral-500 dark:focus:bg-neutral-800 dark:focus:ring-neutral-500/20';
 
@@ -77,6 +94,15 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
 
     const [editing, setEditing] = useState(false);
     const [deleting, setDeleting] = useState(false);
+
+    // Real-time location state — patched directly from socket events
+    const [liveLocations, setLiveLocations] = useState<Record<number, { lat: number; lng: number; recorded_at: string }>>({});
+    // Tick every 30s so "Xm ago" labels stay fresh
+    const [, setTick] = useState(0);
+    useEffect(() => {
+        const id = setInterval(() => setTick(t => t + 1), 30_000);
+        return () => clearInterval(id);
+    }, []);
 
     const verifyForm  = useForm({});
     const rejectForm  = useForm({ notes: '' });
@@ -142,7 +168,32 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                 socket.on('report-status', reload);
                 socket.on('member-status-updated', reload);
                 socket.on('responder.status', reload);
-                socket.on('responder.location', reload);
+                // Patch location in real-time instead of full Inertia reload
+                socket.on('responder.location', (data: any) => {
+                    if (data?.user_id) {
+                        setLiveLocations(prev => ({
+                            ...prev,
+                            [data.user_id]: {
+                                lat: data.lat,
+                                lng: data.lng,
+                                recorded_at: data.recorded_at,
+                            },
+                        }));
+                    }
+                });
+                // Also listen for location.updated from admin:responders room (auto-joined for admins)
+                socket.on('location.updated', (data: any) => {
+                    if (data?.user_id) {
+                        setLiveLocations(prev => ({
+                            ...prev,
+                            [data.user_id]: {
+                                lat: data.lat,
+                                lng: data.lng,
+                                recorded_at: data.recorded_at,
+                            },
+                        }));
+                    }
+                });
                 socket.on('route.updated', reload);
                 socket.on('new-notification', reload);
             })
@@ -660,16 +711,13 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                 {report.team_members && report.team_members.length > 0 ? (
                                     <div className="flex flex-col divide-y divide-neutral-100 rounded-xl border border-neutral-100 dark:divide-neutral-800 dark:border-neutral-800">
                                         {report.team_members.map((m) => {
-                                            const isOnline = m.is_online ?? false;
-                                            const lastSeen = m.location_updated_at
-                                                ? (() => {
-                                                    const diff = Math.floor((Date.now() - new Date(m.location_updated_at!).getTime()) / 1000);
-                                                    if (diff < 60) return 'Just now';
-                                                    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-                                                    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-                                                    return `${Math.floor(diff / 86400)}d ago`;
-                                                })()
-                                                : null;
+                                            const live = liveLocations[m.id];
+                                            const locTime = live?.recorded_at ?? m.location_updated_at;
+                                            const isOnline = live ? true : (m.is_online ?? false);
+                                            const lastSeen = formatLastSeen(locTime);
+                                            const distKm = live
+                                                ? Math.round(haversineKm(report.latitude, report.longitude, live.lat, live.lng) * 10) / 10
+                                                : m.distance_km;
                                             return (
                                                 <div key={m.id} className="flex items-center gap-3 px-4 py-3">
                                                     <div className={`relative flex size-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white shadow-sm ${m.is_leader ? 'bg-neutral-900 dark:bg-white dark:text-neutral-900' : 'bg-neutral-500 dark:bg-neutral-400'}`}>
@@ -693,8 +741,8 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                                         </span>
                                                                         Online
                                                                     </span>
-                                                                    {m.distance_km != null && (
-                                                                        <span className="font-semibold text-blue-600 dark:text-blue-400">{m.distance_km} km</span>
+                                                                    {distKm != null && (
+                                                                        <span className="font-semibold text-blue-600 dark:text-blue-400">{distKm} km</span>
                                                                     )}
                                                                     {lastSeen && (
                                                                         <span className="text-neutral-400">{lastSeen}</span>
@@ -837,17 +885,13 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                         {(() => {
                                                             const leader = t.members.find((m: any) => m.id === t.leader_id);
                                                             if (!leader) return null;
-                                                            const lOnline = (leader as any).is_online ?? false;
-                                                            const lDist = (leader as any).member_distance_km;
-                                                            const lLastSeen = (leader as any).location_updated_at
-                                                                ? (() => {
-                                                                    const diff = Math.floor((Date.now() - new Date((leader as any).location_updated_at).getTime()) / 1000);
-                                                                    if (diff < 60) return 'Just now';
-                                                                    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-                                                                    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-                                                                    return `${Math.floor(diff / 86400)}d ago`;
-                                                                })()
-                                                                : null;
+                                                            const lLive = liveLocations[leader.id];
+                                                            const lLocTime = lLive?.recorded_at ?? (leader as any).location_updated_at;
+                                                            const lOnline = lLive ? true : ((leader as any).is_online ?? false);
+                                                            const lDist = lLive
+                                                                ? Math.round(haversineKm(report.latitude, report.longitude, lLive.lat, lLive.lng) * 10) / 10
+                                                                : (leader as any).member_distance_km;
+                                                            const lLastSeen = formatLastSeen(lLocTime);
                                                             return (
                                                                 <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
                                                                     <span className={`size-1.5 shrink-0 rounded-full ${lOnline ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-600'}`} />

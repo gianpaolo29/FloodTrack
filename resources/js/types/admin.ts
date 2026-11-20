@@ -145,6 +145,26 @@ export interface MapResponder {
     current_latitude: number;
     current_longitude: number;
     location_updated_at: string | null;
+    active_report?: { id: number; reference_number: string; severity: string; address: string | null } | null;
+}
+
+export interface MapTeamMember {
+    id: number;
+    name: string;
+    avatar_url: string | null;
+    is_on_duty: boolean;
+    is_leader: boolean;
+    has_location: boolean;
+}
+
+export interface MapTeam {
+    id: number;
+    name: string;
+    is_active: boolean;
+    leader_id: number;
+    on_duty: boolean;
+    members: MapTeamMember[];
+    active_report?: { id: number; reference_number: string; severity: string; address: string | null } | null;
 }
 
 export interface Responder {

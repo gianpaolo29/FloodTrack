@@ -105,6 +105,17 @@ class TeamController extends Controller
             return response()->json(['message' => 'You are not assigned to this report.'], 403);
         }
 
+        // Forward-only transition check — prevent going backward (e.g. resolved → on_scene)
+        $order = ['pending' => 0, 'en_route' => 1, 'on_scene' => 2, 'resolved' => 3];
+        $currentOrder = $order[$pivot->status] ?? 0;
+        $newOrder = $order[$request->status] ?? 0;
+
+        if ($newOrder <= $currentOrder) {
+            return response()->json([
+                'message' => "Invalid transition from {$pivot->status} to {$request->status}.",
+            ], 409);
+        }
+
         $pivot->update(['status' => $request->status]);
 
         ReportStatusUpdate::create([
@@ -231,6 +242,17 @@ class TeamController extends Controller
         // Only the team leader may confirm
         if (! $user->team || $user->team->leader_id !== $user->id) {
             return response()->json(['message' => 'Only the team leader can confirm team status.'], 403);
+        }
+
+        // Forward-only transition check
+        $statusOrder = ['pending' => 0, 'assigned' => 1, 'en_route' => 2, 'on_scene' => 3, 'resolved' => 4];
+        $currentOrder = $statusOrder[$report->status] ?? 0;
+        $newOrder = $statusOrder[$request->status] ?? 0;
+
+        if ($newOrder <= $currentOrder) {
+            return response()->json([
+                'message' => "Invalid transition from {$report->status} to {$request->status}.",
+            ], 409);
         }
 
         $newStatus = $request->status === 'resolved' ? 'resolved' : 'assigned';

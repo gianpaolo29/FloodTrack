@@ -88,6 +88,13 @@ class ReportController extends Controller
             ->map(function ($r) {
                 $r->team_member_count = $r->team?->members?->count() ?? 0;
                 unset($r->team->members);
+
+                // Attach the active assigned report (if any) so the popup always shows it
+                $r->active_report = Report::where('status', 'assigned')
+                    ->where(fn ($q) => $q->where('assigned_to', $r->id)->orWhere('assigned_team_id', $r->team_id))
+                    ->select(['id', 'reference_number', 'severity', 'address'])
+                    ->first();
+
                 return $r;
             });
 
@@ -110,10 +117,36 @@ class ReportController extends Controller
             ->values()
             ->all();
 
+        // All teams with members for the sidebar
+        $allTeams = Team::with(['members:id,name,avatar,team_id,is_on_duty,current_latitude,current_longitude,location_updated_at'])
+            ->get()
+            ->map(fn (Team $t) => [
+                'id'        => $t->id,
+                'name'      => $t->name,
+                'is_active' => $t->is_active,
+                'leader_id' => $t->leader_id,
+                'on_duty'   => $t->members->contains('is_on_duty', true),
+                'members'   => $t->members->map(fn (User $m) => [
+                    'id'           => $m->id,
+                    'name'         => $m->name,
+                    'avatar_url'   => $m->avatar_url,
+                    'is_on_duty'   => (bool) $m->is_on_duty,
+                    'is_leader'    => $m->id === $t->leader_id,
+                    'has_location' => (bool) ($m->current_latitude && $m->current_longitude),
+                ]),
+                'active_report' => Report::where('status', 'assigned')
+                    ->where('assigned_team_id', $t->id)
+                    ->select(['id', 'reference_number', 'severity', 'address'])
+                    ->first(),
+            ]);
+
+        // Count teams (not individual responders)
+        $onDutyTeams = $allTeams->where('on_duty', true)->count();
+
         $responderCounts = [
-            'on_duty'         => User::where('role', 'responder')->where('is_on_duty', true)->count(),
-            'off_duty'        => User::where('role', 'responder')->where(fn ($q) => $q->where('is_on_duty', false)->orWhereNull('is_on_duty'))->count(),
-            'total_responders' => User::where('role', 'responder')->count(),
+            'on_duty'         => $onDutyTeams,
+            'off_duty'        => $allTeams->count() - $onDutyTeams,
+            'total_responders' => $allTeams->count(),
             'tracking'        => $responders->count(),
         ];
 
@@ -129,6 +162,7 @@ class ReportController extends Controller
             'evacuation_centers' => $evacuationCenters,
             'responders'         => $responders,
             'responder_counts'   => $responderCounts,
+            'teams'              => $allTeams,
             'hazards'            => $hazards,
             'flood_zones'        => $floodZones,
         ]);
@@ -250,7 +284,8 @@ class ReportController extends Controller
                 'name'                => $u->name,
                 'avatar_url'          => $u->avatar_url,
                 'is_leader'           => $report->assignedTeam && $report->assignedTeam->leader_id === $u->id,
-                'is_online'           => $u->current_latitude !== null && $u->location_updated_at !== null,
+                'is_online'           => $u->current_latitude !== null && $u->location_updated_at !== null
+                                            && $u->location_updated_at->diffInMinutes(now()) < 5,
                 'distance_km'         => $distanceKm,
                 'location_updated_at' => $u->location_updated_at?->toIso8601String(),
             ];
@@ -792,7 +827,8 @@ class ReportController extends Controller
                 $team->members->transform(function ($member) use ($report) {
                     $mLat = $member->current_latitude;
                     $mLng = $member->current_longitude;
-                    $member->is_online = $mLat !== null && $member->location_updated_at !== null;
+                    $member->is_online = $mLat !== null && $member->location_updated_at !== null
+                        && $member->location_updated_at->diffInMinutes(now()) < 5;
                     $member->member_distance_km = ($mLat && $mLng && $report->latitude && $report->longitude)
                         ? round($this->haversine($report->latitude, $report->longitude, $mLat, $mLng), 1)
                         : null;

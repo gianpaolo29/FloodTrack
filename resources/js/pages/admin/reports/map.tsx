@@ -9,7 +9,7 @@ import { MapContainer, Marker, Popup, TileLayer, useMap, useMapEvents } from 're
 import { io, type Socket } from 'socket.io-client';
 import AppLayout from '@/layouts/app-layout';
 import type { BreadcrumbItem } from '@/types';
-import type { EvacuationCenter, Hazard, MapResponder, Report, Severity } from '@/types/admin';
+import type { EvacuationCenter, Hazard, MapResponder, MapTeam, Report, Severity } from '@/types/admin';
 import { EVACUATION_CENTER_TYPE_LABELS, HAZARD_TYPE_OPTIONS, SEVERITY_COLORS, STATUS_COLORS } from '@/types/admin';
 import { MapSkeleton } from '@/components/admin/skeletons';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -28,6 +28,7 @@ interface Props {
     evacuation_centers: EvacuationCenter[];
     responders: MapResponder[];
     responder_counts: { on_duty: number; off_duty: number; total_responders: number; tracking: number };
+    teams: MapTeam[];
     hazards: Hazard[];
 }
 
@@ -584,6 +585,7 @@ interface LiveResponder {
     team_member_count: number;
     status: ResponderMapStatus;
     location_updated_at: string;
+    active_report?: { id: number; reference_number: string; severity: string; address: string | null } | null;
 }
 
 function getResponderState(updatedAt: string | null): 'online' | 'stale' | 'offline' {
@@ -613,6 +615,7 @@ function useMapSocket(initial: MapResponder[], initialOnDuty: number, onNewRepor
                     team_member_count: (r as any).team_member_count ?? 0,
                     status: 'idle',
                     location_updated_at: r.location_updated_at ?? new Date().toISOString(),
+                    active_report: (r as any).active_report ?? null,
                 });
             }
         }
@@ -703,9 +706,11 @@ function useMapSocket(initial: MapResponder[], initialOnDuty: number, onNewRepor
                     });
                 });
 
-                // Duty changed — add or remove responders + update count
-                socket.on('duty.changed', (p: { user_id: number; on_duty: boolean }) => {
-                    setOnDutyCount((prev) => Math.max(0, prev + (p.on_duty ? 1 : -1)));
+                // Duty changed — add or remove responders + update team count
+                socket.on('duty.changed', (p: { user_id: number; on_duty: boolean; teams_on_duty_count?: number }) => {
+                    if (p.teams_on_duty_count !== undefined) {
+                        setOnDutyCount(p.teams_on_duty_count);
+                    }
                     setResponders((prev) => {
                         const next = new Map(prev);
                         if (!p.on_duty) {
@@ -733,7 +738,7 @@ function useMapSocket(initial: MapResponder[], initialOnDuty: number, onNewRepor
 }
 
 /* ─── Main page ─── */
-export default function AdminReportsMap({ reports, filters, evacuation_centers, responders: initialResponders, responder_counts, hazards }: Props) {
+export default function AdminReportsMap({ reports, filters, evacuation_centers, responders: initialResponders, responder_counts, teams, hazards }: Props) {
     // Auto-refresh: silently reload Inertia page data when socket fires new-report/report-status
     const refreshDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
     const handleReportEvent = useCallback(() => {
@@ -750,6 +755,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
 
     const [selectedResponder, setSelectedResponder]     = useState<LiveResponder | null>(null);
+    const [selectedTeam, setSelectedTeam]               = useState<MapTeam | null>(null);
     const [selectedHazard, setSelectedHazard]           = useState<Hazard | null>(null);
     const [showHeatmap, setShowHeatmap]                 = useState(true);
     const [showReportMarkers, setShowReportMarkers]     = useState(false);
@@ -1032,16 +1038,16 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
 
                         </div>
 
-                        {/* Responders */}
+                        {/* Responders — Team list */}
                         {showResponders && (
                             <div className="border-b border-neutral-100/80 px-4 sm:px-5 py-3 dark:border-neutral-800/60">
                                 <div className="mb-2 flex items-center justify-between">
                                     <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-neutral-400/80">
-                                        <Users className="size-3" />Responders
+                                        <Users className="size-3" />Teams
                                     </span>
-                                    {selectedResponder && (
+                                    {selectedTeam && (
                                         <button
-                                            onClick={() => setSelectedResponder(null)}
+                                            onClick={() => setSelectedTeam(null)}
                                             className="text-[10px] font-semibold text-[oklch(0.55_0.14_240)] hover:underline cursor-pointer"
                                         >
                                             Show all
@@ -1058,98 +1064,88 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                         {liveResponders.length} Live
                                     </span>
                                     <span className="flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-0.5 text-[9px] font-bold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                                        {offDutyCount} Off Duty
+                                        {offDutyCount} Off
                                     </span>
                                 </div>
-                                {liveResponders.length > 0 ? (
-                                    <div className="space-y-1">
-                                        {[...liveResponders]
-                                            .sort((a, b) => {
-                                                const order: Record<string, number> = { en_route: 0, on_scene: 1, idle: 2 };
-                                                const diff = (order[a.status] ?? 9) - (order[b.status] ?? 9);
-                                                if (diff !== 0) return diff;
-                                                const stateA = getResponderState(a.location_updated_at);
-                                                const stateB = getResponderState(b.location_updated_at);
-                                                const so: Record<string, number> = { online: 0, stale: 1, offline: 2 };
-                                                return (so[stateA] ?? 9) - (so[stateB] ?? 9);
-                                            })
-                                            .filter((r) => !selectedResponder || selectedResponder.id === r.id)
-                                            .map((r) => {
-                                            const state = getResponderState(r.location_updated_at);
-                                            const statusColors: Record<string, string> = { idle: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', en_route: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400', on_scene: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' };
-                                            const statusLabels: Record<string, string> = { idle: 'Idle', en_route: 'En Route', on_scene: 'On Scene' };
-                                            const dotColor = state === 'offline' ? 'bg-neutral-300 dark:bg-neutral-600' : state === 'stale' ? 'bg-amber-400' : 'bg-emerald-500';
-                                            const assignedReport = reports.find(rp => rp.status === 'assigned' && (rp.assigned_to === r.id || rp.assigned_team?.id === r.team_id));
-                                            const isSelected = selectedResponder?.id === r.id;
-                                            return (
+                                <div className="space-y-1">
+                                    {[...teams]
+                                        .filter((t) => t.on_duty)
+                                        .filter((t) => !selectedTeam || selectedTeam.id === t.id)
+                                        .map((t) => {
+                                        const isSelected = selectedTeam?.id === t.id;
+                                        const onDutyMembers = t.members.filter(m => m.is_on_duty).length;
+                                        return (
+                                            <div key={`team-${t.id}`}>
                                                 <button
-                                                    key={`resp-${r.id}`}
-                                                    onClick={() => {
-                                                        if (isSelected) {
-                                                            setSelectedResponder(null);
-                                                        } else {
-                                                            setSelectedResponder(r);
-                                                            if (mapRef.current) {
-                                                                mapRef.current.setView([r.latitude, r.longitude], 16, { animate: true });
-                                                            }
-                                                        }
-                                                    }}
+                                                    onClick={() => setSelectedTeam(isSelected ? null : t)}
                                                     className={`w-full rounded-lg p-2 text-left transition-all ${
                                                         isSelected
                                                             ? 'bg-blue-50 ring-1 ring-blue-200 dark:bg-blue-900/20 dark:ring-blue-700'
                                                             : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
-                                                    } ${state === 'offline' ? 'opacity-40' : state === 'stale' ? 'opacity-60' : ''}`}
+                                                    } ${!t.on_duty ? 'opacity-50' : ''}`}
                                                 >
                                                     <div className="flex items-center justify-between gap-2">
                                                         <div className="flex items-center gap-2 min-w-0">
-                                                            {r.avatar_url ? (
-                                                                <img src={r.avatar_url} alt="" className="size-6 shrink-0 rounded-full object-cover" />
-                                                            ) : (
-                                                                <span className={`flex size-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[9px] font-bold text-blue-700`}>
-                                                                    {r.name.charAt(0).toUpperCase()}
-                                                                </span>
-                                                            )}
+                                                            <span className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${t.on_duty ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-500'}`}>
+                                                                {t.name.charAt(0).toUpperCase()}
+                                                            </span>
                                                             <div className="min-w-0">
-                                                                <span className="block truncate text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">{r.team_name ?? r.name}</span>
-                                                                <span className="block truncate text-[9px] text-neutral-400">{r.name} · {r.team_member_count} member{r.team_member_count !== 1 ? 's' : ''}</span>
+                                                                <span className="block truncate text-[11px] font-semibold text-neutral-700 dark:text-neutral-300">{t.name}</span>
+                                                                <span className="block truncate text-[9px] text-neutral-400">{t.members.length} members · {onDutyMembers} on duty</span>
                                                             </div>
                                                         </div>
-                                                        <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${statusColors[r.status] ?? statusColors.idle}`}>
-                                                            {statusLabels[r.status] ?? 'Idle'}
+                                                        <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-bold ${
+                                                            t.on_duty
+                                                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                                                                : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400'
+                                                        }`}>
+                                                            {t.on_duty ? 'On Duty' : 'Off Duty'}
                                                         </span>
                                                     </div>
-                                                    {isSelected && (
-                                                        <div className="mt-2 ml-8 flex flex-col gap-1.5">
-                                                            <div className="flex items-center gap-2 text-[10px]">
-                                                                <span className={`size-1.5 rounded-full ${dotColor}`} />
-                                                                <span className={`font-medium ${state === 'online' ? 'text-emerald-600' : state === 'stale' ? 'text-amber-600' : 'text-neutral-400'}`}>
-                                                                    {state === 'online' ? 'Online' : state === 'stale' ? 'Stale' : 'Offline'}
-                                                                </span>
-                                                                <span className="text-neutral-300">·</span>
-                                                                <span className="text-neutral-400">{formatLastSeen(r.location_updated_at)}</span>
-                                                            </div>
-                                                            <div className="rounded-md border border-neutral-100 bg-neutral-50 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-800">
-                                                                {assignedReport ? (
-                                                                    <div className="flex flex-col gap-0.5">
-                                                                        <div className="flex items-center gap-1">
-                                                                            <span className="size-1.5 rounded-full" style={{ backgroundColor: SEVERITY_META[assignedReport.severity].hex }} />
-                                                                            <span className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-300">Assigned — {assignedReport.severity}</span>
-                                                                        </div>
-                                                                        {assignedReport.address && <p className="text-[9px] text-neutral-400 leading-snug">{assignedReport.address}</p>}
-                                                                    </div>
-                                                                ) : (
-                                                                    <span className="text-[10px] text-neutral-400">Not assigned</span>
-                                                                )}
-                                                            </div>
+                                                    {!isSelected && t.active_report && (
+                                                        <div className="mt-1.5 ml-8 flex items-center gap-1">
+                                                            <span className="size-1.5 rounded-full" style={{ backgroundColor: SEVERITY_META[t.active_report.severity as Severity]?.hex ?? '#6b7280' }} />
+                                                            <span className="text-[9px] font-medium text-neutral-500">Assigned — {t.active_report.severity}</span>
                                                         </div>
                                                     )}
                                                 </button>
-                                            );
-                                        })}
-                                    </div>
-                                ) : (
-                                    <p className="py-2 text-center text-[10px] text-neutral-400">No responders online</p>
-                                )}
+                                                {isSelected && (
+                                                    <div className="mt-1 ml-2 space-y-0.5">
+                                                        {[...t.members]
+                                                            .sort((a, b) => (a.is_leader ? -1 : b.is_leader ? 1 : (a.is_on_duty === b.is_on_duty ? 0 : a.is_on_duty ? -1 : 1)))
+                                                            .map((m) => (
+                                                            <div key={`member-${m.id}`} className={`flex items-center gap-2 rounded-md px-2 py-1.5 ${!m.is_on_duty ? 'opacity-40' : ''}`}>
+                                                                {m.avatar_url ? (
+                                                                    <img src={m.avatar_url} alt="" className="size-5 shrink-0 rounded-full object-cover" />
+                                                                ) : (
+                                                                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[8px] font-bold text-blue-700">
+                                                                        {m.name.charAt(0).toUpperCase()}
+                                                                    </span>
+                                                                )}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <span className="block truncate text-[10px] font-medium text-neutral-700 dark:text-neutral-300">
+                                                                        {m.name}
+                                                                        {m.is_leader && <span className="ml-1 text-[8px] font-bold text-blue-500">Leader</span>}
+                                                                    </span>
+                                                                </div>
+                                                                <span className={`size-1.5 shrink-0 rounded-full ${m.is_on_duty ? 'bg-emerald-500' : 'bg-neutral-300'}`} />
+                                                            </div>
+                                                        ))}
+                                                        {t.active_report && (
+                                                            <div className="mt-1.5 mx-2 rounded-md border border-neutral-100 bg-neutral-50 px-2 py-1.5 dark:border-neutral-700 dark:bg-neutral-800">
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="size-1.5 rounded-full" style={{ backgroundColor: SEVERITY_META[t.active_report.severity as Severity]?.hex ?? '#6b7280' }} />
+                                                                    <span className="text-[10px] font-semibold text-neutral-600 dark:text-neutral-300">Assigned — {t.active_report.severity}</span>
+                                                                </div>
+                                                                {t.active_report.address && <p className="text-[9px] text-neutral-400 leading-snug mt-0.5">{t.active_report.address}</p>}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
 
@@ -1256,7 +1252,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                             <span className="h-3 w-px bg-neutral-300/60 dark:bg-neutral-600/60" />
                             <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
                                 <span className="size-1.5 rounded-full bg-emerald-500" />
-                                {onDutyCount} On Duty
+                                {onDutyCount} {onDutyCount === 1 ? 'Team' : 'Teams'} On Duty
                             </span>
                             <span className="flex items-center gap-1 text-[10px] font-semibold text-neutral-400 dark:text-neutral-500">
                                 <span className="size-1.5 rounded-full bg-neutral-400" />
@@ -1383,7 +1379,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
 
                         {/* Responder markers */}
                         {showResponders && liveResponders.map((r) => {
-                            const assignedReport = reports.find(rp => rp.status === 'assigned' && (rp.assigned_to === r.id || rp.assigned_team?.id === r.team_id));
+                            const assignedReport = r.active_report ?? reports.find(rp => rp.status === 'assigned' && (rp.assigned_to === r.id || rp.assigned_team?.id === r.team_id));
                             const state = getResponderState(r.location_updated_at);
                             const stale = state !== 'online';
                             return (
