@@ -1132,7 +1132,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                     </span>
                                     <span className="flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-caption font-bold text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
                                         <Radio className="size-2.5" />
-                                        {liveResponders.length} Live
+                                        {liveResponders.filter(r => getResponderState(r.location_updated_at) === 'online').length} Live
                                     </span>
                                     <span className="flex items-center gap-1 rounded-md bg-neutral-100 px-2 py-0.5 text-caption font-bold text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
                                         {offDutyCount} Off
@@ -1464,11 +1464,11 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                             );
                         })}
 
-                        {/* Responder markers — show all on-duty, or filter to selected team */}
+                        {/* Responder markers — show online/stale on-duty responders */}
                         {showResponders && liveResponders
+                          .filter(r => getResponderState(r.location_updated_at) !== 'offline')
                           .filter(r => !selectedTeam || r.team_id === selectedTeam.id)
                           .filter(r => {
-                            // Only show responders belonging to on-duty teams
                             const team = liveTeams.find(t => t.id === r.team_id);
                             return team?.on_duty;
                           })

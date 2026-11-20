@@ -136,10 +136,10 @@ class ExpoPushService
     private static function resolveSound(string $channelId): string
     {
         return match ($channelId) {
-            'floodtrack-critical' => 'critical.wav',
-            'floodtrack-advisory' => 'alert.wav',
-            'floodtrack-messages' => 'message.wav',
-            default               => 'notification.wav',
+            'floodtrack-critical' => 'critical.mp3',
+            'floodtrack-advisory' => 'alert.mp3',
+            'floodtrack-messages' => 'message.mp3',
+            default               => 'notification.mp3',
         };
     }
 
