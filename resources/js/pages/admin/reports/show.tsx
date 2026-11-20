@@ -515,7 +515,9 @@ export default function AdminReportShow({ report, teams, schedule_level }: Props
                                                         <span className="text-xs font-semibold text-neutral-600 dark:text-neutral-300">Voice Note</span>
                                                     </div>
                                                     <div className="px-4 py-3">
-                                                        <audio src={m.url} controls className="w-full" preload="metadata" />
+                                                        <audio controls className="w-full" preload="metadata">
+                                                            <source src={m.url} type="audio/mp4" />
+                                                        </audio>
                                                     </div>
                                                     {report.voice_transcription && (
                                                         <div className="border-t border-neutral-200/60 px-4 py-3 dark:border-neutral-700/60">

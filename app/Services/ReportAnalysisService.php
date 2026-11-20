@@ -7,6 +7,7 @@ use FFMpeg\Coordinate\TimeCode;
 use FFMpeg\FFMpeg;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use OpenAI;
 
 class ReportAnalysisService
@@ -62,7 +63,11 @@ class ReportAnalysisService
             }
 
             // --- 2. Audio transcription + verification ---
-            $audioFiles = array_filter($mediaFiles, fn ($f) => static::isAudio($f));
+            $audioMedia = $report->media->where('file_type', 'audio');
+            $audioFiles = $audioMedia->map(fn ($m) => new \SplFileInfo(Storage::disk('public')->path($m->file_path)))
+                ->filter(fn ($f) => file_exists($f->getPathname()))
+                ->values()
+                ->all();
             if (! empty($audioFiles)) {
                 $audioResult = static::analyzeAudio(array_values($audioFiles), $report);
                 if ($audioResult['transcription']) {
