@@ -597,6 +597,10 @@ function getResponderState(updatedAt: string | null): 'online' | 'stale' | 'offl
 
 function useMapSocket(initial: MapResponder[], initialOnDuty: number, onNewReport: () => void) {
     const [onDutyCount, setOnDutyCount] = useState(initialOnDuty);
+
+    // Sync on-duty count when Inertia reloads props
+    useEffect(() => { setOnDutyCount(initialOnDuty); }, [initialOnDuty]);
+
     const [responders, setResponders] = useState<Map<number, LiveResponder>>(() => {
         const map = new Map<number, LiveResponder>();
         for (const r of initial) {
@@ -619,6 +623,36 @@ function useMapSocket(initial: MapResponder[], initialOnDuty: number, onNewRepor
         }
         return map;
     });
+
+    // Merge server data on Inertia reload — adds new responders, updates stale ones
+    useEffect(() => {
+        setResponders((prev) => {
+            const next = new Map(prev);
+            for (const r of initial) {
+                if (!r.current_latitude || !r.current_longitude) continue;
+                const existing = next.get(r.id);
+                // Only overwrite if we don't already have fresher socket data
+                if (!existing || (r.location_updated_at && (!existing.location_updated_at || new Date(r.location_updated_at) > new Date(existing.location_updated_at)))) {
+                    next.set(r.id, {
+                        ...existing,
+                        id: r.id,
+                        name: r.name,
+                        latitude: r.current_latitude,
+                        longitude: r.current_longitude,
+                        heading: existing?.heading ?? null,
+                        speed: existing?.speed ?? null,
+                        avatar_url: r.avatar_url,
+                        team_id: r.team_id,
+                        team_name: r.team?.name ?? existing?.team_name ?? null,
+                        is_leader: !!(r as any).is_leader,
+                        status: existing?.status ?? 'idle',
+                        location_updated_at: r.location_updated_at ?? existing?.location_updated_at ?? new Date().toISOString(),
+                    });
+                }
+            }
+            return next;
+        });
+    }, [initial]);
 
     useEffect(() => {
         const socketUrl = (import.meta.env.VITE_SOCKET_URL || window.location.origin).replace(/\/$/, '');
@@ -725,6 +759,9 @@ function useMapSocket(initial: MapResponder[], initialOnDuty: number, onNewRepor
 
                 socket.on('new-report', onNewReport);
                 socket.on('report-status', onNewReport);
+                socket.on('schedule-updated', onNewReport);
+                socket.on('new-alert', onNewReport);
+                socket.on('duty.changed', onNewReport);
             })
             .catch((err) => console.warn('[map-socket] setup failed:', err));
 
@@ -742,12 +779,22 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
     const handleReportEvent = useCallback(() => {
         if (refreshDebounce.current) clearTimeout(refreshDebounce.current);
         refreshDebounce.current = setTimeout(() => {
-            router.reload({ only: ['reports'], preserveState: true });
+            router.reload({ only: ['reports', 'teams', 'responders', 'responder_counts', 'hazards', 'evacuation_centers'], preserveState: true });
         }, 1500);
     }, []);
 
     const { liveResponders, onDutyCount } = useMapSocket(initialResponders, responder_counts.on_duty, handleReportEvent);
     const offDutyCount = responder_counts.total_responders - onDutyCount;
+
+    // Enrich teams with live location data — a member has_location if they appear in liveResponders
+    const liveIdSet = useMemo(() => new Set(liveResponders.map(r => r.id)), [liveResponders]);
+    const liveTeams = useMemo(() => teams.map(t => ({
+        ...t,
+        members: t.members.map(m => ({
+            ...m,
+            has_location: m.has_location || liveIdSet.has(m.id),
+        })),
+    })), [teams, liveIdSet]);
 
     const [mounted, setMounted] = useState(false);
     useEffect(() => { const t = setTimeout(() => setMounted(true), 80); return () => clearTimeout(t); }, []);
@@ -760,6 +807,14 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
     const [showHazards, setShowHazards]                 = useState(false);
     const [showEvacCenters, setShowEvacCenters]         = useState(false);
     const [showResponders, setShowResponders]           = useState(false);
+
+    // Keep selectedTeam in sync with refreshed data from Inertia reloads
+    useEffect(() => {
+        if (!selectedTeam) return;
+        const fresh = liveTeams.find(t => t.id === selectedTeam.id);
+        if (fresh) setSelectedTeam(fresh);
+        else setSelectedTeam(null); // team removed
+    }, [liveTeams]);
 
     // Track zoom for responsive responder markers
     const [mapZoom, setMapZoom] = useState(13);
@@ -1066,7 +1121,7 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
                                     </span>
                                 </div>
                                 <div className="space-y-1">
-                                    {[...teams]
+                                    {[...liveTeams]
                                         .filter((t) => t.members.some(m => m.has_location))
                                         .filter((t) => !selectedTeam || selectedTeam.id === t.id)
                                         .map((t) => {

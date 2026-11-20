@@ -44,10 +44,13 @@ class UserController extends Controller
     {
         $data = $request->validate([
             'name'           => 'sometimes|string|max:255',
-            'contact_number' => 'sometimes|nullable|string|max:20',
+            'contact_number' => ['sometimes', 'nullable', 'regex:/^09\d{9}$/', 'unique:users,contact_number,' . $request->user()->id],
             'home_address'   => 'sometimes|nullable|string|max:500',
             'home_latitude'  => 'sometimes|nullable|numeric|between:-90,90',
             'home_longitude' => 'sometimes|nullable|numeric|between:-180,180',
+        ], [
+            'contact_number.regex'  => 'Contact number must start with 09 and be exactly 11 digits.',
+            'contact_number.unique' => 'This contact number is already in use by another account.',
         ]);
 
         $request->user()->update($data);
