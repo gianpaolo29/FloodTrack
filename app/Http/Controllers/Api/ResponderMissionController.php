@@ -42,8 +42,8 @@ class ResponderMissionController extends Controller
         $data = $request->validate([
             'status'                => 'required|in:en_route,on_scene,resolved',
             'notes'                 => 'nullable|string|max:500',
-            'rescued_count'         => 'nullable|integer|min:0|max:9999',
-            'evacuation_center_id'  => 'nullable|integer|exists:evacuation_centers,id',
+            'rescued_count'         => 'required_if:status,resolved|integer|min:0|max:9999',
+            'evacuation_center_id'  => 'required_if:status,resolved|integer|exists:evacuation_centers,id',
         ]);
 
         $newStatus = $data['status'];

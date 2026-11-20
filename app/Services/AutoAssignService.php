@@ -223,15 +223,6 @@ class AutoAssignService
             ['type' => 'assignment', 'reportId' => $report->id]
         );
 
-        // SMS
-        SmsService::queueToUsers(
-            $memberIds,
-            SmsService::format(
-                "New Assignment — {$report->reference_number}",
-                "You have been assigned to a {$report->severity} flood report at {$report->address}. Open the app for details."
-            )
-        );
-
         // Real-time socket events
         foreach ($team->members as $member) {
             SocketService::toUser($member->id, 'new-assignment', [

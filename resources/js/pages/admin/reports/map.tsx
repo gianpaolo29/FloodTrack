@@ -90,15 +90,11 @@ const RESPONDER_STATUS_MARKER_COLORS: Record<string, string> = {
     on_scene: '#22c55e',
 };
 
-function createResponderMarkerSvg(status: ResponderMapStatus, state: 'online' | 'stale' | 'offline', heading?: number | null): string {
+function createResponderMarkerSvg(status: ResponderMapStatus, state: 'online' | 'stale' | 'offline'): string {
     const color = RESPONDER_STATUS_MARKER_COLORS[status] ?? '#2563eb';
     const opacity = state === 'offline' ? '0.3' : state === 'stale' ? '0.5' : '1';
-    const headingArrow = heading != null && state === 'online'
-        ? `<g transform="rotate(${heading}, 20, 20)"><polygon points="20,3 16,11 24,11" fill="${color}" opacity="0.8"/></g>`
-        : '';
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40">
         <g opacity="${opacity}">
-            ${headingArrow}
             <filter id="s"><feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-opacity="0.25"/></filter>
             <circle filter="url(#s)" cx="20" cy="20" r="13" fill="${color}" stroke="white" stroke-width="2.5"/>
             <circle cx="20" cy="16" r="4" fill="white" opacity="0.9"/>
@@ -826,9 +822,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
         const nameFontSize = Math.round(10 * scale);
         const showName = zoom >= 13;
 
-        const heading = r.heading != null && state === 'online'
-            ? `<div style="position:absolute;top:${Math.round(-8 * scale)}px;left:50%;transform:translateX(-50%) rotate(${r.heading}deg);width:0;height:0;border-left:${Math.round(6 * scale)}px solid transparent;border-right:${Math.round(6 * scale)}px solid transparent;border-bottom:${Math.round(10 * scale)}px solid ${color};opacity:0.8;"></div>`
-            : '';
         const firstName = (r.name?.split(' ')[0] ?? '').slice(0, 10);
         const dotColor = state === 'online' ? '#22c55e' : state === 'stale' ? '#f59e0b' : '#9ca3af';
         const nameLabel = showName
@@ -845,7 +838,6 @@ export default function AdminReportsMap({ reports, filters, evacuation_centers, 
         return L.divIcon({
             html: `<div style="opacity:${opacity};display:flex;flex-direction:column;align-items:center;">
                 <div style="position:relative;">
-                    ${heading}
                     <div style="width:${size}px;height:${size}px;border-radius:50%;border:${border}px solid ${color};overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.25);background:${avatarBg};display:flex;align-items:center;justify-content:center;">
                         ${avatarContent}
                     </div>
