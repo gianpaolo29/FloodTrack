@@ -167,9 +167,37 @@ class TeamController extends Controller
             ]);
         }
 
+        // Notify the resident (report owner) of status changes so their tracker updates
+        if ($report->user_id && in_array($request->status, ['en_route', 'on_scene'])) {
+            $statusLabels = [
+                'en_route' => 'A responder is now heading to your location. Stay safe!',
+                'on_scene' => 'A responder has arrived at the scene.',
+            ];
+
+            SocketService::toUser($report->user_id, 'report-status', [
+                'reportId' => $report->id,
+                'status'   => $request->status,
+            ]);
+            SocketService::toUser($report->user_id, 'member-status-updated', [
+                'report_id' => $report->id,
+                'user_id'   => $user->id,
+                'status'    => $request->status,
+            ]);
+
+            ExpoPushService::sendToUsers(
+                $report->user_id,
+                "Report {$report->reference_number}",
+                $statusLabels[$request->status] ?? 'Status updated.',
+                ['type' => 'status_update', 'reportId' => $report->id, 'status' => $request->status],
+                'my_reports'
+            );
+        }
+
         // When a responder marks as resolved, update the main report status
         // and notify admin + resident (same as leader confirmation flow)
         if ($request->status === 'resolved' && $report->status !== 'resolved') {
+            $previousStatus = $report->status;
+
             // Mark all team members as resolved
             ReportResponder::where('report_id', $report->id)
                 ->update(['status' => 'resolved', 'updated_at' => now()]);
@@ -183,6 +211,8 @@ class TeamController extends Controller
 
             // Auto check-in rescued residents at evacuation center
             $this->checkInRescued($report, $request->user());
+
+            app(\App\Services\SlaService::class)->advanceStage($report, 'resolved');
 
             // Broadcast report-status to the report room
             SocketService::toReport($report->id, 'report-status', [
@@ -201,13 +231,14 @@ class TeamController extends Controller
                     $report->user_id,
                     "Report Resolved — {$report->reference_number}",
                     'Your report has been resolved. Thank you for keeping your community safe.',
-                    ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'resolved']
+                    ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'resolved'],
+                    'my_reports'
                 );
 
                 $report->loadMissing('user');
                 if ($report->user) {
                     $report->user->notify(
-                        new ReportStatusChanged($report, $report->status, 'resolved', $user->name)
+                        new ReportStatusChanged($report, $previousStatus, 'resolved', $user->name)
                     );
 
                     SocketService::toUser($report->user_id, 'new-notification', [

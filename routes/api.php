@@ -34,58 +34,12 @@ Route::withoutMiddleware('throttle:api')->group(function () {
     Route::post('/webhooks/messenger', [MessengerWebhookController::class, 'handle']);
 });
 
-// Temporary: check recent logs (REMOVE after debugging)
-Route::get('/debug/messenger-logs', function () {
-    $logFile = storage_path('logs/laravel.log');
-    if (!file_exists($logFile)) return response('No log file', 404);
-    $lines = array_filter(explode("\n", file_get_contents($logFile)), fn($l) => str_contains(strtolower($l), 'messenger') || str_contains(strtolower($l), 'facebook'));
-    return response()->json(array_values(array_slice($lines, -30)));
-});
-
-// Temporary: diagnose Messenger config (REMOVE after debugging)
-Route::get('/debug/messenger-check', function () {
-    $pageId    = config('services.facebook.page_id');
-    $token     = config('services.facebook.page_access_token');
-    $version   = config('services.facebook.graph_version', 'v21.0');
-    $verifyTok = config('services.facebook.webhook_verify_token');
-
-    $config = [
-        'page_id_set'       => ! empty($pageId),
-        'token_set'         => ! empty($token),
-        'token_length'      => strlen($token ?? ''),
-        'token_starts_with' => substr($token ?? '', 0, 4),
-        'graph_version'     => $version,
-        'verify_token_set'  => ! empty($verifyTok),
-    ];
-
-    // Test if token is valid by calling Facebook API
-    $tokenValid = null;
-    if (! empty($token) && ! empty($pageId)) {
-        try {
-            $url = "https://graph.facebook.com/{$version}/{$pageId}?access_token=" . urlencode($token) . "&fields=id,name";
-            $response = \Illuminate\Support\Facades\Http::withoutVerifying()->get($url);
-            $tokenValid = [
-                'status'   => $response->status(),
-                'response' => $response->json(),
-            ];
-        } catch (\Throwable $e) {
-            $tokenValid = ['error' => $e->getMessage()];
-        }
-    }
-
-    return response()->json([
-        'config'      => $config,
-        'token_check' => $tokenValid,
-        'webhook_url' => url('/api/webhooks/messenger'),
-    ]);
-});
-
-// ── Public ──────────────────────────────────────────────────────────────
-Route::post('/register',       [AuthController::class, 'register']);
-Route::post('/login',          [AuthController::class, 'login']);
-Route::post('/check-email',    [AuthController::class, 'checkEmail']);
-Route::post('/reset-password', [AuthController::class, 'resetPassword']);
-Route::post('/auth/google',   [AuthController::class, 'google']);
+// ── Public (rate-limited) ───────────────────────────────────────────────
+Route::post('/register',       [AuthController::class, 'register'])->middleware('throttle:5,1');
+Route::post('/login',          [AuthController::class, 'login'])->middleware('throttle:10,1');
+Route::post('/check-email',    [AuthController::class, 'checkEmail'])->middleware('throttle:10,1');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:3,1');
+Route::post('/auth/google',   [AuthController::class, 'google'])->middleware('throttle:10,1');
 
 // ── Authenticated (all roles) ───────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
@@ -158,7 +112,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // Evacuation centers and protocols
     Route::get('/evacuation-centers', [EvacuationCenterController::class, 'index']);
     Route::get('/evacuation-centers/nearest', [EvacuationCenterController::class, 'nearest']);
-    Route::patch('/evacuation-centers/{evacuationCenter}/occupancy', [EvacuationCenterController::class, 'updateOccupancy']);
     Route::get('/protocols',          [ProtocolController::class, 'index']);
 
     // Active hazards (read-only for all users — shown on map)
@@ -171,6 +124,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/realtime/authorize', [RealtimeController::class, 'authorize']);
 
     // ── Responder only ───────────────────────────────────────────────────
+    // Evacuation center occupancy — responder/admin only
+    Route::patch('/evacuation-centers/{evacuationCenter}/occupancy', [EvacuationCenterController::class, 'updateOccupancy'])
+        ->middleware('role:responder,admin');
+
     Route::middleware('role:responder,admin')->prefix('responder')->group(function () {
         Route::post('/locations', [\App\Http\Controllers\Api\ResponderLocationController::class, 'store'])->middleware('throttle:12,1');
         Route::get('/assigned-reports', [ReportController::class, 'index']);  // with ?assigned=me

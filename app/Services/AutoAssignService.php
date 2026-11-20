@@ -242,8 +242,10 @@ class AutoAssignService
         }
 
         // Notify the resident (report owner) that a responder has been assigned
+        // Skip if the report owner is already a team member (they got the responder notification)
         $report->loadMissing('user');
-        if ($report->user) {
+        $memberIds = $team->members->pluck('id')->toArray();
+        if ($report->user && !in_array($report->user_id, $memberIds)) {
             $report->user->notify(new ReportStatusChanged($report, $oldStatus, 'assigned', $assignerName));
 
             ExpoPushService::sendToUsers(

@@ -347,7 +347,7 @@ class ReportController extends Controller
                     $memberIds->toArray(),
                     "Assignment Cancelled — {$ref}",
                     'This report has been removed. No further action is needed.',
-                    ['type' => 'assignment', 'reportId' => $report->id]
+                    ['type' => 'status_update', 'reportId' => $report->id, 'status' => 'deleted']
                 );
             }
         }
@@ -371,9 +371,27 @@ class ReportController extends Controller
             return back();
         }
 
+        // Clear old responder assignments so they don't show stale resolved status
+        $oldMemberIds = DB::table('report_responders')
+            ->where('report_id', $report->id)
+            ->pluck('user_id');
+
+        DB::table('report_responders')
+            ->where('report_id', $report->id)
+            ->delete();
+
+        // Refresh socket assignment cache for old members
+        foreach ($oldMemberIds as $mId) {
+            SocketService::refreshAssignments($mId);
+            SocketService::toUser($mId, 'report-status', ['reportId' => $report->id, 'status' => 'reopened']);
+        }
+
         $report->update([
-            'status'      => 'pending',
-            'resolved_at' => null,
+            'status'            => 'pending',
+            'resolved_at'       => null,
+            'assigned_to'       => null,
+            'assigned_team_id'  => null,
+            'assigned_at'       => null,
         ]);
 
         ReportStatusUpdate::create([
@@ -407,6 +425,12 @@ class ReportController extends Controller
             'status'      => 'resolved',
             'resolved_at' => now(),
         ]);
+
+        // Also resolve all responder pivots so the mobile app shows resolved
+        DB::table('report_responders')
+            ->where('report_id', $report->id)
+            ->where('status', '!=', 'resolved')
+            ->update(['status' => 'resolved', 'resolved_at' => now(), 'updated_at' => now()]);
 
         ReportStatusUpdate::create([
             'report_id' => $report->id,

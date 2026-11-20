@@ -245,12 +245,19 @@ class ReportController extends Controller
             return response()->json(['message' => 'Responder location not available.'], 404);
         }
 
+        // Get mission status from pivot
+        $pivot = \DB::table('report_responders')
+            ->where('report_id', $report->id)
+            ->where('user_id', $responder->id)
+            ->first();
+
         return response()->json([
             'responder_id'   => $responder->id,
             'name'           => $responder->name,
             'latitude'       => (float) $responder->current_latitude,
             'longitude'      => (float) $responder->current_longitude,
             'updated_at'     => $responder->location_updated_at?->toIso8601String(),
+            'status'         => $pivot->status ?? 'pending',
         ]);
     }
 

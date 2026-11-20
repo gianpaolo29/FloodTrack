@@ -151,16 +151,11 @@ class AuthController extends Controller
 
     public function resetPassword(Request $request)
     {
-        $request->validate([
-            'email'    => 'required|email|exists:users,email',
-            'password' => 'required|string|min:8|max:16',
-        ]);
-
-        $user = User::where('email', $request->email)->firstOrFail();
-        $user->update(['password' => Hash::make($request->password)]);
-        $user->tokens()->delete();
-
-        return response()->json(['message' => 'Password reset successfully.']);
+        // Disabled — requires OTP verification to be secure.
+        // Without OTP, anyone can reset any password by knowing the email.
+        return response()->json([
+            'message' => 'Password reset is temporarily unavailable. Please use Google Sign-In or contact support.',
+        ], 503);
     }
 
     public function logout(Request $request)
