@@ -6,6 +6,11 @@ output/laptop-chat.gif (960x540). Edit the CONFIG section, then run:
 
     python3 output/laptop_chat_overlay.py
 
+Or put the chat straight onto the footage (see the on-video settings in CONFIG):
+
+    python3 output/laptop_chat_overlay.py onvideo
+    python3 output/laptop_chat_overlay.py onvideo preview 42.5   # one still frame to check placement
+
 Needs Python 3 with Pillow, and ffmpeg on PATH.
 """
 import os
@@ -56,10 +61,24 @@ OUTPUT_DIR = os.path.dirname(os.path.abspath(__file__))
 MP4_NAME = "laptop-chat-greenscreen.mp4"
 GIF_NAME = "laptop-chat.gif"
 GIF_WIDTH, GIF_FPS = 960, 15
+
+# --- On-video version (python3 output/laptop_chat_overlay.py onvideo) ---
+# Puts the same chat straight onto your footage instead of green.
+SOURCE_VIDEO = "/root/.claude/uploads/95f8ab45-ab44-5021-a0e3-b24db9a917b6/eb1c584d-document_6066468132518635596.mp4"
+CHAT_START = 33.0                  # time in the source video where the chat's 0.0 s is
+SLOW_FROM, SLOW_TO = 33.0, 37.2    # this part of the source is slowed down so the whole chat fits (None, None = no slow-down)
+ONVIDEO_COLUMN_X = 1330            # left edge of the chat column, in 1920x1080 units (scaled to the video's size)
+ONVIDEO_COLUMN_WIDTH = 560
+ONVIDEO_MAX_BUBBLE_WIDTH = 545
+ONVIDEO_NAME = "laptop-scene-with-chat.mp4"
 # ====================================================================
+import sys
+ON_VIDEO = len(sys.argv) > 1 and sys.argv[1] == "onvideo"
+if ON_VIDEO:
+    COLUMN_WIDTH, MAX_BUBBLE_WIDTH, BACKGROUND = ONVIDEO_COLUMN_WIDTH, ONVIDEO_MAX_BUBBLE_WIDTH, None
 
 SS = 2  # supersampling for smooth edges
-COL_X = (WIDTH - COLUMN_WIDTH) // 2
+COL_X = ONVIDEO_COLUMN_X if ON_VIDEO else (WIDTH - COLUMN_WIDTH) // 2
 GAP_SAME, GAP_NEW = 6, 18          # gap within a sender's group / between groups
 NAME_H, STATUS_H = 34, 34
 SHADOW_PAD = 24
@@ -139,7 +158,7 @@ def text_bubble(text, me, tail):
 
 
 def card_bubble(card, me, tail):
-    w, padx = 560, 24
+    w, padx = min(560, MAX_BUBBLE_WIDTH - 20), 24
     body = wrap(card["body"], F_CARD_BODY, w - 2 * padx)
     h = 20 + 30 + 14 + 40 + 10 + len(body) * 37 + 18
     im, bx = bubble_image(w, h, CARD_BG, "R" if me else "L", tail,
@@ -250,7 +269,7 @@ def paste_scaled(canvas, img, x, y, s, a, anchor_right):
 
 
 def render(t):
-    canvas = Image.new("RGBA", (WIDTH, HEIGHT), BACKGROUND + (255,))
+    canvas = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0) if BACKGROUND is None else BACKGROUND + (255,))
     # scroll up if content (visible so far) would pass the bottom margin
     visible_bottom = TOP_MARGIN
     for it in items:
@@ -290,7 +309,7 @@ def render(t):
                 sp = STATUS_PILLS[cur]
                 canvas.alpha_composite(sp, (COL_X + COLUMN_WIDTH - (sp.width - 2 * SHADOW_PAD) - 4 - SHADOW_PAD,
                                             it["status_y"] - scroll - SHADOW_PAD))
-    return canvas.convert("RGB")
+    return canvas if BACKGROUND is None else canvas.convert("RGB")
 
 
 def main():
@@ -314,9 +333,66 @@ def main():
     print(f"{N_FRAMES} frames, {DURATION:.2f} s\n{mp4}\n{gif}")
 
 
+def main_onvideo(preview_at=None):
+    """Slow SLOW_FROM..SLOW_TO so the chat fits, then overlay the chat (transparent) on the footage."""
+    info = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
+                           "stream=width,height,r_frame_rate:format=duration", "-of", "default=nw=1",
+                           SOURCE_VIDEO], capture_output=True, text=True, check=True).stdout
+    kv = dict(l.split("=", 1) for l in info.split())
+    vw, vh, vdur = int(kv["width"]), int(kv["height"]), float(kv["duration"])
+    num, den = kv["r_frame_rate"].split("/"); vfps = round(int(num) / int(den))
+    chat_end = CHAT_START + DURATION
+    if SLOW_FROM is not None:
+        factor = max(1.0, (chat_end - SLOW_FROM) / (min(SLOW_TO, vdur) - SLOW_FROM))
+        tempo, chain = 1 / factor, []
+        while tempo < 0.5:
+            chain.append("atempo=0.5"); tempo /= 0.5
+        chain.append(f"atempo={tempo:.6f}")
+        slow_to = min(SLOW_TO, vdur)
+        tail = vdur - slow_to > 0.05          # is there footage after the slowed part?
+        n = 3 if tail else 2
+        vf = (f"[0:v]fps={vfps},split={n}" + "".join(f"[v{i}]" for i in range(n)) + ";"
+              f"[v0]trim=0:{SLOW_FROM},setpts=PTS-STARTPTS[a0];"
+              f"[v1]trim={SLOW_FROM}:{slow_to},setpts=(PTS-STARTPTS)*{factor:.6f},"
+              f"minterpolate=fps={vfps}:mi_mode=mci:mc_mode=aobmc:vsbmc=1[a1];"
+              + (f"[v2]trim={slow_to},setpts=PTS-STARTPTS[a2];" if tail else "")
+              + "".join(f"[a{i}]" for i in range(n)) + f"concat=n={n}:v=1:a=0[base];"
+              f"[0:a]asplit={n}" + "".join(f"[s{i}]" for i in range(n)) + ";"
+              f"[s0]atrim=0:{SLOW_FROM},asetpts=PTS-STARTPTS[b0];"
+              f"[s1]atrim={SLOW_FROM}:{slow_to},asetpts=PTS-STARTPTS,{','.join(chain)}[b1];"
+              + (f"[s2]atrim={slow_to},asetpts=PTS-STARTPTS[b2];" if tail else "")
+              + "".join(f"[b{i}]" for i in range(n)) + f"concat=n={n}:v=0:a=1[aud];")
+        total = vdur + (slow_to - SLOW_FROM) * (factor - 1)
+    else:
+        vf, total = f"[0:v]fps={vfps}[base];[0:a]anull[aud];", vdur
+    if preview_at is not None:   # one composited still, for checking position
+        out = os.path.join(OUTPUT_DIR, "preview-laptop-scene.png")
+        frame = render(preview_at - CHAT_START).resize((vw, vh), Image.LANCZOS)
+        tmp = os.path.join(OUTPUT_DIR, "_frame.png"); frame.save(tmp)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", SOURCE_VIDEO, "-i", tmp, "-filter_complex",
+                        vf + f"[aud]anullsink;[base]trim=start={preview_at},setpts=PTS-STARTPTS[b];[b][1:v]overlay[o]",
+                        "-map", "[o]", "-frames:v", "1", out], check=True)
+        os.remove(tmp); print(out); return
+    out = os.path.join(OUTPUT_DIR, ONVIDEO_NAME)
+    enc = subprocess.Popen(
+        ["ffmpeg", "-v", "error", "-y", "-i", SOURCE_VIDEO,
+         "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{WIDTH}x{HEIGHT}", "-r", str(FPS),
+         "-i", "-", "-filter_complex",
+         vf + f"[1:v]setpts=PTS-STARTPTS+{CHAT_START}/TB,scale={vw}:{vh}:flags=lanczos,fps={vfps}[chat];"
+              "[base][chat]overlay=0:0:eof_action=pass:format=auto,format=yuv420p[v]",
+         "-map", "[v]", "-map", "[aud]", "-t", f"{total:.3f}",
+         "-c:v", "libx264", "-preset", "slow", "-crf", "17", "-r", str(vfps),
+         "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart", out], stdin=subprocess.PIPE)
+    for k in range(N_FRAMES):
+        enc.stdin.write(render(k / FPS).tobytes())
+    enc.stdin.close(); enc.wait()
+    print(f"{out}  ({total:.2f} s, chat {CHAT_START:.2f}-{chat_end:.2f} s)")
+
+
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) > 2 and sys.argv[1] == "frame":   # debug: python3 laptop_chat_overlay.py frame 6.5 out.png
+    if ON_VIDEO:
+        main_onvideo(float(sys.argv[3]) if len(sys.argv) > 3 and sys.argv[2] == "preview" else None)
+    elif len(sys.argv) > 2 and sys.argv[1] == "frame":   # debug: python3 laptop_chat_overlay.py frame 6.5 out.png
         render(float(sys.argv[2])).save(sys.argv[3] if len(sys.argv) > 3 else "frame.png")
     else:
         main()
