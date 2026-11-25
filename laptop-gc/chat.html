@@ -1,0 +1,383 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Laptop GC</title>
+<script>
+/* =====================================================================
+   CONFIG — edit names, texts and timings here (times are in seconds)
+   ===================================================================== */
+const CONFIG = {
+  appName: "Kwentuhan",                 // fictional app name (no real brands)
+  clock: "8:42 PM",                     // time shown in sidebar / separator
+
+  group: { name: "BSIT 2A Class GC", members: "42 members" },
+
+  // Everyone who appears in the chat. Colors are avatar colors.
+  people: {
+    janelle: { name: "Janelle", color: "#FF9F0A" },
+    paolo:   { name: "Paolo",   color: "#30B0C7" },
+    bea:     { name: "Bea",     color: "#FF375F" },
+    carlo:   { name: "Carlo",   color: "#34C759" },
+    migs:    { name: "Migs",    color: "#AF52DE" },
+  },
+
+  // Older messages already on screen at 0.0s
+  older: [
+    { from: "janelle", text: "May quiz ba bukas?" },
+    { from: "paolo",   text: "Wala pa announcement" },
+  ],
+
+  // Shared post card that I send
+  card: {
+    at: 1.0,
+    source: "Campus Updates · shared post",
+    heading: "BREAKING ANNOUNCEMENT",
+    body: "Classes are suspended tomorrow due to an emergency! Please share this information immediately!",
+  },
+
+  // What I type in the composer, then send
+  myMessage: {
+    typeAt: 2.0,
+    sendAt: 4.5,
+    text: "GUYS! No classes tomorrow! Look!",
+    status: [                           // status line under my message
+      { at: 4.5, text: "Sent" },
+      { at: 4.9, text: "Delivered" },
+      { at: 5.6, text: "Seen by 7" },
+      { at: 6.6, text: "Seen by 19" },
+      { at: 7.8, text: "Seen by 34" },
+    ],
+  },
+
+  // Replies. typingAt = when "X is typing" appears (omit for none); at = when the message lands
+  replies: [
+    { from: "bea",   typingAt: 6.5,  at: 7.3,  text: "Totoo ba?" },
+    { from: "bea",                   at: 8.0,  text: "YES! Finally! Walang pasok tomorrow!" },
+    { from: "carlo", typingAt: 9.5,  at: 10.5, text: "Wait, suspended? So di ko na need mag-prepare for the presentation?" },
+    { from: "migs",  typingAt: 11.5, at: 12.1, text: "Forward ko rin sa kabilang section para informed sila!" },
+  ],
+
+  // Other conversations in the sidebar (the group chat is always first + selected)
+  sidebar: [
+    { name: "Mama",           preview: "Umuwi ka agad pagkatapos ng klase ha", time: "7:15 PM", color: "#FF9500", unread: true },
+    { name: "Thesis Group 3", preview: "Carlo: send ko later yung draft",       time: "6:02 PM", color: "#5856D6", group: true },
+    { name: "Kuya Jed",       preview: "Pahiram ng charger bukas",              time: "4:47 PM", color: "#64D2FF" },
+    { name: "Org Officers",   preview: "Meeting sa Friday, 3 PM",              time: "Tue",     color: "#FF2D55", group: true },
+    { name: "Bea",            preview: "Sige, see you!",                        time: "Mon",     color: "#FF375F" },
+  ],
+
+  bubbleIn: 0.3,     // seconds each bubble eases in
+  holdEnd: 2.0,      // seconds to hold the final frame
+  fps: 30,
+};
+</script>
+<style>
+  :root {
+    --blue: #0A84FF;
+    --gray-bubble: #E9E9EB;
+    --line: #E5E5EA;
+    --muted: #8A8A8E;
+    --text: #111114;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #fff; }
+  body { font-family: Inter, "Segoe UI", Roboto, sans-serif; color: var(--text); -webkit-font-smoothing: antialiased; }
+  #app { width: 1920px; height: 1080px; display: flex; overflow: hidden; background: #fff; }
+
+  /* nav rail */
+  .rail { width: 84px; background: #F4F5F7; border-right: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; padding-top: 22px; gap: 14px; }
+  .logo { width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(140deg, #4FA8FF, #0A63E0); display: grid; place-items: center; margin-bottom: 12px; }
+  .rail .ico { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; color: #6E6E73; }
+  .rail .ico.on { background: #E2EEFF; color: var(--blue); }
+  .rail .spacer { flex: 1; }
+  .rail .me { width: 44px; height: 44px; margin-bottom: 22px; font-size: 17px; }
+
+  /* sidebar */
+  .sidebar { width: 430px; border-right: 1px solid var(--line); display: flex; flex-direction: column; background: #fff; }
+  .sb-head { display: flex; align-items: center; justify-content: space-between; padding: 26px 24px 14px; }
+  .sb-head h1 { font-size: 30px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
+  .round-btn { width: 42px; height: 42px; border-radius: 50%; background: #F0F1F4; display: grid; place-items: center; color: #3A3A3C; }
+  .search { margin: 0 20px 14px; height: 46px; border-radius: 23px; background: #F0F1F4; display: flex; align-items: center; gap: 10px; padding: 0 18px; color: #8E8E93; font-size: 18px; }
+  .list { padding: 0 12px; display: flex; flex-direction: column; gap: 2px; }
+  .row { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 14px; height: 84px; }
+  .row.sel { background: #E8F1FF; }
+  .row .meta { flex: 1; min-width: 0; }
+  .row .top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .row .nm { font-size: 19px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .tm { font-size: 14px; color: var(--muted); flex: none; }
+  .row .pv { font-size: 16px; color: #6C6C70; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
+  .row .pv.typing { color: var(--blue); font-style: italic; }
+  .row.unread .nm, .row.unread .pv { font-weight: 700; color: var(--text); }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--blue); flex: none; }
+
+  .avatar { border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 600; flex: none; }
+  .av56 { width: 58px; height: 58px; font-size: 22px; }
+  .grp { position: relative; width: 58px; height: 58px; flex: none; }
+  .grp .a, .grp .b { position: absolute; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; color: #fff; font-size: 15px; font-weight: 600; border: 2.5px solid #fff; }
+  .grp .a { left: 0; top: 0; } .grp .b { right: 0; bottom: 0; }
+  .row.sel .grp .a, .row.sel .grp .b { border-color: #E8F1FF; }
+
+  /* main pane */
+  .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+  .header { height: 92px; border-bottom: 1px solid var(--line); display: flex; align-items: center; padding: 0 32px; gap: 16px; background: #fff; flex: none; z-index: 2; }
+  .header .title { flex: 1; }
+  .header .gname { font-size: 23px; font-weight: 700; }
+  .header .gsub { font-size: 16px; color: var(--muted); margin-top: 3px; display: flex; align-items: center; gap: 7px; }
+  .online { width: 9px; height: 9px; border-radius: 50%; background: #34C759; }
+  .header .acts { display: flex; gap: 26px; color: var(--blue); }
+
+  .msgs { flex: 1; position: relative; overflow: hidden; background: #fff; }
+  .track { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 44px 18px; }
+  .item { overflow: hidden; }
+  .inner { padding-top: 10px; will-change: transform, opacity; }
+
+  .sep { text-align: center; font-size: 15px; color: var(--muted); font-weight: 500; padding: 18px 0 6px; }
+
+  .m { display: flex; gap: 12px; align-items: flex-start; }
+  .m.out { justify-content: flex-end; }
+  .m .av { width: 40px; height: 40px; font-size: 16px; margin-top: 24px; }
+  .m .av.ghost { visibility: hidden; }
+  .m .col { display: flex; flex-direction: column; max-width: 640px; }
+  .m.out .col { align-items: flex-end; }
+  .m .who { font-size: 15px; color: var(--muted); margin: 0 0 5px 14px; font-weight: 500; }
+  .bubble { font-size: 22px; line-height: 1.38; padding: 12px 19px; border-radius: 24px; }
+  .in .bubble { background: var(--gray-bubble); color: #000; }
+  .out .bubble { background: var(--blue); color: #fff; }
+  .status { font-size: 15px; color: var(--muted); margin: 6px 6px 0 0; height: 20px; display: flex; align-items: center; gap: 6px; }
+
+  .card { width: 520px; border-radius: 22px; border: 1px solid #DADDE3; background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+  .card .bar { height: 8px; background: #E5262D; }
+  .card .cb { padding: 18px 22px 18px; }
+  .card .src { display: flex; align-items: center; gap: 10px; font-size: 16px; color: #6C6C70; font-weight: 500; }
+  .card .src .pg { width: 30px; height: 30px; border-radius: 8px; background: #1F4FA8; color: #fff; font-size: 13px; font-weight: 700; display: grid; place-items: center; }
+  .card h3 { margin: 14px 0 8px; color: #E5262D; font-size: 26px; font-weight: 800; letter-spacing: 0.3px; }
+  .card p { margin: 0; font-size: 20px; line-height: 1.42; color: #1C1C1E; }
+  .card .ft { border-top: 1px solid #EEEEF1; padding: 12px 22px; font-size: 16px; color: var(--blue); font-weight: 600; }
+
+  .typing-lbl { font-size: 15px; color: var(--muted); margin: 0 0 5px 14px; font-style: italic; }
+  .dots { background: var(--gray-bubble); border-radius: 24px; padding: 0 20px; height: 50px; display: flex; align-items: center; gap: 7px; }
+  .dots span { width: 10px; height: 10px; border-radius: 50%; background: #8E8E93; display: block; }
+
+  /* composer */
+  .composer { height: 100px; border-top: 1px solid var(--line); display: flex; align-items: center; gap: 18px; padding: 0 28px; flex: none; background: #fff; z-index: 2; }
+  .composer .tools { display: flex; gap: 16px; color: var(--blue); }
+  .field { flex: 1; height: 56px; border-radius: 28px; background: #F0F1F4; display: flex; align-items: center; padding: 0 24px; font-size: 22px; overflow: hidden; white-space: pre; }
+  .field .ph { color: #9A9AA0; }
+  .caret { display: inline-block; width: 2px; height: 28px; background: var(--blue); margin-left: 1px; vertical-align: middle; }
+  .send { width: 56px; height: 56px; border-radius: 50%; background: var(--blue); display: grid; place-items: center; flex: none; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="rail">
+    <div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M12 3C6.5 3 2 6.8 2 11.5c0 2.6 1.4 4.9 3.6 6.5L5 21.5l4-2.1c.9.2 1.9.3 3 .3 5.5 0 10-3.8 10-8.5S17.5 3 12 3z"/></svg></div>
+    <div class="ico on"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></div>
+    <div class="ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.6"/><path d="M17 14.5c2.4 0 4 1.5 4.6 4"/></svg></div>
+    <div class="ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
+    <div class="spacer"></div>
+    <div class="ico"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></div>
+    <div class="avatar me" style="background:#0A84FF">A</div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sb-head">
+      <h1>Chats</h1>
+      <div class="round-btn"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></div>
+    </div>
+    <div class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Search chats</div>
+    <div class="list" id="list"></div>
+  </div>
+
+  <div class="main">
+    <div class="header">
+      <div class="grp" id="hdrAv"></div>
+      <div class="title">
+        <div class="gname" id="gname"></div>
+        <div class="gsub"><span class="online"></span><span id="gmem"></span></div>
+      </div>
+      <div class="acts">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></svg>
+        <svg width="30" height="28" viewBox="0 0 26 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="15" height="12" rx="2.5"/><path d="m17 10.5 6-3.5v10l-6-3.5"/></svg>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><circle cx="12" cy="8" r=".6" fill="currentColor"/></svg>
+      </div>
+    </div>
+    <div class="msgs"><div class="track" id="track"></div></div>
+    <div class="composer">
+      <div class="tools">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg>
+      </div>
+      <div class="field" id="field"></div>
+      <div class="send" id="send"><svg width="26" height="26" viewBox="0 0 24 24" fill="#fff"><path d="M3.4 20.4 21 12 3.4 3.6 3.4 10.2 15 12 3.4 13.8z"/></svg></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const C = CONFIG;
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+const initial = n => n.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join("").toUpperCase();
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const ease = x => 1 - Math.pow(1 - clamp(x), 3);           // easeOutCubic
+const P = id => C.people[id];
+
+/* ---------- typing schedule (deterministic, natural-ish rhythm) ---------- */
+const typeTimes = (() => {
+  const txt = C.myMessage.text;
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const w = [...txt].map((ch, i) => {
+    let d = 0.75 + rnd() * 0.6;
+    if (ch === " ") d += 0.35;
+    if (i > 0 && /[!?.,]/.test(txt[i - 1])) d += 0.9;   // pause after punctuation
+    return d;
+  });
+  const start = C.myMessage.typeAt, end = C.myMessage.sendAt - 0.3;
+  const total = w.reduce((a, b) => a + b, 0);
+  let acc = start; const out = [];
+  w.forEach(d => { acc += d / total * (end - start); out.push(acc); });
+  return out; // time each char appears
+})();
+
+/* ---------- build the conversation items ---------- */
+const items = [];
+function addItem(html, tIn, tOut, kind) {
+  const wrap = document.createElement("div");
+  wrap.className = "item";
+  wrap.innerHTML = `<div class="inner">${html}</div>`;
+  $("track").appendChild(wrap);
+  items.push({ wrap, inner: wrap.firstChild, tIn, tOut, kind, h: 0 });
+  return wrap;
+}
+function otherMsg(from, text, showName) {
+  const p = P(from);
+  return `<div class="m in">
+    <div class="avatar av ${showName ? "" : "ghost"}" style="background:${p.color}">${initial(p.name)}</div>
+    <div class="col">${showName ? `<div class="who">${esc(p.name)}</div>` : ""}
+      <div class="bubble">${esc(text)}</div></div></div>`;
+}
+
+addItem(`<div class="sep">Today ${C.clock}</div>`, -1, Infinity);
+let last = null;
+C.older.forEach(o => { addItem(otherMsg(o.from, o.text, last !== o.from), -1, Infinity); last = o.from; });
+
+addItem(`<div class="m out"><div class="col"><div class="card"><div class="bar"></div><div class="cb">
+    <div class="src"><div class="pg">CU</div>${esc(C.card.source)}</div>
+    <h3>${esc(C.card.heading)}</h3><p>${esc(C.card.body)}</p></div>
+    <div class="ft">View post</div></div></div></div>`, C.card.at, Infinity);
+last = "me";
+
+addItem(`<div class="m out"><div class="col"><div class="bubble">${esc(C.myMessage.text)}</div>
+    <div class="status" id="status"></div></div></div>`, C.myMessage.sendAt, Infinity);
+
+const typers = [];
+C.replies.forEach(r => {
+  const p = P(r.from);
+  if (r.typingAt != null) {
+    const w = addItem(`<div class="m in"><div class="avatar av" style="background:${p.color}">${initial(p.name)}</div>
+      <div class="col"><div class="typing-lbl">${esc(p.name)} is typing…</div>
+      <div class="dots"><span></span><span></span><span></span></div></div></div>`, r.typingAt, r.at, "typing");
+    typers.push({ from: r.from, t0: r.typingAt, t1: r.at, dots: [...w.querySelectorAll(".dots span")] });
+  }
+  addItem(otherMsg(r.from, r.text, last !== r.from), r.at, Infinity);
+  last = r.from;
+});
+
+const END = Math.max(C.card.at, C.myMessage.sendAt, ...C.replies.map(r => r.at)) + C.bubbleIn + C.holdEnd;
+
+/* ---------- static UI ---------- */
+function grpAvatar(c1, c2, l1, l2) {
+  return `<div class="a" style="background:${c1}">${l1}</div><div class="b" style="background:${c2}">${l2}</div>`;
+}
+const gp = Object.values(C.people);
+$("hdrAv").innerHTML = grpAvatar(gp[2 % gp.length].color, gp[3 % gp.length].color, initial(gp[2 % gp.length].name), initial(gp[3 % gp.length].name));
+$("gname").textContent = C.group.name;
+$("gmem").textContent = C.group.members;
+
+const list = $("list");
+list.innerHTML = `<div class="row sel"><div class="grp">${$("hdrAv").innerHTML}</div><div class="meta">
+  <div class="top"><div class="nm">${esc(C.group.name)}</div><div class="tm">${C.clock}</div></div>
+  <div class="pv" id="gpv"></div></div></div>` +
+  C.sidebar.map(s => `<div class="row ${s.unread ? "unread" : ""}">
+    ${s.group ? `<div class="grp">${grpAvatar(s.color, "#8E8E93", initial(s.name)[0], initial(s.name)[1] || "+")}</div>`
+              : `<div class="avatar av56" style="background:${s.color}">${initial(s.name)}</div>`}
+    <div class="meta"><div class="top"><div class="nm">${esc(s.name)}</div><div class="tm">${s.time}</div></div>
+    <div class="pv">${esc(s.preview)}</div></div>${s.unread ? `<div class="dot"></div>` : ""}</div>`).join("");
+
+/* ---------- per-frame render ---------- */
+function render(t) {
+  const D = C.bubbleIn;
+  for (const it of items) {
+    const ein = ease((t - it.tIn) / D);
+    const eout = it.tOut === Infinity ? 0 : ease((t - it.tOut) / D);
+    const f = ein * (1 - eout);
+    it.wrap.style.height = (it.h * f).toFixed(2) + "px";
+    it.wrap.style.display = f <= 0 ? "none" : "";
+    // typing indicators vanish the moment the message lands (nothing half-clipped shows); their space still collapses smoothly
+    it.inner.style.opacity = it.kind === "typing" ? (t >= it.tOut ? 0 : ein) : ein;
+    it.inner.style.transform = `translateY(${(1 - ein) * 18}px) scale(${0.97 + 0.03 * ein})`;
+    it.inner.style.transformOrigin = it.inner.querySelector(".out") ? "right bottom" : "left bottom";
+  }
+
+  // typing dots bounce
+  for (const ty of typers) ty.dots.forEach((d, i) => {
+    const ph = ((t - ty.t0) * 2.2 - i * 0.18) % 1;
+    const b = ph > 0 && ph < 0.4 ? Math.sin(ph / 0.4 * Math.PI) : 0;
+    d.style.transform = `translateY(${-b * 7}px)`;
+    d.style.opacity = 0.45 + 0.55 * b;
+  });
+
+  // status under my message
+  const st = C.myMessage.status.filter(s => t >= s.at).pop();
+  const s = $("status");
+  if (s) s.innerHTML = st ? (/seen/i.test(st.text)
+      ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0A84FF" stroke-width="2.4"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>${esc(st.text)}`
+      : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8A8A8E" stroke-width="2.6"><path d="m4 12 5 5L20 6"/></svg>${esc(st.text)}`) : "";
+
+  // composer
+  const mm = C.myMessage;
+  const n = t >= mm.sendAt ? 0 : typeTimes.filter(x => t >= x).length;
+  const typed = [...mm.text].slice(0, n).join("");
+  const activeTyping = t >= mm.typeAt && t < mm.sendAt;
+  const lastKey = n > 0 ? typeTimes[n - 1] : -9;
+  const caretOn = activeTyping && (t - lastKey < 0.5 || Math.floor((t - lastKey) / 0.53) % 2 === 0);
+  const caret = `<span class="caret" style="opacity:${caretOn ? 1 : 0}"></span>`;
+  $("field").innerHTML = typed ? esc(typed) + caret
+    : (activeTyping ? caret + `<span class="ph">Type a message…</span>` : `<span class="ph">Type a message…</span>`);
+  const press = t >= mm.sendAt - 0.08 && t < mm.sendAt + 0.15 ? 0.88 : 1;
+  $("send").style.transform = `scale(${press})`;
+  $("send").style.opacity = typed || press < 1 ? 1 : 0.45;
+
+  // sidebar preview of the group chat
+  let pv = `${P(C.older.at(-1).from).name}: ${C.older.at(-1).text}`, typing = false;
+  const evs = [
+    { at: C.card.at, txt: "You sent a post" },
+    { at: mm.sendAt, txt: "You: " + mm.text },
+    ...C.replies.flatMap(r => [
+      ...(r.typingAt != null ? [{ at: r.typingAt, txt: `${P(r.from).name} is typing…`, typing: true }] : []),
+      { at: r.at, txt: `${P(r.from).name}: ${r.text}` }]),
+  ].sort((a, b) => a.at - b.at);
+  for (const e of evs) if (t >= e.at) { pv = e.txt; typing = !!e.typing; }
+  const g = $("gpv"); g.textContent = pv; g.className = "pv" + (typing ? " typing" : "");
+}
+
+window.ready = document.fonts.ready.then(() => {
+  for (const it of items) { it.wrap.style.height = "auto"; it.h = it.inner.offsetHeight; }
+  window.END = END; window.FPS = C.fps;
+  render(0);
+  return { END, FPS: C.fps };
+});
+window.render = render;
+
+// live preview when opened in a browser (add ?play to the URL)
+if (location.search.includes("play")) window.ready.then(() => {
+  const t0 = performance.now();
+  const loop = () => { render(((performance.now() - t0) / 1000) % END); requestAnimationFrame(loop); };
+  loop();
+});
+</script>
+</body>
+</html>
